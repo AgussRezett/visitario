@@ -36,3 +36,14 @@ test('desktop shows the brand panel, phones do not', async ({ page }, info) => {
   if (info.project.name === 'desktop') await expect(panel).toBeVisible()
   else await expect(panel).toBeHidden()
 })
+
+test('the password can be shown and hidden', async ({ page }) => {
+  await page.goto('/login')
+  const input = page.getByLabel('Contraseña', { exact: true })
+  await input.fill('secreto123')
+  await expect(input).toHaveAttribute('type', 'password')
+  await page.getByRole('button', { name: 'Mostrar contraseña' }).click()
+  await expect(input).toHaveAttribute('type', 'text')
+  await page.getByRole('button', { name: 'Ocultar contraseña' }).click()
+  await expect(input).toHaveAttribute('type', 'password')
+})

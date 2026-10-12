@@ -7,6 +7,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { refreshMe } from '@/features/auth/me'
 import { Button } from '@/ui/Button'
 import { Field } from '@/ui/Field'
+import { PasswordField } from '@/ui/PasswordField'
 import { Banner } from '@/ui/Banner'
 import { AuthLayout } from '@/features/auth/components/AuthLayout'
 import { GoogleButton } from '@/features/auth/components/GoogleButton'
@@ -59,7 +60,7 @@ export function SignUpPage() {
       <OrDivider label="o con tu email" />
       <form className={styles.form} onSubmit={onSubmit} noValidate>
         <Field label="Email" type="email" autoComplete="email" error={formState.errors.email?.message} {...register('email')} />
-        <Field label="Creá una contraseña" type="password" autoComplete="new-password" help="Al menos 8 caracteres." error={formState.errors.password?.message} {...register('password')} />
+        <PasswordField label="Creá una contraseña" autoComplete="new-password" help="Al menos 8 caracteres." error={formState.errors.password?.message} {...register('password')} />
         {error ? <Banner tone="error">{error}</Banner> : null}
         <Button type="submit" loading={formState.isSubmitting}>Crear cuenta</Button>
       </form>

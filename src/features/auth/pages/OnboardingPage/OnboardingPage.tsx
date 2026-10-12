@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase'
 import { isPlausibleBirthDate, isValidDni, normalizeArPhone, normalizeDni } from '@/domain/identity'
 import { Button } from '@/ui/Button'
 import { Field } from '@/ui/Field'
+import { PasswordField } from '@/ui/PasswordField'
 import { Banner } from '@/ui/Banner'
 import { Card } from '@/ui/Card'
 import { Logo } from '@/ui/Logo'
@@ -87,9 +88,8 @@ export function OnboardingPage() {
               <Field label="Celular" type="tel" autoComplete="tel-national" placeholder="11 5555-4521" error={formState.errors.phone?.message} {...register('phone')} />
               <Field label="Email" value={me?.email ?? ''} readOnly />
               {needsPassword ? (
-                <Field
+                <PasswordField
                   label="Creá una contraseña"
-                  type="password"
                   autoComplete="new-password"
                   help="Te sirve para entrar con tu DNI."
                   error={formState.errors.password?.message}

@@ -7,6 +7,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { refreshMe } from '@/features/auth/me'
 import { Button } from '@/ui/Button'
 import { Field } from '@/ui/Field'
+import { PasswordField } from '@/ui/PasswordField'
 import { Banner } from '@/ui/Banner'
 import { AuthLayout } from '@/features/auth/components/AuthLayout'
 import { GoogleButton } from '@/features/auth/components/GoogleButton'
@@ -45,7 +46,7 @@ export function LoginPage() {
       <OrDivider label="o con tu DNI" />
       <form className={styles.form} onSubmit={onSubmit} noValidate>
         <Field label="DNI o email" autoComplete="username" inputMode="text" error={formState.errors.identifier?.message} {...register('identifier')} />
-        <Field label="Contraseña" type="password" autoComplete="current-password" error={formState.errors.password?.message} {...register('password')} />
+        <PasswordField label="Contraseña" autoComplete="current-password" error={formState.errors.password?.message} {...register('password')} />
         {error ? <Banner tone="error">{error}</Banner> : null}
         {notice ? <Banner tone="ok">{notice}</Banner> : null}
         <Button type="submit" loading={formState.isSubmitting}>

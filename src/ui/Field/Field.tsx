@@ -7,11 +7,13 @@ export interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
   help?: ReactNode
   error?: string | undefined
   trailing?: ReactNode
+  /** Small button shown inside the input, on the right (e.g. show password). */
+  action?: ReactNode
 }
 
 /** Labelled input with help and error text wired for screen readers. */
 export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
-  { label, help, error, trailing, className, id, ...props },
+  { label, help, error, trailing, action, className, id, ...props },
   ref,
 ) {
   const autoId = useId()
@@ -23,14 +25,17 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
         {label}
       </label>
       <div className={styles.row}>
-        <input
-          ref={ref}
-          id={inputId}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={describedBy}
-          className={clsx(styles.input, error && styles.invalid, className)}
-          {...props}
-        />
+        <div className={styles.control}>
+          <input
+            ref={ref}
+            id={inputId}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={describedBy}
+            className={clsx(styles.input, error && styles.invalid, action && styles.withAction, className)}
+            {...props}
+          />
+          {action ? <span className={styles.action}>{action}</span> : null}
+        </div>
         {trailing}
       </div>
       {error ? (

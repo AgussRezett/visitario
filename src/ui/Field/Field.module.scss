@@ -15,6 +15,13 @@
     @include flex(row, $gap: space(2), $align: center);
   }
 
+  // Wraps the input so an action can sit inside it
+  .control {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+  }
+
   .input {
     @include text(base);
     width: 100%;
@@ -33,6 +40,18 @@
     &:read-only {
       background: $color-muted;
     }
+  }
+
+  .with-action {
+    padding-right: $touch-target + space(1);
+  }
+
+  .action {
+    position: absolute;
+    inset-block: 0;
+    right: space(0.5);
+    display: flex;
+    align-items: center;
   }
 
   .invalid {

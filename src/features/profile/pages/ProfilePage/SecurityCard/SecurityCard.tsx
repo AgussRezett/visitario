@@ -5,7 +5,7 @@ import { refreshMe } from '@/features/auth/me'
 import { KeyRound, Mail } from 'lucide-react'
 import { Button } from '@/ui/Button'
 import { Card } from '@/ui/Card'
-import { Field } from '@/ui/Field'
+import { PasswordField } from '@/ui/PasswordField'
 import { Banner } from '@/ui/Banner'
 import { setPassword } from '@/features/auth/api'
 import type { Me } from '@/features/auth/me'
@@ -46,7 +46,7 @@ export function SecurityCard({ me }: { me: Me }) {
             }
           }}
         >
-          <Field label="Nueva contraseña" type="password" autoComplete="new-password" value={value} onChange={(e) => setValue(e.target.value)} error={status === 'error' ? 'Usá al menos 8 caracteres' : undefined} />
+          <PasswordField label="Nueva contraseña" autoComplete="new-password" value={value} onChange={(e) => setValue(e.target.value)} error={status === 'error' ? 'Usá al menos 8 caracteres' : undefined} />
           <div className={styles.buttons}>
             <Button type="submit" size="md" loading={status === 'saving'}>Guardar</Button>
             <Button size="md" variant="secondary" onClick={() => setEditing(false)}>Cancelar</Button>
