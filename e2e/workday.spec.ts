@@ -10,8 +10,8 @@ test('opens an own workday, adds 5 addresses and sees them in order', async ({ p
   await page.goto(`/s/workday?date=${DATE}`)
 
   await expect(page.getByRole('heading', { name: /no tenés jornada/i })).toBeVisible()
-  await page.getByRole('button', { name: 'Abrir jornada' }).click()
-  await expect(page.getByRole('heading', { name: 'Mi jornada' })).toBeVisible()
+  await page.getByRole('button', { name: /Abrir (mi )?jornada/ }).click()
+  await expect(page.getByRole('heading', { name: /jornada está abierta/ })).toBeVisible()
 
   await page.getByRole('button', { name: 'Agregar dirección' }).filter({ visible: true }).first().click()
   await page.getByRole('radio', { name: 'Pegar varias' }).click()
