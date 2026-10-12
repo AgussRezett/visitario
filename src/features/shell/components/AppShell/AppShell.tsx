@@ -10,6 +10,7 @@ import type { Role } from '@/domain/roles'
 import { SECTIONS } from '@/features/shell/sections'
 import { RoleSwitcher } from '@/features/shell/components/RoleSwitcher'
 import { ViewSwitcher } from '@/features/shell/components/ViewSwitcher'
+import { UpdateBanner } from '@/features/shell/components/UpdateBanner'
 import { SyncStatus } from '@/features/sync/components/SyncStatus'
 import { useNavBadges } from '@/features/shell/useNavBadges'
 import { MainOverlayContext } from './main-overlay-context'
@@ -71,6 +72,8 @@ export function AppShell({ me, active, children }: Props) {
           )}
         </div>
       </header>
+
+      <UpdateBanner />
 
       <main className={clsx(styles.main, immersive && styles.mainImmersive)} data-scroll>
         <MainOverlayContext.Provider value={overlay}>{children}</MainOverlayContext.Provider>
