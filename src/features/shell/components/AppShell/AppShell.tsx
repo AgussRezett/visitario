@@ -9,6 +9,7 @@ import type { Me } from '@/features/auth/me'
 import type { Role } from '@/domain/roles'
 import { SECTIONS } from '@/features/shell/sections'
 import { RoleSwitcher } from '@/features/shell/components/RoleSwitcher'
+import { ViewSwitcher } from '@/features/shell/components/ViewSwitcher'
 import styles from './AppShell.module.scss'
 
 interface Props {
@@ -50,11 +51,14 @@ export function AppShell({ me, active, children }: Props) {
       <div className={styles.content}>
         <header className={clsx(styles.mobileHeader, immersive && styles.phoneHidden)}>
           <Link to="/" aria-label="Inicio"><Logo /></Link>
-          {active?.role === 'merchandiser' ? null : (
-            <Link to="/profile" aria-label="Mi perfil">
-              <Avatar name={short} size={36} />
-            </Link>
-          )}
+          <div className={styles.headerEnd}>
+            {active ? <ViewSwitcher memberships={me.memberships} active={active} /> : null}
+            {active?.role === 'merchandiser' ? null : (
+              <Link to="/profile" aria-label="Mi perfil">
+                <Avatar name={short} size={36} />
+              </Link>
+            )}
+          </div>
         </header>
         <main className={clsx(styles.main, immersive && styles.mainImmersive)}>{children}</main>
         {mobileItems.length ? (
