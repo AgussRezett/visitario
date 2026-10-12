@@ -49,3 +49,38 @@ export function formatHour(iso: string) {
 export function argentinaTime(date: string, hour: number) {
   return new Date(`${date}T${String(hour).padStart(2, '0')}:00:00-03:00`).toISOString()
 }
+
+/** "Buen día" until noon, "Buenas tardes" until 8 p.m., then "Buenas noches" (Argentina). */
+export function greeting(now: Date = new Date()) {
+  const hour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: AR_TIMEZONE, hour: '2-digit', hour12: false }).format(now))
+  if (hour >= 5 && hour < 12) return 'Buen día'
+  if (hour >= 12 && hour < 20) return 'Buenas tardes'
+  return 'Buenas noches'
+}
+
+/** The seven dates (Monday to Sunday) of the week that contains `date`. */
+export function weekOf(date: string) {
+  const { y, m, d, weekday } = parts(date)
+  const monday = new Date(Date.UTC(y, m - 1, d - ((weekday + 6) % 7)))
+  return Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(monday)
+    day.setUTCDate(monday.getUTCDate() + i)
+    return day.toISOString().slice(0, 10)
+  })
+}
+
+/** Moves a 'YYYY-MM-DD' date by whole days. */
+export function addDays(date: string, days: number) {
+  const { y, m, d } = parts(date)
+  return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10)
+}
+
+/** Initial of the weekday, Spanish: L M M J V S D. */
+export function weekdayInitial(date: string) {
+  return 'DLMMJVS'[parts(date).weekday] ?? ''
+}
+
+/** Day of the month as a number. */
+export function dayOfMonth(date: string) {
+  return parts(date).d
+}

@@ -14,6 +14,8 @@ export const ROLE_LABEL: Record<Role, string> = {
 export interface ActiveMembership {
   companyId: string
   companyName: string
+  /** Self-employed space: nobody assigns work, so the copy changes. */
+  personal?: boolean
   roles: Role[]
 }
 
