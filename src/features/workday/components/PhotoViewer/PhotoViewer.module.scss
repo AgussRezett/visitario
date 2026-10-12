@@ -1,0 +1,149 @@
+@use '@/styles/abstracts' as *;
+
+$night: #0b1411;
+$night-line: #1e2e28;
+
+.viewer {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: $night;
+  color: $color-white;
+
+  &::backdrop {
+    background: $night;
+  }
+}
+
+.frame {
+  @include flex(column);
+  height: 100%;
+}
+
+.bar {
+  @include flex(row, $gap: space(1), $align: center);
+  min-height: 60px;
+  padding: space(3) space(2) 0;
+}
+
+.icon-button {
+  @include center;
+  @include square($touch-target);
+  border-radius: $radius-md;
+  color: $color-white;
+}
+
+.titles {
+  @include flex(column);
+  min-width: 0;
+}
+
+.title {
+  @include text(heading);
+  font-weight: $weight-extrabold;
+}
+
+.subtitle {
+  @include text(label);
+  color: $color-on-forest-subtle;
+}
+
+.stage {
+  @include center;
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  padding: space(3) 0;
+}
+
+.image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.loading {
+  color: $color-on-forest-subtle;
+}
+
+// Tap the left or right third to move between photos
+.prev,
+.next {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 33%;
+}
+
+.prev {
+  left: 0;
+}
+
+.next {
+  right: 0;
+}
+
+.dots {
+  @include flex(row, $gap: space(1.5), $justify: center);
+  padding-bottom: space(3);
+}
+
+.dot,
+.dot-on {
+  height: 6px;
+  border-radius: 3px;
+}
+
+.dot {
+  width: 6px;
+  background: #4e6158;
+}
+
+.dot-on {
+  width: 18px;
+  background: $color-lime;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: space(1.5);
+  padding: 0 space(5) space(3);
+}
+
+.chip {
+  @include flex(row, $gap: space(1.5), $align: center);
+  @include text(tiny);
+  display: inline-flex;
+  padding: space(1) space(2.5);
+  border-radius: $radius-full;
+  background: $night-line;
+  font-weight: $weight-bold;
+  color: $color-on-forest-muted;
+}
+
+.actions {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: space(1);
+  padding: space(2) space(3) max(#{space(4)}, env(safe-area-inset-bottom));
+  border-top: 1px solid $night-line;
+}
+
+.action,
+.danger {
+  @include flex(column, $gap: space(1), $align: center, $justify: center);
+  @include text(tiny);
+  height: 64px;
+  font-weight: $weight-bold;
+  color: $color-white;
+}
+
+.danger {
+  color: #ff9a8b;
+}

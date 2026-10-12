@@ -36,7 +36,7 @@ test('signing in with DNI opens the role view right away', async ({ page }) => {
   await mockSupabase(page, { dniOk: true })
   await signInWithDni(page)
   await expect(page).toHaveURL(/\/s\/workday$/)
-  await expect(page.getByRole('heading', { name: 'Mi jornada' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Buen día|Buenas tardes|Buenas noches/ })).toBeVisible()
 })
 
 test('a wrong DNI or password says so', async ({ page }) => {

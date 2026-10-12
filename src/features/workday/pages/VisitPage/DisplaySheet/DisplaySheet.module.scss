@@ -1,0 +1,67 @@
+@use '@/styles/abstracts' as *;
+
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+  gap: space(2.5);
+}
+
+.block {
+  @include flex(column, $gap: space(2));
+}
+
+.label {
+  @include text(label);
+  font-weight: $weight-bold;
+  color: $color-ink-muted;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: space(1.5);
+}
+
+.thumb {
+  min-height: 68px;
+}
+
+.slot {
+  @include center;
+  min-height: 68px;
+  border: 1.5px dashed $color-control;
+  border-radius: $radius-md;
+  color: $color-ink-muted;
+
+  &:disabled {
+    opacity: 0.55;
+  }
+}
+
+.after-button {
+  @include flex(row, $gap: space(2.5), $align: center, $justify: center);
+  @include text(base);
+  height: 72px;
+  border-radius: 14px;
+  background: $color-forest;
+  font-weight: $weight-extrabold;
+  color: $color-white;
+
+  @include dark {
+    background: $color-lime;
+    color: $color-forest;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+  }
+}
+
+.help {
+  @include text(tiny);
+  color: $color-ink-subtle;
+}
+
+.footer-row {
+  @include flex(row, $align: center, $justify: space-between);
+}

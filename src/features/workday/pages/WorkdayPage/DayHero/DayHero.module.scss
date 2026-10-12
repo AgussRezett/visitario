@@ -1,0 +1,124 @@
+@use '@/styles/abstracts' as *;
+
+$soft: #c9dbd1;
+
+// The one bold element of the screen: forest card with the day's progress and next stop.
+.hero {
+  @include flex(column, $gap: space(4));
+  padding: space(5);
+  border-radius: $radius-xl;
+  background: $color-forest;
+  color: $color-white;
+
+  @include dark {
+    background: #1d3a30;
+  }
+}
+
+.progress {
+  @include flex(column, $gap: space(2));
+}
+
+.progress-text {
+  @include flex(row, $align: baseline, $justify: space-between);
+}
+
+.count {
+  font-weight: $weight-semibold;
+  color: $soft;
+
+  b {
+    @include text(display);
+    font-weight: $weight-extrabold;
+    color: $color-white;
+  }
+}
+
+.percent {
+  @include text(label);
+  font-weight: $weight-bold;
+  color: $color-lime;
+  font-variant-numeric: tabular-nums;
+}
+
+.bar {
+  height: space(2);
+  overflow: hidden;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 0.16);
+
+  i {
+    display: block;
+    height: 100%;
+    border-radius: 4px;
+    background: $color-lime;
+    transition: width 400ms $ease-standard;
+  }
+}
+
+.stop {
+  @include flex(column, $gap: space(0.5));
+  padding-top: space(4);
+  border-top: 1px solid rgb(255 255 255 / 0.14);
+}
+
+.stop-label {
+  @include text(label);
+  font-weight: $weight-bold;
+  color: $color-lime;
+}
+
+.name {
+  @include text(title);
+  font-weight: $weight-extrabold;
+}
+
+.soft {
+  @include text(label);
+  color: $soft;
+}
+
+.meta {
+  @include text(label);
+  padding-top: space(1);
+  font-weight: $weight-semibold;
+  color: $soft;
+}
+
+.actions {
+  @include flex(row, $gap: space(2));
+}
+
+.primary {
+  @include flex(row, $gap: space(2), $align: center, $justify: center);
+  @include text(base);
+  flex: 1;
+  height: 52px;
+  padding-inline: space(4);
+  border-radius: $radius-md;
+  background: $color-lime;
+  font-weight: $weight-extrabold;
+  color: $color-forest;
+}
+
+.icon {
+  @include center;
+  @include square(52px);
+  flex-shrink: 0;
+  border-radius: $radius-md;
+  background: rgb(255 255 255 / 0.12);
+  color: $color-white;
+}
+
+.done {
+  @include flex(column, $gap: space(3));
+
+  .stop {
+    padding-top: 0;
+    border-top: 0;
+  }
+}
+
+.done-icon {
+  color: $color-lime;
+}

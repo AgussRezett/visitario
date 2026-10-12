@@ -22,6 +22,7 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run test:db
+      - run: npm run test:api
       - run: npm run build
 
   e2e:

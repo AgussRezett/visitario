@@ -26,6 +26,11 @@ declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router
   }
+  // Route options read by the app shell.
+  interface StaticDataRouteOption {
+    /** Hide the phone header and bottom navigation (the page brings its own bars). */
+    immersive?: boolean
+  }
 }
 
 // Any sign-in, sign-out or user change refreshes who "me" is and re-runs route guards.

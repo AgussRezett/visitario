@@ -1,0 +1,110 @@
+@use '@/styles/abstracts' as *;
+
+@layer ui {
+  // Native <dialog>: bottom sheet on phones, centered panel on desktop.
+  .sheet {
+    inset: auto 0 0;
+    width: 100%;
+    max-width: 100%;
+    max-height: 92dvh;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: $radius-xl $radius-xl 0 0;
+    background: $color-card;
+    color: $color-ink;
+    box-shadow: $shadow-sheet;
+
+    &::backdrop {
+      background: rgb(15 26 22 / 0.48);
+    }
+
+    @include up(lg) {
+      inset: 0;
+      width: min(600px, calc(100% - #{space(10)}));
+      max-height: min(820px, calc(100dvh - #{space(16)}));
+      margin: auto;
+      border-radius: $radius-xl;
+    }
+  }
+
+  .wide {
+    @include up(lg) {
+      width: min(720px, calc(100% - #{space(10)}));
+    }
+  }
+
+  .panel {
+    @include flex(column);
+    max-height: inherit;
+  }
+
+  .grab {
+    align-self: center;
+    flex-shrink: 0;
+    width: space(10);
+    height: space(1);
+    margin-top: space(2.5);
+    border-radius: 2px;
+    background: $color-line;
+
+    @include up(lg) {
+      display: none;
+    }
+  }
+
+  .header {
+    @include flex(row, $gap: space(2), $align: flex-start, $justify: space-between);
+    padding: space(3.5) space(5) space(2);
+
+    @include up(lg) {
+      padding: space(6) space(6) space(2);
+    }
+  }
+
+  .titles {
+    @include flex(column, $gap: space(0.5));
+    min-width: 0;
+  }
+
+  .title {
+    @include heading(title);
+  }
+
+  .subtitle {
+    @include text(label);
+    color: $color-ink-muted;
+  }
+
+  .close {
+    @include center;
+    @include square($touch-target);
+    flex-shrink: 0;
+    margin: calc(-1 * #{space(2)}) calc(-1 * #{space(2)}) 0 0;
+    border-radius: $radius-md;
+  }
+
+  .body {
+    @include flex(column, $gap: space(3.5));
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: space(2) space(5) space(5);
+
+    @include up(lg) {
+      padding-inline: space(6);
+    }
+  }
+
+  .footer {
+    @include flex(column, $gap: space(2));
+    padding: space(3) space(5) max(#{space(4)}, env(safe-area-inset-bottom));
+    border-top: 1px solid $color-line;
+
+    @include up(lg) {
+      flex-direction: row;
+      justify-content: flex-end;
+      padding: space(4) space(6);
+    }
+  }
+}

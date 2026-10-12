@@ -1,0 +1,45 @@
+@use '@/styles/abstracts' as *;
+
+.header {
+  @include flex(column, $gap: space(4));
+}
+
+.top {
+  @include flex(row, $gap: space(3), $align: flex-end, $justify: space-between);
+  flex-wrap: wrap;
+}
+
+.titles {
+  @include flex(column, $gap: space(1));
+  min-width: 0;
+}
+
+.title {
+  @include heading(title);
+
+  @include up(lg) {
+    @include text(display);
+  }
+}
+
+.sub {
+  color: $color-ink-muted;
+}
+
+.actions {
+  display: none;
+  gap: space(2);
+
+  @include up(lg) {
+    display: flex;
+  }
+}
+
+.week {
+  margin-inline: calc(-1 * #{space(2)});
+
+  @include up(lg) {
+    align-self: flex-start;
+    margin-inline: calc(-1 * #{space(2)}) 0;
+  }
+}

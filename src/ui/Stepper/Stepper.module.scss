@@ -1,0 +1,47 @@
+@use '@/styles/abstracts' as *;
+
+@layer ui {
+  .field {
+    @include flex(column, $gap: space(1.5));
+  }
+
+  .label {
+    @include text(label);
+    font-weight: $weight-bold;
+    color: $color-ink-muted;
+  }
+
+  .stepper {
+    @include flex(row, $align: center);
+    height: $touch-target;
+    overflow: hidden;
+    border: 1.5px solid $color-control;
+    border-radius: $radius-md;
+    background: $color-card;
+  }
+
+  .button {
+    @include center;
+    width: $touch-target;
+    height: 100%;
+    flex-shrink: 0;
+    color: $color-forest;
+
+    @include dark {
+      color: $color-lime;
+    }
+
+    &:disabled {
+      opacity: 0.35;
+    }
+  }
+
+  .value {
+    @include text(base);
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    font-weight: $weight-extrabold;
+    font-variant-numeric: tabular-nums;
+  }
+}

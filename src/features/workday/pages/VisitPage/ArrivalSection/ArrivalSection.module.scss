@@ -1,0 +1,38 @@
+@use '@/styles/abstracts' as *;
+
+.photos {
+  @include flex(row, $gap: space(3), $align: center);
+  flex-wrap: wrap;
+}
+
+.thumb {
+  width: 120px;
+  height: 90px;
+}
+
+.arrive {
+  @include flex(row, $gap: space(2), $align: center, $justify: center);
+  @include text(base);
+  flex: 1;
+  min-width: 200px;
+  height: 52px;
+  border-radius: $radius-md;
+  background: $color-action;
+  font-weight: $weight-extrabold;
+  color: $color-action-ink;
+
+  &:disabled {
+    opacity: 0.55;
+  }
+}
+
+.hint {
+  @include text(tiny);
+  display: none;
+  flex: 1 1 200px;
+  color: $color-ink-subtle;
+
+  @include up(lg) {
+    display: block;
+  }
+}

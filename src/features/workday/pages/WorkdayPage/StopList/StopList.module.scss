@@ -1,0 +1,160 @@
+@use '@/styles/abstracts' as *;
+
+.section {
+  @include flex(column, $gap: space(3));
+}
+
+.head {
+  @include flex(column, $gap: space(3));
+
+  @include up(lg) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.title {
+  @include text(heading);
+  font-weight: $weight-extrabold;
+}
+
+.filter {
+  @include up(lg) {
+    width: 380px;
+  }
+}
+
+.empty {
+  @include surface;
+  padding: space(5) space(4);
+  text-align: center;
+  color: $color-ink-subtle;
+}
+
+// ---- Phone cards
+.cards {
+  @include flex(column, $gap: space(2));
+
+  @include up(lg) {
+    display: none;
+  }
+}
+
+.card {
+  @include surface;
+  @include flex(row, $gap: space(3), $align: flex-start);
+  padding: space(3.5);
+}
+
+.num {
+  @include center;
+  @include square(28px);
+  @include text(label);
+  flex-shrink: 0;
+  border-radius: $radius-sm;
+  background: $color-pending-soft;
+  font-weight: $weight-extrabold;
+  color: $color-pending-ink;
+}
+
+.num-active {
+  background: $color-active-soft;
+  color: $color-active-ink;
+}
+
+.num-done {
+  background: $color-done-soft;
+  color: $color-done-ink;
+}
+
+.num-refused {
+  background: $color-refused-soft;
+  color: $color-refused-ink;
+}
+
+.num-closed {
+  background: $color-closed-soft;
+  color: $color-closed-ink;
+}
+
+.body {
+  @include flex(column, $gap: 2px);
+  flex: 1;
+  min-width: 0;
+}
+
+.row {
+  @include flex(row, $gap: space(2), $align: flex-start, $justify: space-between);
+}
+
+.name {
+  font-weight: $weight-bold;
+}
+
+.address {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.task {
+  @include text(label);
+  font-weight: $weight-semibold;
+  color: $color-ink-muted;
+}
+
+.meta {
+  @include flex(row, $gap: space(3), $align: center);
+  @include text(tiny);
+  flex-wrap: wrap;
+  padding-top: space(1.5);
+  font-weight: $weight-semibold;
+  color: $color-ink-subtle;
+
+  span {
+    @include flex(row, $gap: space(1), $align: center);
+  }
+}
+
+// ---- Desktop table
+.table {
+  display: none;
+
+  @include up(lg) {
+    display: block;
+  }
+}
+
+.cell-link {
+  @include flex(column);
+  min-width: 200px;
+}
+
+.cell-name {
+  font-weight: $weight-bold;
+}
+
+.cell-sub {
+  @include text(tiny);
+  color: $color-ink-subtle;
+}
+
+.small {
+  @include text(label);
+  white-space: nowrap;
+}
+
+.none {
+  color: $color-ink-subtle;
+}
+
+.open {
+  @include center;
+  @include square(32px);
+  border-radius: $radius-sm;
+  color: $color-ink-subtle;
+
+  @include hover {
+    background: $color-muted;
+  }
+}

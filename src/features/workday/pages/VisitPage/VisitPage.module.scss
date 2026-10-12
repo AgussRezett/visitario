@@ -1,0 +1,151 @@
+@use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column);
+  min-height: 100dvh;
+
+  @include up(lg) {
+    min-height: 0;
+    gap: space(5);
+    padding: space(6) space(8) 0;
+  }
+}
+
+// ---- Phone top bar
+.appbar {
+  @include flex(row, $gap: space(1), $align: center);
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  min-height: 60px;
+  padding: space(2) space(4) space(2) space(2);
+  background: $color-ground;
+
+  @include up(lg) {
+    display: none;
+  }
+}
+
+.back {
+  @include center;
+  @include square($touch-target);
+  flex-shrink: 0;
+  border-radius: $radius-md;
+}
+
+.appbar-titles {
+  @include flex(column);
+  flex: 1;
+  min-width: 0;
+}
+
+.appbar-title {
+  @include truncate;
+  @include text(heading);
+  font-weight: $weight-extrabold;
+}
+
+.appbar-meta {
+  @include truncate;
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+// ---- Desktop title
+.desktop-top {
+  @include flex(column, $gap: space(1));
+  display: none;
+
+  @include up(lg) {
+    display: flex;
+  }
+}
+
+.crumb {
+  @include text(label);
+  font-weight: $weight-bold;
+  color: $color-ink-subtle;
+}
+
+.desktop-title-row {
+  @include flex(row, $gap: space(3), $align: center);
+}
+
+.desktop-title {
+  @include heading(display);
+}
+
+.desktop-meta {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+// ---- Content
+.content {
+  @include flex(column, $gap: space(3));
+  padding: space(1) space(5) 0;
+
+  @include up(lg) {
+    gap: space(5);
+    padding: 0 0 space(8);
+  }
+}
+
+.columns {
+  @include flex(column, $gap: space(3));
+
+  @include up(lg) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: space(5);
+  }
+}
+
+.column {
+  // Phones: one list in the wireframe order (the slots below set it).
+  display: contents;
+
+  @include up(lg) {
+    @include flex(column, $gap: space(4));
+  }
+}
+
+.arrival {
+  order: 1;
+}
+
+.consent {
+  order: 2;
+}
+
+.displays {
+  order: 3;
+}
+
+.work {
+  order: 4;
+}
+
+.messages {
+  order: 5;
+}
+
+.help {
+  order: 3;
+}
+
+// The sticky footer must be a direct flex child to stick to the viewport.
+.finish {
+  display: contents;
+  order: 6;
+}
+
+.help {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.finish > * {
+  order: 6;
+}

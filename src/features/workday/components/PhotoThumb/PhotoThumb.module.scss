@@ -1,0 +1,78 @@
+@use '@/styles/abstracts' as *;
+
+.shot {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: 84px;
+  overflow: hidden;
+  border-radius: $radius-md;
+  background: $color-muted;
+  color: $color-ink-subtle;
+}
+
+.image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.glyph {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  opacity: 0.55;
+}
+
+%badge {
+  @include center;
+  @include square(22px);
+  position: absolute;
+  top: space(1.5);
+  right: space(1.5);
+  border-radius: 6px;
+}
+
+.ok {
+  @extend %badge;
+  background: $color-lime;
+  color: $color-forest;
+}
+
+// Still going up: the photo is usable, the badge only tells it is not on the server yet.
+.uploading {
+  @extend %badge;
+  background: rgb(255 255 255 / 0.9);
+  color: $color-active-ink;
+  animation: breathe 1.4s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.failed {
+  @extend %badge;
+  background: $color-refused;
+  color: $color-white;
+}
+
+@keyframes breathe {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.caption {
+  position: relative;
+  margin: space(1.5);
+  padding: 2px space(2);
+  border-radius: $radius-full;
+  background: rgb(255 255 255 / 0.88);
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: $weight-extrabold;
+  color: #15241e;
+}

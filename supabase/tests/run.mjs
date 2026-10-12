@@ -160,6 +160,91 @@ check('Agus sees his progress; Lucía does not', (await as('agus', `select * fro
 const found = await as('agus', `select name from store where private.normalize(coalesce(name, '') || ' ' || address || ' ' || coalesce(customer_number, '')) like '%' || private.normalize('mas ahórro') || '%'`);
 check('Accent-insensitive store search', found.length === 1);
 
+// ---- Stage 1: the merchandiser's day
+const wOwn = (await as('agus', `select open_workday($1, '2026-10-12') id`, [panda]))[0].id;
+check('open_workday returns the same workday twice', (await as('agus', `select open_workday($1, '2026-10-12') id`, [panda]))[0].id === wOwn);
+check('Own workday is published and created by Agus', (await sys(`select status::text s, created_by = $2 mine from workday where id = $1`, [wOwn, agus])).every(r => r.s === 'published' && r.mine));
+await as('martin', `insert into workday (company_id, merchandiser_id, work_date) values ($1, $2, '2026-10-20')`, [panda, agus]);
+await expectError('Cannot open a day the supervisor is drafting', () => as('agus', `select open_workday($1, '2026-10-20')`, [panda]), /preparing/);
+
+const va = (await as('agus', `select add_visit($1, p_address => 'Moldes 1365', p_name => 'Autoservicio Lili', p_display_types => $2) id`, [wOwn, [endcap, endcap]]))[0].id;
+const vb = (await as('agus', `select add_visit($1, p_address => 'Vidal 2044') id`, [wOwn]))[0].id;
+const order = await sys(`select id, sort_order from visit where workday_id = $1 order by sort_order`, [wOwn]);
+check('Added addresses keep their order', order.map(r => r.id).join() === [va, vb].join() && order[1].sort_order === 1);
+check('New store is the merchandiser’s, unverified', (await sys(`select s.source::text src, s.location_status::text loc from visit v join store s on s.id = v.store_id where v.id = $1`, [va]))[0].src === 'merchandiser');
+check('Expected displays are created with the visit', (await sys(`select count(*)::int n from display where visit_id = $1`, [va]))[0].n === 2);
+const sLili = (await sys(`select store_id from visit where id = $1`, [va]))[0].store_id;
+check('Adding the same store twice returns the same visit', (await as('agus', `select add_visit($1, p_store => $2) id`, [wOwn, sLili]))[0].id === va);
+await expectError('Beto cannot add to Agus’s workday', () => as('beto', `select add_visit($1, p_address => 'X 123')`, [wOwn]), /not found/);
+
+check('Directory search ignores accents and case', (await as('agus', `select name from search_stores($1, 'MÁS ahorro')`, [panda])).some(r => r.name === 'Mas Ahorro'));
+check('Directory search by customer number', (await as('agus', `select name from search_stores($1, '12345')`, [panda])).length === 1);
+check('Another company’s directory is empty for Beto', (await as('beto', `select * from search_stores($1, 'mas')`, [panda])).length === 0);
+
+await as('agus', `update visit set work_status = 'in_progress', arrived_at = now() where id = $1`, [va]);
+await expectError('Cannot finish without the storefront photo', () => as('agus', `update visit set work_status = 'closed', consent = 'closed' where id = $1`, [va]), /storefront/);
+await as('agus', `insert into photo (id, company_id, visit_id, kind, taken_at, bytes, width, height, created_by) values (gen_random_uuid(), $1, $2, 'storefront', now(), 180000, 1400, 1050, $3)`, [panda, va, agus]);
+await expectError('Cannot finish as done without consent', () => as('agus', `update visit set work_status = 'done' where id = $1`, [va]), /consent/);
+await as('agus', `update visit set work_status = 'closed', consent = 'closed' where id = $1`, [va]);
+check('Closed with the storefront photo', (await sys(`select work_status::text s from visit where id = $1`, [va]))[0].s === 'closed');
+
+const resumable = await as('agus', `select * from resumable_visits($1, '2026-10-13')`, [panda]);
+check(`Resumable: pending and closed from earlier days (${resumable.length})`, resumable.some(r => r.visit_id === va && r.pending_displays === 2) && resumable.some(r => r.visit_id === vb));
+const wNext = (await as('agus', `select open_workday($1, '2026-10-13') id`, [panda]))[0].id;
+await as('agus', `select add_visit($1, p_address => 'Monroe 2650') id`, [wNext]);
+const vr = (await as('agus', `select resume_visit($1, $2) id`, [va, wNext]))[0].id;
+check('Resumed visit goes to the end of the day', (await sys(`select sort_order from visit where id = $1`, [vr]))[0].sort_order === 1);
+check('A resumed visit is not offered again', !(await as('agus', `select visit_id from resumable_visits($1, '2026-10-14')`, [panda])).some(r => r.visit_id === va));
+check('Lucía cannot list Agus’s resumable visits', (await as('lucia', `select * from resumable_visits($1, '2026-10-14')`, [panda])).length === 0);
+
+// ---- The storefront photo decides whether the visit started
+const vs = (await as('agus', `select add_visit($1, p_address => 'Gorostiaga 1801') id`, [wNext]))[0].id;
+const visitState = async () => (await sys(`select work_status::text s, arrived_at is not null arrived, consent::text c, finished_at is not null f from visit where id = $1`, [vs]))[0];
+const storefront = async () => (await as('agus', `insert into photo (id, company_id, visit_id, kind, taken_at, bytes, width, height, created_by) values (gen_random_uuid(), $1, $2, 'storefront', now(), 180000, 1400, 1050, $3) returning id`, [panda, vs, agus]))[0].id;
+const sf1 = await storefront();
+check('A storefront photo still uploading does not start the visit', (await visitState()).s === 'pending');
+await sys(`update photo set uploaded_at = now() where id = $1`, [sf1]); // the Edge Function confirms the file
+let st = await visitState();
+check('Uploaded storefront photo: the visit is in progress with its arrival', st.s === 'in_progress' && st.arrived);
+const sf2 = await storefront();
+await as('agus', `update photo set deleted_at = now() where id = $1`, [sf1]);
+check('Deleting one of two storefront photos keeps it in progress', (await visitState()).s === 'in_progress');
+await as('agus', `update visit set consent = 'yes', work_status = 'done' where id = $1`, [vs]);
+await expectError('A merchandiser still cannot jump from done to pending', () => as('agus', `update visit set work_status = 'pending' where id = $1`, [vs]), /transition/);
+await as('agus', `update photo set deleted_at = now() where id = $1`, [sf2]);
+st = await visitState();
+check('Deleting the last storefront photo of a finished visit: back to pending, clean', st.s === 'pending' && !st.arrived && st.c === null && !st.f);
+const sf3 = await storefront();
+await sys(`update photo set uploaded_at = now() where id = $1`, [sf3]);
+await as('agus', `update visit set consent = 'refused', work_status = 'refused' where id = $1`, [vs]);
+await as('agus', `update photo set deleted_at = now() where id = $1`, [sf3]);
+check('Also from refused', (await visitState()).s === 'pending');
+
+// ---- MVP backup import (platform admin, own work)
+const mvp = {
+  stores: [{ id: '01926f00-0000-5000-8000-0000000000b1', cn: '9874', name: null, address: 'Arce 730', area: 'Palermo 5', lat: -34.56, lng: -58.43 }],
+  workdays: [{ id: '01926f00-0000-4000-8000-0000000000d1', date: '2026-10-01' }],
+  visits: [
+    { id: '01926f00-0000-4000-8000-0000000000e1', wd: '01926f00-0000-4000-8000-0000000000d1', date: '2026-10-01', store: '01926f00-0000-5000-8000-0000000000b1', sort: 0, task: 'Activar', status: 'done', consent: 'yes', objection: null, arrived: '2026-10-01T12:37:00-03:00', finished: '2026-10-01T12:37:00-03:00', notes: 'Collarines', approved: true, resumed: null },
+    { id: '01926f00-0000-4000-8000-0000000000e2', wd: '01926f00-0000-4000-8000-0000000000d1', date: '2026-10-01', store: '01926f00-0000-5000-8000-0000000000b1', sort: 1, task: null, status: 'pending', consent: null, objection: null, arrived: null, finished: null, notes: null, approved: false, resumed: null },
+  ],
+  displays: [{ id: '01926f00-0000-4000-8000-0000000000f1', visit: '01926f00-0000-4000-8000-0000000000e1', type: 'Puntera', ref: null, source: 'found', sort: 0 }],
+  photos: [{ id: '01926f00-0000-5000-8000-0000000000a1', visit: '01926f00-0000-4000-8000-0000000000e1', display: '01926f00-0000-4000-8000-0000000000f1', kind: 'before', taken: '2026-10-01T12:37:00-03:00', bytes: 200000, w: 1400, h: 1050 }],
+  metrics: [{ visit: '01926f00-0000-4000-8000-0000000000e1', metric: 'Kits de bolsas', qty: 4 }],
+  brands: [{ visit: '01926f00-0000-4000-8000-0000000000e1', brand: 'SKYY' }],
+}
+await expectError('Only a platform admin can import an MVP backup', () => as('agus', `select import_mvp_backup($1, $2)`, [panda, mvp]), /platform admin/)
+await sys(`insert into platform_admin (person_id) values ($1)`, [agus])
+const imported = (await as('agus', `select import_mvp_backup($1, $2) r`, [panda, mvp]))[0].r
+check(`Import returns what was saved (${JSON.stringify(imported)})`, imported.workdays === 1 && imported.visits === 2 && imported.photos === 1)
+const iv = (await sys(`select work_status::text w, review_status::text r, source::text s, added_by = $2 mine, finished_at is not null f from visit where id = $1`, ['01926f00-0000-4000-8000-0000000000e1', agus]))[0]
+check('Imported visit keeps its history: done, approved, assigned', iv.w === 'done' && iv.r === 'approved' && iv.s === 'assigned' && iv.mine && iv.f)
+check('Imported work and brand', (await sys(`select (select quantity from visit_metric where visit_id = $1) q, (select count(*)::int from visit_brand where visit_id = $1) b`, ['01926f00-0000-4000-8000-0000000000e1']))[0].q === 4)
+await as('agus', `select import_mvp_backup($1, $2)`, [panda, mvp])
+check('Importing twice does not duplicate', (await sys(`select count(*)::int n from visit where workday_id = '01926f00-0000-4000-8000-0000000000d1'`))[0].n === 2)
+await as('agus', `update visit set work_status = 'in_progress' where id = '01926f00-0000-4000-8000-0000000000e2'`)
+await expectError('After the import the storefront rule applies again', () => as('agus', `update visit set work_status = 'closed', consent = 'closed' where id = '01926f00-0000-4000-8000-0000000000e2'`), /storefront/)
+
 // Password detection (Google users who later set a password)
 await sys(`update auth.users set encrypted_password = '$2a$10$hash' where id = $1`, [U.agus]);
 check('has_password is true for a user with a password', (await as('agus', `select has_password() v`))[0].v === true);

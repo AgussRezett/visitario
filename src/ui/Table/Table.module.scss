@@ -1,0 +1,33 @@
+@use '@/styles/abstracts' as *;
+
+@layer ui {
+  .wrap {
+    @include surface;
+    overflow-x: auto;
+  }
+
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    line-height: 20px;
+
+    th {
+      @include eyebrow;
+      padding: space(3) space(3.5);
+      border-bottom: 1px solid $color-line;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: space(3) space(3.5);
+      border-bottom: 1px solid $color-line;
+      vertical-align: middle;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+  }
+}

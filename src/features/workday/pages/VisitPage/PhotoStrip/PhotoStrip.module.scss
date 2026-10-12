@@ -1,0 +1,39 @@
+@use '@/styles/abstracts' as *;
+
+.strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: space(2);
+
+  @include up(lg) {
+    display: none;
+  }
+}
+
+.cam {
+  @include flex(column, $gap: space(1), $align: center, $justify: center);
+  @include text(tiny);
+  width: 100%;
+  height: 64px;
+  border-radius: 14px;
+  background: $color-forest;
+  font-weight: $weight-extrabold;
+  color: $color-white;
+
+  &:disabled {
+    opacity: 0.35;
+  }
+
+  @include dark {
+    background: #2a5245;
+  }
+}
+
+.done {
+  background: $color-lime;
+  color: $color-forest;
+
+  @include dark {
+    background: $color-lime;
+  }
+}

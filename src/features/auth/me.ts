@@ -39,7 +39,7 @@ async function fetchMe(): Promise<Me | null> {
 
   const [priv, memberships, admin] = await Promise.all([
     supabase.from('person_private').select('dni, phone, birth_date').eq('person_id', person.id).single(),
-    supabase.from('membership').select('id, company_id, roles, status, starts_on, company:company_id (name)').eq('person_id', person.id),
+    supabase.from('membership').select('id, company_id, roles, status, starts_on, company:company_id (name, kind)').eq('person_id', person.id),
     supabase.from('platform_admin').select('person_id').eq('person_id', person.id).maybeSingle(),
   ])
   if (priv.error) throw priv.error
@@ -49,7 +49,7 @@ async function fetchMe(): Promise<Me | null> {
   return {
     ...base,
     person: { id: person.id, firstName: person.first_name, lastName: person.last_name, dni: priv.data.dni, phone: priv.data.phone, birthDate: priv.data.birth_date },
-    memberships: rows.filter((m) => m.status === 'active').map((m) => ({ companyId: m.company_id, companyName: m.company?.name ?? '', roles: m.roles })),
+    memberships: rows.filter((m) => m.status === 'active').map((m) => ({ companyId: m.company_id, companyName: m.company?.name ?? '', personal: m.company?.kind === 'personal', roles: m.roles })),
     invitations: rows
       .filter((m) => m.status === 'invited')
       .map((m) => ({ membershipId: m.id, companyName: m.company?.name ?? 'Una empresa', roles: m.roles, startsOn: m.starts_on })),

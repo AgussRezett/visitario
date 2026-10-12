@@ -1,0 +1,57 @@
+@use '@/styles/abstracts' as *;
+
+.section {
+  @include surface;
+  @include flex(column);
+  flex-shrink: 0;
+}
+
+.header {
+  @include flex(row, $gap: space(3), $align: center);
+  min-height: 56px;
+  padding: space(3) space(3.5);
+}
+
+.state {
+  @include center;
+  @include square(28px);
+  @include text(label);
+  flex-shrink: 0;
+  border-radius: $radius-sm;
+  font-weight: $weight-extrabold;
+}
+
+.ok {
+  background: $color-lime;
+  color: $color-forest;
+}
+
+.todo {
+  background: $color-muted;
+  color: $color-ink-subtle;
+}
+
+.warn {
+  background: $color-closed-soft;
+  color: $color-closed-ink;
+}
+
+.titles {
+  @include flex(column);
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-weight: $weight-bold;
+}
+
+.subtitle {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.body {
+  @include flex(column, $gap: space(3));
+  padding: space(0.5) space(3.5) space(4);
+}

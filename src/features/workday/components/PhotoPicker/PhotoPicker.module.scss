@@ -1,0 +1,7 @@
+@use '@/styles/abstracts' as *;
+
+// Highlight while an image is dragged over a photo button (desktop)
+.dragging {
+  outline: 2px dashed $color-focus;
+  outline-offset: 2px;
+}

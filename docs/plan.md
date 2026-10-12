@@ -23,4 +23,15 @@
 - [x] El perfil funciona igual en 390 px y en 1440 px.
 - [ ] La app se instala como PWA en Android y en iPhone (probar en dispositivos reales).
 
+## Etapa 1 · criterios de aceptación
+- [x] Agus abre una jornada propia, agrega 5 direcciones y las ve en orden (e2e).
+- [x] Una visita no se puede terminar sin foto de fachada y autorización (base de datos + e2e).
+- [x] Cargar el después de una exhibición la marca como acomodada (derivado de la foto).
+- [x] Terminar con exhibiciones sin acomodar avisa y las deja para retomar.
+- [x] Cerrado y no autorizada cuentan como visitada en el informe (test de dominio).
+- [x] El texto del informe coincide con el formato de WhatsApp (test de dominio).
+- [x] Una foto de 4 MB llega en menos de 400 KB (e2e).
+- [x] Ninguna foto guarda ubicación: se re-codifica sin metadatos (e2e).
+- [ ] Probado con fotos reales en R2 y en un celular real (falta cargar las claves de R2).
+
 Fuera de esta versión: migración del MVP, exportar informes, reportes con diseño, push, cobro automático, acceso para marcas.

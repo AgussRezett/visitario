@@ -21,8 +21,11 @@ Enums: `role` (merchandiser, supervisor, admin) · `work_status` (pending, in_pr
 ## Transiciones de trabajo
 pending → in_progress | closed | refused · in_progress → done | refused | closed | pending · closed → in_progress · done → in_progress.
 
+## Cierre de una visita
+Terminar (terminada, no autorizada o cerrado) exige la foto de fachada; terminada exige además autorización (sí o con oposición). Lo valida el trigger `guard_finish`.
+
 ## RPC y vistas
-`complete_identity`, `create_personal_company`, `find_person_by_dni`, `invite_person`, `respond_invitation`, `resume_visit`. Vistas con `security_invoker`: `display_status`, `daily_progress`, `daily_metrics`.
+`complete_identity`, `create_personal_company`, `find_person_by_dni`, `invite_person`, `respond_invitation`, `resume_visit` (agrega al final del día), `has_password`, `open_workday`, `add_visit`, `search_stores`, `resumable_visits`. Vistas con `security_invoker`: `display_status`, `daily_progress`, `daily_metrics`.
 
 ## Rendimiento y sync
 Helpers en el schema `private` (security definer, `search_path` vacío); `visible_merchandisers()` se ejecuta una vez por consulta. Índices por pantalla. ~40 MB por año para Panda; fotos ~22 GB por año en R2. Sync: `updated_at`/`version` por trigger, borrado lógico (`deleted_at`) con purga a 30 días.

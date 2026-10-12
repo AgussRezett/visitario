@@ -1374,6 +1374,23 @@ export type Database = {
       }
     }
     Functions: {
+      add_visit: {
+        Args: {
+          p_address?: string
+          p_area?: string
+          p_customer_number?: string
+          p_display_types?: number[]
+          p_id?: string
+          p_lat?: number
+          p_lng?: number
+          p_location_status?: Database["public"]["Enums"]["location_status"]
+          p_name?: string
+          p_store?: string
+          p_task?: string
+          p_workday: string
+        }
+        Returns: string
+      }
       complete_identity: {
         Args: {
           p_birth_date: string
@@ -1409,13 +1426,37 @@ export type Database = {
         }
         Returns: string
       }
+      open_workday: { Args: { p_company: string; p_date: string }; Returns: string }
       respond_invitation: {
         Args: { p_accept: boolean; p_membership: string }
         Returns: undefined
       }
+      resumable_visits: {
+        Args: { p_before: string; p_company: string }
+        Returns: {
+          address: string
+          finished_at: string | null
+          pending_displays: number
+          store_name: string | null
+          visit_id: string
+          work_date: string
+          work_status: Database["public"]["Enums"]["work_status"]
+        }[]
+      }
       resume_visit: {
         Args: { p_id?: string; p_visit: string; p_workday: string }
         Returns: string
+      }
+      search_stores: {
+        Args: { p_company: string; p_limit?: number; p_query: string }
+        Returns: {
+          address: string
+          area: string | null
+          customer_number: string | null
+          id: string
+          location_status: Database["public"]["Enums"]["location_status"]
+          name: string | null
+        }[]
       }
     }
     Enums: {

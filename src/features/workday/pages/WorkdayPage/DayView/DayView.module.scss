@@ -1,0 +1,95 @@
+@use '@/styles/abstracts' as *;
+
+// Phones: one column. Desktop: the day on the left, report totals and pending on the right.
+.layout {
+  display: grid;
+  gap: space(5);
+  padding-bottom: space(24);
+
+  @include up(lg) {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    align-items: start;
+    padding-bottom: space(8);
+  }
+}
+
+.main {
+  @include flex(column, $gap: space(4));
+  min-width: 0;
+
+  @include up(lg) {
+    gap: space(5);
+  }
+}
+
+.aside {
+  @include flex(column, $gap: space(4));
+  display: none;
+
+  @include up(lg) {
+    display: flex;
+    position: sticky;
+    top: space(6);
+  }
+}
+
+.phone-only {
+  @include up(lg) {
+    display: none;
+  }
+}
+
+.retry {
+  margin-top: space(2);
+}
+
+// ---- Open but empty day
+.empty {
+  @include surface;
+  @include flex(column, $gap: space(3), $align: flex-start);
+  padding: space(6) space(5);
+
+  @include up(lg) {
+    max-width: 640px;
+    padding: space(8);
+  }
+}
+
+.empty-icon {
+  @include icon-tile(space(14), $radius-lg);
+  background: $color-lime-soft;
+  color: $color-forest;
+}
+
+.empty-title {
+  @include heading(title);
+}
+
+.empty-lead {
+  max-width: 52ch;
+  color: $color-ink-muted;
+}
+
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: space(2);
+  padding-top: space(2);
+}
+
+// ---- Floating "Agregar dirección" (phone)
+.fab {
+  position: fixed;
+  right: space(5);
+  bottom: calc(#{space(24)} + env(safe-area-inset-bottom));
+  z-index: 5;
+
+  @include up(lg) {
+    display: none;
+  }
+}
+
+.fab-button {
+  border-radius: $radius-full;
+  box-shadow: 0 6px 16px rgb(23 59 48 / 0.28);
+}

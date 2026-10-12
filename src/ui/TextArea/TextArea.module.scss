@@ -1,0 +1,33 @@
+@use '@/styles/abstracts' as *;
+
+@layer ui {
+  .field {
+    @include flex(column, $gap: space(1.5));
+  }
+
+  .label {
+    @include text(label);
+    font-weight: $weight-bold;
+    color: $color-ink;
+  }
+
+  .input {
+    @include text(base);
+    width: 100%;
+    min-height: 88px;
+    padding: space(3) space(3.5);
+    border: 1.5px solid $color-control;
+    border-radius: $radius-md;
+    background: $color-card;
+    color: $color-ink;
+
+    &::placeholder {
+      color: $color-ink-subtle;
+    }
+  }
+
+  .help {
+    @include text(label);
+    color: $color-ink-subtle;
+  }
+}

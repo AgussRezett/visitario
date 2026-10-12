@@ -1,0 +1,215 @@
+@use '@/styles/abstracts' as *;
+
+.layout {
+  display: grid;
+  gap: space(4);
+  padding-bottom: space(8);
+
+  @include up(lg) {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    align-items: start;
+    gap: space(5);
+  }
+}
+
+.main,
+.aside {
+  @include flex(column, $gap: space(4));
+  min-width: 0;
+}
+
+// ---- Start the day
+.start {
+  @include surface;
+  @include flex(column, $gap: space(3), $align: flex-start);
+  padding: space(6) space(5);
+
+  @include up(lg) {
+    padding: space(8);
+  }
+}
+
+.start-icon {
+  @include icon-tile(space(14), $radius-lg);
+  background: $color-lime-soft;
+  color: $color-forest;
+}
+
+.title {
+  @include heading(title);
+
+  @include up(lg) {
+    @include text(display);
+  }
+}
+
+.lead {
+  max-width: 56ch;
+  color: $color-ink-muted;
+}
+
+.actions {
+  @include flex(column, $gap: space(2));
+  align-self: stretch;
+  padding-top: space(2);
+
+  @include up(sm) {
+    flex-direction: row;
+    align-items: center;
+    align-self: flex-start;
+  }
+}
+
+.primary {
+  @include up(sm) {
+    padding-inline: space(8);
+  }
+}
+
+.pick {
+  @include flex(row, $gap: space(2), $align: flex-end);
+  align-self: stretch;
+
+  > :first-child {
+    flex: 1;
+  }
+
+  @include up(sm) {
+    align-self: flex-start;
+    width: 420px;
+  }
+}
+
+// ---- Pending from earlier days
+.pending {
+  @include surface;
+  @include flex(column, $gap: space(3), $align: flex-start);
+  padding: space(5);
+  border-color: $color-closed-soft;
+}
+
+.pending-head {
+  @include flex(row, $gap: space(3), $align: flex-start);
+}
+
+.pending-icon {
+  @include icon-tile(space(10));
+  background: $color-closed-soft;
+  color: $color-closed-ink;
+
+  @include dark {
+    color: $color-closed-ink;
+  }
+}
+
+.pending-list {
+  @include flex(column);
+  align-self: stretch;
+
+  li {
+    @include flex(column);
+    padding-block: space(2.5);
+    border-bottom: 1px solid $color-line;
+
+    &:last-child {
+      border-bottom: 0;
+    }
+  }
+}
+
+.section-title {
+  font-weight: $weight-extrabold;
+}
+
+.small {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.item-name {
+  font-weight: $weight-bold;
+}
+
+.item-meta {
+  @include text(tiny);
+  color: $color-ink-subtle;
+}
+
+// ---- The week
+.week,
+.recent {
+  @include surface;
+  @include flex(column, $gap: space(3));
+  padding: space(4);
+}
+
+.week-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: space(2);
+
+  div {
+    @include flex(column-reverse, $gap: 2px);
+  }
+
+  dt {
+    @include text(tiny);
+    color: $color-ink-subtle;
+  }
+
+  dd {
+    @include text(title);
+    font-weight: $weight-extrabold;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.recent-skeleton {
+  @include flex(column, $gap: space(2));
+}
+
+.days {
+  @include flex(column);
+}
+
+.day-row {
+  @include flex(row, $gap: space(3), $align: center);
+  width: 100%;
+  padding-block: space(2.5);
+  border-bottom: 1px solid $color-line;
+  text-align: left;
+
+  li:last-child & {
+    border-bottom: 0;
+  }
+}
+
+.day-text {
+  @include flex(column, $gap: space(1));
+  flex: 1;
+  min-width: 0;
+}
+
+.day-name {
+  @include text(label);
+  font-weight: $weight-bold;
+}
+
+.day-bar {
+  display: block;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: $color-line;
+
+  i {
+    display: block;
+    height: 100%;
+    background: $color-done;
+  }
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: $color-ink-subtle;
+}

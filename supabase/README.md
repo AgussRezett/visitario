@@ -28,15 +28,19 @@ After that, schedule the purge (Dashboard → Integrations → Cron, or SQL):
 select cron.schedule('visitario-purge', '30 6 * * *', $$select private.purge()$$);
 ```
 
-The returned photo ids must be deleted from R2 by an Edge Function (stage 1).
+The returned photo ids must still be deleted from R2 (pending: a cleanup function with the R2 keys).
 
 ## Edge Functions
 
 | Function | Status | What it does |
 | --- | --- | --- |
 | `sign-in-with-dni` | deployed (v1, `verify_jwt = false`) | Resolves DNI → account email server-side and returns a session. Same 401 for every failure. |
+| `photos` | deployed (v1, `verify_jwt = false`, checks the session itself) | `POST /photos` multipart JPEG + meta: inserts the row with the caller's token (RLS + guards), puts the file in R2 at `c/<company>/v/<visit>/<photo>.jpg`, then marks it uploaded. `POST /photos/urls`: 1 h signed links for photos the caller can see. |
+| `geocode` | deployed (v1, `verify_jwt = false`, checks the session itself) | LocationIQ search bounded to CABA; says if the street number was found. |
 
-Deploy: `supabase functions deploy sign-in-with-dni --no-verify-jwt`.
+Deploy: `supabase functions deploy <name> --no-verify-jwt` (the functions call `auth.getUser()`, which works with the new JWT signing keys).
+
+Secrets (Dashboard → Edge Functions → Secrets; never in the repo): `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, optional `R2_BUCKET` (default `visitario-photos`), `LOCATIONIQ_KEY`. Without them `photos` and `geocode` answer 503; the app saves addresses unverified.
 Known limit: all DNI sign-ins reach Supabase Auth from the function's IP, so Auth's per-IP rate limit applies to the whole user base. Fine for the pilot; add a per-DNI attempt counter before opening to more companies.
 
 ## Seed
@@ -75,3 +79,10 @@ from public.company c join public.team t on t.company_id = c.id and t.name = 'No
 cross join public.person_private pp
 where c.name = 'Panda' and pp.dni = '<DNI>';
 ```
+
+## MVP backup import
+
+`scripts/import-mvp-backup.mjs ruta/al/visitario-respaldo.json` imports one person's MVP backup as their own
+work: it signs in, calls `import_mvp_backup` (platform admins only; the company is the backup's, where the
+caller must be an active merchandiser) and uploads the photos through `photos`, without EXIF. Ids are
+deterministic, so running it again only uploads what is missing. Needs `.env.local` and the R2 secrets.

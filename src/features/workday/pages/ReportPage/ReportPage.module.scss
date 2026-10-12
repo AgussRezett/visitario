@@ -1,0 +1,132 @@
+@use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(3));
+  padding: space(4) space(5) space(6);
+
+  @include up(lg) {
+    gap: space(5);
+    padding: space(6) space(8);
+  }
+}
+
+.top {
+  @include flex(row, $gap: space(3), $align: flex-end, $justify: space-between);
+  flex-wrap: wrap;
+}
+
+.titles {
+  @include flex(column, $gap: space(0.5));
+}
+
+.title {
+  @include heading(display);
+}
+
+.sub {
+  color: $color-ink-muted;
+}
+
+.week {
+  margin-inline: calc(-1 * #{space(2)});
+
+  @include up(lg) {
+    align-self: flex-start;
+  }
+}
+
+.desktop-actions {
+  display: none;
+  gap: space(2);
+
+  @include up(lg) {
+    display: flex;
+  }
+}
+
+// ---- Totals
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: space(2);
+
+  @include up(lg) {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: space(3);
+  }
+}
+
+.kpi {
+  @include surface;
+  @include flex(column);
+  padding: space(3);
+
+  b {
+    @include text(heading);
+    font-weight: $weight-extrabold;
+    font-variant-numeric: tabular-nums;
+
+    @include up(lg) {
+      font-size: 28px;
+      line-height: 34px;
+      letter-spacing: -0.02em;
+    }
+  }
+
+  span {
+    @include text(tiny);
+    color: $color-ink-subtle;
+  }
+
+  @include up(lg) {
+    padding: space(4);
+  }
+}
+
+// ---- Text and table
+.columns {
+  @include flex(column, $gap: space(4));
+
+  @include up(lg) {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    align-items: start;
+    gap: space(5);
+  }
+}
+
+.text-column {
+  @include flex(column, $gap: space(3));
+}
+
+.text {
+  min-height: 250px;
+  font-size: 13px;
+  line-height: 19px;
+
+  @include up(lg) {
+    min-height: 420px;
+  }
+}
+
+.phone-actions {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: space(2);
+
+  @include up(lg) {
+    display: none;
+  }
+}
+
+.table {
+  display: none;
+
+  @include up(lg) {
+    display: block;
+  }
+}
+
+.strong {
+  font-weight: $weight-bold;
+}
