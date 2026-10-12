@@ -23,6 +23,12 @@ Requiere Node 22. La app usa el proyecto de Supabase `visitario`; las claves pú
 | `npm run build` | Build de producción con PWA |
 | `npm run db:types` | Regenera los tipos de la base (requiere Supabase CLI) |
 
+## Despliegue
+
+- **App**: Vercel publica `main` en cada push y cada PR en una URL de prueba (`vercel.json`). Variables: `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY` (públicas).
+- **Base y Edge Functions**: Supabase (ver `supabase/README.md`). Las fotos van a Cloudflare R2 a través de la función `photos`.
+- En Supabase → Authentication → URL Configuration, la URL de Vercel tiene que estar como Site URL y en Redirect URLs.
+
 ## Documentación
 
 - `CLAUDE.md`: reglas del repo (código en inglés, interfaz en español).
