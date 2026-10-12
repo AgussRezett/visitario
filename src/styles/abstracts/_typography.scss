@@ -1,0 +1,42 @@
+@use 'sass:map';
+@use 'tokens' as *;
+
+// Type scale from the design system: size and line height.
+$type-scale: (
+  display: (30px, 36px),
+  title: (22px, 28px),
+  heading: (18px, 24px),
+  body: (15px, 22px),
+  label: (13px, 18px),
+  eyebrow: (12px, 16px),
+  // Utility sizes used by buttons and the bottom navigation
+  base: (16px, 24px),
+  small: (14px, 20px),
+  tiny: (12px, 16px),
+);
+
+/// Sets font size and line height from the scale. Usage: `@include text(label);`
+@mixin text($name) {
+  $pair: map.get($type-scale, $name);
+  @if not $pair {
+    @error 'Unknown text size `#{$name}`. Use one of: #{map.keys($type-scale)}';
+  }
+  font-size: nth($pair, 1);
+  line-height: nth($pair, 2);
+}
+
+/// Page or card heading in extra bold with tight tracking.
+@mixin heading($name: display) {
+  @include text($name);
+  font-weight: $weight-extrabold;
+  letter-spacing: $tracking-tight;
+}
+
+/// Small uppercase label above a section.
+@mixin eyebrow {
+  @include text(eyebrow);
+  font-weight: $weight-bold;
+  text-transform: uppercase;
+  letter-spacing: $tracking-eyebrow;
+  color: $color-ink-subtle;
+}

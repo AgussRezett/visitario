@@ -1,0 +1,76 @@
+// Color tokens as CSS custom properties. Light by default, dark with data-theme="dark" on <html>.
+// Design system "calle en calma, tablero con color".
+:root {
+  --forest: #173b30;
+  --forest-hover: #0f2b22;
+  --lime: #b8d941;
+  --lime-soft: #eef5d6;
+
+  --ground: #f6f7f2;
+  --card: #ffffff;
+  --muted: #eef0ea;
+  --line: #e2e5dd;
+  --control-border: #a9b3aa;
+
+  --ink: #15241e;
+  --ink-muted: #4a5650;
+  --ink-subtle: #5a6660;
+
+  --action: #173b30;
+  --action-hover: #0f2b22;
+  --action-ink: #ffffff;
+  --focus: #2f5bd3;
+
+  --pending: #5c6661;
+  --pending-soft: #eceee9;
+  --pending-ink: #444e49;
+  --active: #2f5bd3;
+  --active-soft: #e3ebfb;
+  --active-ink: #1f4e8c;
+  --done: #17804a;
+  --done-soft: #e2f1e6;
+  --done-ink: #1e6b3a;
+  --closed: #a86200;
+  --closed-soft: #faf0d7;
+  --closed-ink: #7e5300;
+  --refused: #c8392c;
+  --refused-soft: #fae5e1;
+  --refused-ink: #9e2c20;
+  --fix: #6b4bd8;
+  --fix-soft: #eee9fc;
+  --fix-ink: #4b2fb0;
+
+  --shadow-sheet: 0 -8px 24px rgb(21 36 30 / 0.12);
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --ground: #0f1a16;
+  --card: #172520;
+  --muted: #1e2e28;
+  --line: #2a3b34;
+  --control-border: #4d5f57;
+
+  --ink: #eef3ee;
+  --ink-muted: #b7c4bc;
+  --ink-subtle: #9aa9a1;
+
+  --action: #b8d941;
+  --action-hover: #c9e65f;
+  --action-ink: #0f1a16;
+  --focus: #8fb0ff;
+
+  --pending-soft: #26332e;
+  --pending-ink: #c4cdc8;
+  --active-soft: #1c2a4a;
+  --active-ink: #a9c1ff;
+  --done-soft: #16301f;
+  --done-ink: #8fd9a8;
+  --closed-soft: #3a2a0c;
+  --closed-ink: #f2c46d;
+  --refused-soft: #3d1a16;
+  --refused-ink: #f3a096;
+  --fix-soft: #2a2050;
+  --fix-ink: #c3b3ff;
+  color-scheme: dark;
+}

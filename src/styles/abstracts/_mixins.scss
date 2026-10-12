@@ -1,0 +1,106 @@
+@use 'tokens' as *;
+@use 'functions' as *;
+
+/// Rules that only apply in dark mode (`data-theme="dark"` on <html>).
+@mixin dark {
+  :global([data-theme='dark']) & {
+    @content;
+  }
+}
+
+/// Hover only on devices that can hover, so taps on phones do not leave it stuck.
+@mixin hover {
+  @media (hover: hover) {
+    &:hover {
+      @content;
+    }
+  }
+}
+
+/// Flex container. Usage: `@include flex(column, $gap: space(4));`
+@mixin flex($direction: row, $gap: null, $align: null, $justify: null) {
+  display: flex;
+  flex-direction: $direction;
+  gap: $gap;
+  align-items: $align;
+  justify-content: $justify;
+}
+
+/// Centers content in both axes.
+@mixin center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/// Square box of a given size.
+@mixin square($size) {
+  width: $size;
+  height: $size;
+}
+
+/// Single line that ends in "…" when it does not fit.
+@mixin truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/// Hidden on screen, still read by screen readers.
+@mixin visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/// Color transitions for interactive elements.
+@mixin transition-colors {
+  transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke;
+  transition-timing-function: $ease-standard;
+  transition-duration: $duration-fast;
+}
+
+/// Rounded square that holds an icon next to a title (cards, permission rows).
+@mixin icon-tile($size: space(10), $radius: $radius-md) {
+  @include center;
+  @include square($size);
+  flex-shrink: 0;
+  border-radius: $radius;
+  background: $color-muted;
+  color: $color-forest;
+
+  @include dark {
+    color: $color-lime;
+  }
+}
+
+/// Bordered surface used by cards and lists.
+@mixin surface {
+  border: 1px solid $color-line;
+  border-radius: $radius-lg;
+  background: $color-card;
+}
+
+/// Spinning ring; pair with `@include keyframes-spin` at the root of the module.
+@mixin spinner-ring($size, $width) {
+  @include square($size);
+  border: $width solid currentColor;
+  border-right-color: transparent;
+  border-radius: $radius-full;
+  animation: spin 1s linear infinite;
+}
+
+/// Declares the `spin` keyframes inside the module that uses them (CSS Modules scope names).
+@mixin keyframes-spin {
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}

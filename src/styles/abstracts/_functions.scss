@@ -1,0 +1,4 @@
+// 4px spacing grid: space(1) = 4px, space(4) = 16px, space(1.5) = 6px.
+@function space($steps) {
+  @return $steps * 4px;
+}

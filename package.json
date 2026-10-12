@@ -27,14 +27,12 @@
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-hook-form": "^7.90.0",
-    "tailwind-merge": "^3.7.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.2.17",
     "@eslint/js": "^9.39.5",
     "@playwright/test": "1.56",
-    "@tailwindcss/vite": "^4.3.3",
     "@tanstack/router-plugin": "^1.168.43",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.3",
@@ -48,7 +46,7 @@
     "eslint-plugin-react-refresh": "^0.5.7",
     "globals": "^17.13.0",
     "jsdom": "^26.1.0",
-    "tailwindcss": "^4.3.3",
+    "sass-embedded": "^1.105.1",
     "typescript": "5.8",
     "typescript-eslint": "^8.71.1",
     "vite": "^6.4.4",

@@ -1,3 +1,5 @@
+// Global styles first: they declare the cascade layer order (reset < base < ui).
+import '@/styles/main.scss'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -6,7 +8,6 @@ import { supabase } from '@/lib/supabase'
 import { applyTheme } from '@/features/profile/theme'
 import { FullScreenSpinner } from '@/ui/Spinner'
 import { routeTree } from './routeTree.gen'
-import '@/styles/index.css'
 
 applyTheme()
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme())
