@@ -29,6 +29,9 @@ const r2 = new AwsClient({
   service: 's3',
   region: 'auto',
 })
+// The Account ID is 32 hex characters (it is part of the S3 endpoint). Anything else, e.g. an
+// API token pasted by mistake, would end up in URLs and error logs, so it is refused.
+const configured = /^[0-9a-f]{32}$/.test(accountId) && Boolean(Deno.env.get('R2_ACCESS_KEY_ID')) && Boolean(Deno.env.get('R2_SECRET_ACCESS_KEY'))
 const objectUrl = (key: string) => `https://${accountId}.r2.cloudflarestorage.com/${bucket}/${key}`
 const objectKey = (companyId: string, visitId: string, photoId: string) => `c/${companyId}/v/${visitId}/${photoId}.jpg`
 
@@ -90,12 +93,20 @@ async function upload(req: Request, user: SupabaseClient, admin: SupabaseClient)
     if (error) return json({ error: 'not_allowed', detail: error.message }, 403)
   }
 
-  const put = await r2.fetch(objectUrl(objectKey(visit.company_id, meta.visitId, meta.id)), {
-    method: 'PUT',
-    body: bytes,
-    headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'private, max-age=31536000, immutable' },
-  })
-  if (!put.ok) {
+  // A row without its file would count as a photo, so any failure removes the row again.
+  let stored = false
+  try {
+    const put = await r2.fetch(objectUrl(objectKey(visit.company_id, meta.visitId, meta.id)), {
+      method: 'PUT',
+      body: bytes,
+      headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'private, max-age=31536000, immutable' },
+    })
+    stored = put.ok
+    if (!put.ok) console.error(`R2 PUT failed with status ${put.status}`)
+  } catch (e) {
+    console.error(`R2 PUT failed: ${e instanceof Error ? e.name : 'unknown error'}`) // no URL: it would expose the account
+  }
+  if (!stored) {
     if (!existing) await admin.from('photo').delete().eq('id', meta.id)
     return json({ error: 'storage_failed' }, 502)
   }
@@ -122,7 +133,10 @@ async function signedUrls(req: Request, user: SupabaseClient) {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405)
-  if (!accountId) return json({ error: 'not_configured' }, 503)
+  if (!configured) {
+    console.error('R2 is not configured: check R2_ACCOUNT_ID (32 hex characters), R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY')
+    return json({ error: 'not_configured' }, 503)
+  }
 
   const authorization = req.headers.get('Authorization') ?? ''
   const user = createClient(supabaseUrl, anonKey, {
