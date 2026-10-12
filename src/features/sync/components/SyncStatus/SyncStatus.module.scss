@@ -1,0 +1,135 @@
+@use '@/styles/abstracts' as *;
+
+// ---- Pill: one glance tells whether the work reached the server
+.pill {
+  @include flex(row, $gap: space(1.5), $align: center, $justify: center);
+  @include transition-colors;
+  flex-shrink: 0;
+  height: space(9);
+  padding-inline: space(3);
+  border-radius: $radius-full;
+  font-size: 13px;
+  line-height: 16px;
+  font-weight: $weight-extrabold;
+  white-space: nowrap;
+}
+
+.icon-only {
+  width: space(9);
+  padding: 0;
+}
+
+.ok {
+  background: $color-done-soft;
+  color: $color-done-ink;
+}
+
+.sending {
+  background: $color-active-soft;
+  color: $color-active-ink;
+}
+
+.offline {
+  background: $color-closed-soft;
+  color: $color-closed-ink;
+}
+
+.failed {
+  background: $color-refused-soft;
+  color: $color-refused-ink;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@include keyframes-spin;
+
+// ---- Sheet
+.body {
+  @include flex(column, $gap: space(5));
+  padding-bottom: space(2);
+}
+
+.lead {
+  @include text(small);
+  color: $color-ink-muted;
+}
+
+.group {
+  @include flex(column, $gap: space(2));
+}
+
+.group-title {
+  @include eyebrow;
+}
+
+.list {
+  @include flex(column, $gap: space(2));
+}
+
+.row {
+  @include flex(row, $gap: space(3), $align: center);
+  padding: space(2.5) space(3);
+  border: 1px solid $color-line;
+  border-radius: $radius-md;
+  background: $color-card;
+}
+
+.row-failed {
+  @extend .row;
+  flex-wrap: wrap;
+  border-color: $color-refused-soft;
+}
+
+.row-icon {
+  @include icon-tile(space(9), $radius-sm);
+}
+
+.row-text {
+  @include flex(column, $gap: space(0.5));
+  flex: 1;
+  min-width: 0;
+}
+
+.row-label {
+  @include text(small);
+  font-weight: $weight-bold;
+  color: $color-ink;
+}
+
+.row-meta {
+  @include text(tiny);
+  color: $color-ink-subtle;
+}
+
+.row-error {
+  @include text(label);
+  color: $color-refused-ink;
+}
+
+.row-actions {
+  @include flex(row, $gap: space(2));
+  width: 100%;
+  justify-content: flex-end;
+
+  @include up(sm) {
+    width: auto;
+  }
+}
+
+.more,
+.empty {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.empty {
+  @include flex(row, $gap: space(2), $align: center);
+  color: $color-done-ink;
+  font-weight: $weight-bold;
+}

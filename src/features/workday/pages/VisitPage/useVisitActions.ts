@@ -1,73 +1,66 @@
-import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMemo, useState } from 'react'
 import { argentinaTime } from '@/domain/dates'
 import { finishStatus, type Consent } from '@/domain/visit'
 import type { Visit } from '@/features/workday/api/queries'
-import { useUpdateVisit } from '@/features/workday/api/mutations'
-import { PhotoError, useAddPhoto, useDeletePhoto, type NewPhoto } from '@/features/workday/api/photos'
-import { retryUpload, uploadsSettled } from '@/features/workday/api/uploads'
+import { PhotoError, usePreparePhoto } from '@/features/workday/api/photos'
+import { visitChanges } from '@/features/sync/changes'
+import { retry, whenSent } from '@/features/sync/outbox'
 
-/** Everything the visit sheet can do, in the order the merchandiser does it. */
+/**
+ * Everything the visit sheet can do, in the order the merchandiser does it. All of it is
+ * saved on the phone first and works without signal; the outbox sends it in order
+ * (so the storefront photo always reaches the server before the visit is finished).
+ */
 export function useVisitActions(visit: Visit) {
-  const qc = useQueryClient()
-  const update = useUpdateVisit(visit.id)
-  const photos = useAddPhoto()
-  const remove = useDeletePhoto()
+  const changes = useMemo(() => visitChanges(visit), [visit])
+  const photos = usePreparePhoto()
   const [photoError, setPhotoError] = useState<Error | null>(null)
 
-  /** Photos never block: they show at once and upload in the background. */
-  const add = async (p: NewPhoto) => {
+  const addPhoto = async (kind: Visit['photos'][number]['kind'], displayId: string | null, file: File, sortOrder: number) => {
     setPhotoError(null)
     try {
-      return await photos.add(p)
+      const { blob, width, height } = await photos.prepare(file)
+      return await changes.addPhoto({ kind, displayId, blob, width, height, sortOrder })
     } catch (e) {
       setPhotoError(e instanceof Error ? e : new PhotoError('No pudimos agregar la foto.'))
       return null
     }
   }
 
-  /** Arrival = storefront photo. The visit shows as started right away; the database
-   *  confirms it after the upload, and sends it back to pending if the photo is deleted. */
+  /** Arrival = storefront photo: the visit starts on screen at once, the server follows. */
   const arrive = async (file: File) => {
-    await add({ visitId: visit.id, displayId: null, kind: 'storefront', file })
+    await addPhoto('storefront', null, file, 0)
   }
 
   const photo = async (displayId: string, kind: 'before' | 'after', file: File) => {
-    await add({ visitId: visit.id, displayId, kind, file, sortOrder: visit.photos.filter((p) => p.displayId === displayId && p.kind === kind).length })
+    await addPhoto(kind, displayId, file, visit.photos.filter((p) => p.displayId === displayId && p.kind === kind).length)
   }
 
   const setConsent = (consent: Consent) =>
-    update.mutateAsync({
+    changes.patch({
       consent,
       objection: consent === 'with_objection' ? visit.objection : null,
       retry_after: consent === 'closed' ? visit.retryAfter ?? argentinaTime(visit.workDate, 17) : null,
     })
 
-  const setObjection = (objection: string) => update.mutateAsync({ objection: objection.trim() || null })
-  const setRetry = (later: boolean) => update.mutateAsync({ retry_after: later ? argentinaTime(visit.workDate, 17) : null })
-  const setNotes = (notes: string) => update.mutateAsync({ notes: notes.trim() || null })
+  const setObjection = (objection: string) => changes.patch({ objection: objection.trim() || null })
+  const setRetry = (later: boolean) => changes.patch({ retry_after: later ? argentinaTime(visit.workDate, 17) : null })
+  const setNotes = (notes: string) => changes.patch({ notes: notes.trim() || null })
 
-  /** Ending waits for the photos still going up (usually already there by then). */
-  const finishing = useMutation({
-    mutationFn: async () => {
-      if (!visit.consent) return
-      if (!(await uploadsSettled(visit.id))) throw new PhotoError('Hay fotos que no se pudieron subir. Reintentalas antes de terminar.')
-      await update.mutateAsync({ work_status: finishStatus(visit.consent) })
-    },
-  })
+  const finish = async () => {
+    if (visit.consent) await changes.patch({ work_status: finishStatus(visit.consent) })
+  }
 
   /** "Volví: probar de nuevo": the closed store gets another try. */
-  const retry = () =>
-    update.mutateAsync(
-      visit.workStatus === 'closed' ? { work_status: 'in_progress', consent: null, retry_after: null } : { consent: null, retry_after: null },
-    )
+  const retryStore = () =>
+    changes.patch(visit.workStatus === 'closed' ? { work_status: 'in_progress', consent: null, retry_after: null } : { consent: null, retry_after: null })
 
   /** The new photo replaces the old one once it is safely on the server. */
   const replacePhoto = async (oldId: string, file: File) => {
     const old = visit.photos.find((p) => p.id === oldId)
     if (!old) return
-    const queued = await add({ visitId: visit.id, displayId: old.displayId, kind: old.kind, file, sortOrder: 0 })
-    if (queued && (await queued.done)) await remove.mutateAsync(oldId)
+    const id = await addPhoto(old.kind, old.displayId, file, 0)
+    if (id && (await whenSent(id))) await changes.removePhoto(oldId)
   }
 
   return {
@@ -77,15 +70,16 @@ export function useVisitActions(visit: Visit) {
     setObjection,
     setRetry,
     setNotes,
-    finish: () => finishing.mutateAsync(),
-    retry,
+    finish,
+    retry: retryStore,
     replacePhoto,
-    deletePhoto: (id: string) => remove.mutateAsync(id),
-    retryPhoto: (id: string) => retryUpload(qc, id),
+    deletePhoto: (id: string) => changes.removePhoto(id),
+    retryPhoto: (id: string) => retry(id),
+    changes,
     /** Only while the photo is being compressed on the phone. */
     uploading: photos.preparing,
-    saving: update.isPending || finishing.isPending,
-    error: finishing.error ?? update.error ?? photoError ?? remove.error,
+    saving: false,
+    error: photoError,
   }
 }
 

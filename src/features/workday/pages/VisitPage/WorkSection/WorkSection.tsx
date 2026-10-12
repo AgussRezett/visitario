@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Check, ClipboardList } from 'lucide-react'
 import { Stepper } from '@/ui/Stepper'
 import { TextArea } from '@/ui/TextArea'
 import { ToggleTags } from '@/ui/ToggleTag'
-import { visitWorkQuery, type Catalogs, type Visit } from '@/features/workday/api/queries'
-import { useSetMetric, useToggleBrand } from '@/features/workday/api/mutations'
+import type { Catalogs, Visit } from '@/features/workday/api/queries'
+import { visitChanges } from '@/features/sync/changes'
+import { useVisitWork } from '@/features/sync/hooks'
 import { VisitSection } from '@/features/workday/components/VisitSection'
 import styles from './WorkSection.module.scss'
 
@@ -32,9 +32,8 @@ function MetricStepper({ label, saved, onSave }: { label: string; saved: number;
 
 /** Work done: quantities, brands and notes. */
 export function WorkSection({ visit: v, catalogs, onNotes }: { visit: Visit; catalogs: Catalogs; onNotes: (notes: string) => void }) {
-  const work = useQuery(visitWorkQuery(v.id))
-  const setMetric = useSetMetric(v.id, v.companyId)
-  const toggleBrand = useToggleBrand(v.id, v.companyId)
+  const work = useVisitWork(v.id)
+  const changes = useMemo(() => visitChanges(v), [v])
   const [brands, setBrands] = useState<number[]>([])
   const [notes, setNotes] = useState(v.notes ?? '')
   useEffect(() => setBrands(work.data?.brands ?? []), [work.data?.brands])
@@ -46,7 +45,7 @@ export function WorkSection({ visit: v, catalogs, onNotes }: { visit: Visit; cat
       {catalogs.metrics.length ? (
         <div className={styles.metrics}>
           {catalogs.metrics.map((m) => (
-            <MetricStepper key={m.id} label={m.name} saved={work.data?.metrics[m.id] ?? 0} onSave={(quantity) => setMetric.mutate({ metricId: m.id, quantity })} />
+            <MetricStepper key={m.id} label={m.name} saved={work.data?.metrics[m.id] ?? 0} onSave={(quantity) => void changes.setMetric(m.id, quantity)} />
           ))}
         </div>
       ) : null}
@@ -60,7 +59,7 @@ export function WorkSection({ visit: v, catalogs, onNotes }: { visit: Visit; cat
             onToggle={(id) => {
               const on = !brands.includes(id)
               setBrands((b) => (on ? [...b, id] : b.filter((x) => x !== id)))
-              toggleBrand.mutate({ brandId: id, on })
+              void changes.setBrand(id, on)
             }}
           />
         </div>

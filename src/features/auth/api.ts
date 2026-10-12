@@ -1,5 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { normalizeDni } from '@/domain/identity'
+import { clearLocalData } from '@/features/sync/db'
+import { forgetAll } from '@/features/sync/outbox'
 
 export class AuthError extends Error {}
 
@@ -48,4 +50,6 @@ export async function setPassword(password: string) {
 
 export async function signOut() {
   await supabase.auth.signOut()
+  forgetAll()
+  await clearLocalData() // a shared phone must not show the previous person's day
 }

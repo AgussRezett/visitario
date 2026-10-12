@@ -8,7 +8,6 @@ import { Select } from '@/ui/Select'
 import { Sheet } from '@/ui/Sheet'
 import { Chip } from '@/ui/StatusChip'
 import type { Catalogs, Display, Visit } from '@/features/workday/api/queries'
-import type { useDisplayMutations } from '@/features/workday/api/mutations'
 import { PhotoPicker } from '@/features/workday/components/PhotoPicker'
 import { PhotoThumb } from '@/features/workday/components/PhotoThumb'
 import type { VisitActions } from '../useVisitActions'
@@ -22,14 +21,13 @@ interface DisplaySheetProps {
   catalogs: Catalogs
   urlFor: (id: string) => string | undefined
   actions: VisitActions
-  mutations: ReturnType<typeof useDisplayMutations>
   onClose: () => void
   onView: (v: ViewerState) => void
   typeName: (id: number) => string
 }
 
 /** One display: type, reference, before and after photos (wireframe A10). */
-export function DisplaySheet({ visit: v, display: d, index, catalogs, urlFor, actions, mutations, onClose, onView, typeName }: DisplaySheetProps) {
+export function DisplaySheet({ visit: v, display: d, index, catalogs, urlFor, actions, onClose, onView, typeName }: DisplaySheetProps) {
   const [reference, setReference] = useState(d.reference ?? '')
   const { confirm, dialog } = useConfirm()
   useEffect(() => setReference(d.reference ?? ''), [d.reference])
@@ -66,13 +64,13 @@ export function DisplaySheet({ visit: v, display: d, index, catalogs, urlFor, ac
           label="Tipo"
           value={d.typeId}
           options={catalogs.displayTypes.map((t) => ({ value: t.id, label: t.name }))}
-          onChange={(e) => mutations.update.mutate({ id: d.id, typeId: Number(e.target.value) })}
+          onChange={(e) => void actions.changes.patchDisplay(d.id, { typeId: Number(e.target.value) })}
         />
         <Field
           label="Referencia"
           value={reference}
           onChange={(e) => setReference(e.target.value)}
-          onBlur={() => reference !== (d.reference ?? '') && mutations.update.mutate({ id: d.id, reference: reference.trim() || null })}
+          onBlur={() => reference !== (d.reference ?? '') && void actions.changes.patchDisplay(d.id, { reference: reference.trim() || null })}
           placeholder="Ej.: pasillo 3, al lado de cervezas"
           maxLength={120}
         />
@@ -129,7 +127,7 @@ export function DisplaySheet({ visit: v, display: d, index, catalogs, urlFor, ac
               tone: 'danger',
             })
             if (!ok) return
-            await mutations.remove.mutateAsync(d.id)
+            await actions.changes.removeDisplay(d.id)
             onClose()
           }}
         >

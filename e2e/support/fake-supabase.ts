@@ -19,6 +19,8 @@ export interface FakeState {
   memberships?: Row[]
   /** Simulates a slow connection when loading a day. */
   workdayDelayMs?: number
+  /** Answer photo uploads with this status (e.g. 503 down, 403 refused) instead of storing them. */
+  photoStatus?: number
   /** Simulates a slow connection for photo uploads. */
   uploadDelayMs?: number
 }
@@ -96,6 +98,7 @@ export async function installFakeSupabase(page: Page, state: FakeState) {
     }
     if (path.endsWith('/functions/v1/photos')) {
       if (state.uploadDelayMs) await new Promise((resolve) => setTimeout(resolve, state.uploadDelayMs))
+      if (state.photoStatus) return json({ error: 'fake' }, state.photoStatus)
       const { bytes, meta } = filePart(req)
       state.uploads.push({ bytes, meta })
       const v = state.visits.find((x) => x.id === meta.visitId)
