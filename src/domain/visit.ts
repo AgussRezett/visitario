@@ -32,6 +32,14 @@ export function canTransition(from: WorkStatus, to: WorkStatus) {
   return from === to || TRANSITIONS[from].includes(to)
 }
 
+/**
+ * Whether the merchandiser can take a stop off the day: the ones they added or resumed,
+ * never one the supervisor assigned or an approved visit (same rule as the database).
+ */
+export function canRemoveVisit(v: { addedByMe: boolean; resumedFrom: string | null; reviewStatus: ReviewStatus }) {
+  return v.reviewStatus !== 'approved' && (v.addedByMe || v.resumedFrom !== null)
+}
+
 /** Every visit with a result counts as visited: done, not authorized or closed. */
 export function isVisited(status: WorkStatus) {
   return status === 'done' || status === 'refused' || status === 'closed'

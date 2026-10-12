@@ -12,6 +12,7 @@ export function workdayErrorMessage(error: { message?: string; code?: string } |
   if (m.includes('consent')) return 'Marcá si el local te autorizó antes de terminar.'
   if (m.includes('approved visit is locked')) return 'Esta visita ya fue aprobada y no se puede cambiar.'
   if (m.includes('store_customer_number') || (error?.code === '23505' && m.includes('customer'))) return 'Ese número de cliente ya está en el directorio. Buscalo arriba.'
+  if (m.includes('removes an assigned visit')) return 'Esta parada la asignó tu supervisor: solo él puede quitarla.'
   if (m.includes('transition')) return 'Ese cambio de estado no está permitido.'
   return 'No pudimos guardar el cambio. Probá de nuevo.'
 }
@@ -86,6 +87,18 @@ export function useUpdateVisit(visitId: string) {
       if (error) throw new WorkdayError(workdayErrorMessage(error))
     },
     onSettled: () => qc.invalidateQueries({ queryKey: workdayKeys.all }),
+  })
+}
+
+/** Takes the stop off the day (soft delete; the history keeps it). */
+export function useRemoveVisit(visitId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from('visit').update({ deleted_at: new Date().toISOString() }).eq('id', visitId)
+      if (error) throw new WorkdayError(workdayErrorMessage(error))
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: workdayKeys.all }),
   })
 }
 

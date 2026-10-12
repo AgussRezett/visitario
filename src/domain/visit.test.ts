@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canTransition, finishCheck, isVisited, workdayProgress } from './visit'
+import { canRemoveVisit, canTransition, finishCheck, isVisited, workdayProgress } from './visit'
 
 describe('visit rules', () => {
   it('mirrors the database transitions', () => {
@@ -37,5 +37,14 @@ describe('visit rules', () => {
       { workStatus: 'pending', reviewStatus: 'unreviewed' },
     ])
     expect(p).toMatchObject({ total: 4, visited: 3, percent: 75, approved: 1, done: 1, closed: 1 })
+  })
+})
+
+describe('canRemoveVisit', () => {
+  it('own and resumed stops can be removed; assigned and approved ones cannot', () => {
+    expect(canRemoveVisit({ addedByMe: true, resumedFrom: null, reviewStatus: 'unreviewed' })).toBe(true)
+    expect(canRemoveVisit({ addedByMe: false, resumedFrom: 'v0', reviewStatus: 'needs_fix' })).toBe(true)
+    expect(canRemoveVisit({ addedByMe: false, resumedFrom: null, reviewStatus: 'unreviewed' })).toBe(false)
+    expect(canRemoveVisit({ addedByMe: true, resumedFrom: null, reviewStatus: 'approved' })).toBe(false)
   })
 })

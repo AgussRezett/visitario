@@ -22,6 +22,7 @@ import { DisplaysSection } from './DisplaysSection'
 import { WorkSection } from './WorkSection'
 import { MessagesSection } from './MessagesSection'
 import { FinishBar } from './FinishBar'
+import { RemoveStop } from './RemoveStop'
 import styles from './VisitPage.module.scss'
 
 export interface ViewerState {
@@ -155,6 +156,7 @@ function VisitBody(props: {
             </div>
           </div>
         </div>
+        <RemoveStop visit={v} back={back} />
       </div>
 
       <PhotoViewer
