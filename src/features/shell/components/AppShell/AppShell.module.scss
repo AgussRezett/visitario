@@ -1,12 +1,13 @@
 @use '@/styles/abstracts' as *;
 
 // The whole screen is one grid that never scrolls; each region scrolls by itself.
-// Phones:  header / main / bottom navigation as rows.
-// Desktop: sidebar | main as columns.
+// Phones:  header / update notice / main / bottom navigation as rows.
+// Desktop: sidebar | update notice over main. The notice row collapses when there is none.
 .shell {
   display: grid;
   grid-template:
     'header' auto
+    'update' auto
     'main' minmax(0, 1fr)
     'nav' auto
     / minmax(0, 1fr);
@@ -15,6 +16,7 @@
 
   @include up(lg) {
     grid-template:
+      'sidebar update' auto
       'sidebar main' minmax(0, 1fr)
       / $sidebar-width minmax(0, 1fr);
   }
