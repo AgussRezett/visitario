@@ -1,0 +1,56 @@
+@use '@/styles/abstracts' as *;
+
+.info {
+  @include flex(column, $gap: space(1.5));
+
+  @include up(lg) {
+    @include surface;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: space(4);
+    padding: space(4);
+  }
+}
+
+.lines {
+  @include flex(column, $gap: space(0.5));
+  min-width: 0;
+}
+
+.address {
+  font-weight: $weight-bold;
+}
+
+.meta {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.actions {
+  @include flex(row, $gap: space(2), $align: center);
+  flex-wrap: wrap;
+  padding-top: space(0.5);
+}
+
+// Looks like a small secondary button
+.link {
+  @include flex(row, $gap: space(2), $align: center);
+  @include text(label);
+  height: space(9);
+  padding-inline: space(3);
+  border: 1.5px solid $color-control;
+  border-radius: $radius-md;
+  background: $color-card;
+  font-weight: $weight-extrabold;
+  color: $color-ink;
+}
+
+.located {
+  margin-left: auto;
+
+  @include up(lg) {
+    margin-left: 0;
+  }
+}

@@ -1,0 +1,68 @@
+@use '@/styles/abstracts' as *;
+
+.list {
+  @include flex(column);
+}
+
+.item {
+  @include flex(row, $gap: space(2.5), $align: center);
+  width: 100%;
+  padding: space(2.5) 0;
+  border-bottom: 1px solid $color-line;
+  text-align: left;
+
+  li:last-child & {
+    border-bottom: 0;
+  }
+}
+
+.thumb {
+  @include square(36px);
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: $radius-sm;
+  background: $color-muted;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.text {
+  @include flex(column);
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  @include text(label);
+  font-weight: $weight-bold;
+}
+
+.by {
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: $weight-bold;
+  color: $color-ink-subtle;
+}
+
+.camera-icon {
+  @include center;
+  @include square(40px);
+  flex-shrink: 0;
+  border: 1px solid $color-line;
+  border-radius: $radius-md;
+  background: $color-card;
+  color: $color-forest;
+
+  @include dark {
+    color: $color-lime;
+  }
+}
+
+.add {
+  align-self: flex-start;
+  padding-inline: 0;
+}

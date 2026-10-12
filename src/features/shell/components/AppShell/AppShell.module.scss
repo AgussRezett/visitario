@@ -112,3 +112,16 @@
   font-weight: $weight-semibold;
   color: $color-ink-subtle;
 }
+
+// ---- Pages with their own bars on phones (visit sheet)
+.phone-hidden {
+  display: none;
+}
+
+.main-immersive {
+  padding-bottom: 0;
+
+  @include up(lg) {
+    padding-bottom: space(10);
+  }
+}

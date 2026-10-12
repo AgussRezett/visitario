@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { argentinaTime, formatDayMonth, formatLongDate, formatShortWeekday, formatTime, todayInArgentina } from './dates'
+import { argentinaTime, formatDayMonth, formatHour, formatLongDate, formatShortWeekday, formatTime, todayInArgentina } from './dates'
 
 describe('dates', () => {
   it('uses the Argentine day even when UTC is already tomorrow', () => {
@@ -14,5 +14,7 @@ describe('dates', () => {
   it('shows times in Argentina', () => {
     expect(formatTime('2026-10-13T17:12:00Z')).toBe('14:12')
     expect(argentinaTime('2026-10-13', 17)).toBe('2026-10-13T20:00:00.000Z')
+    expect(formatHour('2026-10-13T20:00:00Z')).toBe('17 h')
+    expect(formatHour('2026-10-13T20:30:00Z')).toBe('17:30 h')
   })
 })

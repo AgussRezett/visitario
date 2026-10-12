@@ -1,0 +1,50 @@
+@use '@/styles/abstracts' as *;
+
+.choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(2);
+}
+
+.choice {
+  @include flex(row, $gap: space(1.5), $align: center, $justify: center);
+  @include transition-colors;
+  width: 100%;
+  height: $touch-target;
+  padding-inline: space(2.5);
+  border: 1.5px solid $color-control;
+  border-radius: $radius-md;
+  background: $color-card;
+  font-size: 14px;
+  font-weight: $weight-bold;
+  color: $color-ink;
+
+  &:disabled {
+    opacity: 0.55;
+  }
+}
+
+.on {
+  border-color: $color-forest;
+  background: $color-forest;
+  color: $color-white;
+
+  @include dark {
+    border-color: $color-lime;
+    background: $color-lime;
+    color: $color-forest;
+  }
+
+  &:disabled {
+    opacity: 1;
+  }
+}
+
+.field {
+  @include flex(column, $gap: space(1.5));
+}
+
+.label {
+  @include text(label);
+  font-weight: $weight-bold;
+}

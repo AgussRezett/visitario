@@ -1,0 +1,25 @@
+@use '@/styles/abstracts' as *;
+
+// Looks like text; a transparent native select on top does the picking.
+.switcher {
+  @include flex(row, $gap: space(1), $align: center);
+  position: relative;
+  display: inline-flex;
+  align-self: flex-start;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: $weight-bold;
+  color: $color-ink-subtle;
+}
+
+.select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.text {
+  @include truncate;
+}

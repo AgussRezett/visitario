@@ -1,0 +1,342 @@
+@use '@/styles/abstracts' as *;
+
+// ---- Title row
+.top {
+  @include flex(row, $gap: space(3), $align: flex-end, $justify: space-between);
+  flex-wrap: wrap;
+}
+
+.titles {
+  @include flex(column, $gap: space(0.5));
+  min-width: 0;
+}
+
+.title {
+  @include heading(display);
+}
+
+.actions {
+  display: none;
+
+  @include up(lg) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: space(2);
+  }
+}
+
+// ---- Progress
+.progress {
+  gap: space(2);
+
+  @include up(lg) {
+    max-width: 560px;
+  }
+}
+
+.progress-head {
+  @include flex(row, $align: baseline, $justify: space-between);
+}
+
+.progress-title {
+  @include text(heading);
+  font-weight: $weight-extrabold;
+  font-variant-numeric: tabular-nums;
+}
+
+.percent {
+  @include text(label);
+  font-weight: $weight-bold;
+  color: $color-ink-subtle;
+  font-variant-numeric: tabular-nums;
+}
+
+.bar {
+  display: flex;
+  height: space(2);
+  overflow: hidden;
+  border-radius: 4px;
+  background: $color-line;
+
+  i {
+    display: block;
+    height: 100%;
+    background: $color-forest;
+
+    @include dark {
+      background: $color-lime;
+    }
+  }
+
+  .bar-done {
+    background: $color-done;
+  }
+
+  .bar-closed {
+    background: $color-closed;
+  }
+}
+
+.breakdown {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+// ---- Empty day
+.empty {
+  align-items: flex-start;
+}
+
+.empty-title {
+  @include text(heading);
+  font-weight: $weight-extrabold;
+}
+
+.empty-lead {
+  color: $color-ink-muted;
+}
+
+.empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: space(2);
+}
+
+// ---- Layout: list on phones; table + next card on desktop
+.columns {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: space(5);
+  padding-bottom: space(20);
+
+  @include up(lg) {
+    padding-bottom: space(6);
+  }
+}
+
+.list-column {
+  @include flex(column, $gap: space(3));
+  flex: 999 1 560px;
+  min-width: 0;
+}
+
+.desktop-aside {
+  @include flex(column, $gap: space(2.5));
+  display: none;
+  flex: 1 1 340px;
+  min-width: 0;
+
+  @include up(lg) {
+    display: flex;
+  }
+}
+
+.phone-only {
+  @include flex(column, $gap: space(2));
+
+  @include up(lg) {
+    display: none;
+  }
+}
+
+.desktop-only {
+  @include flex(column, $gap: space(2.5));
+  display: none;
+
+  @include up(lg) {
+    display: flex;
+  }
+}
+
+.section-head {
+  @include flex(row, $align: center, $justify: space-between);
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+.heading {
+  @include text(heading);
+  font-weight: $weight-extrabold;
+}
+
+.phone-resume {
+  align-self: flex-start;
+  padding-inline: 0;
+
+  @include up(lg) {
+    display: none;
+  }
+}
+
+// ---- Next stop card (forest)
+.next {
+  @include flex(column, $gap: space(3));
+  padding: 18px;
+  border-radius: $radius-xl;
+  background: $color-forest;
+  color: $color-white;
+
+  @include dark {
+    background: #1d3a30;
+  }
+}
+
+.next-head {
+  @include flex(row, $align: center, $justify: space-between);
+}
+
+.next-stop {
+  @include text(label);
+  font-weight: $weight-bold;
+  color: $color-lime;
+}
+
+.next-chip {
+  @include flex(row, $gap: space(1.5), $align: center);
+  @include text(tiny);
+  padding: space(1) space(2.5);
+  border-radius: $radius-full;
+  background: #2a5245;
+  font-weight: $weight-bold;
+  color: #e3ede7;
+}
+
+.next-dot {
+  @include square(7px);
+  border-radius: $radius-full;
+  background: $color-lime;
+}
+
+.next-titles {
+  @include flex(column, $gap: space(0.5));
+}
+
+.next-name {
+  @include text(title);
+  font-weight: $weight-extrabold;
+}
+
+.next-soft,
+.next-meta {
+  @include text(label);
+  color: #c9dbd1;
+}
+
+.next-meta {
+  font-weight: $weight-semibold;
+}
+
+.next-button {
+  @include flex(row, $gap: space(2), $align: center, $justify: center);
+  @include text(base);
+  height: 52px;
+  border-radius: $radius-md;
+  background: $color-lime;
+  font-weight: $weight-extrabold;
+  color: $color-forest;
+}
+
+// ---- Stop rows (phone)
+.rows {
+  @include flex(column, $gap: space(2));
+}
+
+.row {
+  @include surface;
+  @include flex(row, $gap: space(3), $align: center);
+  min-height: 64px;
+  padding: space(3) space(3.5);
+}
+
+.num {
+  @include center;
+  @include square(28px);
+  @include text(label);
+  flex-shrink: 0;
+  border-radius: $radius-sm;
+  background: $color-pending-soft;
+  font-weight: $weight-extrabold;
+  color: $color-pending-ink;
+}
+
+.num-active {
+  background: $color-lime-soft;
+  color: $color-forest;
+}
+
+.num-done {
+  background: $color-done-soft;
+  color: $color-done-ink;
+}
+
+.num-refused {
+  background: $color-refused-soft;
+  color: $color-refused-ink;
+}
+
+.num-closed {
+  background: $color-closed-soft;
+  color: $color-closed-ink;
+}
+
+.row-text {
+  @include flex(column);
+  flex: 1;
+  min-width: 0;
+}
+
+.row-name {
+  @include truncate;
+  font-weight: $weight-bold;
+}
+
+.row-lead {
+  @include truncate;
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: $weight-bold;
+  color: $color-ink-subtle;
+}
+
+// ---- Desktop table cells
+.cell-link {
+  @include flex(column);
+}
+
+.strong {
+  font-weight: $weight-bold;
+}
+
+.help {
+  @include text(tiny);
+  color: $color-ink-subtle;
+}
+
+.small,
+.muted {
+  @include text(label);
+}
+
+.muted {
+  color: $color-ink-subtle;
+}
+
+// ---- Floating "Agregar dirección" (phone)
+.fab {
+  position: fixed;
+  right: space(5);
+  bottom: calc(#{space(24)} + env(safe-area-inset-bottom));
+  z-index: 5;
+
+  @include up(lg) {
+    display: none;
+  }
+}
+
+.fab-button {
+  border-radius: $radius-full;
+  box-shadow: 0 6px 16px rgb(23 59 48 / 0.28);
+}

@@ -39,6 +39,12 @@ export function formatTime(iso: string) {
   return new Intl.DateTimeFormat('es-AR', { timeZone: AR_TIMEZONE, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(iso))
 }
 
+/** ISO timestamp → '17 h' or '17:30 h', as people say it. */
+export function formatHour(iso: string) {
+  const t = formatTime(iso)
+  return `${t.endsWith(':00') ? t.slice(0, -3) : t} h`
+}
+
 /** A given hour of a date in Argentina, as an ISO timestamp. */
 export function argentinaTime(date: string, hour: number) {
   return new Date(`${date}T${String(hour).padStart(2, '0')}:00:00-03:00`).toISOString()

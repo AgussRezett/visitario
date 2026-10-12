@@ -1,0 +1,61 @@
+@use '@/styles/abstracts' as *;
+
+.counter {
+  @include flex(row, $align: center, $justify: space-between);
+  @include text(label);
+  font-weight: $weight-bold;
+  color: $color-ink-subtle;
+}
+
+.list {
+  @include flex(column, $gap: space(2));
+}
+
+.option,
+.option-on {
+  @include flex(row, $gap: space(3), $align: center);
+  min-height: 56px;
+  padding: space(3.5);
+  border: 1.5px solid $color-line;
+  border-radius: 14px;
+  background: $color-card;
+  cursor: pointer;
+}
+
+.option-on {
+  border-color: $color-forest;
+  background: $color-lime-soft;
+
+  @include dark {
+    border-color: $color-lime;
+    background: $color-muted;
+  }
+}
+
+.check {
+  @include square(20px);
+  flex-shrink: 0;
+}
+
+.text {
+  @include flex(column, $gap: space(0.5));
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-weight: $weight-bold;
+}
+
+.meta {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.cancel {
+  display: none;
+
+  @include up(lg) {
+    display: inline-flex;
+  }
+}

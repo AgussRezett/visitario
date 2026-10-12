@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
-import { Link } from '@tanstack/react-router'
+import { Link, useMatches } from '@tanstack/react-router'
 import { UserRound } from 'lucide-react'
+import clsx from 'clsx'
 import { Logo } from '@/ui/Logo'
 import { Avatar } from '@/ui/Avatar'
 import { initials } from '@/lib/format'
@@ -24,6 +25,7 @@ export function AppShell({ me, active, children }: Props) {
   const name = `${me.person.firstName} ${me.person.lastName}`
   const short = initials(me.person.firstName, me.person.lastName)
   const mobileItems = active?.role === 'merchandiser' ? [...sections, null] : sections
+  const immersive = useMatches({ select: (matches) => matches.some((m) => m.staticData.immersive) })
 
   return (
     <div className={styles.shell}>
@@ -46,7 +48,7 @@ export function AppShell({ me, active, children }: Props) {
       </aside>
 
       <div className={styles.content}>
-        <header className={styles.mobileHeader}>
+        <header className={clsx(styles.mobileHeader, immersive && styles.phoneHidden)}>
           <Link to="/" aria-label="Inicio"><Logo /></Link>
           {active?.role === 'merchandiser' ? null : (
             <Link to="/profile" aria-label="Mi perfil">
@@ -54,9 +56,9 @@ export function AppShell({ me, active, children }: Props) {
             </Link>
           )}
         </header>
-        <main className={styles.main}>{children}</main>
+        <main className={clsx(styles.main, immersive && styles.mainImmersive)}>{children}</main>
         {mobileItems.length ? (
-          <nav aria-label="Secciones" className={styles.bottomNav} style={{ gridTemplateColumns: `repeat(${mobileItems.length}, minmax(0, 1fr))` }}>
+          <nav aria-label="Secciones" className={clsx(styles.bottomNav, immersive && styles.phoneHidden)} style={{ gridTemplateColumns: `repeat(${mobileItems.length}, minmax(0, 1fr))` }}>
             {mobileItems.map((s) =>
               s ? (
                 <Link key={s.slug} to="/s/$section" params={{ section: s.slug }} className={styles.tab} activeProps={activeProps}>

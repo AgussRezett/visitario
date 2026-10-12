@@ -1,0 +1,193 @@
+@use '@/styles/abstracts' as *;
+
+.head {
+  @include flex(column, $gap: space(0.5));
+}
+
+.eyebrow {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: $weight-bold;
+  color: $color-ink-subtle;
+
+  @include up(lg) {
+    @include eyebrow;
+  }
+}
+
+.title {
+  @include heading(display);
+}
+
+.lead {
+  max-width: 640px;
+  color: $color-ink-muted;
+}
+
+// ---- Two cards: resume and open
+.cards {
+  display: grid;
+  gap: space(3);
+
+  @include up(lg) {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: space(4);
+  }
+}
+
+.resume-card {
+  @include surface;
+  @include flex(row, $gap: space(3), $align: center);
+  padding: space(4);
+  text-align: left;
+}
+
+.resume-icon,
+.open-icon {
+  @include icon-tile(space(10));
+}
+
+.resume-icon {
+  background: $color-closed-soft;
+  color: $color-closed-ink;
+
+  @include dark {
+    color: $color-closed-ink;
+  }
+}
+
+.card-text {
+  @include flex(column);
+  flex: 1;
+  min-width: 0;
+}
+
+.card-title {
+  font-weight: $weight-bold;
+
+  @include up(lg) {
+    @include text(heading);
+    font-weight: $weight-extrabold;
+  }
+}
+
+.card-lead {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: $color-ink-subtle;
+}
+
+.open-card {
+  gap: space(3);
+}
+
+.open-icon {
+  display: none;
+
+  @include up(lg) {
+    display: flex;
+  }
+}
+
+.open-form {
+  @include flex(column, $gap: space(3));
+
+  @include up(lg) {
+    flex-direction: row;
+    align-items: flex-end;
+
+    > :first-child {
+      flex: 1;
+    }
+  }
+}
+
+.open-button {
+  @include up(lg) {
+    height: $control-height;
+  }
+}
+
+.help {
+  @include text(tiny);
+  color: $color-ink-subtle;
+}
+
+// ---- Previous days: list on phones, table on desktop
+.history {
+  @include flex(column, $gap: space(2.5));
+  padding-bottom: space(6);
+}
+
+.history-title {
+  @include eyebrow;
+
+  @include up(lg) {
+    @include text(heading);
+    font-weight: $weight-extrabold;
+    text-transform: none;
+    letter-spacing: normal;
+    color: $color-ink;
+  }
+}
+
+.rows {
+  @include flex(column, $gap: space(2));
+
+  @include up(lg) {
+    display: none;
+  }
+}
+
+.row {
+  @include surface;
+  @include flex(row, $gap: space(3), $align: center);
+  width: 100%;
+  min-height: 64px;
+  padding: space(3) space(3.5);
+  text-align: left;
+}
+
+.row-text {
+  @include flex(column);
+  flex: 1;
+  min-width: 0;
+}
+
+.row-title {
+  font-weight: $weight-bold;
+}
+
+.row-lead {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.pending-pill {
+  @include text(tiny);
+  padding: space(1) space(2.5);
+  border-radius: $radius-full;
+  background: $color-closed;
+  font-weight: $weight-extrabold;
+  color: $color-white;
+}
+
+.desktop-table {
+  display: none;
+
+  @include up(lg) {
+    display: block;
+  }
+}
+
+.strong {
+  font-weight: $weight-bold;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}

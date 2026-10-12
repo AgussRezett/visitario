@@ -17,6 +17,9 @@ import { Route as SignupRouteImport } from './../routes/signup'
 import { Route as WelcomeRouteImport } from './../routes/welcome'
 import { Route as AppProfileRouteImport } from './../routes/_app/profile'
 import { Route as AppSSectionRouteImport } from './../routes/_app/s.$section'
+import { Route as AppSReportRouteImport } from './../routes/_app/s.report'
+import { Route as AppSWorkdayRouteImport } from './../routes/_app/s.workday'
+import { Route as AppVisitVisitIdRouteImport } from './../routes/_app/visit.$visitId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -57,6 +60,21 @@ const AppSSectionRoute = AppSSectionRouteImport.update({
   path: '/s/$section',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSReportRoute = AppSReportRouteImport.update({
+  id: '/s/report',
+  path: '/s/report',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSWorkdayRoute = AppSWorkdayRouteImport.update({
+  id: '/s/workday',
+  path: '/s/workday',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppVisitVisitIdRoute = AppVisitVisitIdRouteImport.update({
+  id: '/visit/$visitId',
+  path: '/visit/$visitId',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -66,6 +84,9 @@ export interface FileRoutesByFullPath {
   '/welcome': typeof WelcomeRoute
   '/profile': typeof AppProfileRoute
   '/s/$section': typeof AppSSectionRoute
+  '/s/report': typeof AppSReportRoute
+  '/s/workday': typeof AppSWorkdayRoute
+  '/visit/$visitId': typeof AppVisitVisitIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -75,6 +96,9 @@ export interface FileRoutesByTo {
   '/welcome': typeof WelcomeRoute
   '/profile': typeof AppProfileRoute
   '/s/$section': typeof AppSSectionRoute
+  '/s/report': typeof AppSReportRoute
+  '/s/workday': typeof AppSWorkdayRoute
+  '/visit/$visitId': typeof AppVisitVisitIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -86,6 +110,9 @@ export interface FileRoutesById {
   '/welcome': typeof WelcomeRoute
   '/_app/profile': typeof AppProfileRoute
   '/_app/s/$section': typeof AppSSectionRoute
+  '/_app/s/report': typeof AppSReportRoute
+  '/_app/s/workday': typeof AppSWorkdayRoute
+  '/_app/visit/$visitId': typeof AppVisitVisitIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,6 +124,9 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/profile'
     | '/s/$section'
+    | '/s/report'
+    | '/s/workday'
+    | '/visit/$visitId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -106,6 +136,9 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/profile'
     | '/s/$section'
+    | '/s/report'
+    | '/s/workday'
+    | '/visit/$visitId'
   id:
     | '__root__'
     | '/'
@@ -116,6 +149,9 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/_app/profile'
     | '/_app/s/$section'
+    | '/_app/s/report'
+    | '/_app/s/workday'
+    | '/_app/visit/$visitId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -185,17 +221,44 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSSectionRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/s/report': {
+      id: '/_app/s/report'
+      path: '/s/report'
+      fullPath: '/s/report'
+      preLoaderRoute: typeof AppSReportRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/s/workday': {
+      id: '/_app/s/workday'
+      path: '/s/workday'
+      fullPath: '/s/workday'
+      preLoaderRoute: typeof AppSWorkdayRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/visit/$visitId': {
+      id: '/_app/visit/$visitId'
+      path: '/visit/$visitId'
+      fullPath: '/visit/$visitId'
+      preLoaderRoute: typeof AppVisitVisitIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
   AppProfileRoute: typeof AppProfileRoute
   AppSSectionRoute: typeof AppSSectionRoute
+  AppSReportRoute: typeof AppSReportRoute
+  AppSWorkdayRoute: typeof AppSWorkdayRoute
+  AppVisitVisitIdRoute: typeof AppVisitVisitIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppProfileRoute: AppProfileRoute,
   AppSSectionRoute: AppSSectionRoute,
+  AppSReportRoute: AppSReportRoute,
+  AppSWorkdayRoute: AppSWorkdayRoute,
+  AppVisitVisitIdRoute: AppVisitVisitIdRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
