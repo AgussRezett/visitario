@@ -17,6 +17,8 @@ export interface FakeState {
   uploads: { bytes: Buffer; meta: Row }[]
   /** Defaults to one Panda merchandiser membership. */
   memberships?: Row[]
+  /** Simulates a slow connection when loading a day. */
+  workdayDelayMs?: number
   /** Simulates a slow connection for photo uploads. */
   uploadDelayMs?: number
 }
@@ -77,7 +79,9 @@ export async function installFakeSupabase(page: Page, state: FakeState) {
     if (path.endsWith('/rpc/resumable_visits') || path.endsWith('/rpc/search_stores')) return json([])
     if (path.endsWith('/workday')) {
       if (url.searchParams.get('select') === 'id, work_date') return json(state.workday ? [{ id: 'w1', work_date: state.workday.work_date }] : [])
-      return json(state.workday ? [state.workday] : [])
+      const wanted = url.searchParams.get('work_date')?.replace('eq.', '')
+      if (state.workdayDelayMs && wanted) await new Promise((resolve) => setTimeout(resolve, state.workdayDelayMs))
+      return json(state.workday && (!wanted || wanted === state.workday.work_date) ? [state.workday] : [])
     }
     if (path.endsWith('/visit')) {
       const id = url.searchParams.get('id')?.replace('eq.', '')

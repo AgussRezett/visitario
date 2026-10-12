@@ -136,3 +136,31 @@ test('photos never make the merchandiser wait: the visit goes on while they uplo
   expect(state.uploads).toHaveLength(1)
   expect(state.visits[0]?.work_status).toBe('done')
 })
+
+test('changing the date keeps the header; days of the week are instant, others keep the day until they arrive', async ({ page }) => {
+  const state: FakeState = {
+    workday: { id: 'w1', company_id: 'c1', work_date: DATE, status: 'published', created_by: 'p1' },
+    visits: [visitRow('v1', 0, 'Tres Arroyos 762')],
+    uploads: [],
+  }
+  await installFakeSupabase(page, state)
+  await page.goto(`/s/workday?date=${DATE}`)
+  await expect(page.getByText('Tres Arroyos 762').first()).toBeVisible()
+  const greeting = await page.getByRole('heading', { level: 1 }).elementHandle()
+  await page.waitForLoadState('networkidle') // the week is prefetched
+  state.workdayDelayMs = 1_500
+
+  // Same week: already loaded, no wait.
+  const week = page.getByRole('navigation', { name: 'Días de la semana' })
+  await week.getByRole('button', { name: /^martes 13 de octubre/i }).click()
+  await expect(page.getByText('Todavía no hay jornada para este día')).toBeVisible({ timeout: 500 })
+  await week.getByRole('button', { name: /^lunes 12 de octubre/i }).click()
+  await expect(page.getByText('Tres Arroyos 762').first()).toBeVisible({ timeout: 500 })
+
+  // Another week: the new date shows at once and the current day stays, busy, until it arrives.
+  await week.getByRole('button', { name: 'Semana siguiente' }).click()
+  await expect(page.getByText(/lunes 19 de octubre/i).first()).toBeVisible({ timeout: 500 })
+  await expect(page.locator('[aria-busy="true"]').getByText('Tres Arroyos 762').first()).toBeAttached()
+  await expect(page.getByText('Todavía no hay jornada para este día')).toBeVisible({ timeout: 5_000 })
+  expect(await greeting?.evaluate((el) => el.isConnected)).toBe(true)
+})
