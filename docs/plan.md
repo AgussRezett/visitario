@@ -34,4 +34,14 @@
 - [x] Ninguna foto guarda ubicación: se re-codifica sin metadatos (e2e).
 - [ ] Probado con fotos reales en R2 y en un celular real (falta cargar las claves de R2).
 
+## Etapa 2 · criterios de aceptación
+- [x] Sin señal se marca la llegada, se cargan fotos, autorización, exhibiciones, trabajo y se termina la visita (e2e).
+- [x] Al volver la señal todo llega al servidor en orden: la foto de fachada antes que el cierre de la visita (e2e).
+- [x] Los cambios pendientes sobreviven a cerrar la app y salen al volver a abrirla (e2e).
+- [x] Reenviar un cambio no duplica nada: ids del celular y upserts (test contra PostgREST real).
+- [x] Un cambio rechazado por el servidor queda marcado y se puede reintentar o descartar (e2e).
+- [x] El indicador muestra sin señal, enviando, sin guardar y todo guardado (A06 / AD07).
+- [x] Abrir jornada, agregar direcciones y retomar avisan que necesitan señal.
+- [ ] Probado en la calle con un celular real (modo avión a mitad de una visita).
+
 Fuera de esta versión: migración del MVP, exportar informes, reportes con diseño, push, cobro automático, acceso para marcas.
