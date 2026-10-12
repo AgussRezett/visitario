@@ -79,6 +79,11 @@
   }
 }
 
+.header-end {
+  @include flex(row, $gap: space(2.5), $align: center);
+  min-width: 0;
+}
+
 .main {
   @include flex(column);
   flex: 1;
