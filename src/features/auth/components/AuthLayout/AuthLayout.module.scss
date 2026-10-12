@@ -1,0 +1,84 @@
+@use '@/styles/abstracts' as *;
+
+// Phones: one column. Desktop: brand panel on the left, form on the right.
+.layout {
+  @include flex(column);
+  min-height: 100dvh;
+
+  @include up(lg) {
+    flex-direction: row;
+  }
+}
+
+// ---- Brand panel (desktop only)
+.brand {
+  @include flex(column, $gap: space(8), $justify: space-between);
+  display: none;
+  padding: space(14) space(12);
+  background: $color-forest;
+  color: $color-white;
+
+  @include up(lg) {
+    display: flex;
+    width: 42%;
+  }
+}
+
+.pitch {
+  @include flex(column, $gap: space(5));
+  max-width: 448px;
+}
+
+.headline {
+  font-size: 34px;
+  line-height: 40px;
+  font-weight: $weight-extrabold;
+  letter-spacing: $tracking-tight;
+}
+
+.points {
+  @include flex(column, $gap: space(3));
+  color: $color-on-forest-muted;
+}
+
+.point {
+  @include flex(row, $gap: space(2.5), $align: center);
+}
+
+.check {
+  @include center;
+  @include square(space(6));
+  flex-shrink: 0;
+  border-radius: $radius-sm;
+  background: $color-lime;
+  color: $color-forest;
+}
+
+.footnote {
+  @include text(label);
+  color: $color-on-forest-subtle;
+}
+
+// ---- Form column
+.main {
+  @include flex(row, $justify: center);
+  flex: 1;
+  padding: space(10) space(5);
+
+  @include up(lg) {
+    align-items: center;
+    padding-inline: space(6);
+  }
+}
+
+.column {
+  @include flex(column, $gap: space(4));
+  width: 100%;
+  max-width: $auth-form-width;
+}
+
+.mobile-logo {
+  @include up(lg) {
+    display: none;
+  }
+}

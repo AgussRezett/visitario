@@ -1,0 +1,27 @@
+@use '@/styles/abstracts' as *;
+
+@layer ui {
+  .group {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: space(1);
+    padding: space(1);
+    border-radius: $radius-md;
+    background: $color-muted;
+  }
+
+  .option {
+    @include text(label);
+    height: space(10);
+    border-radius: $radius-sm;
+    font-weight: $weight-bold;
+    color: $color-ink-muted;
+
+    &[aria-checked='true'] {
+      background: $color-card;
+      color: $color-ink;
+      box-shadow: $shadow-raised;
+    }
+  }
+}

@@ -11,15 +11,16 @@ import { Card } from '@/ui/Card'
 import { Segmented } from '@/ui/Segmented'
 import { signOut } from '@/features/auth/api'
 import type { Me } from '@/features/auth/me'
+import { Invitations } from '@/features/profile/components/Invitations'
+import { getThemeChoice, setThemeChoice, type ThemeChoice } from '@/features/profile/theme'
 import { EditNameForm } from './EditNameForm'
-import { Invitations } from './Invitations'
 import { SecurityCard } from './SecurityCard'
-import { getThemeChoice, setThemeChoice, type ThemeChoice } from './theme'
+import styles from './ProfilePage.module.scss'
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="flex flex-col gap-2">
-      <h2 className="eyebrow">{title}</h2>
+    <section className={styles.section}>
+      <h2 className={styles.sectionTitle}>{title}</h2>
       {children}
     </section>
   )
@@ -41,50 +42,50 @@ export function ProfilePage({ me }: { me: Me & { person: NonNullable<Me['person'
   const name = `${p.firstName} ${p.lastName}`
 
   return (
-    <div className="flex flex-col gap-5 px-5 pt-4 lg:px-8 lg:pt-8">
-      <div className="flex items-center gap-4">
+    <div className={styles.page}>
+      <div className={styles.header}>
         <Avatar name={initials(p.firstName, p.lastName)} size={56} />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <p className="eyebrow hidden lg:block">Mi perfil</p>
-          <h1 className="truncate text-title font-extrabold lg:text-display">{name}</h1>
-          <p className="text-label text-ink-subtle">
+        <div className={styles.identity}>
+          <p className={styles.eyebrow}>Mi perfil</p>
+          <h1 className={styles.name}>{name}</h1>
+          <p className={styles.meta}>
             DNI {formatDni(p.dni)}
             {p.phone ? ` · ${formatPhone(p.phone)}` : ''}
-            {me.email ? <span className="hidden lg:inline"> · {me.email}</span> : null}
+            {me.email ? <span className={styles.desktopOnly}> · {me.email}</span> : null}
           </p>
         </div>
         {!editing ? (
           <Button variant="secondary" size="sm" onClick={() => setEditing(true)} aria-label="Editar mis datos">
             <Pencil size={16} aria-hidden />
-            <span className="hidden sm:inline">Editar</span>
+            <span className={styles.editLabel}>Editar</span>
           </Button>
         ) : null}
       </div>
       {editing ? <Card><EditNameForm personId={p.id} defaults={{ firstName: p.firstName, lastName: p.lastName }} onDone={() => setEditing(false)} /></Card> : null}
 
-      <div className="grid items-start gap-5 lg:grid-cols-2">
-        <div className="flex flex-col gap-5">
+      <div className={styles.columns}>
+        <div className={styles.column}>
           <Section title="Mis empresas y roles">
             {me.memberships.length ? (
-              <Card className="gap-0 py-1">
-                {me.memberships.map((m, i) => (
-                  <div key={m.companyId} className={`flex min-h-15 items-center gap-3 py-3 ${i < me.memberships.length - 1 ? 'border-b border-line' : ''}`}>
-                    <Building2 size={20} className="shrink-0 text-ink-subtle" aria-hidden />
-                    <div className="flex min-w-0 flex-1 flex-col">
-                      <span className="text-label font-bold">{m.companyName}</span>
-                      <span className="text-label text-ink-subtle">{m.roles.map((r) => ROLE_LABEL[r]).join(' · ')}</span>
+              <Card className={styles.list}>
+                {me.memberships.map((m) => (
+                  <div key={m.companyId} className={styles.company}>
+                    <Building2 size={20} className={styles.companyIcon} aria-hidden />
+                    <div className={styles.companyText}>
+                      <span className={styles.companyName}>{m.companyName}</span>
+                      <span className={styles.companyRoles}>{m.roles.map((r) => ROLE_LABEL[r]).join(' · ')}</span>
                     </div>
-                    <span className="rounded-full bg-done-soft px-2.5 py-1 text-xs font-bold text-done-ink">Activa</span>
+                    <span className={styles.badge}>Activa</span>
                   </div>
                 ))}
               </Card>
             ) : (
-              <p className="text-label text-ink-subtle">Todavía no pertenecés a ninguna empresa.</p>
+              <p className={styles.empty}>Todavía no pertenecés a ninguna empresa.</p>
             )}
             <Invitations invitations={me.invitations} />
           </Section>
         </div>
-        <div className="flex flex-col gap-5">
+        <div className={styles.column}>
           <Section title="Seguridad">
             <SecurityCard me={me} />
           </Section>
@@ -103,7 +104,7 @@ export function ProfilePage({ me }: { me: Me & { person: NonNullable<Me['person'
               ]}
             />
           </Section>
-          <div className="flex flex-col gap-2 sm:flex-row">
+          <div className={styles.actions}>
             <Button
               variant="danger"
               size="md"

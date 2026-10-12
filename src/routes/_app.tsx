@@ -1,7 +1,7 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
 import { meQuery, useMe } from '@/features/auth/me'
 import { useActiveRole } from '@/features/auth/active-role'
-import { AppShell } from '@/features/shell/AppShell'
+import { AppShell } from '@/features/shell/components/AppShell'
 import { FullScreenSpinner } from '@/ui/Spinner'
 
 // Signed-in area: requires a session and a completed identity.

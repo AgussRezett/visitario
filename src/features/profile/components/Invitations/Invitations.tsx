@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { ROLE_LABEL } from '@/domain/roles'
 import { Button } from '@/ui/Button'
 import type { Invitation } from '@/features/auth/me'
+import styles from './Invitations.module.scss'
 
 function formatDate(iso: string) {
   const [y, m, d] = iso.split('-')
@@ -23,13 +24,13 @@ export function Invitations({ invitations }: { invitations: Invitation[] }) {
   }
 
   return invitations.map((inv) => (
-    <div key={inv.membershipId} className="flex gap-3 rounded-md bg-active-soft px-3.5 py-3 text-active-ink">
-      <Mail size={20} className="mt-0.5 shrink-0" aria-hidden />
-      <div className="flex flex-col gap-2">
-        <p className="text-label font-semibold">
-          <span className="font-extrabold">{inv.companyName} te invitó</span> como {inv.roles.map((r) => ROLE_LABEL[r].toLowerCase()).join(' y ')} desde el {formatDate(inv.startsOn)}.
+    <div key={inv.membershipId} className={styles.invitation}>
+      <Mail size={20} className={styles.icon} aria-hidden />
+      <div className={styles.content}>
+        <p className={styles.text}>
+          <span className={styles.company}>{inv.companyName} te invitó</span> como {inv.roles.map((r) => ROLE_LABEL[r].toLowerCase()).join(' y ')} desde el {formatDate(inv.startsOn)}.
         </p>
-        <div className="flex gap-2">
+        <div className={styles.buttons}>
           <Button size="sm" loading={busy === inv.membershipId} onClick={() => respond(inv.membershipId, true)}>Aceptar</Button>
           <Button size="sm" variant="secondary" disabled={busy === inv.membershipId} onClick={() => respond(inv.membershipId, false)}>Rechazar</Button>
         </div>

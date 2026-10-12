@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Button } from '@/ui/Button'
-import { signInWithGoogle } from './api'
+import { signInWithGoogle } from '@/features/auth/api'
 
 function GoogleMark() {
   return (

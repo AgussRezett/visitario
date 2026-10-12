@@ -1,0 +1,23 @@
+@use '@/styles/abstracts' as *;
+
+@include keyframes-spin;
+
+@layer ui {
+  .screen {
+    @include center;
+    min-height: 100dvh;
+  }
+
+  .ring {
+    @include spinner-ring(space(8), 3px);
+    color: $color-forest;
+
+    @include dark {
+      color: $color-lime;
+    }
+  }
+
+  .sr-only {
+    @include visually-hidden;
+  }
+}

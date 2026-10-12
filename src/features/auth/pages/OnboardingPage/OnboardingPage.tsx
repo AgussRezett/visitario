@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import clsx from 'clsx'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -11,11 +12,12 @@ import { Field } from '@/ui/Field'
 import { Banner } from '@/ui/Banner'
 import { Card } from '@/ui/Card'
 import { Logo } from '@/ui/Logo'
-import { useMe } from './me'
-import { setPassword } from './api'
-import { passwordSchema } from './schemas'
-import { identityErrorMessage } from './identity-errors'
+import { useMe } from '@/features/auth/me'
+import { setPassword } from '@/features/auth/api'
+import { passwordSchema } from '@/features/auth/schemas'
+import { identityErrorMessage } from '@/features/auth/identity-errors'
 import { PermissionsStep } from './PermissionsStep'
+import styles from './OnboardingPage.module.scss'
 
 function buildSchema(needsPassword: boolean) {
   return z.object({
@@ -58,26 +60,26 @@ export function OnboardingPage() {
   })
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-[760px] flex-col gap-6 px-5 py-8 lg:py-12">
-      <div className="flex items-center justify-between">
+    <div className={styles.page}>
+      <div className={styles.top}>
         <Logo />
-        <span className="text-label font-bold text-ink-subtle">Paso {step === 'identity' ? 1 : 2} de 2</span>
+        <span className={styles.step}>Paso {step === 'identity' ? 1 : 2} de 2</span>
       </div>
-      <div className="grid grid-cols-2 gap-1.5" aria-hidden>
-        <span className="h-1.5 rounded-full bg-forest dark:bg-lime" />
-        <span className={step === 'permissions' ? 'h-1.5 rounded-full bg-forest dark:bg-lime' : 'h-1.5 rounded-full bg-line'} />
+      <div className={styles.progress} aria-hidden>
+        <span className={clsx(styles.segment, styles.segmentDone)} />
+        <span className={clsx(styles.segment, step === 'permissions' && styles.segmentDone)} />
       </div>
 
       {step === 'permissions' ? (
         <PermissionsStep onDone={() => navigate({ to: '/' })} />
       ) : (
         <>
-          <div className="flex flex-col gap-1">
-            <h1 className="text-display font-extrabold tracking-tight">Validá tu identidad</h1>
-            <p className="text-ink-muted">Tus datos quedan en tu perfil de Visitario y te acompañan si cambiás de empresa.</p>
+          <div className={styles.intro}>
+            <h1 className={styles.title}>Validá tu identidad</h1>
+            <p className={styles.lead}>Tus datos quedan en tu perfil de Visitario y te acompañan si cambiás de empresa.</p>
           </div>
-          <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
-            <Card className="gap-4 p-5 lg:grid lg:grid-cols-2">
+          <form onSubmit={onSubmit} noValidate className={styles.form}>
+            <Card className={styles.fields}>
               <Field label="DNI" inputMode="numeric" autoComplete="off" error={formState.errors.dni?.message} {...register('dni')} />
               <Field label="Fecha de nacimiento" type="date" error={formState.errors.birthDate?.message} {...register('birthDate')} />
               <Field label="Nombre" autoComplete="given-name" error={formState.errors.firstName?.message} {...register('firstName')} />
@@ -95,9 +97,9 @@ export function OnboardingPage() {
                 />
               ) : null}
             </Card>
-            <p className="text-label text-ink-subtle">Las empresas no ven tu trabajo con otras empresas. Tu DNI y tu celular solo los ves vos.</p>
+            <p className={styles.privacy}>Las empresas no ven tu trabajo con otras empresas. Tu DNI y tu celular solo los ves vos.</p>
             {error ? <Banner tone="error">{error}</Banner> : null}
-            <Button type="submit" loading={formState.isSubmitting} className="lg:self-end lg:px-10">
+            <Button type="submit" loading={formState.isSubmitting} className={styles.submit}>
               Continuar
             </Button>
           </form>

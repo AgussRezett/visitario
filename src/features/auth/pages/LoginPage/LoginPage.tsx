@@ -7,9 +7,11 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/ui/Button'
 import { Field } from '@/ui/Field'
 import { Banner } from '@/ui/Banner'
-import { AuthLayout } from './AuthLayout'
-import { GoogleButton } from './GoogleButton'
-import { AuthError, sendPasswordReset, signIn } from './api'
+import { AuthLayout } from '@/features/auth/components/AuthLayout'
+import { GoogleButton } from '@/features/auth/components/GoogleButton'
+import { OrDivider } from '@/features/auth/components/OrDivider'
+import { AuthError, sendPasswordReset, signIn } from '@/features/auth/api'
+import styles from './LoginPage.module.scss'
 
 const schema = z.object({
   identifier: z.string().trim().min(1, 'Ingresá tu DNI o email'),
@@ -37,12 +39,10 @@ export function LoginPage() {
 
   return (
     <AuthLayout>
-      <h1 className="text-display font-extrabold tracking-tight">Entrar</h1>
+      <h1 className={styles.title}>Entrar</h1>
       <GoogleButton />
-      <div className="flex items-center gap-3 text-label text-ink-subtle">
-        <span className="h-px flex-1 bg-line" />o con tu DNI<span className="h-px flex-1 bg-line" />
-      </div>
-      <form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate>
+      <OrDivider label="o con tu DNI" />
+      <form className={styles.form} onSubmit={onSubmit} noValidate>
         <Field label="DNI o email" autoComplete="username" inputMode="text" error={formState.errors.identifier?.message} {...register('identifier')} />
         <Field label="Contraseña" type="password" autoComplete="current-password" error={formState.errors.password?.message} {...register('password')} />
         {error ? <Banner tone="error">{error}</Banner> : null}
@@ -54,7 +54,7 @@ export function LoginPage() {
       <Button
         variant="ghost"
         size="md"
-        className="self-center"
+        className={styles.forgot}
         onClick={async () => {
           const id = getValues('identifier')
           if (!id?.includes('@')) {
@@ -69,10 +69,10 @@ export function LoginPage() {
       >
         Olvidé mi contraseña
       </Button>
-      <Link to="/signup" className="flex h-11 items-center justify-center rounded-md border-[1.5px] border-control font-extrabold text-ink no-underline">
+      <Link to="/signup" className={styles.signUp}>
         Crear cuenta o aceptar invitación
       </Link>
-      <p className="text-center text-label text-ink-subtle">Al entrar vas a la vista de tu rol: jornada, tablero o administración.</p>
+      <p className={styles.hint}>Al entrar vas a la vista de tu rol: jornada, tablero o administración.</p>
     </AuthLayout>
   )
 }

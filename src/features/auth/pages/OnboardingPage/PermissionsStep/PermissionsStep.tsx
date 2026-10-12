@@ -2,16 +2,17 @@ import { useState } from 'react'
 import { Camera, Download, LocateFixed } from 'lucide-react'
 import { Button } from '@/ui/Button'
 import { Card } from '@/ui/Card'
+import styles from './PermissionsStep.module.scss'
 
 type State = 'idle' | 'granted' | 'denied'
 
 function Row({ icon, title, text, action }: { icon: React.ReactNode; title: string; text: string; action: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-3">
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-muted text-forest dark:text-lime">{icon}</span>
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="font-bold">{title}</span>
-        <span className="text-label text-ink-muted">{text}</span>
+    <div className={styles.row}>
+      <span className={styles.icon}>{icon}</span>
+      <span className={styles.text}>
+        <span className={styles.rowTitle}>{title}</span>
+        <span className={styles.rowText}>{text}</span>
       </span>
       {action}
     </div>
@@ -46,18 +47,18 @@ export function PermissionsStep({ onDone }: { onDone: () => void }) {
 
   const action = (s: State, onClick: () => void) =>
     stateLabel(s) ? (
-      <span className="text-label font-bold text-done-ink">{stateLabel(s)}</span>
+      <span className={styles.granted}>{stateLabel(s)}</span>
     ) : (
       <Button variant="secondary" size="sm" onClick={onClick}>Permitir</Button>
     )
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-display font-extrabold tracking-tight">Dejemos todo listo</h1>
-        <p className="text-ink-muted">Lo hacés una sola vez. Podés cambiarlo cuando quieras desde tu perfil.</p>
+    <div className={styles.step}>
+      <div className={styles.intro}>
+        <h1 className={styles.title}>Dejemos todo listo</h1>
+        <p className={styles.lead}>Lo hacés una sola vez. Podés cambiarlo cuando quieras desde tu perfil.</p>
       </div>
-      <Card className="gap-4 p-5">
+      <Card className={styles.card}>
         <Row icon={<Camera size={20} aria-hidden />} title="Cámara" text="Para la fachada, el antes y el después." action={action(camera, askCamera)} />
         <Row icon={<LocateFixed size={20} aria-hidden />} title="Ubicación (opcional)" text="Solo para armar el recorrido desde donde estás. Nunca en segundo plano." action={action(location, askLocation)} />
         <Row
@@ -67,8 +68,8 @@ export function PermissionsStep({ onDone }: { onDone: () => void }) {
           action={null}
         />
       </Card>
-      <div className="flex flex-col gap-2 lg:flex-row lg:justify-end">
-        <Button onClick={onDone} className="lg:px-10">Empezar</Button>
+      <div className={styles.actions}>
+        <Button onClick={onDone} className={styles.start}>Empezar</Button>
       </div>
     </div>
   )

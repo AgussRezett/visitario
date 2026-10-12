@@ -1,0 +1,56 @@
+@use '@/styles/abstracts' as *;
+
+.card {
+  gap: 0;
+  padding-block: space(1);
+}
+
+// Each row: icon, title and status, action
+.row {
+  @include flex(row, $gap: space(3), $align: center);
+  min-height: space(15);
+  padding-block: space(3);
+}
+
+.divided {
+  border-bottom: 1px solid $color-line;
+}
+
+.icon {
+  flex-shrink: 0;
+  color: $color-ink-subtle;
+}
+
+.text {
+  @include flex(column);
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  @include text(label);
+  font-weight: $weight-bold;
+}
+
+.status {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.status-truncate {
+  @include truncate;
+}
+
+.form {
+  @include flex(column, $gap: space(3));
+  padding-block: space(3);
+  border-bottom: 1px solid $color-line;
+}
+
+.buttons {
+  @include flex(row, $gap: space(2));
+}
+
+.notice {
+  padding-block: space(3);
+}

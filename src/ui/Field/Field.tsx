@@ -1,5 +1,6 @@
 import { forwardRef, useId, type InputHTMLAttributes, type ReactNode } from 'react'
-import { cn } from '@/lib/cn'
+import clsx from 'clsx'
+import styles from './Field.module.scss'
 
 export interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string
@@ -17,32 +18,27 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(function Field(
   const inputId = id ?? autoId
   const describedBy = error ? `${inputId}-error` : help ? `${inputId}-help` : undefined
   return (
-    <div className="flex flex-col gap-1.5">
-      <label htmlFor={inputId} className="text-label font-bold text-ink">
+    <div className={styles.field}>
+      <label htmlFor={inputId} className={styles.label}>
         {label}
       </label>
-      <div className="flex items-center gap-2">
+      <div className={styles.row}>
         <input
           ref={ref}
           id={inputId}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy}
-          className={cn(
-            'h-12 w-full min-w-0 rounded-md border-[1.5px] border-control bg-card px-3.5 text-base text-ink',
-            'placeholder:text-ink-subtle read-only:bg-muted',
-            error && 'border-refused',
-            className,
-          )}
+          className={clsx(styles.input, error && styles.invalid, className)}
           {...props}
         />
         {trailing}
       </div>
       {error ? (
-        <p id={`${inputId}-error`} className="text-label font-semibold text-refused-ink">
+        <p id={`${inputId}-error`} className={styles.error}>
           {error}
         </p>
       ) : help ? (
-        <p id={`${inputId}-help`} className="text-label text-ink-subtle">
+        <p id={`${inputId}-help`} className={styles.help}>
           {help}
         </p>
       ) : null}

@@ -1,0 +1,14 @@
+@use '@/styles/abstracts' as *;
+
+@layer ui {
+  // Size comes from the `size` prop (inline width, height and font size).
+  .avatar {
+    @include center;
+    display: inline-flex;
+    flex-shrink: 0;
+    border-radius: $radius-full;
+    background: $color-forest;
+    color: $color-white;
+    font-weight: $weight-extrabold;
+  }
+}

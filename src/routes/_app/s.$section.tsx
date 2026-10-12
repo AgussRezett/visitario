@@ -1,6 +1,6 @@
 import { createFileRoute, notFound } from '@tanstack/react-router'
 import { findSection } from '@/features/shell/sections'
-import { ComingSoon } from '@/features/shell/ComingSoon'
+import { ComingSoonPage } from '@/features/shell/pages/ComingSoonPage'
 
 export const Route = createFileRoute('/_app/s/$section')({
   loader: ({ params }) => {
@@ -9,6 +9,6 @@ export const Route = createFileRoute('/_app/s/$section')({
     return section
   },
   component: function SectionPage() {
-    return <ComingSoon section={Route.useLoaderData()} />
+    return <ComingSoonPage section={Route.useLoaderData()} />
   },
 })

@@ -1,0 +1,14 @@
+@use '@/styles/abstracts' as *;
+
+// "——— o con tu DNI ———" between Google and the form.
+.divider {
+  @include flex(row, $gap: space(3), $align: center);
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.line {
+  flex: 1;
+  height: 1px;
+  background: $color-line;
+}

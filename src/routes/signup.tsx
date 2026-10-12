@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { SignUpPage } from '@/features/auth/SignUpPage'
+import { SignUpPage } from '@/features/auth/pages/SignUpPage'
 import { meQuery } from '@/features/auth/me'
 
 export const Route = createFileRoute('/signup')({
