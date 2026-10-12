@@ -1,3 +1,4 @@
+@use 'sass:list';
 @use 'sass:map';
 @use 'tokens' as *;
 
@@ -21,8 +22,8 @@ $type-scale: (
   @if not $pair {
     @error 'Unknown text size `#{$name}`. Use one of: #{map.keys($type-scale)}';
   }
-  font-size: nth($pair, 1);
-  line-height: nth($pair, 2);
+  font-size: list.nth($pair, 1);
+  line-height: list.nth($pair, 2);
 }
 
 /// Page or card heading in extra bold with tight tracking.
