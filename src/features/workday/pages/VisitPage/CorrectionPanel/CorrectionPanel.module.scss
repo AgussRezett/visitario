@@ -1,0 +1,57 @@
+@use '@/styles/abstracts' as *;
+
+.panel {
+  @include surface;
+  @include flex(column, $gap: space(3));
+  padding: space(4);
+
+  &[data-fixing] {
+    border: 1.5px solid $color-fix;
+  }
+}
+
+.head {
+  @include flex(row, $gap: space(3), $align: flex-start);
+}
+
+.icon {
+  @include icon-tile(space(10));
+  background: $color-fix-soft;
+  color: $color-fix-ink;
+
+  @include dark {
+    color: $color-fix-ink;
+  }
+}
+
+.titles {
+  @include flex(column, $gap: space(0.5));
+}
+
+.title {
+  font-weight: $weight-extrabold;
+}
+
+.sub {
+  @include text(label);
+  color: $color-ink-muted;
+}
+
+.heading {
+  @include heading(heading);
+}
+
+.resubmit {
+  align-self: stretch;
+
+  @include up(lg) {
+    align-self: flex-end;
+  }
+}
+
+.sent {
+  @include flex(row, $gap: space(2), $align: center);
+  @include text(label);
+  font-weight: $weight-bold;
+  color: $color-done-ink;
+}

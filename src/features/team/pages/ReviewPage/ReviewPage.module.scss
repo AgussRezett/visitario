@@ -1,0 +1,108 @@
+@use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(3));
+  padding: space(4) space(5) space(6);
+
+  @include up(lg) {
+    gap: space(4);
+    padding: space(6) space(8);
+  }
+}
+
+.top {
+  @include flex(row, $align: flex-end, $justify: space-between);
+}
+
+.titles {
+  @include flex(column, $gap: space(0.5));
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+.title {
+  @include heading(title);
+
+  @include up(lg) {
+    @include heading(display);
+  }
+}
+
+// Desktop: list | selected visit
+.split {
+  @include flex(column, $gap: space(4));
+
+  @include up(lg) {
+    display: grid;
+    grid-template-columns: 320px minmax(0, 1fr);
+    align-items: start;
+    gap: space(5);
+  }
+}
+
+.list-column,
+.detail-column {
+  min-width: 0;
+}
+
+.list {
+  @include flex(column, $gap: space(2));
+}
+
+.skeletons {
+  @include flex(column, $gap: space(2));
+}
+
+.row {
+  @include surface;
+  @include flex(row, $gap: space(3), $align: center);
+  @include transition-colors;
+  padding: space(2.5) space(3);
+  border: 2px solid transparent;
+  color: inherit;
+
+  &[data-active] {
+    border-color: $color-forest;
+
+    @include dark {
+      border-color: $color-lime;
+    }
+  }
+}
+
+.row-body {
+  @include flex(column, $gap: space(0.5));
+  flex: 1;
+  min-width: 0;
+}
+
+.row-title {
+  @include truncate;
+  font-weight: $weight-bold;
+}
+
+.row-meta {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.empty {
+  @include flex(column, $gap: space(2), $align: center);
+  @include text(label);
+  padding: space(10) space(4);
+  text-align: center;
+  color: $color-ink-subtle;
+}
+
+.pick {
+  @include text(label);
+  padding: space(10) 0;
+  text-align: center;
+  color: $color-ink-subtle;
+}
+
+.selected {
+  @include flex(column, $gap: space(3));
+}

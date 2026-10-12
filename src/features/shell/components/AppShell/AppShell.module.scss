@@ -61,6 +61,24 @@
   color: $color-ink-muted;
 }
 
+.nav-text {
+  flex: 1;
+}
+
+// Count of things waiting (reviews, fixes)
+.badge {
+  @include center;
+  @include text(tiny);
+  min-width: 20px;
+  height: 20px;
+  padding-inline: space(1.5);
+  border-radius: $radius-full;
+  background: $color-fix;
+  font-weight: $weight-extrabold;
+  color: $color-white;
+  font-variant-numeric: tabular-nums;
+}
+
 .account-title {
   @include eyebrow;
   padding: space(4) space(2.5) space(1.5);
@@ -140,6 +158,21 @@
 
   @include up(lg) {
     display: none;
+  }
+}
+
+.tab-icon {
+  display: inline-grid;
+
+  // On the icon's corner: the icon is the grid, the badge overlaps it in the same cell
+  > * {
+    grid-area: 1 / 1;
+  }
+
+  .badge {
+    justify-self: end;
+    align-self: start;
+    margin: -8px -12px 0 0;
   }
 }
 

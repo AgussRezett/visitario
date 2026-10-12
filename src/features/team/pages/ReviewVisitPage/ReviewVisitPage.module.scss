@@ -1,0 +1,76 @@
+@use '@/styles/abstracts' as *;
+
+// Phone: top bar / content that scrolls / decision bar, as grid rows (like the visit sheet).
+.page {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
+
+  @include up(lg) {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    gap: space(4);
+    padding: space(6) space(8);
+  }
+}
+
+.appbar {
+  @include flex(row, $gap: space(1), $align: center);
+  min-height: 60px;
+  padding: max(#{space(2)}, env(safe-area-inset-top)) space(4) space(2) space(2);
+  border-bottom: 1px solid $color-line;
+  background: $color-ground;
+}
+
+.back {
+  @include center;
+  @include square($touch-target);
+  flex-shrink: 0;
+  border-radius: $radius-md;
+}
+
+.titles {
+  @include flex(column);
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  @include truncate;
+  @include text(heading);
+  font-weight: $weight-extrabold;
+}
+
+.meta {
+  @include truncate;
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.scroll {
+  min-height: 0;
+  overflow-y: auto;
+  padding: space(3) space(5) space(6);
+
+  @include up(lg) {
+    overflow: visible;
+    padding: 0;
+  }
+}
+
+.footer {
+  padding: space(3) space(5) max(#{space(4)}, env(safe-area-inset-bottom));
+  border-top: 1px solid $color-line;
+  background: $color-card;
+
+  &:empty {
+    display: none;
+  }
+
+  @include up(lg) {
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+}

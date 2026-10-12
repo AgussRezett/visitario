@@ -1,0 +1,80 @@
+@use '@/styles/abstracts' as *;
+
+.conversation {
+  @include flex(column, $gap: space(3));
+}
+
+.list {
+  @include flex(column, $gap: space(3));
+}
+
+.message {
+  @include flex(row, $gap: space(2.5), $align: flex-start);
+
+  &[data-mine] {
+    flex-direction: row-reverse;
+  }
+}
+
+.bubble {
+  @include flex(column, $gap: space(1));
+  min-width: 0;
+  max-width: 85%;
+  padding: space(2.5) space(3);
+  border: 1px solid $color-line;
+  border-radius: $radius-md;
+  background: $color-card;
+
+  [data-kind='fix_request'] & {
+    border-color: $color-fix;
+    background: $color-fix-soft;
+  }
+
+  [data-mine] & {
+    background: $color-muted;
+  }
+}
+
+.meta {
+  @include text(tiny);
+  color: $color-ink-subtle;
+
+  b {
+    font-weight: $weight-extrabold;
+    color: $color-ink;
+  }
+}
+
+.body {
+  @include text(small);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.about {
+  @include text(tiny);
+  align-self: flex-start;
+  padding: 2px space(2);
+  border-radius: $radius-full;
+  background: $color-card;
+  font-weight: $weight-bold;
+  color: $color-fix-ink;
+}
+
+.empty {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.composer {
+  @include flex(column, $gap: space(2), $align: stretch);
+
+  @include up(sm) {
+    flex-direction: row;
+    align-items: flex-end;
+
+    > :first-child {
+      flex: 1;
+    }
+  }
+}

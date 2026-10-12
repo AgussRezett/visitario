@@ -1,0 +1,38 @@
+@use '@/styles/abstracts' as *;
+
+.bar {
+  display: flex;
+  gap: 2px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: $radius-full;
+  background: transparent;
+}
+
+.approved {
+  background: $color-done-ink;
+}
+
+.done {
+  background: $color-done;
+}
+
+.closed {
+  background: $color-closed;
+}
+
+.refused {
+  background: $color-refused;
+}
+
+.fix {
+  background: $color-fix;
+}
+
+.active {
+  background: $color-active;
+}
+
+.rest {
+  background: $color-line;
+}
