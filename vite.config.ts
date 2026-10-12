@@ -10,7 +10,9 @@ export default defineConfig(({ mode }) => ({
     tanstackRouter({ target: 'react', autoCodeSplitting: true, routesDirectory: './src/routes', generatedRouteTree: './src/app/routeTree.gen.ts' }),
     react(),
     VitePWA({
+      // Registered from src/app/pwa.ts, which shows "Hay una versión nueva".
       registerType: 'prompt',
+      injectRegister: false,
       includeAssets: ['favicon.svg'],
       manifest: {
         name: 'Visitario',

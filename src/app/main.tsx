@@ -11,6 +11,7 @@ import { applyTheme } from '@/features/profile/theme'
 import { FullScreenSpinner } from '@/ui/Spinner'
 import { PERSIST_OPTIONS } from '@/features/sync/persist'
 import { startSync } from '@/features/sync/outbox'
+import { startPwa } from './pwa'
 import { routeTree } from './routeTree.gen'
 
 applyTheme()
@@ -64,6 +65,7 @@ async function start(root: HTMLElement) {
   const [, restored] = persistQueryClient({ queryClient, ...PERSIST_OPTIONS })
   await restored.catch(() => null)
   void startSync(queryClient)
+  startPwa()
   createRoot(root).render(
     <StrictMode>
       <QueryClientProvider client={queryClient}>
