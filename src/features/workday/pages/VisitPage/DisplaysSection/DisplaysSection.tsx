@@ -3,7 +3,6 @@ import { Camera, Check, Plus } from 'lucide-react'
 import { Button } from '@/ui/Button'
 import { Chip } from '@/ui/StatusChip'
 import type { Catalogs, Visit } from '@/features/workday/api/queries'
-import { useDisplayMutations } from '@/features/workday/api/mutations'
 import { VisitSection } from '@/features/workday/components/VisitSection'
 import type { VisitActions } from '../useVisitActions'
 import type { ViewerState } from '../VisitPage'
@@ -23,7 +22,6 @@ interface DisplaysSectionProps {
 /** Each display counts once; it is arranged when its "after" photo exists. */
 export function DisplaysSection({ visit: v, catalogs, urlFor, actions, openDisplay, onOpened, onView }: DisplaysSectionProps) {
   const [openId, setOpenId] = useState<string | null>(null)
-  const displays = useDisplayMutations(v.id, v.companyId)
   useEffect(() => {
     if (openDisplay) {
       setOpenId(openDisplay.id)
@@ -40,7 +38,7 @@ export function DisplaysSection({ visit: v, catalogs, urlFor, actions, openDispl
   const addFound = async () => {
     const first = catalogs.displayTypes[0]
     if (!first) return
-    const id = await displays.add.mutateAsync({ typeId: first.id, sortOrder: total })
+    const id = await actions.changes.addDisplay(first.id, total)
     setOpenId(id)
   }
 
@@ -79,7 +77,7 @@ export function DisplaysSection({ visit: v, catalogs, urlFor, actions, openDispl
           })}
         </ul>
       ) : null}
-      <Button variant="ghost" size="md" className={styles.add} onClick={addFound} loading={displays.add.isPending} disabled={!catalogs.displayTypes.length}>
+      <Button variant="ghost" size="md" className={styles.add} onClick={addFound} disabled={!catalogs.displayTypes.length}>
         <Plus size={18} aria-hidden />Encontré otra exhibición
       </Button>
 
@@ -91,7 +89,6 @@ export function DisplaysSection({ visit: v, catalogs, urlFor, actions, openDispl
           catalogs={catalogs}
           urlFor={urlFor}
           actions={actions}
-          mutations={displays}
           onClose={() => setOpenId(null)}
           onView={onView}
           typeName={typeName}

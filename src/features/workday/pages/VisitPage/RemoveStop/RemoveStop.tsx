@@ -1,10 +1,9 @@
 import { useNavigate } from '@tanstack/react-router'
 import { Trash2 } from 'lucide-react'
 import { canRemoveVisit } from '@/domain/visit'
-import { Banner } from '@/ui/Banner'
 import { useConfirm } from '@/ui/ConfirmDialog'
 import type { Visit } from '@/features/workday/api/queries'
-import { useRemoveVisit } from '@/features/workday/api/mutations'
+import { visitChanges } from '@/features/sync/changes'
 import styles from './RemoveStop.module.scss'
 
 interface RemoveStopProps {
@@ -15,7 +14,6 @@ interface RemoveStopProps {
 /** Takes a stop the merchandiser added (or resumed) off the day, e.g. a wrong address. */
 export function RemoveStop({ visit: v, back }: RemoveStopProps) {
   const navigate = useNavigate()
-  const remove = useRemoveVisit(v.id)
   const { confirm, dialog } = useConfirm()
   if (!canRemoveVisit(v)) return null
 
@@ -31,20 +29,15 @@ export function RemoveStop({ visit: v, back }: RemoveStopProps) {
       tone: 'danger',
     })
     if (!ok) return
-    try {
-      await remove.mutateAsync()
-      await navigate(back)
-    } catch {
-      // the banner shows the error
-    }
+    await navigate(back) // leave first: on this phone the stop is gone at once
+    await visitChanges(v).remove()
   }
 
   return (
     <div className={styles.remove}>
-      {remove.error ? <Banner tone="error">{remove.error.message}</Banner> : null}
-      <button type="button" className={styles.button} onClick={onRemove} disabled={remove.isPending}>
+      <button type="button" className={styles.button} onClick={onRemove}>
         <Trash2 size={18} aria-hidden />
-        {remove.isPending ? 'Quitando…' : 'Quitar de la jornada'}
+        Quitar de la jornada
       </button>
       <p className={styles.hint}>
         {v.resumedFrom ? 'Vuelve a quedar para retomar más adelante.' : 'Para direcciones cargadas por error o que ya no vas a visitar.'}

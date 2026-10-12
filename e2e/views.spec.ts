@@ -49,7 +49,7 @@ test('a stop added by mistake can be taken off the day', async ({ page }) => {
   await page.screenshot({ path: 'test-results/confirm-dialog.png' })
   await ask.getByRole('button', { name: 'Quitar', exact: true }).click()
   await expect(page).toHaveURL(/\/s\/workday/)
-  expect(state.visits.map((v) => v.id)).toEqual(['v2'])
+  await expect.poll(() => state.visits.map((v) => v.id)).toEqual(['v2']) // sent in the background
 })
 
 test('a confirmation on top of a sheet closes only itself', async ({ page }) => {

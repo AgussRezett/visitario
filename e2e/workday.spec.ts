@@ -98,7 +98,7 @@ test('a visit cannot end without the storefront photo and the store’s answer',
   await expect(finish).toBeEnabled()
   await finish.click()
   await expect(page).toHaveURL(/\/s\/workday/)
-  expect(state.visits[0]?.work_status).toBe('done')
+  await expect.poll(() => state.visits[0]?.work_status).toBe('done')
 })
 
 test('photos never make the merchandiser wait: the visit goes on while they upload', async ({ page }) => {
@@ -133,8 +133,9 @@ test('photos never make the merchandiser wait: the visit goes on while they uplo
   await page.getByRole('radio', { name: 'Sí' }).click()
   await page.getByRole('button', { name: 'Terminar visita' }).click()
   await expect(page).toHaveURL(/\/s\/workday/, { timeout: 10_000 })
-  expect(state.uploads).toHaveLength(1)
-  expect(state.visits[0]?.work_status).toBe('done')
+  // Sent in order in the background: the photo first, then the finished visit.
+  await expect.poll(() => state.uploads.length, { timeout: 10_000 }).toBe(1)
+  await expect.poll(() => state.visits[0]?.work_status).toBe('done')
 })
 
 test('changing the date keeps the header; days of the week are instant, others keep the day until they arrive', async ({ page }) => {

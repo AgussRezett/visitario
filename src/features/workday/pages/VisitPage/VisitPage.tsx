@@ -9,7 +9,7 @@ import { StatusChip } from '@/ui/StatusChip'
 import { useWorkContext } from '@/features/workday/context'
 import { useCatalogs, visitFromLists, visitQuery, visitsQuery, type Catalogs, type Photo, type Visit } from '@/features/workday/api/queries'
 import { usePhotoUrls } from '@/features/workday/api/photos'
-import { usePendingUploads, withPendingUploads } from '@/features/workday/api/uploads'
+import { useVisitView } from '@/features/sync/hooks'
 import { PhotoViewer } from '@/features/workday/components/PhotoViewer'
 import { VisitSkeleton } from '@/features/workday/components/Skeletons'
 import { originLabel } from '@/features/workday/visit-text'
@@ -41,8 +41,7 @@ export function VisitPage({ visitId }: { visitId: string }) {
     initialData: () => visitFromLists(qc, visitId)?.data,
     initialDataUpdatedAt: () => visitFromLists(qc, visitId)?.updatedAt,
   })
-  const uploads = usePendingUploads()
-  const v = visit.data ? withPendingUploads(visit.data, uploads) : visit.data
+  const v = useVisitView(visit.data)
   const siblings = useQuery({ ...visitsQuery(v?.workdayId ?? '', ctx?.personId ?? ''), enabled: Boolean(v && ctx) })
   const catalogs = useCatalogs(v?.companyId ?? '')
   const urlFor = usePhotoUrls(v?.photos.map((p) => p.id) ?? [])

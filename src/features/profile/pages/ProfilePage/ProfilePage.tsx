@@ -8,8 +8,10 @@ import { Avatar } from '@/ui/Avatar'
 import { initials } from '@/lib/format'
 import { Button } from '@/ui/Button'
 import { Card } from '@/ui/Card'
+import { useConfirm } from '@/ui/ConfirmDialog'
 import { Segmented } from '@/ui/Segmented'
 import { signOut } from '@/features/auth/api'
+import { getSync } from '@/features/sync/outbox'
 import type { Me } from '@/features/auth/me'
 import { Invitations } from '@/features/profile/components/Invitations'
 import { getThemeChoice, setThemeChoice, type ThemeChoice } from '@/features/profile/theme'
@@ -35,6 +37,7 @@ function formatPhone(e164: string | null) {
 /** Same profile for every role, on phone and desktop (wireframes A17 / P01 / P02). */
 export function ProfilePage({ me }: { me: Me & { person: NonNullable<Me['person']> } }) {
   const navigate = useNavigate()
+  const { confirm, dialog } = useConfirm()
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState(false)
   const [theme, setTheme] = useState<ThemeChoice>(getThemeChoice)
@@ -109,6 +112,17 @@ export function ProfilePage({ me }: { me: Me & { person: NonNullable<Me['person'
               variant="danger"
               size="md"
               onClick={async () => {
+                const unsent = getSync().rows.filter((r) => !r.sent).length
+                if (
+                  unsent &&
+                  !(await confirm({
+                    title: 'Tenés cambios sin enviar',
+                    description: `${unsent === 1 ? 'Hay 1 cambio que todavía no llegó' : `Hay ${unsent} cambios que todavía no llegaron`} al servidor. Si cerrás sesión se pierden. Esperá a tener señal para que se envíen.`,
+                    confirmLabel: 'Cerrar igual',
+                    tone: 'danger',
+                  }))
+                )
+                  return
                 await signOut()
                 queryClient.clear()
                 await navigate({ to: '/login' })
@@ -117,6 +131,7 @@ export function ProfilePage({ me }: { me: Me & { person: NonNullable<Me['person'
               <LogOut size={18} aria-hidden />
               Cerrar sesión
             </Button>
+            {dialog}
           </div>
         </div>
       </div>

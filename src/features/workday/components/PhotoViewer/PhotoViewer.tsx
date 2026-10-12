@@ -5,7 +5,8 @@ import { canShare, share } from '@/lib/share'
 import { useConfirm } from '@/ui/ConfirmDialog'
 import type { Photo } from '@/features/workday/api/queries'
 import { localPhotoBlob } from '@/features/workday/api/photos'
-import { uploadStateOf, usePendingUploads } from '@/features/workday/api/uploads'
+import { useUploadState } from '@/features/sync/hooks'
+import { useOnline } from '@/lib/online'
 import { PhotoPicker } from '@/features/workday/components/PhotoPicker'
 import styles from './PhotoViewer.module.scss'
 
@@ -39,8 +40,9 @@ export function PhotoViewer({ photos, startId, title, subtitle, urlFor, onClose,
   const { confirm, dialog } = useConfirm()
   const photo = photos[index]
   const url = photo ? urlFor(photo.id) : undefined
-  const uploads = usePendingUploads()
-  const failed = photo ? uploadStateOf(photo.id, uploads) === 'failed' : false
+  const uploadState = useUploadState(photo?.id)
+  const failed = uploadState === 'failed'
+  const online = useOnline()
 
   const sharePhoto = async () => {
     if (!photo) return
@@ -76,7 +78,7 @@ export function PhotoViewer({ photos, startId, title, subtitle, urlFor, onClose,
           ) : null}
           <div className={styles.meta}>
             <span className={styles.chip}><Clock size={14} aria-hidden />{formatTime(photo.takenAt)}</span>
-            <span className={styles.chip}><Cloud size={14} aria-hidden />{failed ? 'No se pudo subir' : photo.uploaded ? 'Guardada en el servidor' : 'Subiendo…'}</span>
+            <span className={styles.chip}><Cloud size={14} aria-hidden />{failed ? 'No se pudo subir' : uploadState === 'uploading' ? (online ? 'Subiendo…' : 'Guardada en el celu · sube con señal') : 'Guardada en el servidor'}</span>
           </div>
           <div className={styles.actions}>
             {failed && onRetry ? (

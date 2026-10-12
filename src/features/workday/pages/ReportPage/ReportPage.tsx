@@ -14,6 +14,7 @@ import { TextArea } from '@/ui/TextArea'
 import { useWorkContext } from '@/features/workday/context'
 import { dayMetricsQuery, historyQuery, useCatalogs, visitsQuery, workdayQuery } from '@/features/workday/api/queries'
 import { WeekStrip } from '@/features/workday/components/WeekStrip'
+import { useVisitList } from '@/features/sync/hooks'
 import { ReportSkeleton } from '@/features/workday/components/Skeletons'
 import styles from './ReportPage.module.scss'
 
@@ -35,9 +36,10 @@ export function ReportPage({ date: requested }: { date?: string }) {
   const catalogs = useCatalogs(companyId)
   const { copied, copy } = useCopy()
 
+  const dayVisits = useVisitList(visits.data) // includes changes not sent yet
   const reportVisits = useMemo(
-    () => (visits.data ?? []).map((v) => ({ address: v.store.address, added: v.source === 'added', workStatus: v.workStatus })),
-    [visits.data],
+    () => (dayVisits ?? []).map((v) => ({ address: v.store.address, added: v.source === 'added', workStatus: v.workStatus })),
+    [dayVisits],
   )
   const reportMetrics = useMemo(
     () => (catalogs.data?.metrics ?? []).map((m) => ({ name: m.name, reportLabel: m.reportLabel, total: metrics.data?.[m.id] ?? 0 })),
@@ -111,11 +113,11 @@ export function ReportPage({ date: requested }: { date?: string }) {
                   <Button variant="secondary" size="md" aria-label="Regenerar" onClick={() => setText(generated)}><RefreshCw size={18} aria-hidden /></Button>
                 </div>
               </div>
-              {visits.data?.length ? (
+              {dayVisits?.length ? (
                 <Table className={styles.table} label="Resultado por comercio">
                   <thead><tr><th>Comercio</th><th>Resultado</th></tr></thead>
                   <tbody>
-                    {visits.data.map((v) => (
+                    {dayVisits.map((v) => (
                       <tr key={v.id}>
                         <td className={styles.strong}>{v.store.address}{v.source === 'added' ? ' · extra' : ''}</td>
                         <td><StatusChip work={v.workStatus} review={v.reviewStatus} label={v.workStatus === 'pending' ? 'No visitado' : undefined} /></td>
