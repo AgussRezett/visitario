@@ -160,6 +160,43 @@ check('Agus sees his progress; Lucía does not', (await as('agus', `select * fro
 const found = await as('agus', `select name from store where private.normalize(coalesce(name, '') || ' ' || address || ' ' || coalesce(customer_number, '')) like '%' || private.normalize('mas ahórro') || '%'`);
 check('Accent-insensitive store search', found.length === 1);
 
+// ---- Stage 1: the merchandiser's day
+const wOwn = (await as('agus', `select open_workday($1, '2026-10-12') id`, [panda]))[0].id;
+check('open_workday returns the same workday twice', (await as('agus', `select open_workday($1, '2026-10-12') id`, [panda]))[0].id === wOwn);
+check('Own workday is published and created by Agus', (await sys(`select status::text s, created_by = $2 mine from workday where id = $1`, [wOwn, agus])).every(r => r.s === 'published' && r.mine));
+await as('martin', `insert into workday (company_id, merchandiser_id, work_date) values ($1, $2, '2026-10-20')`, [panda, agus]);
+await expectError('Cannot open a day the supervisor is drafting', () => as('agus', `select open_workday($1, '2026-10-20')`, [panda]), /preparing/);
+
+const va = (await as('agus', `select add_visit($1, p_address => 'Moldes 1365', p_name => 'Autoservicio Lili', p_display_types => $2) id`, [wOwn, [endcap, endcap]]))[0].id;
+const vb = (await as('agus', `select add_visit($1, p_address => 'Vidal 2044') id`, [wOwn]))[0].id;
+const order = await sys(`select id, sort_order from visit where workday_id = $1 order by sort_order`, [wOwn]);
+check('Added addresses keep their order', order.map(r => r.id).join() === [va, vb].join() && order[1].sort_order === 1);
+check('New store is the merchandiser’s, unverified', (await sys(`select s.source::text src, s.location_status::text loc from visit v join store s on s.id = v.store_id where v.id = $1`, [va]))[0].src === 'merchandiser');
+check('Expected displays are created with the visit', (await sys(`select count(*)::int n from display where visit_id = $1`, [va]))[0].n === 2);
+const sLili = (await sys(`select store_id from visit where id = $1`, [va]))[0].store_id;
+check('Adding the same store twice returns the same visit', (await as('agus', `select add_visit($1, p_store => $2) id`, [wOwn, sLili]))[0].id === va);
+await expectError('Beto cannot add to Agus’s workday', () => as('beto', `select add_visit($1, p_address => 'X 123')`, [wOwn]), /not found/);
+
+check('Directory search ignores accents and case', (await as('agus', `select name from search_stores($1, 'MÁS ahorro')`, [panda])).some(r => r.name === 'Mas Ahorro'));
+check('Directory search by customer number', (await as('agus', `select name from search_stores($1, '12345')`, [panda])).length === 1);
+check('Another company’s directory is empty for Beto', (await as('beto', `select * from search_stores($1, 'mas')`, [panda])).length === 0);
+
+await as('agus', `update visit set work_status = 'in_progress', arrived_at = now() where id = $1`, [va]);
+await expectError('Cannot finish without the storefront photo', () => as('agus', `update visit set work_status = 'closed', consent = 'closed' where id = $1`, [va]), /storefront/);
+await as('agus', `insert into photo (id, company_id, visit_id, kind, taken_at, bytes, width, height, created_by) values (gen_random_uuid(), $1, $2, 'storefront', now(), 180000, 1400, 1050, $3)`, [panda, va, agus]);
+await expectError('Cannot finish as done without consent', () => as('agus', `update visit set work_status = 'done' where id = $1`, [va]), /consent/);
+await as('agus', `update visit set work_status = 'closed', consent = 'closed' where id = $1`, [va]);
+check('Closed with the storefront photo', (await sys(`select work_status::text s from visit where id = $1`, [va]))[0].s === 'closed');
+
+const resumable = await as('agus', `select * from resumable_visits($1, '2026-10-13')`, [panda]);
+check(`Resumable: pending and closed from earlier days (${resumable.length})`, resumable.some(r => r.visit_id === va && r.pending_displays === 2) && resumable.some(r => r.visit_id === vb));
+const wNext = (await as('agus', `select open_workday($1, '2026-10-13') id`, [panda]))[0].id;
+await as('agus', `select add_visit($1, p_address => 'Monroe 2650') id`, [wNext]);
+const vr = (await as('agus', `select resume_visit($1, $2) id`, [va, wNext]))[0].id;
+check('Resumed visit goes to the end of the day', (await sys(`select sort_order from visit where id = $1`, [vr]))[0].sort_order === 1);
+check('A resumed visit is not offered again', !(await as('agus', `select visit_id from resumable_visits($1, '2026-10-14')`, [panda])).some(r => r.visit_id === va));
+check('Lucía cannot list Agus’s resumable visits', (await as('lucia', `select * from resumable_visits($1, '2026-10-14')`, [panda])).length === 0);
+
 // Password detection (Google users who later set a password)
 await sys(`update auth.users set encrypted_password = '$2a$10$hash' where id = $1`, [U.agus]);
 check('has_password is true for a user with a password', (await as('agus', `select has_password() v`))[0].v === true);
