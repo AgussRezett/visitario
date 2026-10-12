@@ -1395,6 +1395,7 @@ export type Database = {
           phone_last4: string
         }[]
       }
+      has_password: { Args: never; Returns: boolean }
       invite_person: {
         Args: {
           p_company: string

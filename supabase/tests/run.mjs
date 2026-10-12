@@ -160,6 +160,12 @@ check('Agus sees his progress; Lucía does not', (await as('agus', `select * fro
 const found = await as('agus', `select name from store where private.normalize(coalesce(name, '') || ' ' || address || ' ' || coalesce(customer_number, '')) like '%' || private.normalize('mas ahórro') || '%'`);
 check('Accent-insensitive store search', found.length === 1);
 
+// Password detection (Google users who later set a password)
+await sys(`update auth.users set encrypted_password = '$2a$10$hash' where id = $1`, [U.agus]);
+check('has_password is true for a user with a password', (await as('agus', `select has_password() v`))[0].v === true);
+check('has_password is false for a user without one', (await as('lucia', `select has_password() v`))[0].v === false);
+await expectError('Anonymous cannot call has_password', () => asAnon(`select has_password()`));
+
 const carlaMembership = (await sys(`select id from membership where person_id = $1`, [await pid('carla')]))[0].id;
 await expectError('A company cannot lose its last admin', () => as('carla', `update membership set roles = '{supervisor}' where id = $1`, [carlaMembership]), /admin/);
 
