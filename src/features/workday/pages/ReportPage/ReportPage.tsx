@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { Check, Copy, RefreshCw, Share2 } from 'lucide-react'
 import { formatLongDate, todayInArgentina } from '@/domain/dates'
@@ -8,6 +8,7 @@ import { canShare, share, useCopy } from '@/lib/share'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
 import { StatusChip } from '@/ui/StatusChip'
+import { Refreshing } from '@/ui/Refreshing'
 import { Table } from '@/ui/Table'
 import { TextArea } from '@/ui/TextArea'
 import { useWorkContext } from '@/features/workday/context'
@@ -24,9 +25,12 @@ export function ReportPage({ date: requested }: { date?: string }) {
   const on = Boolean(ctx)
   const companyId = ctx?.companyId ?? ''
   const personId = ctx?.personId ?? ''
-  const workday = useQuery({ ...workdayQuery(companyId, personId, date), enabled: on })
-  const visits = useQuery({ ...visitsQuery(workday.data?.id ?? '', personId), enabled: Boolean(workday.data) })
-  const metrics = useQuery({ ...dayMetricsQuery(companyId, personId, date), enabled: on })
+  // While another day loads, the previous one stays on screen (faded) instead of a skeleton.
+  const workday = useQuery({ ...workdayQuery(companyId, personId, date), enabled: on, placeholderData: keepPreviousData })
+  const visits = useQuery({ ...visitsQuery(workday.data?.id ?? '', personId), enabled: Boolean(workday.data), placeholderData: keepPreviousData })
+  const metrics = useQuery({ ...dayMetricsQuery(companyId, personId, date), enabled: on, placeholderData: keepPreviousData })
+  const switching = workday.isPlaceholderData || visits.isPlaceholderData || metrics.isPlaceholderData
+  const shownDate = workday.data?.workDate ?? date
   const history = useQuery({ ...historyQuery(companyId, personId), enabled: on })
   const catalogs = useCatalogs(companyId)
   const { copied, copy } = useCopy()
@@ -40,8 +44,8 @@ export function ReportPage({ date: requested }: { date?: string }) {
     [catalogs.data, metrics.data],
   )
   const generated = useMemo(
-    () => (catalogs.data ? buildDailyReport({ date, visits: reportVisits, metrics: reportMetrics, template: catalogs.data.templates.daily_report }) : ''),
-    [catalogs.data, date, reportVisits, reportMetrics],
+    () => (catalogs.data ? buildDailyReport({ date: shownDate, visits: reportVisits, metrics: reportMetrics, template: catalogs.data.templates.daily_report }) : ''),
+    [catalogs.data, shownDate, reportVisits, reportMetrics],
   )
   const [text, setText] = useState(generated)
   useEffect(() => setText(generated), [generated])
@@ -70,58 +74,60 @@ export function ReportPage({ date: requested }: { date?: string }) {
         <WeekStrip date={date} days={history.data ?? []} onSelect={goTo} />
       </div>
 
-      {workday.isPending || (workday.data && visits.isPending) ? (
-        <ReportSkeleton />
-      ) : workday.isSuccess && !workday.data ? (
-        <Banner tone="info">No tenés jornada ese día. Elegí otro día arriba.</Banner>
-      ) : (
-        <>
-          <div className={styles.kpis}>
-            <div className={styles.kpi}><b>{totals.visited}</b><span>visitados</span></div>
-            {reportMetrics.map((m) => (
-              <div key={m.name} className={styles.kpi}><b>{m.total}</b><span>{m.name.toLowerCase()}</span></div>
-            ))}
-            <div className={styles.kpi}><b>{totals.extras}</b><span>extras</span></div>
-          </div>
-
-          <Banner tone="ok" icon={<Check size={18} aria-hidden />}>Tu supervisor ya lo ve en Visitario. Copialo solo si te lo piden por WhatsApp.</Banner>
-
-          <div className={styles.columns}>
-            <div className={styles.textColumn}>
-              <TextArea
-                label="Texto del informe"
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                className={styles.text}
-                help="Lo que edites acá no cambia las visitas guardadas. Regenerar vuelve al texto original."
-              />
-              <div className={styles.phoneActions}>
-                <Button size="md" onClick={() => copy('report', text)}>
-                  {copied === 'report' ? <Check size={18} aria-hidden /> : <Copy size={18} aria-hidden />}
-                  {copied === 'report' ? 'Copiado' : 'Copiar'}
-                </Button>
-                {canShare() ? (
-                  <Button variant="secondary" size="md" aria-label="Compartir" onClick={() => share({ text })}><Share2 size={18} aria-hidden /></Button>
-                ) : null}
-                <Button variant="secondary" size="md" aria-label="Regenerar" onClick={() => setText(generated)}><RefreshCw size={18} aria-hidden /></Button>
-              </div>
+      <Refreshing active={switching} className={styles.body}>
+        {workday.isPending || (workday.data && visits.isPending) ? (
+          <ReportSkeleton />
+        ) : workday.isSuccess && !workday.data ? (
+          <Banner tone="info">No tenés jornada ese día. Elegí otro día arriba.</Banner>
+        ) : (
+          <>
+            <div className={styles.kpis}>
+              <div className={styles.kpi}><b>{totals.visited}</b><span>visitados</span></div>
+              {reportMetrics.map((m) => (
+                <div key={m.name} className={styles.kpi}><b>{m.total}</b><span>{m.name.toLowerCase()}</span></div>
+              ))}
+              <div className={styles.kpi}><b>{totals.extras}</b><span>extras</span></div>
             </div>
-            {visits.data?.length ? (
-              <Table className={styles.table} label="Resultado por comercio">
-                <thead><tr><th>Comercio</th><th>Resultado</th></tr></thead>
-                <tbody>
-                  {visits.data.map((v) => (
-                    <tr key={v.id}>
-                      <td className={styles.strong}>{v.store.address}{v.source === 'added' ? ' · extra' : ''}</td>
-                      <td><StatusChip work={v.workStatus} review={v.reviewStatus} label={v.workStatus === 'pending' ? 'No visitado' : undefined} /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            ) : null}
-          </div>
-        </>
-      )}
+
+            <Banner tone="ok" icon={<Check size={18} aria-hidden />}>Tu supervisor ya lo ve en Visitario. Copialo solo si te lo piden por WhatsApp.</Banner>
+
+            <div className={styles.columns}>
+              <div className={styles.textColumn}>
+                <TextArea
+                  label="Texto del informe"
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  className={styles.text}
+                  help="Lo que edites acá no cambia las visitas guardadas. Regenerar vuelve al texto original."
+                />
+                <div className={styles.phoneActions}>
+                  <Button size="md" onClick={() => copy('report', text)}>
+                    {copied === 'report' ? <Check size={18} aria-hidden /> : <Copy size={18} aria-hidden />}
+                    {copied === 'report' ? 'Copiado' : 'Copiar'}
+                  </Button>
+                  {canShare() ? (
+                    <Button variant="secondary" size="md" aria-label="Compartir" onClick={() => share({ text })}><Share2 size={18} aria-hidden /></Button>
+                  ) : null}
+                  <Button variant="secondary" size="md" aria-label="Regenerar" onClick={() => setText(generated)}><RefreshCw size={18} aria-hidden /></Button>
+                </div>
+              </div>
+              {visits.data?.length ? (
+                <Table className={styles.table} label="Resultado por comercio">
+                  <thead><tr><th>Comercio</th><th>Resultado</th></tr></thead>
+                  <tbody>
+                    {visits.data.map((v) => (
+                      <tr key={v.id}>
+                        <td className={styles.strong}>{v.store.address}{v.source === 'added' ? ' · extra' : ''}</td>
+                        <td><StatusChip work={v.workStatus} review={v.reviewStatus} label={v.workStatus === 'pending' ? 'No visitado' : undefined} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              ) : null}
+            </div>
+          </>
+        )}
+      </Refreshing>
     </div>
   )
 }

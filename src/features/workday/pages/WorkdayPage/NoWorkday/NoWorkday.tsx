@@ -10,7 +10,6 @@ import type { WorkContext } from '@/features/workday/context'
 import { historyQuery, resumableQuery } from '@/features/workday/api/queries'
 import { useOpenWorkday } from '@/features/workday/api/mutations'
 import { ResumeSheet } from '../ResumeSheet'
-import { DayHeader } from '../DayHeader'
 import styles from './NoWorkday.module.scss'
 
 interface NoWorkdayProps {
@@ -51,8 +50,6 @@ export function NoWorkday({ ctx, date, onOpen }: NoWorkdayProps) {
 
   return (
     <>
-      <DayHeader ctx={ctx} date={date} days={history.data ?? []} onDateChange={onOpen} />
-
       <div className={styles.layout}>
         <div className={styles.main}>
           <section className={styles.start}>
