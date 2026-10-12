@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { Camera, Cloud, Download, Share2, Trash2, X, Clock } from 'lucide-react'
+import { Camera, Cloud, Download, RefreshCw, Share2, Trash2, X, Clock } from 'lucide-react'
 import { formatTime } from '@/domain/dates'
 import { canShare, share } from '@/lib/share'
 import type { Photo } from '@/features/workday/api/queries'
 import { localPhotoBlob } from '@/features/workday/api/photos'
+import { uploadStateOf, usePendingUploads } from '@/features/workday/api/uploads'
 import { PhotoPicker } from '@/features/workday/components/PhotoPicker'
 import styles from './PhotoViewer.module.scss'
 
@@ -16,10 +17,11 @@ interface PhotoViewerProps {
   onClose: () => void
   onReplace?: (photo: Photo, file: File) => void
   onDelete?: (photo: Photo) => void
+  onRetry?: (photo: Photo) => void
 }
 
 /** Full-screen viewer for the photos of a visit or a display (wireframes A15 / AD12). */
-export function PhotoViewer({ photos, startId, title, subtitle, urlFor, onClose, onReplace, onDelete }: PhotoViewerProps) {
+export function PhotoViewer({ photos, startId, title, subtitle, urlFor, onClose, onReplace, onDelete, onRetry }: PhotoViewerProps) {
   const ref = useRef<HTMLDialogElement>(null)
   const [index, setIndex] = useState(0)
   const open = startId !== null
@@ -35,6 +37,8 @@ export function PhotoViewer({ photos, startId, title, subtitle, urlFor, onClose,
 
   const photo = photos[index]
   const url = photo ? urlFor(photo.id) : undefined
+  const uploads = usePendingUploads()
+  const failed = photo ? uploadStateOf(photo.id, uploads) === 'failed' : false
 
   const sharePhoto = async () => {
     if (!photo) return
@@ -70,9 +74,14 @@ export function PhotoViewer({ photos, startId, title, subtitle, urlFor, onClose,
           ) : null}
           <div className={styles.meta}>
             <span className={styles.chip}><Clock size={14} aria-hidden />{formatTime(photo.takenAt)}</span>
-            <span className={styles.chip}><Cloud size={14} aria-hidden />{photo.uploaded ? 'Guardada en el servidor' : 'Subiendo…'}</span>
+            <span className={styles.chip}><Cloud size={14} aria-hidden />{failed ? 'No se pudo subir' : photo.uploaded ? 'Guardada en el servidor' : 'Subiendo…'}</span>
           </div>
           <div className={styles.actions}>
+            {failed && onRetry ? (
+              <button type="button" className={styles.action} onClick={() => onRetry(photo)}>
+                <RefreshCw size={22} aria-hidden />Reintentar
+              </button>
+            ) : null}
             {url ? (
               <a className={styles.action} href={url} target="_blank" rel="noreferrer" download>
                 <Download size={22} aria-hidden />Guardar

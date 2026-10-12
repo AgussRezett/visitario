@@ -28,12 +28,12 @@ export function ArrivalSection({ visit: v, busy, urlFor, onArrive, onView }: Arr
     >
       <div className={styles.photos}>
         {storefront.map((p) => (
-          <PhotoThumb key={p.id} url={urlFor(p.id)} caption="Fachada" done label="Ver la foto de la fachada" onOpen={() => onView(p.id)} className={styles.thumb} />
+          <PhotoThumb key={p.id} photoId={p.id} url={urlFor(p.id)} caption="Fachada" done label="Ver la foto de la fachada" onOpen={() => onView(p.id)} className={styles.thumb} />
         ))}
         {!arrived ? (
           <PhotoPicker className={styles.arrive} onPick={onArrive} disabled={busy} label="Marcar llegada con la foto de la fachada">
             <Camera size={20} aria-hidden />
-            {busy ? 'Subiendo la foto…' : 'Marcar llegada'}
+            {busy ? 'Preparando la foto…' : 'Marcar llegada'}
           </PhotoPicker>
         ) : null}
         <span className={styles.hint}>Desde la computadora podés elegir la foto de tus archivos o arrastrarla.</span>

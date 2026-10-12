@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { History, MapPinPlus, Plus } from 'lucide-react'
 import { isVisited, workdayProgress } from '@/domain/visit'
@@ -6,6 +6,7 @@ import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
 import type { WorkContext } from '@/features/workday/context'
 import { dayMetricsQuery, historyQuery, resumableQuery, useCatalogs, visitsQuery, type Workday } from '@/features/workday/api/queries'
+import { usePendingUploads, withPendingUploads } from '@/features/workday/api/uploads'
 import { AddAddressSheet } from '../AddAddressSheet'
 import { ResumeSheet } from '../ResumeSheet'
 import { DayHeader } from '../DayHeader'
@@ -33,7 +34,8 @@ export function DayView({ ctx, workday, onDateChange }: DayViewProps) {
   const totals = useQuery(dayMetricsQuery(ctx.companyId, ctx.personId, workday.workDate))
   const catalogs = useCatalogs(ctx.companyId)
 
-  const list = visits.data ?? []
+  const uploads = usePendingUploads()
+  const list = useMemo(() => (visits.data ?? []).map((v) => withPendingUploads(v, uploads)), [visits.data, uploads])
   const progress = workdayProgress(list)
   const next = list.find((v) => v.workStatus === 'in_progress') ?? list.find((v) => v.workStatus === 'pending')
   const shown = filter === 'all' ? list : list.filter((v) => (filter === 'done' ? isVisited(v.workStatus) : !isVisited(v.workStatus)))

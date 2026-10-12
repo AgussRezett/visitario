@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase, type Enums } from '@/lib/supabase'
 import { uuidv7 } from '@/lib/id'
 import { fitWithin, PHOTO_QUALITY } from '@/domain/image'
 import { workdayKeys } from './queries'
+import { discardUpload, enqueuePhoto, pendingUpload } from './uploads'
 
 /**
  * Photos taken in this session, kept in memory to show and share them right away
@@ -41,34 +43,38 @@ export interface NewPhoto {
 
 export class PhotoError extends Error {}
 
-export function useUploadPhoto() {
+/**
+ * Takes a photo into the visit: compresses it on the phone (a fraction of a second) and
+ * hands it to the background queue. The photo shows up at once; the upload happens behind.
+ */
+export function useAddPhoto() {
   const qc = useQueryClient()
-  return useMutation({
-    mutationFn: async (p: NewPhoto) => {
-      const { blob, width, height } = await compressPhoto(p.file)
+  const [preparing, setPreparing] = useState(0)
+  const add = async (p: NewPhoto) => {
+    setPreparing((n) => n + 1)
+    try {
+      const { blob, width, height } = await compressPhoto(p.file).catch(() => {
+        throw new PhotoError('No pudimos leer la foto. Probá sacarla de nuevo.')
+      })
       const id = uuidv7()
-      localPhotos.set(id, { blob, url: URL.createObjectURL(blob) })
-      const form = new FormData()
-      form.append('file', blob, `${id}.jpg`)
-      form.append(
-        'meta',
-        JSON.stringify({ id, visitId: p.visitId, displayId: p.displayId, kind: p.kind, takenAt: new Date().toISOString(), width, height, sortOrder: p.sortOrder ?? 0 }),
-      )
-      const { error } = await supabase.functions.invoke('photos', { body: form })
-      if (error) {
-        localPhotos.delete(id)
-        throw new PhotoError('No pudimos subir la foto. Revisá la conexión y probá de nuevo.')
-      }
-      return { id, bytes: blob.size }
-    },
-    onSettled: () => qc.invalidateQueries({ queryKey: workdayKeys.all }),
-  })
+      localPhotos.set(id, { blob, url: URL.createObjectURL(blob) }) // before the queue shows it
+      return enqueuePhoto(qc, { id, visitId: p.visitId, displayId: p.displayId, kind: p.kind, blob, width, height, sortOrder: p.sortOrder })
+    } finally {
+      setPreparing((n) => n - 1)
+    }
+  }
+  return { add, preparing: preparing > 0 }
 }
 
 export function useDeletePhoto() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (id: string) => {
+      const queued = pendingUpload(id)
+      if (queued) {
+        if (discardUpload(id)) return // it never reached the server
+        if (!(await queued.done)) return
+      }
       const { error } = await supabase.from('photo').update({ deleted_at: new Date().toISOString() }).eq('id', id)
       if (error) throw new PhotoError('No pudimos borrar la foto.')
     },

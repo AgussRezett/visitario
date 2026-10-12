@@ -15,6 +15,8 @@ export interface FakeState {
   workday: Row | null
   visits: Row[]
   uploads: { bytes: Buffer; meta: Row }[]
+  /** Simulates a slow connection for photo uploads. */
+  uploadDelayMs?: number
 }
 
 export function visitRow(id: string, order: number, address: string, extra: Row = {}): Row {
@@ -86,6 +88,7 @@ export async function installFakeSupabase(page: Page, state: FakeState) {
       return json(id ? state.visits.filter((v) => v.id === id) : state.visits)
     }
     if (path.endsWith('/functions/v1/photos')) {
+      if (state.uploadDelayMs) await new Promise((resolve) => setTimeout(resolve, state.uploadDelayMs))
       const { bytes, meta } = filePart(req)
       state.uploads.push({ bytes, meta })
       const v = state.visits.find((x) => x.id === meta.visitId)

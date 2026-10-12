@@ -27,7 +27,7 @@ export function PhotoStrip({ visit: v, working, busy, onArrive, onViewStorefront
         </button>
       ) : (
         <PhotoPicker className={styles.cam} onPick={onArrive} disabled={busy} label="Sacar la foto de la fachada">
-          <Camera size={22} aria-hidden />{busy ? 'Subiendo…' : 'Fachada'}
+          <Camera size={22} aria-hidden />{busy ? 'Preparando…' : 'Fachada'}
         </PhotoPicker>
       )}
       {(['before', 'after'] as const).map((kind) => (
