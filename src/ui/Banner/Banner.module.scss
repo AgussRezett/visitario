@@ -1,0 +1,49 @@
+@use '@/styles/abstracts' as *;
+
+@layer ui {
+  .banner {
+    @include flex(row, $gap: space(3));
+    @include text(label);
+    padding: space(3) space(3.5);
+    border-radius: $radius-md;
+  }
+
+  // ---- Tones
+  .info {
+    background: $color-active-soft;
+    color: $color-active-ink;
+  }
+
+  .ok {
+    background: $color-done-soft;
+    color: $color-done-ink;
+  }
+
+  .warn {
+    background: $color-closed-soft;
+    color: $color-closed-ink;
+  }
+
+  .error {
+    background: $color-refused-soft;
+    color: $color-refused-ink;
+  }
+
+  .icon {
+    flex-shrink: 0;
+    margin-top: space(0.5);
+  }
+
+  .content {
+    @include flex(column, $gap: space(0.5));
+    min-width: 0;
+  }
+
+  .title {
+    font-weight: $weight-extrabold;
+  }
+
+  .body {
+    font-weight: $weight-semibold;
+  }
+}

@@ -1,0 +1,32 @@
+@use '@/styles/abstracts' as *;
+
+.intro {
+  @include flex(column, $gap: space(1));
+}
+
+.title {
+  @include heading(display);
+}
+
+.lead {
+  color: $color-ink-muted;
+}
+
+.form {
+  @include flex(column, $gap: space(4));
+}
+
+.link {
+  font-weight: $weight-bold;
+}
+
+.back-link {
+  align-self: center;
+  font-weight: $weight-bold;
+}
+
+// "Revisá tu email" after signing up
+.sent-title {
+  @include text(title);
+  font-weight: $weight-extrabold;
+}

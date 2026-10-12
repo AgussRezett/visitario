@@ -1,0 +1,7 @@
+// Everything a module needs: `@use '@/styles/abstracts' as *;`
+// Abstracts only emit CSS when used, so importing them everywhere is free.
+@forward 'tokens';
+@forward 'functions';
+@forward 'breakpoints';
+@forward 'typography';
+@forward 'mixins';

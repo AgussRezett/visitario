@@ -1,0 +1,28 @@
+@use '@/styles/abstracts' as *;
+
+.title {
+  @include heading(display);
+}
+
+.form {
+  @include flex(column, $gap: space(4));
+}
+
+.forgot {
+  align-self: center;
+}
+
+.sign-up {
+  @include center;
+  height: $touch-target;
+  border: 1.5px solid $color-control;
+  border-radius: $radius-md;
+  font-weight: $weight-extrabold;
+  color: $color-ink;
+}
+
+.hint {
+  @include text(label);
+  text-align: center;
+  color: $color-ink-subtle;
+}

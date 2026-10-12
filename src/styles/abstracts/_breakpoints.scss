@@ -1,0 +1,18 @@
+@use 'sass:map';
+
+// Mobile first: styles are for phones, these widths add tablet and desktop rules.
+$breakpoints: (
+  sm: 640px,
+  lg: 1024px,
+);
+
+/// From this width up. Usage: `@include up(lg) { ... }`
+@mixin up($name) {
+  $width: map.get($breakpoints, $name);
+  @if not $width {
+    @error 'Unknown breakpoint `#{$name}`. Use one of: #{map.keys($breakpoints)}';
+  }
+  @media (min-width: $width) {
+    @content;
+  }
+}

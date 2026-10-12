@@ -2,15 +2,13 @@
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [
     tanstackRouter({ target: 'react', autoCodeSplitting: true, routesDirectory: './src/routes', generatedRouteTree: './src/app/routeTree.gen.ts' }),
     react(),
-    tailwindcss(),
     VitePWA({
       registerType: 'prompt',
       includeAssets: ['favicon.svg'],
@@ -44,10 +42,18 @@ export default defineConfig({
       },
     },
   },
+  css: {
+    modules: {
+      // `.nav-link` in SCSS is `styles.navLink` in TSX.
+      localsConvention: 'camelCaseOnly',
+      // Readable class names in development (Button-module__primary__a1b2) to find the file from DevTools.
+      generateScopedName: mode === 'production' ? '[hash:base64:6]' : '[name]__[local]__[hash:base64:4]',
+    },
+  },
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
   },
-})
+}))

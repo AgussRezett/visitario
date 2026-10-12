@@ -1,0 +1,114 @@
+@use '@/styles/abstracts' as *;
+
+.shell {
+  display: flex;
+  min-height: 100dvh;
+}
+
+// ---- Desktop sidebar
+.sidebar {
+  @include flex(column, $gap: space(1));
+  position: sticky;
+  top: 0;
+  display: none;
+  flex-shrink: 0;
+  width: $sidebar-width;
+  height: 100dvh;
+  padding: space(5) space(3);
+  border-right: 1px solid $color-line;
+  background: $color-card;
+
+  @include up(lg) {
+    display: flex;
+  }
+}
+
+.sidebar-logo {
+  padding: 0 space(2) space(4);
+}
+
+.sidebar-nav {
+  @include flex(column, $gap: space(1));
+  margin-top: space(3);
+}
+
+.nav-link {
+  @include flex(row, $gap: space(2.5), $align: center);
+  @include text(small);
+  height: $touch-target;
+  padding-inline: space(3);
+  border-radius: $radius-md;
+  font-weight: $weight-bold;
+  color: $color-ink-muted;
+}
+
+.account-title {
+  @include eyebrow;
+  padding: space(4) space(2.5) space(1.5);
+}
+
+.account-name {
+  @include truncate;
+}
+
+// Current page, shared by the sidebar and the bottom navigation
+.active {
+  background: $color-lime-soft;
+  font-weight: $weight-extrabold;
+  color: $color-forest;
+
+  @include dark {
+    background: $color-muted;
+    color: $color-lime;
+  }
+}
+
+// ---- Content column
+.content {
+  @include flex(column);
+  flex: 1;
+  min-width: 0;
+}
+
+.mobile-header {
+  @include flex(row, $align: center, $justify: space-between);
+  padding: space(4) space(5) space(1);
+
+  @include up(lg) {
+    display: none;
+  }
+}
+
+.main {
+  @include flex(column);
+  flex: 1;
+  padding-bottom: space(24);
+
+  @include up(lg) {
+    padding-bottom: space(10);
+  }
+}
+
+// ---- Phone bottom navigation (columns set inline from the number of items)
+.bottom-nav {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  display: grid;
+  padding: space(1.5) space(2) max(10px, env(safe-area-inset-bottom));
+  border-top: 1px solid $color-line;
+  background: $color-card;
+
+  @include up(lg) {
+    display: none;
+  }
+}
+
+.tab {
+  @include flex(column, $gap: space(1), $align: center, $justify: center);
+  @include text(tiny);
+  height: space(14);
+  border-radius: $radius-md;
+  font-weight: $weight-semibold;
+  color: $color-ink-subtle;
+}

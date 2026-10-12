@@ -10,15 +10,27 @@ Read before working: `docs/brief.md` (product), `docs/architecture.md`, `docs/pl
 - Catalog values and message templates stored as data stay in Spanish.
 
 ## Stack
-Vite + React 19 + TypeScript strict · TanStack Router (file routes in `src/routes`) and Query · React Hook Form + Zod · Tailwind 4 with design tokens in `src/styles/index.css` · vite-plugin-pwa · Supabase (Postgres + RLS, Auth, Edge Functions) · Cloudflare R2 for photos (stage 1) · Dexie for offline (stage 2).
+Vite + React 19 + TypeScript strict · TanStack Router (file routes in `src/routes`) and Query · React Hook Form + Zod · Sass with CSS Modules (`*.module.scss` next to each component), design tokens in `src/styles` · vite-plugin-pwa · Supabase (Postgres + RLS, Auth, Edge Functions) · Cloudflare R2 for photos (stage 1) · Dexie for offline (stage 2).
 
 ## Layout
 - `src/routes` — route files only: guards (`beforeLoad`) and wiring. No business logic.
-- `src/features/<feature>` — screens and hooks per feature (auth, profile, shell, workday...).
+- `src/features/<feature>` — one folder per feature (auth, profile, shell, workday...):
+  - `pages/<Name>Page/` — a screen. Components used only by that page live in subfolders of it.
+  - `components/<Name>/` — components shared inside the feature.
+  - Logic files (`api.ts`, hooks, schemas) stay at the feature root.
 - `src/domain` — pure business rules with unit tests. No React, no Supabase.
-- `src/ui` — design-system primitives (Button, Field, Card, Banner...). Use tokens, never raw hex.
+- `src/ui/<Name>/` — design-system primitives (Button, Field, Card, Banner...).
+- `src/styles` — `main.scss` (global, loaded once), `base/` (reset, themes as CSS variables, body), `abstracts/` (tokens, `space()`, breakpoints, typography and mixins; no CSS output).
 - `src/lib` — Supabase client, generated types, small utilities.
 - `supabase/` — migrations, seed, Edge Functions, DB tests. See `supabase/README.md`.
+
+## Styles
+Every component or page is a folder: `Name.tsx`, `Name.module.scss`, `index.ts`. Example: `src/features/auth/pages/OnboardingPage/PermissionsStep/PermissionsStep.module.scss`.
+- Each module starts with `@use '@/styles/abstracts' as *;` and uses its tokens: `$color-*` (never raw hex), `space(n)` (4 px grid), `$radius-*`, `@include text(label)`, `@include heading(display)`, `@include eyebrow`.
+- Mobile first: base rules are for phones, then `@include up(sm)` / `@include up(lg)`. Dark mode: `@include dark { ... }`. Hover: `@include hover { ... }`.
+- Class names in kebab-case in SCSS, camelCase in TSX (`.nav-link` → `styles.navLink`). Join classes with `clsx`. In development the class shows the file: `AppShell-module__nav-link__x1y2`.
+- Primitives in `src/ui` wrap their rules in `@layer ui`, so a page can adjust one by passing its own `className` (layer order is declared in `main.scss`, imported first in `main.tsx`).
+- No global utility classes and no inline styles except values computed at runtime.
 
 ## Rules
 - TypeScript strict, no `any`, no non-null assertions. Files under 300 lines.

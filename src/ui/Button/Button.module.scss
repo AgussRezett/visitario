@@ -1,0 +1,92 @@
+@use '@/styles/abstracts' as *;
+
+@include keyframes-spin;
+
+@layer ui {
+  .button {
+    @include flex(row, $gap: space(2), $align: center, $justify: center);
+    @include transition-colors;
+    display: inline-flex;
+    border-radius: $radius-md;
+    font-weight: $weight-extrabold;
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+  }
+
+  // ---- Variants
+  .primary {
+    background: $color-action;
+    color: $color-action-ink;
+
+    @include hover {
+      background: $color-action-hover;
+    }
+  }
+
+  .secondary {
+    border: 1.5px solid $color-control;
+    background: $color-card;
+    color: $color-ink;
+
+    @include hover {
+      background: $color-muted;
+    }
+  }
+
+  .ghost {
+    background: transparent;
+    color: $color-forest;
+
+    @include dark {
+      color: $color-lime;
+    }
+
+    @include hover {
+      background: $color-muted;
+    }
+  }
+
+  .danger {
+    background: transparent;
+    color: $color-refused-ink;
+
+    @include hover {
+      background: $color-refused-soft;
+    }
+  }
+
+  .lime {
+    background: $color-lime;
+    color: $color-forest;
+
+    @include hover {
+      filter: brightness(95%);
+    }
+  }
+
+  // ---- Sizes
+  .lg {
+    @include text(base);
+    height: 52px;
+    padding-inline: space(5);
+  }
+
+  .md {
+    height: $touch-target;
+    padding-inline: space(4);
+    font-size: 15px;
+  }
+
+  .sm {
+    @include text(label);
+    height: space(9);
+    padding-inline: space(3);
+  }
+
+  .spinner {
+    @include spinner-ring(space(4), 2px);
+  }
+}

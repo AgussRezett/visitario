@@ -1,0 +1,67 @@
+@use '@/styles/abstracts' as *;
+
+.step {
+  @include flex(column, $gap: space(5));
+}
+
+.intro {
+  @include flex(column, $gap: space(1));
+}
+
+.title {
+  @include heading(display);
+}
+
+.lead {
+  color: $color-ink-muted;
+}
+
+.card {
+  gap: space(4);
+  padding: space(5);
+}
+
+// One permission: icon, title and text, action
+.row {
+  @include flex(row, $gap: space(3), $align: flex-start);
+}
+
+.icon {
+  @include icon-tile(space(9), 10px);
+}
+
+.text {
+  @include flex(column, $gap: space(0.5));
+  flex: 1;
+  min-width: 0;
+}
+
+.row-title {
+  font-weight: $weight-bold;
+}
+
+.row-text {
+  @include text(label);
+  color: $color-ink-muted;
+}
+
+.granted {
+  @include text(label);
+  font-weight: $weight-bold;
+  color: $color-done-ink;
+}
+
+.actions {
+  @include flex(column, $gap: space(2));
+
+  @include up(lg) {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+}
+
+.start {
+  @include up(lg) {
+    padding-inline: space(10);
+  }
+}

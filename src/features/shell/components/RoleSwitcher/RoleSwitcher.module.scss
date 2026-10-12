@@ -1,0 +1,29 @@
+@use '@/styles/abstracts' as *;
+
+// Single company and role: plain text
+.current {
+  @include text(label);
+  padding-inline: space(3);
+  font-weight: $weight-bold;
+  color: $color-ink-muted;
+}
+
+// Several: a select
+.picker {
+  @include flex(column, $gap: space(1));
+  padding-inline: space(1);
+}
+
+.select {
+  @include text(label);
+  height: $touch-target;
+  padding-inline: space(3);
+  border: 1px solid $color-line;
+  border-radius: $radius-md;
+  background: $color-card;
+  font-weight: $weight-bold;
+}
+
+.sr-only {
+  @include visually-hidden;
+}

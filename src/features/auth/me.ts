@@ -1,4 +1,4 @@
-import { queryOptions, useQuery } from '@tanstack/react-query'
+import { queryOptions, useQuery, type QueryClient } from '@tanstack/react-query'
 import { supabase, type Enums } from '@/lib/supabase'
 import type { ActiveMembership } from '@/domain/roles'
 
@@ -58,6 +58,15 @@ async function fetchMe(): Promise<Me | null> {
 }
 
 export const meQuery = queryOptions({ queryKey: ['me'], queryFn: fetchMe, staleTime: 60_000 })
+
+/**
+ * Fetches "me" again and waits for it. Use after anything that changes the session or the
+ * person. Unlike invalidateQueries, it also refreshes when no screen is showing "me" yet
+ * (the login page), so route guards never read the signed-out copy.
+ */
+export function refreshMe(queryClient: QueryClient) {
+  return queryClient.fetchQuery({ ...meQuery, staleTime: 0 })
+}
 
 export function useMe() {
   return useQuery(meQuery)

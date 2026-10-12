@@ -1,7 +1,7 @@
 # Arquitectura — Visitario v2
 
 ## Stack
-- **Frontend:** SPA con Vite + React + TypeScript estricto, TanStack Router y Query, React Hook Form + Zod, Tailwind con los tokens del design system. Sin Next.js: SSR no aporta detrás de un login y complica el modo offline.
+- **Frontend:** SPA con Vite + React + TypeScript estricto, TanStack Router y Query, React Hook Form + Zod, Sass con CSS Modules: cada componente o página es una carpeta con su `.module.scss`; tokens, mixins y breakpoints en `src/styles/abstracts`. Sin Next.js: SSR no aporta detrás de un login y complica el modo offline.
 - **PWA:** vite-plugin-pwa (Workbox). Datos locales en IndexedDB con Dexie (etapa 2).
 - **Backend:** Supabase (Postgres 17, Auth, Edge Functions), región São Paulo. Aislamiento por empresa con Row Level Security; cada tabla de negocio lleva `company_id`.
 - **Fotos:** Cloudflare R2 (10 GB gratis, sin egress). Subida directa con URL firmada que emite una Edge Function. Ruta `c/<company_id>/v/<visit_id>/<photo_id>.jpg`. Compresión en el cliente: 1400 px, JPEG 72 %.
@@ -25,4 +25,4 @@ Cola propia: la jornada se descarga a IndexedDB; todo se escribe local primero y
 Opcional y solo para armar el recorrido. No se guarda en fotos ni al marcar llegada. Nunca en segundo plano.
 
 ## Repo
-`CLAUDE.md` con reglas; `docs/`; `src/app`, `src/routes`, `src/features`, `src/domain` (reglas puras con tests), `src/ui`, `src/lib`; `supabase/migrations`, `supabase/functions`, `supabase/tests`; `e2e/`.
+`CLAUDE.md` con reglas; `docs/`; `src/app`, `src/routes`, `src/features/<feature>/pages` y `components`, `src/domain` (reglas puras con tests), `src/ui` (primitivas), `src/styles` (abstracts y base), `src/lib`; `supabase/migrations`, `supabase/functions`, `supabase/tests`; `e2e/`.

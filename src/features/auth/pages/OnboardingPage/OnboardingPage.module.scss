@@ -1,0 +1,84 @@
+@use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(6));
+  width: 100%;
+  max-width: 760px;
+  min-height: 100dvh;
+  margin-inline: auto;
+  padding: space(8) space(5);
+
+  @include up(lg) {
+    padding-block: space(12);
+  }
+}
+
+.top {
+  @include flex(row, $align: center, $justify: space-between);
+}
+
+.step {
+  @include text(label);
+  font-weight: $weight-bold;
+  color: $color-ink-subtle;
+}
+
+// Two-segment progress bar
+.progress {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(1.5);
+}
+
+.segment {
+  height: space(1.5);
+  border-radius: $radius-full;
+  background: $color-line;
+}
+
+.segment-done {
+  background: $color-forest;
+
+  @include dark {
+    background: $color-lime;
+  }
+}
+
+.intro {
+  @include flex(column, $gap: space(1));
+}
+
+.title {
+  @include heading(display);
+}
+
+.lead {
+  color: $color-ink-muted;
+}
+
+.form {
+  @include flex(column, $gap: space(4));
+}
+
+// Fields card: one column on phones, two on desktop
+.fields {
+  gap: space(4);
+  padding: space(5);
+
+  @include up(lg) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.privacy {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.submit {
+  @include up(lg) {
+    align-self: flex-end;
+    padding-inline: space(10);
+  }
+}

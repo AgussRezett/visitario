@@ -1,0 +1,107 @@
+@use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(6));
+  width: 100%;
+  max-width: 560px;
+  min-height: 100dvh;
+  margin-inline: auto;
+  padding: space(8) space(5);
+
+  @include up(lg) {
+    padding-block: space(12);
+  }
+}
+
+.top {
+  @include flex(row, $align: center, $justify: space-between);
+}
+
+.intro {
+  @include flex(column, $gap: space(1.5));
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+.title {
+  @include heading(title);
+
+  @include up(lg) {
+    @include text(display);
+  }
+}
+
+.lead {
+  color: $color-ink-muted;
+}
+
+.invitations {
+  @include flex(column, $gap: space(2));
+}
+
+.choices {
+  @include flex(column, $gap: space(3));
+}
+
+// ---- Choice cards
+.choice {
+  gap: space(4);
+}
+
+.choice-row {
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+.choice-head {
+  @include flex(row, $gap: space(3), $align: flex-start);
+}
+
+.choice-icon {
+  @include icon-tile;
+  background: $color-lime-soft;
+
+  @include dark {
+    background: $color-muted;
+  }
+}
+
+.choice-icon-muted {
+  @include icon-tile;
+  color: $color-ink-subtle;
+
+  @include dark {
+    color: $color-ink-subtle;
+  }
+}
+
+.choice-text {
+  @include flex(column, $gap: space(1));
+}
+
+.choice-title {
+  @include text(heading);
+  font-weight: $weight-extrabold;
+}
+
+.choice-lead {
+  @include text(label);
+  color: $color-ink-muted;
+}
+
+// ---- Footer links
+.footer {
+  @include flex(row, $gap: space(6), $align: center, $justify: center);
+  @include text(label);
+  margin-top: auto;
+  padding-top: space(4);
+  font-weight: $weight-bold;
+}
+
+.footer-link {
+  @include flex(row, $gap: space(1.5), $align: center);
+  display: inline-flex;
+  color: $color-ink-muted;
+}
