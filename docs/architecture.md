@@ -4,7 +4,7 @@
 - **Frontend:** SPA con Vite + React + TypeScript estricto, TanStack Router y Query, React Hook Form + Zod, Sass con CSS Modules: cada componente o página es una carpeta con su `.module.scss`; tokens, mixins y breakpoints en `src/styles/abstracts`. Sin Next.js: SSR no aporta detrás de un login y complica el modo offline.
 - **PWA:** vite-plugin-pwa (Workbox). Datos locales en IndexedDB con Dexie (etapa 2).
 - **Backend:** Supabase (Postgres 17, Auth, Edge Functions), región São Paulo. Aislamiento por empresa con Row Level Security; cada tabla de negocio lleva `company_id`.
-- **Fotos:** Cloudflare R2 (10 GB gratis, sin egress). Subida directa con URL firmada que emite una Edge Function. Ruta `c/<company_id>/v/<visit_id>/<photo_id>.jpg`. Compresión en el cliente: 1400 px, JPEG 72 %.
+- **Fotos:** Cloudflare R2 (10 GB gratis, sin egress). Subida a través de la Edge Function `photos`, que guarda la fila con el token de la persona (RLS) y recién después marca la foto como subida; para verlas emite URLs firmadas de 1 h. Así el bucket no necesita CORS. Ruta `c/<company_id>/v/<visit_id>/<photo_id>.jpg`. Compresión en el cliente: 1400 px, JPEG 72 %, sin metadatos (sin ubicación).
 - **Geocodificación y rutas:** LocationIQ desde Edge Functions; ruteo en el cliente (TSP exacto hasta 11 paradas, greedy + 2-opt arriba).
 - **IA de capturas:** Gemini Flash en plan pago, detrás de una Edge Function con salida validada por Zod. Solo para empresas con plan pago.
 - **Hosting:** Cloudflare Pages. **CI:** GitHub Actions.
