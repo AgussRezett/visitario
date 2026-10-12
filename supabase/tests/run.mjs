@@ -197,6 +197,29 @@ check('Resumed visit goes to the end of the day', (await sys(`select sort_order 
 check('A resumed visit is not offered again', !(await as('agus', `select visit_id from resumable_visits($1, '2026-10-14')`, [panda])).some(r => r.visit_id === va));
 check('Lucía cannot list Agus’s resumable visits', (await as('lucia', `select * from resumable_visits($1, '2026-10-14')`, [panda])).length === 0);
 
+// ---- The storefront photo decides whether the visit started
+const vs = (await as('agus', `select add_visit($1, p_address => 'Gorostiaga 1801') id`, [wNext]))[0].id;
+const visitState = async () => (await sys(`select work_status::text s, arrived_at is not null arrived, consent::text c, finished_at is not null f from visit where id = $1`, [vs]))[0];
+const storefront = async () => (await as('agus', `insert into photo (id, company_id, visit_id, kind, taken_at, bytes, width, height, created_by) values (gen_random_uuid(), $1, $2, 'storefront', now(), 180000, 1400, 1050, $3) returning id`, [panda, vs, agus]))[0].id;
+const sf1 = await storefront();
+check('A storefront photo still uploading does not start the visit', (await visitState()).s === 'pending');
+await sys(`update photo set uploaded_at = now() where id = $1`, [sf1]); // the Edge Function confirms the file
+let st = await visitState();
+check('Uploaded storefront photo: the visit is in progress with its arrival', st.s === 'in_progress' && st.arrived);
+const sf2 = await storefront();
+await as('agus', `update photo set deleted_at = now() where id = $1`, [sf1]);
+check('Deleting one of two storefront photos keeps it in progress', (await visitState()).s === 'in_progress');
+await as('agus', `update visit set consent = 'yes', work_status = 'done' where id = $1`, [vs]);
+await expectError('A merchandiser still cannot jump from done to pending', () => as('agus', `update visit set work_status = 'pending' where id = $1`, [vs]), /transition/);
+await as('agus', `update photo set deleted_at = now() where id = $1`, [sf2]);
+st = await visitState();
+check('Deleting the last storefront photo of a finished visit: back to pending, clean', st.s === 'pending' && !st.arrived && st.c === null && !st.f);
+const sf3 = await storefront();
+await sys(`update photo set uploaded_at = now() where id = $1`, [sf3]);
+await as('agus', `update visit set consent = 'refused', work_status = 'refused' where id = $1`, [vs]);
+await as('agus', `update photo set deleted_at = now() where id = $1`, [sf3]);
+check('Also from refused', (await visitState()).s === 'pending');
+
 // ---- MVP backup import (platform admin, own work)
 const mvp = {
   stores: [{ id: '01926f00-0000-5000-8000-0000000000b1', cn: '9874', name: null, address: 'Arce 730', area: 'Palermo 5', lat: -34.56, lng: -58.43 }],
