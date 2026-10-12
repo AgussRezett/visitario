@@ -1,0 +1,6 @@
+# Minimal config for `supabase link` / `db push` / `functions deploy`.
+project_id = "visitario"
+
+[functions.sign-in-with-dni]
+# Called before the person has a session; it validates credentials itself.
+verify_jwt = false

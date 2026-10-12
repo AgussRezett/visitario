@@ -1,0 +1,172 @@
+// Runs the migrations on Postgres (PGlite) and checks permissions with real users of every role.
+// Usage: node supabase/tests/run.mjs
+import { PGlite } from '@electric-sql/pglite';
+import { pg_trgm } from '@electric-sql/pglite/contrib/pg_trgm';
+import { readFileSync, readdirSync } from 'node:fs';
+
+const db = new PGlite({ extensions: { pg_trgm } });
+const here = new URL('.', import.meta.url);
+const migrations = new URL('../migrations/', import.meta.url);
+await db.exec(readFileSync(new URL('stub_supabase.sql', here), 'utf8'));
+for (const f of readdirSync(migrations).filter(f => f.endsWith('.sql')).sort()) {
+  await db.exec(readFileSync(new URL(f, migrations), 'utf8'));
+}
+
+let passed = 0, failed = 0;
+const U = {
+  carla: '00000000-0000-7000-8000-000000000001', martin: '00000000-0000-7000-8000-000000000002',
+  agus: '00000000-0000-7000-8000-000000000003', lucia: '00000000-0000-7000-8000-000000000004',
+  beto: '00000000-0000-7000-8000-000000000005', intruder: '00000000-0000-7000-8000-000000000006',
+};
+const phone = { agus: '+5491155554521', martin: '+5491144441020', lucia: '+5491133330000', beto: '+5491122220000' };
+for (const [k, id] of Object.entries(U)) await db.query('insert into auth.users (id, phone) values ($1, $2)', [id, phone[k] ?? null]);
+
+async function as(who, sql, params = []) {
+  const claims = JSON.stringify({ sub: U[who], phone: phone[who] ?? null, role: 'authenticated' });
+  await db.exec(`set role authenticated; select set_config('request.jwt.claim.sub', '${U[who]}', false), set_config('request.jwt.claims', '${claims}', false);`);
+  try { return (await db.query(sql, params)).rows; }
+  finally { await db.exec(`reset role; select set_config('request.jwt.claim.sub', '', false), set_config('request.jwt.claims', '', false);`); }
+}
+async function asAnon(sql) {
+  await db.exec('set role anon;');
+  try { return (await db.query(sql)).rows; } finally { await db.exec('reset role;'); }
+}
+const sys = async (sql, params = []) => (await db.query(sql, params)).rows;
+function check(name, cond) { cond ? passed++ : failed++; console.log(`${cond ? 'ok  ' : 'FAIL'} ${name}`); }
+async function expectError(name, fn, pattern) {
+  try { await fn(); check(`${name} (should have failed)`, false); }
+  catch (e) { check(`${name} → ${e.message}`, pattern ? pattern.test(e.message) : true); }
+}
+const pid = async who => (await sys(`select id from person where auth_user_id = $1`, [U[who]]))[0].id;
+
+// ---- Platform setup: Panda and another company, each with an admin (done by a platform admin / service role)
+const [{ id: panda }] = await sys(`insert into company (name, kind) values ('Panda', 'distributor') returning id`);
+const [{ id: other }] = await sys(`insert into company (name, kind) values ('Distribuidora Sur', 'distributor') returning id`);
+await sys(`insert into subscription (company_id, plan) values ($1, 'pilot'), ($2, 'free')`, [panda, other]);
+
+await as('carla', `select complete_identity('30111222', 'Carla', 'López', '1990-01-01', '+5491100000001')`);
+await as('beto', `select complete_identity('31222333', 'Beto', 'Ruiz', '1985-05-05', '+5491122220000')`);
+await sys(`insert into membership (company_id, person_id, roles, status) values ($1, $2, '{admin}', 'active'), ($3, $4, '{admin,merchandiser}', 'active')`,
+  [panda, await pid('carla'), other, await pid('beto')]);
+const [{ id: north }] = await sys(`insert into team (company_id, name) values ($1, 'Norte') returning id`, [panda]);
+const [{ id: south }] = await sys(`insert into team (company_id, name) values ($1, 'Sur') returning id`, [panda]);
+const [{ id: endcap }] = await sys(`insert into display_type (company_id, name) values ($1, 'Puntera') returning id`, [panda]);
+const [{ id: kits }] = await sys(`insert into work_metric (company_id, name, report_label) values ($1, 'Kits de bolsas', 'CUANTOS KIT DE BOLSAS ARME') returning id`, [panda]);
+const [{ id: skyy }] = await sys(`insert into brand (company_id, name) values ($1, 'SKYY') returning id`, [panda]);
+
+// ---- Identity and invitations
+await expectError('Supervisor cannot search by DNI', () => as('martin', `select * from find_person_by_dni($1, '34567890')`, [panda]));
+check('Admin searching an unknown DNI gets nothing', (await as('carla', `select * from find_person_by_dni($1, '34567890')`, [panda])).length === 0);
+check('Lookup is logged with a hash, never the DNI', (await sys(`select count(*)::int n from dni_lookup where length(dni_hash) = 32`))[0].n === 1);
+
+await as('carla', `select invite_person($1, '34567890', '{merchandiser}', $2, current_date, 'Agustín', 'Rezett', '+5491155554521')`, [panda, north]);
+await as('carla', `select invite_person($1, '28441906', '{supervisor}', $2, current_date, 'Martín', 'Sosa', '+5491144441020')`, [panda, north]);
+await as('carla', `select invite_person($1, '40111222', '{merchandiser}', $2, current_date, 'Lucía', 'Gómez', '+5491133330000')`, [panda, south]);
+
+await expectError('Someone else cannot claim Agus’s DNI without his phone', () =>
+  as('intruder', `select complete_identity('34567890', 'X', 'Y', null, '+5491100000000')`), /phone/);
+await as('agus', `select complete_identity('34567890', 'Agustín', 'Rezett', '1995-04-12', '+5491155554521')`);
+await as('martin', `select complete_identity('28441906', 'Martín', 'Sosa', null, '+5491144441020')`);
+await as('lucia', `select complete_identity('40111222', 'Lucía', 'Gómez', null, '+5491133330000')`);
+check('Agus claimed the person created by the invitation', (await sys(`select count(*)::int n from person_private where dni = '34567890'`))[0].n === 1);
+
+const membershipOf = async who => (await sys(`select id from membership where person_id = $1 and company_id = $2`, [await pid(who), panda]))[0].id;
+await expectError('Admin cannot accept an invitation for someone else', async () => {
+  await as('carla', `update membership set status = 'active' where id = $1`, [await membershipOf('agus')]);
+}, /invited person/);
+for (const w of ['agus', 'martin', 'lucia']) await as(w, `select respond_invitation($1, true)`, [await membershipOf(w)]);
+check('Three invitations accepted', (await sys(`select count(*)::int n from membership where company_id = $1 and status = 'active'`, [panda]))[0].n === 4);
+
+check('Agus cannot read Martín’s private data', (await as('agus', `select * from person_private`)).length === 1);
+check('Anonymous sees nothing', (await asAnon(`select * from person`).catch(() => [])).length === 0);
+check('Beto (other company) cannot see Panda people', (await as('beto', `select first_name from person`)).every(r => r.first_name === 'Beto'));
+check('Agus sees his company only', (await as('agus', `select name from company`)).map(r => r.name).join() === 'Panda');
+check('Agus cannot see the subscription', (await as('agus', `select * from subscription`)).length === 0);
+check('Carla (admin) sees the subscription', (await as('carla', `select * from subscription`)).length === 1);
+
+// ---- Workday and visits
+const agus = await pid('agus'), martin = await pid('martin');
+const [{ id: s1 }] = await as('martin', `insert into store (company_id, customer_number, name, address, created_by, source)
+  values ($1, '12345', 'Mas Ahorro', 'Tres Arroyos 762', $2, 'imported') returning id`, [panda, martin]);
+const [{ id: w1 }] = await as('martin', `insert into workday (company_id, merchandiser_id, work_date) values ($1, $2, '2026-10-09') returning id`, [panda, agus]);
+const v1 = '01926f00-0000-7000-8000-00000000a001';
+await as('martin', `insert into visit (id, company_id, workday_id, merchandiser_id, work_date, store_id, added_by, task)
+  values ($1, $2, $3, $4, '2000-01-01', $5, $4, 'Ordenar puntera')`, [v1, panda, w1, agus, s1]);
+check('Visit copies the date from its workday (ignores the client value)', (await sys(`select work_date::text d from visit where id = $1`, [v1]))[0].d === '2026-10-09');
+check('Agus cannot see the draft workday', (await as('agus', `select * from visit`)).length === 0);
+await as('martin', `update workday set status = 'published' where id = $1`, [w1]);
+check('Published: Agus sees his visit', (await as('agus', `select * from visit`)).length === 1);
+check('Lucía (other team) cannot see Agus’s visit', (await as('lucia', `select * from visit`)).length === 0);
+check('Beto (other company) cannot see the visit', (await as('beto', `select * from visit`)).length === 0);
+
+// Agus adds his own address (offline: id comes from the phone)
+const [{ id: s2 }] = await as('agus', `insert into store (company_id, address, created_by, source) values ($1, 'Cabildo 2280', $2, 'merchandiser') returning id`, [panda, agus]);
+const v2 = '01926f00-0000-7000-8000-00000000a002';
+await as('agus', `insert into visit (id, company_id, workday_id, merchandiser_id, work_date, store_id, added_by) values ($1, $2, $3, $4, current_date, $5, $4)`, [v2, panda, w1, agus, s2]);
+check('A visit Agus adds is marked as added by him', (await sys(`select source::text s from visit where id = $1`, [v2]))[0].s === 'added');
+await as('agus', `insert into visit (id, company_id, workday_id, merchandiser_id, work_date, store_id, added_by) values ($1, $2, $3, $4, current_date, $5, $4) on conflict (id) do nothing`, [v2, panda, w1, agus, s2]);
+check('Re-sending the same insert does not duplicate', (await sys(`select count(*)::int n from visit`))[0].n === 2);
+
+await expectError('Agus cannot change the store of an assigned visit', () => as('agus', `update visit set store_id = $1 where id = $2`, [s2, v1]), /supervisor/);
+await expectError('Invalid jump (pending → done)', () => as('agus', `update visit set work_status = 'done' where id = $1`, [v1]), /transition/);
+
+// Visit work
+await as('agus', `update visit set work_status = 'in_progress', arrived_at = now(), consent = 'with_objection', objection = 'Sin cartelería' where id = $1`, [v1]);
+const p1 = '01926f00-0000-7000-8000-00000000f001', d1 = '01926f00-0000-7000-8000-00000000e001', p2 = '01926f00-0000-7000-8000-00000000f002';
+await as('agus', `insert into photo (id, company_id, visit_id, kind, taken_at, bytes, width, height, created_by, uploaded_at) values ($1, $2, $3, 'storefront', now(), 210000, 1400, 1050, $4, now())`, [p1, panda, v1, martin]);
+const ph = (await sys(`select created_by = $2 mine, uploaded_at is null pending from photo where id = $1`, [p1, agus]))[0];
+check('Photo belongs to the uploader and starts unconfirmed', ph.mine === true && ph.pending === true);
+await as('agus', `insert into display (id, company_id, visit_id, display_type_id) values ($1, $2, $3, $4)`, [d1, panda, v1, endcap]);
+check('Display without an after photo: not arranged', (await as('agus', `select arranged from display_status where id = $1`, [d1]))[0].arranged === false);
+await as('agus', `insert into photo (id, company_id, visit_id, display_id, kind, taken_at, bytes, width, height, created_by) values ($1, $2, $3, $4, 'after', now(), 190000, 1400, 1050, $5)`, [p2, panda, v1, d1, agus]);
+check('With an after photo: arranged (derived)', (await as('agus', `select arranged from display_status where id = $1`, [d1]))[0].arranged === true);
+await expectError('Storefront photo with a display is rejected', () => as('agus', `insert into photo (id, company_id, visit_id, display_id, kind, taken_at, bytes, width, height, created_by) values (gen_random_uuid(), $1, $2, $3, 'storefront', now(), 1, 1, 1, $4)`, [panda, v1, d1, agus]));
+await as('agus', `insert into visit_metric (company_id, visit_id, metric_id, quantity) values ($1, $2, $3, 2)`, [panda, v1, kits]);
+await as('agus', `insert into visit_brand (company_id, visit_id, brand_id) values ($1, $2, $3)`, [panda, v1, skyy]);
+await expectError('Supervisor cannot upload photos', () => as('martin', `insert into photo (id, company_id, visit_id, kind, taken_at, bytes, width, height, created_by) values (gen_random_uuid(), $1, $2, 'storefront', now(), 1, 1, 1, $3)`, [panda, v1, martin]), /merchandiser/);
+await expectError('Supervisor cannot record the work', () => as('martin', `update visit set notes = 'x' where id = $1`, [v1]), /merchandiser/);
+await as('agus', `update visit set work_status = 'done', notes = 'Faltó SKYY' where id = $1`, [v1]);
+check('Done: finished_at is stamped', (await sys(`select finished_at is not null f from visit where id = $1`, [v1]))[0].f === true);
+
+// Cross-company isolation
+await expectError('Beto cannot attach a photo to a Panda visit', () => as('beto', `insert into photo (id, company_id, visit_id, kind, taken_at, bytes, width, height, created_by) values (gen_random_uuid(), $1, $2, 'storefront', now(), 1, 1, 1, $3)`, [other, v1, U.beto]));
+await expectError('Not even the service role: the composite FK blocks crossing companies', () => sys(`insert into photo (id, company_id, visit_id, kind, taken_at, bytes, width, height, created_by) values (gen_random_uuid(), $1, $2, 'storefront', now(), 1, 1, 1, $3)`, [other, v1, agus]), /foreign key/);
+
+// Review
+await expectError('Agus cannot approve his own visit', () => as('agus', `update visit set review_status = 'approved' where id = $1`, [v1]), /resubmit/);
+await expectError('Requesting a fix without a comment', () => as('martin', `update visit set review_status = 'needs_fix' where id = $1`, [v1]), /comment/);
+await as('martin', `insert into comment (company_id, visit_id, display_id, author_id, kind, body) values ($1, $2, $3, $4, 'fix_request', 'Falta la foto del antes')`, [panda, v1, d1, martin]);
+await as('martin', `update visit set review_status = 'needs_fix' where id = $1`, [v1]);
+await as('agus', `update visit set review_status = 'unreviewed' where id = $1`, [v1]);
+check('Agus resubmits the fix', (await sys(`select review_status::text r from visit where id = $1`, [v1]))[0].r === 'unreviewed');
+await as('martin', `update visit set review_status = 'approved' where id = $1`, [v1]);
+check('Approved with reviewer and date', (await sys(`select reviewed_by = $2 r from visit where id = $1`, [v1, martin]))[0].r === true);
+await expectError('An approved visit is locked', () => as('agus', `update visit set notes = 'otra' where id = $1`, [v1]), /approved/);
+await expectError('Nor can photos be added to it', () => as('agus', `insert into photo (id, company_id, visit_id, display_id, kind, taken_at, bytes, width, height, created_by) values (gen_random_uuid(), $1, $2, $3, 'before', now(), 1, 1, 1, $4)`, [panda, v1, d1, agus]), /approved/);
+await expectError('Nobody writes the history by hand', () => as('martin', `insert into visit_event (company_id, visit_id, kind) values ($1, $2, 'created')`, [panda, v1]));
+const ev = await as('agus', `select kind::text, to_value from visit_event where visit_id = $1 order by id`, [v1]);
+check(`Automatic history (${ev.map(e => e.to_value ?? e.kind).join(' → ')})`, ev.length === 6);
+
+// Resume: v2 is still pending; Agus moves it to a new workday of his own
+const [{ id: w2 }] = await as('agus', `insert into workday (company_id, merchandiser_id, work_date, status) values ($1, $2, '2026-10-10', 'published') returning id`, [panda, agus]);
+const [{ resume_visit: v3 }] = await as('agus', `select resume_visit($1, $2)`, [v2, w2]);
+const r = (await sys(`select work_date::text d, source::text s, resumed_from = $2 r from visit where id = $1`, [v3, v2]))[0];
+check('Resumed: new visit in the new workday, original source kept', r.r === true && r.d === '2026-10-10' && r.s === 'added');
+
+// Views and search
+const prog = await as('martin', `select * from daily_progress where work_date = '2026-10-09'`);
+check(`Supervisor daily progress (${prog[0]?.total} visits, ${prog[0]?.visited} visited)`, prog.length === 1 && prog[0].total === 2 && prog[0].visited === 1);
+check('Agus sees his progress; Lucía does not', (await as('agus', `select * from daily_progress`)).length === 2 && (await as('lucia', `select * from daily_progress`)).length === 0);
+const found = await as('agus', `select name from store where private.normalize(coalesce(name, '') || ' ' || address || ' ' || coalesce(customer_number, '')) like '%' || private.normalize('mas ahórro') || '%'`);
+check('Accent-insensitive store search', found.length === 1);
+
+const carlaMembership = (await sys(`select id from membership where person_id = $1`, [await pid('carla')]))[0].id;
+await expectError('A company cannot lose its last admin', () => as('carla', `update membership set roles = '{supervisor}' where id = $1`, [carlaMembership]), /admin/);
+
+console.log('\nQuery plan for visits as supervisor:');
+await db.exec(`set role authenticated; select set_config('request.jwt.claim.sub', '${U.martin}', false);`);
+for (const row of (await db.query(`explain select id from visit where work_date = '2026-10-09'`)).rows) console.log('  ' + row['QUERY PLAN']);
+await db.exec('reset role;');
+
+console.log(`\n${passed} passed, ${failed} failed`);
+process.exit(failed ? 1 : 0);
