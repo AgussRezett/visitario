@@ -4,3 +4,11 @@ project_id = "visitario"
 [functions.sign-in-with-dni]
 # Called before the person has a session; it validates credentials itself.
 verify_jwt = false
+
+# These check the session themselves with auth.getUser(), which also works with
+# the project's new JWT signing keys.
+[functions.photos]
+verify_jwt = false
+
+[functions.geocode]
+verify_jwt = false
