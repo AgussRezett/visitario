@@ -15,6 +15,8 @@ export interface FakeState {
   workday: Row | null
   visits: Row[]
   uploads: { bytes: Buffer; meta: Row }[]
+  /** Defaults to one Panda merchandiser membership. */
+  memberships?: Row[]
   /** Simulates a slow connection for photo uploads. */
   uploadDelayMs?: number
 }
@@ -59,7 +61,7 @@ export async function installFakeSupabase(page: Page, state: FakeState) {
     if (path.endsWith('/person_private')) return json({ dni: '35111222', phone: null, birth_date: null })
     if (path.endsWith('/platform_admin')) return json(null)
     if (path.endsWith('/membership')) {
-      return json([{ id: 'm1', company_id: COMPANY, roles: ['merchandiser'], status: 'active', starts_on: '2026-10-01', company: { name: 'Panda' } }])
+      return json(state.memberships ?? [{ id: 'm1', company_id: COMPANY, roles: ['merchandiser'], status: 'active', starts_on: '2026-10-01', company: { name: 'Panda' } }])
     }
 
     if (path.endsWith('/rpc/open_workday')) {
@@ -82,6 +84,7 @@ export async function installFakeSupabase(page: Page, state: FakeState) {
       if (req.method() === 'PATCH' && id) {
         const v = state.visits.find((x) => x.id === id)
         if (v) Object.assign(v, body())
+        if (v?.deleted_at) state.visits = state.visits.filter((x) => x !== v)
         if (v && ['done', 'refused', 'closed'].includes(String(v.work_status))) v.finished_at = new Date().toISOString()
         return route.fulfill({ status: 204 })
       }
