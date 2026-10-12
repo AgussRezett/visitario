@@ -197,6 +197,31 @@ check('Resumed visit goes to the end of the day', (await sys(`select sort_order 
 check('A resumed visit is not offered again', !(await as('agus', `select visit_id from resumable_visits($1, '2026-10-14')`, [panda])).some(r => r.visit_id === va));
 check('Lucía cannot list Agus’s resumable visits', (await as('lucia', `select * from resumable_visits($1, '2026-10-14')`, [panda])).length === 0);
 
+// ---- MVP backup import (platform admin, own work)
+const mvp = {
+  stores: [{ id: '01926f00-0000-5000-8000-0000000000b1', cn: '9874', name: null, address: 'Arce 730', area: 'Palermo 5', lat: -34.56, lng: -58.43 }],
+  workdays: [{ id: '01926f00-0000-4000-8000-0000000000d1', date: '2026-10-01' }],
+  visits: [
+    { id: '01926f00-0000-4000-8000-0000000000e1', wd: '01926f00-0000-4000-8000-0000000000d1', date: '2026-10-01', store: '01926f00-0000-5000-8000-0000000000b1', sort: 0, task: 'Activar', status: 'done', consent: 'yes', objection: null, arrived: '2026-10-01T12:37:00-03:00', finished: '2026-10-01T12:37:00-03:00', notes: 'Collarines', approved: true, resumed: null },
+    { id: '01926f00-0000-4000-8000-0000000000e2', wd: '01926f00-0000-4000-8000-0000000000d1', date: '2026-10-01', store: '01926f00-0000-5000-8000-0000000000b1', sort: 1, task: null, status: 'pending', consent: null, objection: null, arrived: null, finished: null, notes: null, approved: false, resumed: null },
+  ],
+  displays: [{ id: '01926f00-0000-4000-8000-0000000000f1', visit: '01926f00-0000-4000-8000-0000000000e1', type: 'Puntera', ref: null, source: 'found', sort: 0 }],
+  photos: [{ id: '01926f00-0000-5000-8000-0000000000a1', visit: '01926f00-0000-4000-8000-0000000000e1', display: '01926f00-0000-4000-8000-0000000000f1', kind: 'before', taken: '2026-10-01T12:37:00-03:00', bytes: 200000, w: 1400, h: 1050 }],
+  metrics: [{ visit: '01926f00-0000-4000-8000-0000000000e1', metric: 'Kits de bolsas', qty: 4 }],
+  brands: [{ visit: '01926f00-0000-4000-8000-0000000000e1', brand: 'SKYY' }],
+}
+await expectError('Only a platform admin can import an MVP backup', () => as('agus', `select import_mvp_backup($1, $2)`, [panda, mvp]), /platform admin/)
+await sys(`insert into platform_admin (person_id) values ($1)`, [agus])
+const imported = (await as('agus', `select import_mvp_backup($1, $2) r`, [panda, mvp]))[0].r
+check(`Import returns what was saved (${JSON.stringify(imported)})`, imported.workdays === 1 && imported.visits === 2 && imported.photos === 1)
+const iv = (await sys(`select work_status::text w, review_status::text r, source::text s, added_by = $2 mine, finished_at is not null f from visit where id = $1`, ['01926f00-0000-4000-8000-0000000000e1', agus]))[0]
+check('Imported visit keeps its history: done, approved, assigned', iv.w === 'done' && iv.r === 'approved' && iv.s === 'assigned' && iv.mine && iv.f)
+check('Imported work and brand', (await sys(`select (select quantity from visit_metric where visit_id = $1) q, (select count(*)::int from visit_brand where visit_id = $1) b`, ['01926f00-0000-4000-8000-0000000000e1']))[0].q === 4)
+await as('agus', `select import_mvp_backup($1, $2)`, [panda, mvp])
+check('Importing twice does not duplicate', (await sys(`select count(*)::int n from visit where workday_id = '01926f00-0000-4000-8000-0000000000d1'`))[0].n === 2)
+await as('agus', `update visit set work_status = 'in_progress' where id = '01926f00-0000-4000-8000-0000000000e2'`)
+await expectError('After the import the storefront rule applies again', () => as('agus', `update visit set work_status = 'closed', consent = 'closed' where id = '01926f00-0000-4000-8000-0000000000e2'`), /storefront/)
+
 // Password detection (Google users who later set a password)
 await sys(`update auth.users set encrypted_password = '$2a$10$hash' where id = $1`, [U.agus]);
 check('has_password is true for a user with a password', (await as('agus', `select has_password() v`))[0].v === true);

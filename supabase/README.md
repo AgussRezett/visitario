@@ -79,3 +79,10 @@ from public.company c join public.team t on t.company_id = c.id and t.name = 'No
 cross join public.person_private pp
 where c.name = 'Panda' and pp.dni = '<DNI>';
 ```
+
+## MVP backup import
+
+`scripts/import-mvp-backup.mjs ruta/al/visitario-respaldo.json` imports one person's MVP backup as their own
+work: it signs in, calls `import_mvp_backup` (platform admins only; the company is the backup's, where the
+caller must be an active merchandiser) and uploads the photos through `photos`, without EXIF. Ids are
+deterministic, so running it again only uploads what is missing. Needs `.env.local` and the R2 secrets.
