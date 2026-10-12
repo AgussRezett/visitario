@@ -230,6 +230,60 @@ check('Removing a resumed stop makes the original resumable again', (await as('a
 await as('martin', `update visit set deleted_at = now() where id = $1`, [vAssigned]);
 check('The supervisor removes the assigned stop', (await sys(`select deleted_at is not null d from visit where id = $1`, [vAssigned]))[0].d === true);
 
+// ---- Stage 3 · Supervisor: assign, publish, team day, review and corrections
+const fri = '2026-10-16'
+const luciaId = await pid('lucia')
+const wFri = (await as('martin', `select plan_workday($1, $2, $3) id`, [panda, agus, fri]))[0].id
+check('Supervisor plans a draft for Agus', (await sys(`select status::text s, created_by = $2 mine from workday where id = $1`, [wFri, martin]))[0].s === 'draft')
+check('plan_workday twice returns the same draft', (await as('martin', `select plan_workday($1, $2, $3) id`, [panda, agus, fri]))[0].id === wFri)
+check('Agus does not see the draft', (await as('agus', `select id from workday where id = $1`, [wFri])).length === 0)
+await expectError('Agus opening that day is told the supervisor is preparing it', () => as('agus', `select open_workday($1, $2)`, [panda, fri]), /preparing/)
+await expectError('Martín cannot plan for Lucía (another team)', () => as('martin', `select plan_workday($1, $2, $3)`, [panda, luciaId, fri]))
+const vAssign = (await as('martin', `select add_visit($1, p_store => $2, p_task => 'Ordenar puntera', p_display_types => $3) id`, [wFri, s1, [endcap, endcap]]))[0].id
+await as('martin', `select add_visit($1, p_address => 'Echeverría 1580') id`, [wFri])
+check('Assigned stop: source, author, task and indicated displays', (await sys(`select v.source::text s, v.added_by = $2 by, v.task, (select count(*)::int from display d where d.visit_id = v.id and d.source = 'assigned') n from visit v where v.id = $1`, [vAssign, martin]))[0].n === 2)
+await as('martin', `update workday set status = 'published' where id = $1`, [wFri])
+check('Published: Agus sees the day and its 2 stops', (await as('agus', `select id from visit where workday_id = $1`, [wFri])).length === 2)
+const vExtra = (await as('agus', `select add_visit($1, p_address => 'Moldes 1365') id`, [wFri]))[0].id
+check('A stop Agus adds to an assigned day shows as his', (await as('martin', `select source::text s, added_by = $2 mine from visit where id = $1`, [vExtra, agus]))[0].s === 'added')
+
+const wSat = (await as('martin', `select plan_workday($1, $2, '2026-10-17') id`, [panda, agus]))[0].id
+check('Copy a day: all its stops', (await as('martin', `select copy_workday($1, $2) n`, [wFri, wSat]))[0].n === 3)
+check('Copy again adds nothing', (await as('martin', `select copy_workday($1, $2) n`, [wFri, wSat]))[0].n === 0)
+check('Copied stops keep task and indicated displays', (await sys(`select count(*)::int n from display d join visit v on v.id = d.visit_id where v.workday_id = $1`, [wSat]))[0].n === 2)
+check('Supervisor lists Agus’s pending stops', (await as('martin', `select * from merchandiser_pending($1, $2, '2026-10-18')`, [panda, agus])).length > 0)
+check('Lucía cannot list Agus’s pending stops', (await as('lucia', `select * from merchandiser_pending($1, $2, '2026-10-18')`, [panda, agus])).length === 0)
+
+await as('agus', `select report_sync($1, 7, 0, 2, now() - interval '10 minutes')`, [panda])
+await as('agus', `select report_sync($1, 3, 1, 1, null)`, [panda])
+check('Sync report keeps the last numbers', (await as('martin', `select pending, failed from sync_report where person_id = $1`, [agus]))[0]?.pending === 3)
+check('Lucía and Beto do not see Agus’s sync', (await as('lucia', `select * from sync_report where person_id = $1`, [agus])).length === 0 && (await as('beto', `select * from sync_report`)).length === 0)
+await as('beto', `select report_sync($1, 9, 9, 9, null)`, [panda])
+check('Reporting for a company where you do not work saves nothing', (await sys(`select count(*)::int n from sync_report where person_id = $1`, [U.beto]))[0].n === 0)
+
+// Agus works the assigned stop and finishes it
+await as('agus', `insert into photo (id, company_id, visit_id, kind, taken_at, bytes, width, height, created_by) values (gen_random_uuid(), $1, $2, 'storefront', now(), 1, 1, 1, $3)`, [panda, vAssign, agus])
+await as('agus', `update visit set work_status = 'in_progress', consent = 'yes' where id = $1`, [vAssign])
+await as('agus', `update visit set work_status = 'done' where id = $1`, [vAssign])
+let team = await as('martin', `select * from team_day($1, $2)`, [panda, fri])
+let agusRow = team.find(r => r.person_id === agus)
+check(`Team day: Agus 1 of 3 visited, 1 to review, sync 3 (${JSON.stringify({ t: agusRow?.total, v: agusRow?.visited, r: agusRow?.to_review, s: agusRow?.sync_pending })})`, agusRow?.total === 3 && agusRow.visited === 1 && agusRow.to_review === 1 && agusRow.sync_pending === 3 && agusRow.last_activity_at !== null)
+check('Team day does not show Lucía to Martín', !team.some(r => r.first_name === 'Lucía'))
+check('Lucía’s team day only has herself', (await as('lucia', `select * from team_day($1, $2)`, [panda, fri])).every(r => r.first_name === 'Lucía'))
+
+await expectError('A fix request needs a comment', () => as('martin', `select request_fix($1, '  ')`, [vAssign]), /comment/)
+await expectError('Lucía cannot ask for a fix on Agus’s visit', () => as('lucia', `select request_fix($1, 'x')`, [vAssign]))
+const dFix = (await sys(`select id from display where visit_id = $1 order by sort_order limit 1`, [vAssign]))[0].id
+await as('martin', `select request_fix($1, 'Falta el después de la puntera', $2)`, [vAssign, dFix])
+check('Fix requested with its comment on the display', (await sys(`select v.review_status::text r, (select display_id = $2 from comment c where c.visit_id = v.id and c.kind = 'fix_request') d from visit v where v.id = $1`, [vAssign, dFix]))[0].d === true)
+await as('agus', `insert into comment (company_id, visit_id, author_id, kind, body) values ($1, $2, $3, 'reply', 'Ahora la saco')`, [panda, vAssign, agus])
+await as('agus', `update visit set review_status = 'unreviewed' where id = $1`, [vAssign])
+team = await as('martin', `select * from team_day($1, $2)`, [panda, fri])
+check('The resubmitted fix is back in the supervisor’s queue', team.find(r => r.person_id === agus)?.to_review === 1)
+await as('martin', `update visit set review_status = 'approved' where id = $1`, [vAssign])
+check('Approved', (await sys(`select review_status::text r from visit where id = $1`, [vAssign]))[0].r === 'approved')
+check('The conversation is visible to both, not to Lucía', (await as('agus', `select * from comment where visit_id = $1`, [vAssign])).length === 2 && (await as('lucia', `select * from comment where visit_id = $1`, [vAssign])).length === 0)
+
 // ---- MVP backup import (platform admin, own work)
 const mvp = {
   stores: [{ id: '01926f00-0000-5000-8000-0000000000b1', cn: '9874', name: null, address: 'Arce 730', area: 'Palermo 5', lat: -34.56, lng: -58.43 }],

@@ -842,6 +842,51 @@ export type Database = {
           },
         ]
       }
+      sync_report: {
+        Row: {
+          company_id: string
+          failed: number
+          oldest_at: string | null
+          pending: number
+          person_id: string
+          photos: number
+          reported_at: string
+        }
+        Insert: {
+          company_id: string
+          failed?: number
+          oldest_at?: string | null
+          pending?: number
+          person_id: string
+          photos?: number
+          reported_at?: string
+        }
+        Update: {
+          company_id?: string
+          failed?: number
+          oldest_at?: string | null
+          pending?: number
+          person_id?: string
+          photos?: number
+          reported_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_report_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sync_report_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "person"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team: {
         Row: {
           areas: string | null
@@ -1401,6 +1446,7 @@ export type Database = {
         }
         Returns: string
       }
+      copy_workday: { Args: { p_from: string; p_to: string }; Returns: number }
       create_personal_company: { Args: never; Returns: string }
       find_person_by_dni: {
         Args: { p_company: string; p_dni: string }
@@ -1413,6 +1459,10 @@ export type Database = {
         }[]
       }
       has_password: { Args: never; Returns: boolean }
+      import_mvp_backup: {
+        Args: { p_company: string; p_data: Json }
+        Returns: Json
+      }
       invite_person: {
         Args: {
           p_company: string
@@ -1426,7 +1476,40 @@ export type Database = {
         }
         Returns: string
       }
-      open_workday: { Args: { p_company: string; p_date: string }; Returns: string }
+      merchandiser_pending: {
+        Args: { p_before: string; p_company: string; p_merchandiser: string }
+        Returns: {
+          address: string
+          finished_at: string
+          pending_displays: number
+          store_name: string
+          visit_id: string
+          work_date: string
+          work_status: Database["public"]["Enums"]["work_status"]
+        }[]
+      }
+      open_workday: {
+        Args: { p_company: string; p_date: string }
+        Returns: string
+      }
+      plan_workday: {
+        Args: { p_company: string; p_date: string; p_merchandiser: string }
+        Returns: string
+      }
+      report_sync: {
+        Args: {
+          p_company: string
+          p_failed: number
+          p_oldest?: string
+          p_pending: number
+          p_photos: number
+        }
+        Returns: undefined
+      }
+      request_fix: {
+        Args: { p_body: string; p_display?: string; p_visit: string }
+        Returns: undefined
+      }
       respond_invitation: {
         Args: { p_accept: boolean; p_membership: string }
         Returns: undefined
@@ -1435,9 +1518,9 @@ export type Database = {
         Args: { p_before: string; p_company: string }
         Returns: {
           address: string
-          finished_at: string | null
+          finished_at: string
           pending_displays: number
-          store_name: string | null
+          store_name: string
           visit_id: string
           work_date: string
           work_status: Database["public"]["Enums"]["work_status"]
@@ -1451,11 +1534,35 @@ export type Database = {
         Args: { p_company: string; p_limit?: number; p_query: string }
         Returns: {
           address: string
-          area: string | null
-          customer_number: string | null
+          area: string
+          customer_number: string
           id: string
           location_status: Database["public"]["Enums"]["location_status"]
-          name: string | null
+          name: string
+        }[]
+      }
+      team_day: {
+        Args: { p_company: string; p_date: string }
+        Returns: {
+          approved: number
+          closed: number
+          first_name: string
+          in_progress: number
+          last_activity_at: string
+          last_name: string
+          last_place: string
+          needs_fix: number
+          person_id: string
+          refused: number
+          sync_failed: number
+          sync_pending: number
+          sync_photos: number
+          sync_reported_at: string
+          to_review: number
+          total: number
+          visited: number
+          workday_id: string
+          workday_status: Database["public"]["Enums"]["workday_status"]
         }[]
       }
     }

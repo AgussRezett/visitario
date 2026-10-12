@@ -86,7 +86,7 @@ test('a visit cannot end without the storefront photo and the store’s answer',
 
   await page.locator('input[type=file]').first().setInputFiles({ name: 'IMG_0001.jpg', mimeType: 'image/jpeg', buffer: withGps })
   await expect(page.getByText(/con la foto de fachada/)).toBeVisible()
-  await expect.poll(() => state.uploads.length).toBe(1)
+  await expect.poll(() => state.uploads.length, { timeout: 15_000 }).toBe(1) // a 4 MB photo is compressed first
   const upload = state.uploads[0]
   expect(upload?.bytes.length).toBeLessThan(400_000)
   expect(upload?.meta.width).toBe(1400)

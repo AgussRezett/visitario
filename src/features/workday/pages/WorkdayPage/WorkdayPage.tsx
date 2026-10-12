@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { History, Plus } from 'lucide-react'
@@ -9,6 +9,7 @@ import { Refreshing } from '@/ui/Refreshing'
 import { useWorkContext } from '@/features/workday/context'
 import { historyQuery, resumableQuery, workdayQuery } from '@/features/workday/api/queries'
 import { usePrefetchWeek } from '@/features/workday/api/prefetch'
+import { reportFor } from '@/features/sync/outbox'
 import { DaySkeleton } from '@/features/workday/components/Skeletons'
 import { DayHeader } from './DayHeader'
 import { NoWorkday } from './NoWorkday'
@@ -31,6 +32,9 @@ export function WorkdayPage({ date: requested }: { date?: string }) {
   const resumable = useQuery({ ...resumableQuery(companyId, date), enabled: on, placeholderData: keepPreviousData })
   const [sheet, setSheet] = useState<DaySheet>(null)
   usePrefetchWeek(companyId, personId, date, history.data)
+  useEffect(() => {
+    if (companyId) reportFor(companyId) // the supervisor sees this phone is up to date
+  }, [companyId])
 
   if (!ctx) return null
   const goTo = (d: string) => navigate({ to: '/s/workday', search: d === todayInArgentina() ? {} : { date: d } })

@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { visitWorkQuery, type Visit } from '@/features/workday/api/queries'
+import { commentsQuery, type VisitComment } from '@/features/workday/api/comments'
 import { applyToList, applyToVisit, applyToWork } from './overlay'
 import { useSync, type Pending } from './outbox'
 
@@ -37,4 +38,20 @@ export function uploadStateOf(photoId: string, rows: readonly Pending[]): Upload
 export function useUploadState(photoId: string | undefined) {
   const { rows } = useSync()
   return photoId ? uploadStateOf(photoId, rows) : undefined
+}
+
+/** The visit's conversation, with the messages still on the phone at the end. */
+export function useVisitComments(visitId: string) {
+  const comments = useQuery(commentsQuery(visitId))
+  const { rows } = useSync()
+  const data = useMemo(() => {
+    const server = comments.data ?? []
+    const pending: VisitComment[] = rows.flatMap((r) =>
+      r.op.kind === 'comment.add' && r.op.visitId === visitId && r.state !== 'failed' && !server.some((c) => c.id === r.id)
+        ? [{ id: r.id, visitId, displayId: r.op.displayId, authorId: r.op.authorId, authorName: '', kind: 'reply' as const, body: r.op.body, createdAt: r.createdAt, pending: !r.sent }]
+        : [],
+    )
+    return [...server, ...pending]
+  }, [comments.data, rows, visitId])
+  return { ...comments, data }
 }

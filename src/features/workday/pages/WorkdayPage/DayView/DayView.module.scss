@@ -80,3 +80,18 @@
   border-radius: $radius-full;
   box-shadow: 0 6px 16px rgb(23 59 48 / 0.28);
 }
+
+// ---- Corrections asked by the supervisor
+.fix-links {
+  @include flex(row, $gap: space(2));
+  flex-wrap: wrap;
+  margin-top: space(1);
+}
+
+.fix-link {
+  @include text(label);
+  font-weight: $weight-extrabold;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  color: inherit;
+}

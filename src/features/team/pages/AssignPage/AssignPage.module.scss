@@ -1,0 +1,251 @@
+@use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(4));
+  padding: space(4) space(5) space(6);
+
+  @include up(lg) {
+    gap: space(5);
+    padding: space(6) space(8);
+  }
+}
+
+.top {
+  @include flex(row, $gap: space(3), $align: flex-end, $justify: space-between);
+  flex-wrap: wrap;
+}
+
+.titles {
+  @include flex(column, $gap: space(0.5));
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+.title {
+  @include heading(title);
+
+  @include up(lg) {
+    @include heading(display);
+  }
+}
+
+.actions {
+  @include flex(row, $gap: space(3), $align: flex-end);
+  flex-wrap: wrap;
+}
+
+.date-field {
+  min-width: 170px;
+}
+
+.publish-desktop {
+  display: none;
+
+  @include up(lg) {
+    display: inline-flex;
+  }
+}
+
+.publish-phone {
+  @include flex(column);
+
+  @include up(lg) {
+    display: none;
+  }
+}
+
+.empty {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+// People: a row that scrolls sideways on phones, wraps on desktop
+.people {
+  @include flex(row, $gap: space(2));
+  margin-inline: calc(-1 * #{space(5)});
+  padding-inline: space(5);
+  overflow-x: auto;
+
+  @include up(lg) {
+    flex-wrap: wrap;
+    margin-inline: 0;
+    padding-inline: 0;
+    overflow: visible;
+  }
+}
+
+.person {
+  @include flex(row, $gap: space(2.5), $align: center);
+  @include transition-colors;
+  flex: 0 0 auto;
+  min-height: 52px;
+  padding: space(2) space(3.5) space(2) space(2.5);
+  border: 1.5px solid $color-line;
+  border-radius: $radius-md;
+  background: $color-card;
+  text-align: left;
+
+  &[data-on] {
+    border-color: $color-forest;
+    background: $color-lime-soft;
+
+    @include dark {
+      border-color: $color-lime;
+      background: $color-muted;
+    }
+  }
+}
+
+.person-text {
+  @include flex(column);
+}
+
+.person-name {
+  @include text(label);
+  font-weight: $weight-extrabold;
+}
+
+.person-meta {
+  @include text(tiny);
+  color: $color-ink-subtle;
+}
+
+// ---- The selected merchandiser's day
+.plan {
+  @include flex(column, $gap: space(3));
+}
+
+.plan-head {
+  @include flex(row, $gap: space(3), $align: center, $justify: space-between);
+  flex-wrap: wrap;
+}
+
+.heading {
+  @include heading(heading);
+  @include flex(row, $gap: space(2), $align: center);
+  flex-wrap: wrap;
+}
+
+%status {
+  @include text(tiny);
+  padding: 2px space(2);
+  border-radius: $radius-full;
+  font-weight: $weight-extrabold;
+}
+
+.published {
+  @extend %status;
+  background: $color-done-soft;
+  color: $color-done-ink;
+}
+
+.draft {
+  @extend %status;
+  background: $color-pending-soft;
+  color: $color-pending-ink;
+}
+
+.plan-actions {
+  @include flex(row, $gap: space(2));
+  flex-wrap: wrap;
+}
+
+.help {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.empty-plan {
+  @include surface;
+  @include flex(column, $gap: space(2), $align: center);
+  @include text(label);
+  padding: space(8) space(5);
+  text-align: center;
+  color: $color-ink-muted;
+}
+
+.stops {
+  @include flex(column, $gap: space(2));
+}
+
+.stop {
+  @include surface;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: space(2) space(3);
+  padding: space(3);
+
+  @include up(lg) {
+    grid-template-columns: auto minmax(0, 1fr) 260px auto;
+  }
+}
+
+.num {
+  @include center;
+  @include square(space(8));
+  @include text(label);
+  border-radius: $radius-sm;
+  background: $color-muted;
+  font-weight: $weight-extrabold;
+}
+
+.stop-body {
+  @include flex(column, $gap: space(1));
+  min-width: 0;
+}
+
+.stop-name {
+  @include truncate;
+  font-weight: $weight-bold;
+}
+
+.stop-meta {
+  @include text(tiny);
+  color: $color-ink-subtle;
+}
+
+.tags {
+  @include flex(row, $gap: space(1.5));
+  flex-wrap: wrap;
+}
+
+.tag {
+  @include text(tiny);
+  padding: 2px space(2);
+  border-radius: $radius-full;
+  background: $color-muted;
+  font-weight: $weight-bold;
+}
+
+// Phones: the task goes on its own line under the store
+.task {
+  @include text(label);
+  grid-column: 2 / 4;
+  grid-row: 2;
+  height: space(10);
+  padding-inline: space(3);
+  border: 1px solid $color-control;
+  border-radius: $radius-md;
+  background: $color-card;
+  color: $color-ink;
+
+  @include up(lg) {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+.remove {
+  @include center;
+  @include square($touch-target);
+  border-radius: $radius-md;
+  color: $color-ink-subtle;
+
+  @include hover {
+    background: $color-refused-soft;
+    color: $color-refused-ink;
+  }
+}

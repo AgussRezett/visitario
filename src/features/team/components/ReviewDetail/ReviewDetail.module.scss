@@ -1,0 +1,163 @@
+@use '@/styles/abstracts' as *;
+
+.detail {
+  @include flex(column, $gap: space(3));
+
+  @include up(lg) {
+    gap: space(4);
+  }
+}
+
+.card {
+  @include surface;
+  @include flex(column, $gap: space(3));
+  min-width: 0;
+  padding: space(4);
+}
+
+.head {
+  @include flex(row, $gap: space(3), $align: flex-start, $justify: space-between);
+}
+
+.titles {
+  @include flex(column, $gap: space(0.5));
+  min-width: 0;
+}
+
+.title {
+  @include heading(title);
+}
+
+.muted {
+  @include text(label);
+  color: $color-ink-muted;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: space(2);
+
+  div {
+    @include flex(column);
+    padding: space(2.5) space(3);
+    border-radius: $radius-md;
+    background: $color-muted;
+  }
+
+  dt {
+    @include text(tiny);
+    color: $color-ink-subtle;
+  }
+
+  dd {
+    @include text(label);
+    font-weight: $weight-bold;
+  }
+}
+
+.card-head {
+  @include flex(row, $gap: space(2), $align: baseline, $justify: space-between);
+  flex-wrap: wrap;
+}
+
+.heading {
+  @include heading(heading);
+}
+
+.shots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: space(2);
+
+  @include up(sm) {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  }
+}
+
+.shot {
+  min-height: 104px;
+}
+
+.missing {
+  @include center;
+  @include text(tiny);
+  min-height: 104px;
+  padding: space(2);
+  border: 1.5px dashed $color-fix;
+  border-radius: $radius-md;
+  font-weight: $weight-bold;
+  text-align: center;
+  color: $color-fix-ink;
+}
+
+.pair {
+  @include flex(column, $gap: space(3));
+
+  @include up(sm) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: space(4);
+  }
+}
+
+.kv {
+  @include flex(column, $gap: space(1.5));
+
+  div {
+    @include flex(row, $gap: space(3), $justify: space-between);
+  }
+
+  dt {
+    @include text(label);
+    color: $color-ink-muted;
+  }
+
+  dd {
+    @include text(label);
+    font-weight: $weight-bold;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+}
+
+.body {
+  @include text(small);
+  white-space: pre-wrap;
+}
+
+.history {
+  @include text(tiny);
+  padding-top: space(2);
+  border-top: 1px solid $color-line;
+  color: $color-ink-subtle;
+}
+
+.buttons {
+  @include flex(column, $gap: space(2));
+}
+
+.button-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(2);
+
+  // Phones: two buttons side by side, words only so neither wraps
+  svg {
+    display: none;
+
+    @include up(sm) {
+      display: inline;
+    }
+  }
+
+  @include up(lg) {
+    display: flex;
+    justify-content: flex-end;
+  }
+}
+
+.fix {
+  border-color: $color-fix;
+  color: $color-fix-ink;
+}

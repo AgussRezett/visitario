@@ -17,6 +17,11 @@ export interface FakeState {
   uploads: { bytes: Buffer; meta: Row }[]
   /** Defaults to one Panda merchandiser membership. */
   memberships?: Row[]
+  /** Supervisor side: comments, people of the team, workdays planned, sync reports received. */
+  comments?: Row[]
+  people?: Row[]
+  workdays?: Row[]
+  reports?: Row[]
   /** Simulates a slow connection when loading a day. */
   workdayDelayMs?: number
   /** Answer photo uploads with this status (e.g. 503 down, 403 refused) instead of storing them. */
@@ -31,7 +36,7 @@ export function visitRow(id: string, order: number, address: string, extra: Row 
     resumed_from: null, work_status: 'pending', review_status: 'unreviewed', arrived_at: null, consent: null, objection: null,
     retry_after: null, finished_at: null, notes: null, adder: { first_name: 'Agustín' },
     store: { id: `s-${id}`, name: null, address, area: null, customer_number: null, lat: null, lng: null, location_status: 'unverified' },
-    display: [], photo: [], ...extra,
+    display: [], photo: [], merchandiser_id: ME, merchandiser: { first_name: 'Agustín', last_name: 'Rezett' }, reviewed_at: null, updated_at: '2026-10-12T15:00:00Z', ...extra,
   }
 }
 
@@ -44,11 +49,24 @@ function filePart(req: Request) {
   return { bytes: body.subarray(start, end + 2), meta: JSON.parse(metaMatch?.[1] ?? '{}') as Row }
 }
 
-export async function installFakeSupabase(page: Page, state: FakeState) {
-  await page.addInitScript((token) => {
-    localStorage.setItem('visitario.activeRole', JSON.stringify({ companyId: 'c1', role: 'merchandiser' }))
+/** PostgREST filters the app uses: eq, neq, in, is.null. */
+function matches(row: Row, params: URLSearchParams) {
+  for (const [key, raw] of params) {
+    if (['select', 'order', 'limit', 'offset', 'on_conflict', 'columns'].includes(key)) continue
+    const value = row[key]
+    if (raw.startsWith('eq.') && String(value) !== raw.slice(3)) return false
+    if (raw.startsWith('neq.') && String(value) === raw.slice(4)) return false
+    if (raw.startsWith('in.(') && !raw.slice(4, -1).split(',').map((x) => x.replace(/"/g, '')).includes(String(value))) return false
+    if (raw === 'is.null' && value != null) return false
+  }
+  return true
+}
+
+export async function installFakeSupabase(page: Page, state: FakeState, role: 'merchandiser' | 'supervisor' = 'merchandiser') {
+  await page.addInitScript(([token, r]) => {
+    localStorage.setItem('visitario.activeRole', JSON.stringify({ companyId: 'c1', role: r }))
     localStorage.setItem('sb-mjpzawlyjjlmluozjwap-auth-token', JSON.stringify({ access_token: token, refresh_token: 'r', token_type: 'bearer', expires_in: 3600, expires_at: 9999999999, user: { id: 'u1' } }))
-  }, fakeToken)
+  }, [fakeToken, role] as const)
 
   await page.route('**/*.supabase.co/**', async (route) => {
     const req = route.request()
@@ -68,6 +86,51 @@ export async function installFakeSupabase(page: Page, state: FakeState) {
       return json(state.memberships ?? [{ id: 'm1', company_id: COMPANY, roles: ['merchandiser'], status: 'active', starts_on: '2026-10-01', company: { name: 'Panda' } }])
     }
 
+    // ---- Supervisor side
+    if (path.endsWith('/rpc/report_sync')) {
+      ;(state.reports ??= []).push(body())
+      return json(null)
+    }
+    if (path.endsWith('/rpc/request_fix')) {
+      const b = body()
+      ;(state.comments ??= []).push({ id: `c${state.comments.length + 1}`, visit_id: b.p_visit, display_id: b.p_display ?? null, author_id: ME, kind: 'fix_request', body: b.p_body, created_at: new Date().toISOString(), author: { first_name: 'Agustín', last_name: 'Rezett' } })
+      const v = state.visits.find((x) => x.id === b.p_visit)
+      if (v) v.review_status = 'needs_fix'
+      return json(null)
+    }
+    if (path.endsWith('/rpc/team_day')) {
+      const date = String(body().p_date)
+      return json((state.people ?? []).map((p) => {
+        const wd = (state.workdays ?? []).find((w) => w.merchandiser_id === p.id && w.work_date === date)
+        const vs = state.visits.filter((v) => v.merchandiser_id === p.id && v.work_date === date && (!wd || v.workday_id === wd.id))
+        const n = (f: (v: Row) => boolean) => vs.filter(f).length
+        return {
+          person_id: p.id, first_name: p.first_name, last_name: p.last_name, workday_id: wd?.id ?? null, workday_status: wd?.status ?? null,
+          total: vs.length, visited: n((v) => ['done', 'refused', 'closed'].includes(String(v.work_status))), in_progress: n((v) => v.work_status === 'in_progress'),
+          refused: n((v) => v.work_status === 'refused'), closed: n((v) => v.work_status === 'closed'), approved: n((v) => v.review_status === 'approved'),
+          needs_fix: n((v) => v.review_status === 'needs_fix'), to_review: n((v) => v.review_status === 'unreviewed' && ['done', 'refused', 'closed'].includes(String(v.work_status))),
+          last_activity_at: p.last_activity_at ?? null, last_place: p.last_place ?? null, sync_pending: p.sync_pending ?? 0, sync_failed: 0, sync_photos: p.sync_photos ?? 0, sync_reported_at: p.sync_reported_at ?? null,
+        }
+      }))
+    }
+    if (path.endsWith('/rpc/plan_workday')) {
+      const b = body()
+      const found = (state.workdays ??= []).find((w) => w.merchandiser_id === b.p_merchandiser && w.work_date === b.p_date)
+      if (found) return json(found.id)
+      const w = { id: `w-${b.p_merchandiser}-${b.p_date}`, company_id: COMPANY, merchandiser_id: b.p_merchandiser, work_date: b.p_date, status: 'draft' }
+      state.workdays.push(w)
+      return json(w.id)
+    }
+    if (path.endsWith('/rpc/merchandiser_pending') || path.endsWith('/rpc/copy_workday')) return json(path.endsWith('copy_workday') ? 0 : [])
+    if (path.endsWith('/comment')) {
+      if (req.method() === 'POST') {
+        ;(state.comments ??= []).push({ ...body(), created_at: new Date().toISOString(), author: { first_name: 'Agustín', last_name: 'Rezett' } })
+        return route.fulfill({ status: 201 })
+      }
+      return json((state.comments ?? []).filter((c) => matches(c, url.searchParams)))
+    }
+    if (path.endsWith('/visit_event')) return json([])
+
     if (path.endsWith('/rpc/open_workday')) {
       state.workday = { id: 'w1', company_id: COMPANY, work_date: body().p_date, status: 'published', created_by: ME }
       return json('w1')
@@ -75,10 +138,19 @@ export async function installFakeSupabase(page: Page, state: FakeState) {
     if (path.endsWith('/rpc/add_visit')) {
       const b = body()
       const id = `v${state.visits.length + 1}`
-      state.visits.push(visitRow(id, state.visits.length, String(b.p_address)))
+      const planned = (state.workdays ?? []).find((w) => w.id === b.p_workday)
+      state.visits.push(visitRow(id, state.visits.length, String(b.p_address), planned ? { workday_id: planned.id, work_date: planned.work_date, merchandiser_id: planned.merchandiser_id, source: 'assigned', task: b.p_task ?? null } : {}))
       return json(id)
     }
     if (path.endsWith('/rpc/resumable_visits') || path.endsWith('/rpc/search_stores')) return json([])
+    if (path.endsWith('/workday') && req.method() === 'PATCH') {
+      const changed = (state.workdays ?? []).filter((w) => matches(w, url.searchParams))
+      changed.forEach((w) => Object.assign(w, body()))
+      return json(changed.map((w) => ({ id: w.id })))
+    }
+    if (path.endsWith('/workday') && url.searchParams.has('merchandiser_id') && state.workdays) {
+      return json(state.workdays.filter((w) => matches(w, url.searchParams)))
+    }
     if (path.endsWith('/workday')) {
       if (url.searchParams.get('select') === 'id, work_date') return json(state.workday ? [{ id: 'w1', work_date: state.workday.work_date }] : [])
       const wanted = url.searchParams.get('work_date')?.replace('eq.', '')
@@ -94,7 +166,9 @@ export async function installFakeSupabase(page: Page, state: FakeState) {
         if (v && ['done', 'refused', 'closed'].includes(String(v.work_status))) v.finished_at = new Date().toISOString()
         return route.fulfill({ status: 204 })
       }
-      return json(id ? state.visits.filter((v) => v.id === id) : state.visits)
+      const found = state.visits.filter((v) => matches(v, url.searchParams))
+      if (req.method() === 'HEAD') return route.fulfill({ status: 200, headers: { 'content-range': `*/${found.length}`, 'access-control-allow-origin': '*', 'access-control-expose-headers': 'content-range' } })
+      return json(id ? found : found)
     }
     if (path.endsWith('/functions/v1/photos')) {
       if (state.uploadDelayMs) await new Promise((resolve) => setTimeout(resolve, state.uploadDelayMs))

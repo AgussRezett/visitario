@@ -20,6 +20,7 @@ function patchVisit(v: Visit, p: VisitFields, at: string): Visit {
     ...(p.retry_after !== undefined ? { retryAfter: p.retry_after } : {}),
     ...(p.notes !== undefined ? { notes: p.notes } : {}),
     ...(p.task !== undefined ? { task: p.task } : {}),
+    ...(p.review_status !== undefined ? { reviewStatus: p.review_status } : {}),
   }
   if (p.work_status !== undefined) {
     next.finishedAt = FINISHED.has(p.work_status) ? v.finishedAt ?? at : null

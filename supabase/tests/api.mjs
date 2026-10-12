@@ -3,7 +3,7 @@
 import crypto from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { PostgrestClient } from '@supabase/postgrest-js'
-import { VISIT_SELECT } from '../../src/features/workday/api/selects.ts'
+import { VISIT_SELECT, TEAM_VISIT_SELECT, COMMENT_SELECT } from '../../src/features/workday/api/selects.ts'
 
 let passed = 0, failed = 0
 const check = (name, ok, detail = '') => { ok ? passed++ : failed++; console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}${ok ? '' : ` → ${detail}`}`) }
@@ -91,6 +91,22 @@ const removeDisplay = () => db.from('display').update({ deleted_at: new Date().t
 ok('outbox: remove display', await removeDisplay())
 ok('outbox: remove display again (no-op)', await removeDisplay())
 ok('outbox: same visit patch twice', await db.from('visit').update({ notes: 'Faltó SKYY' }).eq('id', vid))
+
+// ---- Stage 3: what the supervisor screens and the correction flow send
+const tv = await db.from('visit').select(TEAM_VISIT_SELECT).eq('id', vid).single()
+ok('team visit select (merchandiser embed)', tv, tv.data?.merchandiser?.first_name !== undefined)
+const reply = { id: crypto.randomUUID(), company_id: COMPANY, visit_id: vid, display_id: null, author_id: PERSON, kind: 'reply', body: 'Ahora la saco' }
+ok('outbox: reply comment', await db.from('comment').upsert(reply, { onConflict: 'id', ignoreDuplicates: true }))
+ok('outbox: same reply again', await db.from('comment').upsert(reply, { onConflict: 'id', ignoreDuplicates: true }))
+const cs = await db.from('comment').select(COMMENT_SELECT).eq('visit_id', vid).order('created_at')
+ok('comments with author', cs, cs.data?.length === 1 && cs.data[0].author?.first_name !== undefined)
+ok('events of a visit', await db.from('visit_event').select('id, kind, from_value, to_value, occurred_at, actor_id').eq('visit_id', vid).order('id'))
+const td = await db.rpc('team_day', { p_company: COMPANY, p_date: '2026-10-12' })
+ok('team_day', td, Array.isArray(td.data) && td.data.length >= 1)
+ok('report_sync', await db.rpc('report_sync', { p_company: COMPANY, p_pending: 2, p_failed: 0, p_photos: 1 }))
+const reviewCount = await db.from('visit').select('id', { count: 'exact', head: true }).eq('company_id', COMPANY).eq('review_status', 'unreviewed').in('work_status', ['done', 'refused', 'closed'])
+ok('review count (head)', reviewCount, typeof reviewCount.count === 'number')
+ok('merchandiser_pending', await db.rpc('merchandiser_pending', { p_company: COMPANY, p_merchandiser: PERSON, p_before: '2026-10-20' }))
 
 console.log(`\n${passed} passed, ${failed} failed`)
 process.exit(failed ? 1 : 0)

@@ -44,4 +44,14 @@
 - [x] Abrir jornada, agregar direcciones y retomar avisan que necesitan señal.
 - [ ] Probado en la calle con un celular real (modo avión a mitad de una visita).
 
+## Etapa 3 · criterios de aceptación
+- [x] El supervisor arma la jornada de cada activador sin publicar, la publica y el activador la ve al abrir la app (base + e2e).
+- [x] El activador puede agregar direcciones a una jornada asignada y el supervisor ve que las agregó él (base).
+- [x] Pedir corrección sin comentario no se permite (base + dominio + e2e).
+- [x] Una corrección reenviada vuelve a la bandeja del supervisor (base + e2e).
+- [x] Un supervisor no ve activadores de otro equipo: tablero, pendientes, sincronización y conversación (test de RLS).
+- [x] Tablero con avance, última actividad, sincronización de cada celular y alertas (sin actividad, fotos sin subir, correcciones).
+- [x] El activador ve el aviso de corrección, responde y reenvía, también sin señal (e2e).
+- [ ] Revisar 15 visitas desde el celular lleva menos de 10 minutos (prueba con Martín).
+
 Fuera de esta versión: migración del MVP, exportar informes, reportes con diseño, push, cobro automático, acceso para marcas.

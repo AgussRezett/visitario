@@ -1,0 +1,265 @@
+@use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(4));
+  padding: space(4) space(5) space(6);
+
+  @include up(lg) {
+    gap: space(5);
+    padding: space(6) space(8);
+  }
+}
+
+.top {
+  @include flex(row, $gap: space(3), $align: flex-end, $justify: space-between);
+  flex-wrap: wrap;
+}
+
+.titles {
+  @include flex(column, $gap: space(0.5));
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+.title {
+  @include heading(title);
+
+  @include up(lg) {
+    @include heading(display);
+  }
+}
+
+.actions {
+  @include flex(row, $gap: space(2), $align: center);
+  flex-wrap: wrap;
+}
+
+.primary-link {
+  @include flex(row, $gap: space(2), $align: center);
+  @include text(label);
+  @include transition-colors;
+  height: space(9);
+  padding-inline: space(3.5);
+  border-radius: $radius-md;
+  background: $color-action;
+  font-weight: $weight-extrabold;
+  color: $color-action-ink;
+
+  @include hover {
+    background: $color-action-hover;
+  }
+}
+
+.body {
+  @include flex(column, $gap: space(4));
+
+  @include up(lg) {
+    gap: space(5);
+  }
+}
+
+// ---- Totals
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(2);
+
+  @include up(lg) {
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: space(3);
+  }
+
+  > :first-child {
+    grid-column: 1 / -1;
+
+    @include up(lg) {
+      grid-column: auto;
+    }
+  }
+}
+
+.kpi {
+  @include surface;
+  @include flex(column, $gap: space(1.5));
+  min-width: 0;
+  padding: space(3) space(3.5);
+  color: inherit;
+}
+
+.kpi-label {
+  @include text(label);
+  font-weight: $weight-bold;
+  color: $color-ink-subtle;
+}
+
+.kpi-value {
+  font-size: 26px;
+  line-height: 32px;
+  font-weight: $weight-extrabold;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+
+  &[data-tone='fix'] {
+    color: $color-fix-ink;
+  }
+
+  &[data-tone='refused'] {
+    color: $color-refused-ink;
+  }
+}
+
+.kpi-of {
+  font-size: 16px;
+  color: $color-ink-subtle;
+}
+
+.kpi-note {
+  @include text(tiny);
+  color: $color-ink-subtle;
+}
+
+// ---- Team and queue
+.columns {
+  @include flex(column, $gap: space(5));
+
+  @include up(lg) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    align-items: start;
+  }
+}
+
+.team,
+.queue {
+  @include flex(column, $gap: space(2.5));
+  min-width: 0;
+}
+
+.heading {
+  @include heading(heading);
+}
+
+.skeletons {
+  @include flex(column, $gap: space(2));
+}
+
+.empty {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+// Desktop table, phone list
+.table {
+  display: none;
+
+  @include up(lg) {
+    display: block;
+  }
+}
+
+.list {
+  @include flex(column, $gap: space(2));
+
+  @include up(lg) {
+    display: none;
+  }
+}
+
+.person {
+  @include flex(row, $gap: space(2.5), $align: center);
+}
+
+.strong {
+  font-weight: $weight-bold;
+  color: $color-ink;
+}
+
+.progress {
+  @include flex(column, $gap: space(1));
+  min-width: 160px;
+}
+
+.count {
+  @include text(label);
+  font-weight: $weight-bold;
+  font-variant-numeric: tabular-nums;
+}
+
+.small {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.alerts {
+  @include flex(row, $gap: space(1.5));
+
+  > * {
+    white-space: normal;
+  }
+
+  @include text(label);
+  flex-wrap: wrap;
+  color: $color-ink-subtle;
+}
+
+.sync {
+  @include flex(row, $gap: space(1.5), $align: center);
+  @include text(label);
+  font-weight: $weight-bold;
+
+  &[data-tone='ok'] {
+    color: $color-done-ink;
+  }
+
+  &[data-tone='pending'] {
+    color: $color-active-ink;
+  }
+
+  &[data-tone='failed'] {
+    color: $color-refused-ink;
+  }
+}
+
+.row {
+  @include surface;
+  @include flex(row, $gap: space(3), $align: flex-start);
+  padding: space(3);
+  color: inherit;
+}
+
+.row-body {
+  @include flex(column, $gap: space(1));
+  flex: 1;
+  min-width: 0;
+}
+
+.row-top {
+  @include flex(row, $gap: space(2), $justify: space-between);
+}
+
+.queue-head {
+  @include flex(row, $align: center, $justify: space-between);
+}
+
+.more {
+  @include text(label);
+  font-weight: $weight-bold;
+  color: $color-forest;
+
+  @include dark {
+    color: $color-lime;
+  }
+}
+
+.queue-list {
+  @include flex(column, $gap: space(2));
+}
+
+.queue-row {
+  @include surface;
+  @include flex(row, $gap: space(3), $align: center);
+  padding: space(2.5) space(3);
+  color: inherit;
+}

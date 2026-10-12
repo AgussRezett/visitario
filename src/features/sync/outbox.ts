@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import type { QueryClient } from '@tanstack/react-query'
 import { uuidv7 } from '@/lib/id'
+import { supabase } from '@/lib/supabase'
 import { localDb, type OutboxRow } from './db'
 import { PermanentError, describe, send, type Op } from './ops'
 
@@ -35,7 +36,41 @@ let retryTimer: ReturnType<typeof setTimeout> | null = null
 function set(change: Partial<SyncState>) {
   state = { ...state, ...change }
   listeners.forEach((l) => l())
+  if (change.rows) reportSoon()
 }
+
+// ---- What the supervisor sees: how much each phone still has to send, per company.
+const reported = new Set<string>()
+let reportTimer: ReturnType<typeof setTimeout> | null = null
+
+function reportSoon() {
+  if (reportTimer) clearTimeout(reportTimer)
+  reportTimer = setTimeout(() => void report(), 2_000)
+}
+
+async function report(extra: string[] = []) {
+  if (!navigator.onLine) return // reported again when signal returns
+  const byCompany = new Map<string, { pending: number; failed: number; photos: number; oldest: string | null }>()
+  for (const id of [...reported, ...extra]) byCompany.set(id, { pending: 0, failed: 0, photos: 0, oldest: null })
+  for (const r of state.rows) {
+    if (r.sent) continue
+    const c = byCompany.get(r.op.companyId) ?? { pending: 0, failed: 0, photos: 0, oldest: null }
+    if (r.state === 'failed') c.failed++
+    else c.pending++
+    if (r.op.kind === 'photo.add' && r.state !== 'failed') c.photos++
+    if (!c.oldest || r.createdAt < c.oldest) c.oldest = r.createdAt
+    byCompany.set(r.op.companyId, c)
+  }
+  for (const [companyId, c] of byCompany) {
+    const { error } = await supabase.rpc('report_sync', { p_company: companyId, p_pending: c.pending, p_failed: c.failed, p_photos: c.photos, p_oldest: c.oldest ?? undefined })
+    if (error) continue
+    if (c.pending || c.failed) reported.add(companyId)
+    else reported.delete(companyId)
+  }
+}
+
+/** The phone checks in for the company it is working for (also when nothing is pending). */
+export const reportFor = (companyId: string) => void report([companyId])
 const setRows = (rows: Pending[]) => set({ rows })
 const patchRow = (id: string, change: Partial<Pending>) => setRows(state.rows.map((r) => (r.id === id ? { ...r, ...change } : r)))
 
@@ -56,7 +91,10 @@ export async function startSync(qc: QueryClient) {
   client = qc
   const saved = await localDb.outbox.orderBy('seq').toArray().catch(() => [] as OutboxRow[])
   setRows(saved)
-  window.addEventListener('online', () => kick())
+  window.addEventListener('online', () => {
+    kick()
+    reportSoon()
+  })
   kick()
 }
 

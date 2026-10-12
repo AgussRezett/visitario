@@ -24,6 +24,7 @@ import { WorkSection } from './WorkSection'
 import { MessagesSection } from './MessagesSection'
 import { FinishBar } from './FinishBar'
 import { RemoveStop } from './RemoveStop'
+import { CorrectionPanel } from './CorrectionPanel'
 import styles from './VisitPage.module.scss'
 
 export interface ViewerState {
@@ -61,7 +62,7 @@ export function VisitPage({ visitId }: { visitId: string }) {
   const working = canWork(v.consent)
 
   return (
-    <VisitBody key={v.id} visit={v} title={title} meta={meta} back={back} catalogs={catalogs.data} urlFor={urlFor} working={working} onView={setViewer} displayToOpen={displayToOpen} setDisplayToOpen={setDisplayToOpen} viewer={viewer} firstName={ctx.firstName} />
+    <VisitBody key={v.id} visit={v} title={title} meta={meta} back={back} catalogs={catalogs.data} urlFor={urlFor} working={working} onView={setViewer} displayToOpen={displayToOpen} setDisplayToOpen={setDisplayToOpen} viewer={viewer} firstName={ctx.firstName} meId={ctx.personId} />
   )
 }
 
@@ -80,8 +81,9 @@ function VisitBody(props: {
   displayToOpen: { id: string; kind: 'before' | 'after' } | null
   setDisplayToOpen: (d: { id: string; kind: 'before' | 'after' } | null) => void
   firstName: string
+  meId: string
 }) {
-  const { visit: v, title, meta, back, catalogs, urlFor, working, viewer, onView, firstName } = props
+  const { visit: v, title, meta, back, catalogs, urlFor, working, viewer, onView, firstName, meId } = props
   const actions = useVisitActions(v)
   const storefront = v.photos.filter((p) => p.kind === 'storefront')
   const closed = v.consent === 'closed'
@@ -113,6 +115,16 @@ function VisitBody(props: {
 
         <div className={styles.content}>
           <StoreInfo visit={v} />
+          <CorrectionPanel
+            visit={v}
+            actions={actions}
+            meId={meId}
+            displayLabel={(id) => {
+              const i = v.displays.findIndex((d) => d.id === id)
+              const d = v.displays[i]
+              return d ? `Exhibición ${i + 1} · ${catalogs?.displayTypes.find((t) => t.id === d.typeId)?.name ?? ''}` : undefined
+            }}
+          />
           <PhotoStrip
             visit={v}
             working={working}

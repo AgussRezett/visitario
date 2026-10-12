@@ -11,3 +11,14 @@ export const VISIT_SELECT = `
   display:display!display_company_id_visit_id_fkey (id, display_type_id, reference, source, sort_order, deleted_at),
   photo:photo!photo_company_id_visit_id_fkey (id, kind, display_id, taken_at, uploaded_at, deleted_at)
 `
+
+// The supervisor's lists add who did the visit and when it was reviewed.
+export const TEAM_VISIT_SELECT = `${VISIT_SELECT},
+  merchandiser_id, reviewed_at, updated_at,
+  merchandiser:person!visit_merchandiser_id_fkey (first_name, last_name)
+`
+
+export const COMMENT_SELECT = `
+  id, visit_id, display_id, author_id, kind, body, created_at,
+  author:person!comment_author_id_fkey (first_name, last_name)
+`

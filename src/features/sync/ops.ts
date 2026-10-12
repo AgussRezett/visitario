@@ -10,6 +10,8 @@ export type VisitFields = Partial<{
   retry_after: string | null
   notes: string | null
   task: string | null
+  /** Only 'unreviewed': the merchandiser resubmits a visit after a fix. */
+  review_status: 'unreviewed'
 }>
 
 interface Base {
@@ -31,6 +33,7 @@ export type Op =
   | (Base & { kind: 'photo.remove'; photoId: string })
   | (Base & { kind: 'metric.set'; metricId: number; quantity: number })
   | (Base & { kind: 'brand.set'; brandId: number; on: boolean })
+  | (Base & { kind: 'comment.add'; commentId: string; authorId: string; body: string; displayId: string | null })
 
 /** The server refused the change: retrying the same thing will not help. */
 export class PermanentError extends Error {}
@@ -86,6 +89,15 @@ export async function send(op: Op, blob?: Blob) {
           ? await supabase.from('visit_brand').upsert({ company_id: op.companyId, visit_id: op.visitId, brand_id: op.brandId }, { onConflict: 'visit_id,brand_id', ignoreDuplicates: true })
           : await supabase.from('visit_brand').delete().eq('visit_id', op.visitId).eq('brand_id', op.brandId),
       )
+    case 'comment.add':
+      return check(
+        await supabase
+          .from('comment')
+          .upsert(
+            { id: op.commentId, company_id: op.companyId, visit_id: op.visitId, display_id: op.displayId, author_id: op.authorId, kind: 'reply', body: op.body },
+            { onConflict: 'id', ignoreDuplicates: true },
+          ),
+      )
     case 'photo.add': {
       if (!blob) throw new PermanentError('Falta el archivo de la foto.')
       const form = new FormData()
@@ -111,6 +123,7 @@ export function describe(op: Op): string {
     case 'visit.patch': {
       const p = op.patch
       if (p.work_status === 'done' || p.work_status === 'refused' || (p.work_status === 'closed' && !('consent' in p))) return 'Visita terminada'
+      if (p.review_status) return 'Reenviada al supervisor'
       if (p.work_status) return 'Estado de la visita'
       if ('consent' in p) return 'Autorización del local'
       if ('notes' in p) return 'Notas'
@@ -134,5 +147,7 @@ export function describe(op: Op): string {
       return 'Trabajo realizado'
     case 'brand.set':
       return 'Marcas trabajadas'
+    case 'comment.add':
+      return 'Mensaje al supervisor'
   }
 }

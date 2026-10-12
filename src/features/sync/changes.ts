@@ -58,6 +58,15 @@ export function visitChanges(visit: Pick<Visit, 'id' | 'companyId' | 'store'>) {
 
     setMetric: (metricId: number, quantity: number) => enqueue({ ...base, kind: 'metric.set', metricId, quantity }, place),
     setBrand: (brandId: number, on: boolean) => enqueue({ ...base, kind: 'brand.set', brandId, on }, place),
+
+    /** A reply in the visit's conversation, from the merchandiser. */
+    comment: async (authorId: string, body: string, displayId: string | null = null) => {
+      const commentId = uuidv7()
+      await enqueue({ ...base, kind: 'comment.add', commentId, authorId, body: body.trim(), displayId }, place, { id: commentId })
+      return commentId
+    },
+    /** After a fix: back to the supervisor's queue. */
+    resubmit: () => enqueue({ ...base, kind: 'visit.patch', patch: { review_status: 'unreviewed' } }, place),
   }
 }
 
