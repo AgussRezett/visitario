@@ -1,0 +1,10 @@
+@use '@/styles/abstracts' as *;
+
+@layer ui {
+  // Pages adjust layout (row, padding, grid) by passing their own className.
+  .card {
+    @include surface;
+    @include flex(column, $gap: space(3));
+    padding: space(4);
+  }
+}

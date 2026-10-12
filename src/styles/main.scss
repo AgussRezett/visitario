@@ -1,0 +1,18 @@
+@use 'sass:meta';
+
+// Global styles, loaded once from src/app/main.tsx.
+// Component and page styles live next to each component in `*.module.scss`.
+//
+// Cascade layers: reset < base < ui. Shared UI primitives (src/ui) put their
+// styles in the `ui` layer, so a page or feature module can always adjust a
+// primitive by passing a className, whatever order the CSS files load in.
+@layer reset, base, ui;
+
+@layer reset {
+  @include meta.load-css('base/reset');
+}
+
+@layer base {
+  @include meta.load-css('base/themes');
+  @include meta.load-css('base/base');
+}

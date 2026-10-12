@@ -1,0 +1,26 @@
+@use '../abstracts' as *;
+
+html {
+  font-family: $font-sans;
+}
+
+body {
+  @include text(body);
+  min-height: 100dvh;
+  background: $color-ground;
+  color: $color-ink;
+  font-family: $font-sans;
+  font-weight: $weight-medium;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:focus-visible {
+  outline: 2px solid $color-focus;
+  outline-offset: 2px;
+}
+
+input[type='checkbox'],
+input[type='radio'] {
+  accent-color: $color-forest;
+}

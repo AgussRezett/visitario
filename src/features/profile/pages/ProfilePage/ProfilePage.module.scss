@@ -1,0 +1,143 @@
+@use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(5));
+  padding: space(4) space(5) 0;
+
+  @include up(lg) {
+    padding: space(8) space(8) 0;
+  }
+}
+
+// ---- Header: avatar, name, DNI and phone, edit button
+.header {
+  @include flex(row, $gap: space(4), $align: center);
+}
+
+.identity {
+  @include flex(column);
+  flex: 1;
+  min-width: 0;
+}
+
+.eyebrow {
+  @include eyebrow;
+  display: none;
+
+  @include up(lg) {
+    display: block;
+  }
+}
+
+.name {
+  @include truncate;
+  @include text(title);
+  font-weight: $weight-extrabold;
+
+  @include up(lg) {
+    @include text(display);
+  }
+}
+
+.meta {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.desktop-only {
+  display: none;
+
+  @include up(lg) {
+    display: inline;
+  }
+}
+
+.edit-label {
+  display: none;
+
+  @include up(sm) {
+    display: inline;
+  }
+}
+
+// ---- Two columns on desktop
+.columns {
+  display: grid;
+  align-items: start;
+  gap: space(5);
+
+  @include up(lg) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.column {
+  @include flex(column, $gap: space(5));
+}
+
+.section {
+  @include flex(column, $gap: space(2));
+}
+
+.section-title {
+  @include eyebrow;
+}
+
+// ---- Companies list
+.list {
+  gap: 0;
+  padding-block: space(1);
+}
+
+.company {
+  @include flex(row, $gap: space(3), $align: center);
+  min-height: space(15);
+  padding-block: space(3);
+
+  & + & {
+    border-top: 1px solid $color-line;
+  }
+}
+
+.company-icon {
+  flex-shrink: 0;
+  color: $color-ink-subtle;
+}
+
+.company-text {
+  @include flex(column);
+  flex: 1;
+  min-width: 0;
+}
+
+.company-name {
+  @include text(label);
+  font-weight: $weight-bold;
+}
+
+.company-roles {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.badge {
+  @include text(tiny);
+  padding: space(1) space(2.5);
+  border-radius: $radius-full;
+  background: $color-done-soft;
+  font-weight: $weight-bold;
+  color: $color-done-ink;
+}
+
+.empty {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.actions {
+  @include flex(column, $gap: space(2));
+
+  @include up(sm) {
+    flex-direction: row;
+  }
+}

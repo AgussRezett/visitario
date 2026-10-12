@@ -1,0 +1,19 @@
+@use '@/styles/abstracts' as *;
+
+.form {
+  @include flex(column, $gap: space(3));
+}
+
+// Name and last name side by side from tablet up
+.fields {
+  display: grid;
+  gap: space(3);
+
+  @include up(sm) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.buttons {
+  @include flex(row, $gap: space(2));
+}

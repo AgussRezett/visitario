@@ -1,0 +1,80 @@
+// Design tokens as Sass variables. Colors point at CSS custom properties
+// (defined in base/_themes.scss) so light and dark switch in one place.
+
+// ---- Brand
+$color-forest: var(--forest);
+$color-forest-hover: var(--forest-hover);
+$color-lime: var(--lime);
+$color-lime-soft: var(--lime-soft);
+$color-on-forest: #f6f7f2;
+$color-on-forest-muted: #d6e4dc;
+$color-on-forest-subtle: #a9bdb2;
+$color-white: #ffffff;
+
+// ---- Surfaces and lines
+$color-ground: var(--ground);
+$color-card: var(--card);
+$color-muted: var(--muted);
+$color-line: var(--line);
+$color-control: var(--control-border);
+
+// ---- Text
+$color-ink: var(--ink);
+$color-ink-muted: var(--ink-muted);
+$color-ink-subtle: var(--ink-subtle);
+
+// ---- Actions
+$color-action: var(--action);
+$color-action-hover: var(--action-hover);
+$color-action-ink: var(--action-ink);
+$color-focus: var(--focus);
+
+// ---- Work and review states: base, soft background, ink on soft
+$color-pending: var(--pending);
+$color-pending-soft: var(--pending-soft);
+$color-pending-ink: var(--pending-ink);
+$color-active: var(--active);
+$color-active-soft: var(--active-soft);
+$color-active-ink: var(--active-ink);
+$color-done: var(--done);
+$color-done-soft: var(--done-soft);
+$color-done-ink: var(--done-ink);
+$color-closed: var(--closed);
+$color-closed-soft: var(--closed-soft);
+$color-closed-ink: var(--closed-ink);
+$color-refused: var(--refused);
+$color-refused-soft: var(--refused-soft);
+$color-refused-ink: var(--refused-ink);
+$color-fix: var(--fix);
+$color-fix-soft: var(--fix-soft);
+$color-fix-ink: var(--fix-ink);
+
+// ---- Radius
+$radius-sm: 8px;
+$radius-md: 12px;
+$radius-lg: 16px;
+$radius-xl: 20px;
+$radius-full: 9999px;
+
+// ---- Shadows
+$shadow-sheet: var(--shadow-sheet);
+$shadow-raised: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+
+// ---- Font
+$font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+$weight-medium: 500;
+$weight-semibold: 600;
+$weight-bold: 700;
+$weight-extrabold: 800;
+$tracking-tight: -0.025em;
+$tracking-eyebrow: 0.06em;
+
+// ---- Layout sizes
+$control-height: 48px; // inputs
+$touch-target: 44px; // minimum tappable height
+$sidebar-width: 240px;
+$auth-form-width: 400px;
+
+// ---- Motion
+$ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+$duration-fast: 150ms;

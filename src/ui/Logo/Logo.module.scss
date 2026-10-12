@@ -1,0 +1,43 @@
+@use '@/styles/abstracts' as *;
+
+@layer ui {
+  .logo {
+    @include flex(row, $gap: space(0.5), $align: center);
+    display: inline-flex;
+    font-weight: $weight-extrabold;
+    letter-spacing: $tracking-tight;
+  }
+
+  // Only the size changes; line height follows the surrounding text.
+  .md {
+    font-size: 22px;
+  }
+
+  .lg {
+    font-size: 34px;
+  }
+
+  .mark {
+    color: $color-forest;
+
+    @include dark {
+      color: $color-lime;
+    }
+  }
+
+  .word {
+    color: $color-forest;
+
+    @include dark {
+      color: $color-ink;
+    }
+  }
+
+  .on-dark {
+    color: $color-on-forest;
+  }
+
+  .sr-only {
+    @include visually-hidden;
+  }
+}
