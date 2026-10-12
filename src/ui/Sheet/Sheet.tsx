@@ -33,7 +33,9 @@ export function Sheet({ open, onClose, title, subtitle, children, footer, wide }
       ref={ref}
       className={clsx(styles.sheet, wide && styles.wide)}
       aria-labelledby={titleId}
-      onClose={onClose}
+      onClose={(e) => {
+        if (e.target === e.currentTarget) onClose() // not a dialog opened inside this one
+      }}
       onClick={(e) => {
         if (e.target === ref.current) onClose()
       }}
