@@ -61,6 +61,21 @@ function parseMeta(raw: unknown): Meta | null {
   }
 }
 
+async function putObject(url: string, bytes: Uint8Array) {
+  try {
+    const put = await r2.fetch(url, {
+      method: 'PUT',
+      body: bytes,
+      headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'private, max-age=31536000, immutable' },
+    })
+    if (!put.ok) console.error(`R2 PUT failed with status ${put.status}`)
+    return put.ok
+  } catch (e) {
+    console.error(`R2 PUT failed: ${e instanceof Error ? e.name : 'unknown error'}`) // no URL: it would expose the account
+    return false
+  }
+}
+
 async function upload(req: Request, user: SupabaseClient, admin: SupabaseClient) {
   const form = await req.formData().catch(() => null)
   const meta = parseMeta(form?.get('meta'))
@@ -71,40 +86,37 @@ async function upload(req: Request, user: SupabaseClient, admin: SupabaseClient)
   if (bytes[0] !== 0xff || bytes[1] !== 0xd8) return json({ error: 'not_a_jpeg' }, 415)
 
   // The visit must be visible to the caller (RLS); its company decides the folder.
-  const { data: visit } = await user.from('visit').select('company_id').eq('id', meta.visitId).maybeSingle()
+  const [{ data: visit }, { data: existing }] = await Promise.all([
+    user.from('visit').select('company_id').eq('id', meta.visitId).maybeSingle(),
+    user.from('photo').select('id, uploaded_at').eq('id', meta.id).maybeSingle(),
+  ])
   if (!visit) return json({ error: 'visit_not_found' }, 404)
-
-  const { data: existing } = await user.from('photo').select('id, uploaded_at').eq('id', meta.id).maybeSingle()
   if (existing?.uploaded_at) return json({ id: meta.id, uploaded: true }) // retry of a finished upload
-  if (!existing) {
-    const { error } = await user.from('photo').insert({
-      id: meta.id,
-      company_id: visit.company_id,
-      visit_id: meta.visitId,
-      display_id: meta.displayId,
-      kind: meta.kind,
-      sort_order: meta.sortOrder ?? 0,
-      taken_at: meta.takenAt,
-      bytes: file.size,
-      width: meta.width,
-      height: meta.height,
-      created_by: '00000000-0000-0000-0000-000000000000', // replaced by the database guard
-    })
-    if (error) return json({ error: 'not_allowed', detail: error.message }, 403)
-  }
 
-  // A row without its file would count as a photo, so any failure removes the row again.
-  let stored = false
-  try {
-    const put = await r2.fetch(objectUrl(objectKey(visit.company_id, meta.visitId, meta.id)), {
-      method: 'PUT',
-      body: bytes,
-      headers: { 'Content-Type': 'image/jpeg', 'Cache-Control': 'private, max-age=31536000, immutable' },
-    })
-    stored = put.ok
-    if (!put.ok) console.error(`R2 PUT failed with status ${put.status}`)
-  } catch (e) {
-    console.error(`R2 PUT failed: ${e instanceof Error ? e.name : 'unknown error'}`) // no URL: it would expose the account
+  // The row (checked by RLS and the guards) and the file go at the same time; if either
+  // fails the other is undone, so a photo never counts without its file.
+  const url = objectUrl(objectKey(visit.company_id, meta.visitId, meta.id))
+  const [inserted, stored] = await Promise.all([
+    existing
+      ? Promise.resolve(null)
+      : user.from('photo').insert({
+          id: meta.id,
+          company_id: visit.company_id,
+          visit_id: meta.visitId,
+          display_id: meta.displayId,
+          kind: meta.kind,
+          sort_order: meta.sortOrder ?? 0,
+          taken_at: meta.takenAt,
+          bytes: file.size,
+          width: meta.width,
+          height: meta.height,
+          created_by: '00000000-0000-0000-0000-000000000000', // replaced by the database guard
+        }).then(({ error }) => error),
+    putObject(url, bytes),
+  ])
+  if (inserted) {
+    if (stored) await r2.fetch(url, { method: 'DELETE' }).catch(() => null)
+    return json({ error: 'not_allowed', detail: inserted.message }, 403)
   }
   if (!stored) {
     if (!existing) await admin.from('photo').delete().eq('id', meta.id)
@@ -120,13 +132,14 @@ async function signedUrls(req: Request, user: SupabaseClient) {
   if (!ids.length) return json({ urls: {} })
   // Only photos the caller can see (RLS) and that finished uploading.
   const { data } = await user.from('photo').select('id, company_id, visit_id').in('id', ids).not('uploaded_at', 'is', null)
-  const urls: Record<string, string> = {}
-  for (const p of data ?? []) {
-    const url = new URL(objectUrl(objectKey(p.company_id, p.visit_id, p.id)))
-    url.searchParams.set('X-Amz-Expires', String(URL_TTL_SECONDS))
-    const signed = await r2.sign(url.toString(), { method: 'GET', aws: { signQuery: true } })
-    urls[p.id] = signed.url
-  }
+  const signed = await Promise.all(
+    (data ?? []).map(async (p) => {
+      const url = new URL(objectUrl(objectKey(p.company_id, p.visit_id, p.id)))
+      url.searchParams.set('X-Amz-Expires', String(URL_TTL_SECONDS))
+      return [p.id, (await r2.sign(url.toString(), { method: 'GET', aws: { signQuery: true } })).url] as const
+    }),
+  )
+  const urls = Object.fromEntries(signed)
   return json({ urls })
 }
 
@@ -143,8 +156,9 @@ Deno.serve(async (req) => {
     global: { headers: { Authorization: authorization } },
     auth: { persistSession: false },
   })
-  const { data: auth } = await user.auth.getUser(authorization.replace(/^Bearer\s+/i, ''))
-  if (!auth.user) return json({ error: 'unauthorized' }, 401)
+  // Verified locally with the project's signing keys when possible (no round trip to Auth).
+  const { data: auth } = await user.auth.getClaims(authorization.replace(/^Bearer\s+/i, ''))
+  if (!auth?.claims?.sub) return json({ error: 'unauthorized' }, 401)
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
 
   const path = new URL(req.url).pathname
