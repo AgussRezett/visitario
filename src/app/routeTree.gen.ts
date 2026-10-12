@@ -14,8 +14,8 @@ import { Route as AppRouteImport } from './../routes/_app'
 import { Route as LoginRouteImport } from './../routes/login'
 import { Route as OnboardingRouteImport } from './../routes/onboarding'
 import { Route as SignupRouteImport } from './../routes/signup'
+import { Route as WelcomeRouteImport } from './../routes/welcome'
 import { Route as AppProfileRouteImport } from './../routes/_app/profile'
-import { Route as AppWelcomeRouteImport } from './../routes/_app/welcome'
 import { Route as AppSSectionRouteImport } from './../routes/_app/s.$section'
 
 const IndexRoute = IndexRouteImport.update({
@@ -42,14 +42,14 @@ const SignupRoute = SignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WelcomeRoute = WelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AppProfileRoute = AppProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppWelcomeRoute = AppWelcomeRouteImport.update({
-  id: '/welcome',
-  path: '/welcome',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSSectionRoute = AppSSectionRouteImport.update({
@@ -63,8 +63,8 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
+  '/welcome': typeof WelcomeRoute
   '/profile': typeof AppProfileRoute
-  '/welcome': typeof AppWelcomeRoute
   '/s/$section': typeof AppSSectionRoute
 }
 export interface FileRoutesByTo {
@@ -72,8 +72,8 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
+  '/welcome': typeof WelcomeRoute
   '/profile': typeof AppProfileRoute
-  '/welcome': typeof AppWelcomeRoute
   '/s/$section': typeof AppSSectionRoute
 }
 export interface FileRoutesById {
@@ -83,8 +83,8 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
+  '/welcome': typeof WelcomeRoute
   '/_app/profile': typeof AppProfileRoute
-  '/_app/welcome': typeof AppWelcomeRoute
   '/_app/s/$section': typeof AppSSectionRoute
 }
 export interface FileRouteTypes {
@@ -94,8 +94,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/signup'
-    | '/profile'
     | '/welcome'
+    | '/profile'
     | '/s/$section'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -103,8 +103,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/signup'
-    | '/profile'
     | '/welcome'
+    | '/profile'
     | '/s/$section'
   id:
     | '__root__'
@@ -113,8 +113,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboarding'
     | '/signup'
+    | '/welcome'
     | '/_app/profile'
-    | '/_app/welcome'
     | '/_app/s/$section'
   fileRoutesById: FileRoutesById
 }
@@ -124,6 +124,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   SignupRoute: typeof SignupRoute
+  WelcomeRoute: typeof WelcomeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -163,18 +164,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/welcome': {
+      id: '/welcome'
+      path: '/welcome'
+      fullPath: '/welcome'
+      preLoaderRoute: typeof WelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_app/profile': {
       id: '/_app/profile'
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof AppProfileRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/welcome': {
-      id: '/_app/welcome'
-      path: '/welcome'
-      fullPath: '/welcome'
-      preLoaderRoute: typeof AppWelcomeRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/s/$section': {
@@ -189,13 +190,11 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppProfileRoute: typeof AppProfileRoute
-  AppWelcomeRoute: typeof AppWelcomeRoute
   AppSSectionRoute: typeof AppSSectionRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppProfileRoute: AppProfileRoute,
-  AppWelcomeRoute: AppWelcomeRoute,
   AppSSectionRoute: AppSSectionRoute,
 }
 
@@ -207,6 +206,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   SignupRoute: SignupRoute,
+  WelcomeRoute: WelcomeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -29,7 +29,7 @@ export function AppShell({ me, active, children }: Props) {
   return (
     <div className="flex min-h-dvh">
       <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-1 border-r border-line bg-card px-3 py-5 lg:flex">
-        <div className="px-2 pb-4"><Logo /></div>
+        <Link to="/" aria-label="Inicio" className="px-2 pb-4 no-underline"><Logo /></Link>
         {active ? <RoleSwitcher memberships={me.memberships} active={active} /> : null}
         <nav aria-label="Secciones" className="mt-3 flex flex-col gap-1">
           {sections.map((s) => (
@@ -48,7 +48,7 @@ export function AppShell({ me, active, children }: Props) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between px-5 pb-1 pt-4 lg:hidden">
-          <Logo />
+          <Link to="/" aria-label="Inicio" className="no-underline"><Logo /></Link>
           {active?.role === 'merchandiser' ? null : (
             <Link to="/profile" aria-label="Mi perfil" className="no-underline">
               <Avatar name={short} size={36} />

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { KeyRound, Mail } from 'lucide-react'
 import { Button } from '@/ui/Button'
 import { Card } from '@/ui/Card'
@@ -8,6 +9,7 @@ import { setPassword } from '@/features/auth/api'
 import type { Me } from '@/features/auth/me'
 
 export function SecurityCard({ me }: { me: Me }) {
+  const queryClient = useQueryClient()
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState('')
   const [status, setStatus] = useState<'idle' | 'saving' | 'ok' | 'error'>('idle')
@@ -35,6 +37,7 @@ export function SecurityCard({ me }: { me: Me }) {
               setStatus('ok')
               setEditing(false)
               setValue('')
+              await queryClient.invalidateQueries({ queryKey: ['me'] })
             } catch {
               setStatus('error')
             }

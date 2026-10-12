@@ -25,7 +25,13 @@ async function fetchMe(): Promise<Me | null> {
   const user = auth.user
   if (!user) return null
   const providers = (user.identities ?? []).map((i) => i.provider)
-  const base = { userId: user.id, email: user.email ?? null, providers, hasPassword: providers.includes('email') }
+  // A Google user who later sets a password gets no 'email' identity, so ask the server.
+  let hasPassword = providers.includes('email')
+  if (!hasPassword) {
+    const { data } = await supabase.rpc('has_password')
+    hasPassword = data === true
+  }
+  const base = { userId: user.id, email: user.email ?? null, providers, hasPassword }
 
   const { data: person, error } = await supabase.from('person').select('id, first_name, last_name').eq('auth_user_id', user.id).maybeSingle()
   if (error) throw error
