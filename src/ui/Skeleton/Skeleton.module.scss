@@ -1,0 +1,30 @@
+@use '@/styles/abstracts' as *;
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@layer ui {
+  // Placeholder shape while content loads; size comes from props or the caller's class.
+  .skeleton {
+    display: block;
+    border-radius: $radius-sm;
+    background: linear-gradient(90deg, $color-muted 25%, $color-line 50%, $color-muted 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  }
+
+  .round {
+    border-radius: $radius-full;
+  }
+
+  .block {
+    border-radius: $radius-lg;
+  }
+}
