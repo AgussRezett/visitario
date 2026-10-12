@@ -93,7 +93,11 @@ export function PhotoViewer({ photos, startId, title, subtitle, urlFor, onClose,
                 type="button"
                 className={styles.danger}
                 onClick={() => {
-                  if (window.confirm('¿Borrar esta foto?')) onDelete(photo)
+                  const lastStorefront = photo.kind === 'storefront' && photos.filter((p) => p.kind === 'storefront').length === 1
+                  const question = lastStorefront
+                    ? '¿Borrar la foto de la fachada? La parada vuelve a quedar pendiente: se borran la hora de llegada y la respuesta del local. Las exhibiciones y sus fotos se mantienen.'
+                    : '¿Borrar esta foto?'
+                  if (window.confirm(question)) onDelete(photo)
                 }}
               >
                 <Trash2 size={22} aria-hidden />Borrar

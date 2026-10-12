@@ -10,10 +10,10 @@ export function useVisitActions(visit: Visit) {
   const upload = useUploadPhoto()
   const remove = useDeletePhoto()
 
-  /** Arrival = storefront photo; the visit starts if it was pending. */
+  /** Arrival = storefront photo. The database starts the visit once the photo is uploaded,
+   *  and sends it back to pending if the last storefront photo is deleted. */
   const arrive = async (file: File) => {
     await upload.mutateAsync({ visitId: visit.id, displayId: null, kind: 'storefront', file })
-    if (visit.workStatus === 'pending') await update.mutateAsync({ work_status: 'in_progress', arrived_at: new Date().toISOString() })
   }
 
   const photo = (displayId: string, kind: 'before' | 'after', file: File) =>

@@ -91,6 +91,7 @@ export async function installFakeSupabase(page: Page, state: FakeState) {
       const v = state.visits.find((x) => x.id === meta.visitId)
       const now = new Date().toISOString()
       ;(v?.photo as Row[] | undefined)?.push({ id: meta.id, kind: meta.kind, display_id: meta.displayId, taken_at: now, uploaded_at: now, deleted_at: null })
+      if (v && meta.kind === 'storefront' && v.work_status === 'pending') Object.assign(v, { work_status: 'in_progress', arrived_at: now }) // like the sync_arrival trigger
       return json({ id: meta.id, uploaded: true })
     }
     if (path.endsWith('/functions/v1/photos/urls')) return json({ urls: {} })
