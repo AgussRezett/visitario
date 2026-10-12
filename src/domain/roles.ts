@@ -19,6 +19,24 @@ export interface ActiveMembership {
   roles: Role[]
 }
 
+/** How a company is named in the view picker: the self-employed space reads as such. */
+export const companyLabel = (m: Pick<ActiveMembership, 'companyName' | 'personal'>) => (m.personal ? 'Autónomo' : m.companyName)
+
+export interface ViewOption {
+  companyId: string
+  role: Role
+}
+
+/** Every view a person can open, grouped by company, field work first within each. */
+export function viewGroups(memberships: ActiveMembership[]) {
+  return memberships.map((m) => ({
+    companyId: m.companyId,
+    label: companyLabel(m),
+    personal: Boolean(m.personal),
+    roles: ROLE_PRIORITY.filter((r) => m.roles.includes(r)),
+  }))
+}
+
 /** Picks the view to open: the stored one if still valid, else the first by priority. */
 export function pickActiveRole(memberships: ActiveMembership[], stored: { companyId: string; role: Role } | null) {
   if (stored) {

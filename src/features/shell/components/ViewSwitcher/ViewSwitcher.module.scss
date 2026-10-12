@@ -1,0 +1,129 @@
+@use '@/styles/abstracts' as *;
+
+// ---- Header pill: company over role, always visible on phones
+.pill {
+  @include flex(row, $gap: space(1.5), $align: center);
+  @include transition-colors;
+  min-width: 0;
+  max-width: 220px;
+  height: $touch-target;
+  padding: 0 space(2.5) 0 space(3.5);
+  border: 1px solid $color-line;
+  border-radius: $radius-full;
+  background: $color-card;
+  color: $color-ink-muted;
+
+  @include hover {
+    background: $color-muted;
+  }
+}
+
+.pill-text {
+  @include flex(column, $align: flex-start);
+  min-width: 0;
+  text-align: left;
+}
+
+.company {
+  @include truncate;
+  max-width: 100%;
+  font-size: 13px;
+  line-height: 16px;
+  font-weight: $weight-extrabold;
+  color: $color-ink;
+}
+
+.role {
+  @include text(tiny);
+  line-height: 14px;
+  font-weight: $weight-semibold;
+}
+
+// Only one view: the same information, not tappable
+.current {
+  @include truncate;
+  @include text(label);
+  max-width: 200px;
+  font-weight: $weight-bold;
+  color: $color-ink-muted;
+}
+
+// ---- Sheet
+.groups {
+  @include flex(column, $gap: space(5));
+  padding-bottom: space(2);
+}
+
+.group {
+  @include flex(column, $gap: space(2));
+}
+
+.group-title {
+  @include flex(row, $gap: space(2), $align: baseline);
+  @include eyebrow;
+  flex-wrap: wrap;
+}
+
+.group-note {
+  @include text(tiny);
+  font-weight: $weight-semibold;
+  text-transform: none;
+  letter-spacing: normal;
+  color: $color-ink-subtle;
+}
+
+.option {
+  @include flex(row, $gap: space(3), $align: center);
+  @include transition-colors;
+  width: 100%;
+  min-height: space(16);
+  padding: space(2.5) space(3);
+  border: 1.5px solid $color-line;
+  border-radius: $radius-lg;
+  background: $color-card;
+  text-align: left;
+
+  @include hover {
+    background: $color-muted;
+  }
+}
+
+.option-selected {
+  @extend .option;
+  border-color: $color-forest;
+  background: $color-lime-soft;
+
+  @include dark {
+    border-color: $color-lime;
+    background: $color-muted;
+  }
+}
+
+.option-icon {
+  @include icon-tile(space(10));
+}
+
+.option-text {
+  @include flex(column, $gap: space(0.5));
+  flex: 1;
+  min-width: 0;
+}
+
+.option-title {
+  font-weight: $weight-extrabold;
+  color: $color-ink;
+}
+
+.option-hint {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.check {
+  flex-shrink: 0;
+  color: $color-forest;
+
+  @include dark {
+    color: $color-lime;
+  }
+}

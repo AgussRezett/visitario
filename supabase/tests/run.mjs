@@ -220,6 +220,16 @@ await as('agus', `update visit set consent = 'refused', work_status = 'refused' 
 await as('agus', `update photo set deleted_at = now() where id = $1`, [sf3]);
 check('Also from refused', (await visitState()).s === 'pending');
 
+// ---- Removing a stop from the day
+const vAssigned = (await as('martin', `insert into visit (company_id, workday_id, merchandiser_id, work_date, store_id, added_by) values ($1, $2, $3, '2000-01-01', $4, $5) returning id`, [panda, wNext, agus, s1, martin]))[0].id;
+await expectError('Agus cannot remove a stop the supervisor assigned', () => as('agus', `update visit set deleted_at = now() where id = $1`, [vAssigned]), /supervisor/);
+await as('agus', `update visit set deleted_at = now() where id = $1`, [vs]);
+check('Agus removes a stop he added', (await sys(`select deleted_at is not null d from visit where id = $1`, [vs]))[0].d === true);
+await as('agus', `update visit set deleted_at = now() where id = $1`, [vr]);
+check('Removing a resumed stop makes the original resumable again', (await as('agus', `select visit_id from resumable_visits($1, '2026-10-14')`, [panda])).some(r => r.visit_id === va));
+await as('martin', `update visit set deleted_at = now() where id = $1`, [vAssigned]);
+check('The supervisor removes the assigned stop', (await sys(`select deleted_at is not null d from visit where id = $1`, [vAssigned]))[0].d === true);
+
 // ---- MVP backup import (platform admin, own work)
 const mvp = {
   stores: [{ id: '01926f00-0000-5000-8000-0000000000b1', cn: '9874', name: null, address: 'Arce 730', area: 'Palermo 5', lat: -34.56, lng: -58.43 }],
