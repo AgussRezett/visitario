@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
+import { refreshMe } from '@/features/auth/me'
 import { Button } from '@/ui/Button'
 import { Field } from '@/ui/Field'
 import { Banner } from '@/ui/Banner'
@@ -30,7 +31,7 @@ export function LoginPage() {
     setError(null)
     try {
       await signIn(identifier, password)
-      await queryClient.invalidateQueries({ queryKey: ['me'] })
+      await refreshMe(queryClient)
       await navigate({ to: '/' })
     } catch (e) {
       setError(e instanceof AuthError ? e.message : 'Algo salió mal. Probá de nuevo.')

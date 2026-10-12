@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useQueryClient } from '@tanstack/react-query'
+import { refreshMe } from '@/features/auth/me'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/ui/Button'
 import { Field } from '@/ui/Field'
@@ -16,7 +17,7 @@ export function EditNameForm({ personId, defaults, onDone }: { personId: string;
   const onSubmit = handleSubmit(async (v) => {
     const { error } = await supabase.from('person').update({ first_name: v.firstName, last_name: v.lastName }).eq('id', personId)
     if (!error) {
-      await queryClient.invalidateQueries({ queryKey: ['me'] })
+      await refreshMe(queryClient)
       onDone()
     }
   })

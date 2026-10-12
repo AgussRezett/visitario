@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import clsx from 'clsx'
 import { useQueryClient } from '@tanstack/react-query'
+import { refreshMe } from '@/features/auth/me'
 import { KeyRound, Mail } from 'lucide-react'
 import { Button } from '@/ui/Button'
 import { Card } from '@/ui/Card'
@@ -39,7 +40,7 @@ export function SecurityCard({ me }: { me: Me }) {
               setStatus('ok')
               setEditing(false)
               setValue('')
-              await queryClient.invalidateQueries({ queryKey: ['me'] })
+              await refreshMe(queryClient)
             } catch {
               setStatus('error')
             }

@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { useMe } from '@/features/auth/me'
+import { useMe, refreshMe } from '@/features/auth/me'
 import { signOut } from '@/features/auth/api'
 import { Invitations } from '@/features/profile/components/Invitations'
 import { Button } from '@/ui/Button'
@@ -37,7 +37,7 @@ export function WelcomePage() {
       setError(true)
       return
     }
-    await queryClient.invalidateQueries({ queryKey: ['me'] })
+    await refreshMe(queryClient)
   }
 
   return (

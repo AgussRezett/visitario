@@ -12,7 +12,7 @@ import { Field } from '@/ui/Field'
 import { Banner } from '@/ui/Banner'
 import { Card } from '@/ui/Card'
 import { Logo } from '@/ui/Logo'
-import { useMe } from '@/features/auth/me'
+import { useMe, refreshMe } from '@/features/auth/me'
 import { setPassword } from '@/features/auth/api'
 import { passwordSchema } from '@/features/auth/schemas'
 import { identityErrorMessage } from '@/features/auth/identity-errors'
@@ -55,7 +55,7 @@ export function OnboardingPage() {
       return
     }
     if (needsPassword && v.password) await setPassword(v.password)
-    await queryClient.invalidateQueries({ queryKey: ['me'] })
+    await refreshMe(queryClient)
     setStep('permissions')
   })
 

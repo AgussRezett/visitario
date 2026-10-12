@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { supabase } from '@/lib/supabase'
+import { refreshMe } from '@/features/auth/me'
 import { applyTheme } from '@/features/profile/theme'
 import { FullScreenSpinner } from '@/ui/Spinner'
 import { routeTree } from './routeTree.gen'
@@ -27,10 +28,16 @@ declare module '@tanstack/react-router' {
   }
 }
 
-// Any sign-in, sign-out or token refresh refreshes who "me" is and re-runs route guards.
+// Any sign-in, sign-out or user change refreshes who "me" is and re-runs route guards.
+// Deferred with setTimeout: Supabase holds its auth lock while running this callback, so
+// calling Supabase from inside it (fetching "me") would wait forever and freeze sign-in.
 supabase.auth.onAuthStateChange((event) => {
   if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
-    void queryClient.invalidateQueries({ queryKey: ['me'] }).then(() => router.invalidate())
+    setTimeout(() => {
+      void refreshMe(queryClient)
+        .catch(() => null)
+        .then(() => router.invalidate())
+    }, 0)
   }
 })
 

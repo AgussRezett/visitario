@@ -3,6 +3,8 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Link, useNavigate } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
+import { refreshMe } from '@/features/auth/me'
 import { Button } from '@/ui/Button'
 import { Field } from '@/ui/Field'
 import { Banner } from '@/ui/Banner'
@@ -18,6 +20,7 @@ type Values = z.infer<typeof schema>
 
 export function SignUpPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [error, setError] = useState<string | null>(null)
   const [sentTo, setSentTo] = useState<string | null>(null)
   const { register, handleSubmit, formState } = useForm<Values>({ resolver: zodResolver(schema) })
@@ -27,7 +30,10 @@ export function SignUpPage() {
     try {
       const { needsEmailConfirmation } = await signUp(email, password)
       if (needsEmailConfirmation) setSentTo(email)
-      else await navigate({ to: '/onboarding' })
+      else {
+        await refreshMe(queryClient)
+        await navigate({ to: '/onboarding' })
+      }
     } catch (e) {
       setError(e instanceof AuthError ? e.message : 'Algo salió mal. Probá de nuevo.')
     }

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Mail } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
+import { refreshMe } from '@/features/auth/me'
 import { supabase } from '@/lib/supabase'
 import { ROLE_LABEL } from '@/domain/roles'
 import { Button } from '@/ui/Button'
@@ -20,7 +21,7 @@ export function Invitations({ invitations }: { invitations: Invitation[] }) {
     setBusy(id)
     await supabase.rpc('respond_invitation', { p_membership: id, p_accept: accept })
     setBusy(null)
-    await queryClient.invalidateQueries({ queryKey: ['me'] })
+    await refreshMe(queryClient)
   }
 
   return invitations.map((inv) => (
