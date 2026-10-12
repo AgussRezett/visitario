@@ -1,0 +1,87 @@
+@use '@/styles/abstracts' as *;
+
+@layer ui {
+  // Soft chip with a dot (activador) — "calle en calma"
+  .chip {
+    @include flex(row, $gap: space(1.5), $align: center);
+    @include text(tiny);
+    display: inline-flex;
+    flex-shrink: 0;
+    padding: space(1) space(2.5);
+    border-radius: $radius-full;
+    font-weight: $weight-bold;
+    white-space: nowrap;
+  }
+
+  .dot {
+    @include square(7px);
+    flex-shrink: 0;
+    border-radius: $radius-full;
+    background: currentColor;
+  }
+
+  .pending {
+    background: $color-pending-soft;
+    color: $color-pending-ink;
+
+    .dot {
+      background: $color-pending;
+    }
+  }
+
+  .in-progress {
+    background: $color-active-soft;
+    color: $color-active-ink;
+
+    .dot {
+      background: $color-active;
+    }
+  }
+
+  .done {
+    background: $color-done-soft;
+    color: $color-done-ink;
+
+    .dot {
+      background: $color-done;
+    }
+  }
+
+  .closed {
+    background: $color-closed-soft;
+    color: $color-closed-ink;
+
+    .dot {
+      background: $color-closed;
+    }
+  }
+
+  .refused {
+    background: $color-refused-soft;
+    color: $color-refused-ink;
+
+    .dot {
+      background: $color-refused;
+    }
+  }
+
+  .needs-fix {
+    background: $color-fix-soft;
+    color: $color-fix-ink;
+
+    .dot {
+      background: $color-fix;
+    }
+  }
+
+  // Approved: forest with a lime tick
+  .approved {
+    background: $color-forest;
+    color: $color-lime;
+
+    @include dark {
+      background: $color-lime-soft;
+      color: $color-forest;
+    }
+  }
+}

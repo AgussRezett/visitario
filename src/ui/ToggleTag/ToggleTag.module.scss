@@ -1,0 +1,32 @@
+@use '@/styles/abstracts' as *;
+
+@layer ui {
+  .group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: space(1.5);
+  }
+
+  .tag {
+    @include flex(row, $gap: space(1), $align: center);
+    @include text(label);
+    @include transition-colors;
+    display: inline-flex;
+    height: space(9);
+    padding-inline: space(3);
+    border-radius: $radius-sm;
+    background: $color-muted;
+    font-weight: $weight-extrabold;
+    color: $color-ink-muted;
+
+    &[aria-pressed='true'] {
+      background: $color-forest;
+      color: $color-white;
+
+      @include dark {
+        background: $color-lime;
+        color: $color-forest;
+      }
+    }
+  }
+}
