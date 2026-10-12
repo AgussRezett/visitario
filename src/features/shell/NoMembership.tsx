@@ -1,4 +1,4 @@
-import { Briefcase, UserRound } from 'lucide-react'
+import { Briefcase, LogOut, UserRound } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
@@ -9,6 +9,9 @@ import { Invitations } from '@/features/profile/Invitations'
 import { Button } from '@/ui/Button'
 import { Card } from '@/ui/Card'
 import { Banner } from '@/ui/Banner'
+import { Logo } from '@/ui/Logo'
+import { Avatar } from '@/ui/Avatar'
+import { initials } from '@/lib/format'
 
 /** Shown to a person with no active company: accept an invitation, wait for one, or work self-employed. */
 export function NoMembership() {
@@ -37,34 +40,69 @@ export function NoMembership() {
   }
 
   return (
-    <div className="flex max-w-xl flex-col gap-4 px-5 pt-4 lg:px-8 lg:pt-8">
-      <h1 className="text-display font-extrabold tracking-tight">Todavía no tenés empresa</h1>
-      {me?.invitations.length ? <Invitations invitations={me.invitations} /> : null}
-      <Card className="flex-row items-start gap-3">
-        <Briefcase className="mt-0.5 shrink-0 text-forest dark:text-lime" size={22} aria-hidden />
-        <p className="text-ink-muted">Si trabajás para una distribuidora o agencia, pediles que te den de alta con tu DNI. La invitación te aparece en tu perfil.</p>
-      </Card>
-      <Card className="gap-3">
-        <div className="flex items-start gap-3">
-          <UserRound className="mt-0.5 shrink-0 text-forest dark:text-lime" size={22} aria-hidden />
-          <p className="text-ink-muted">¿Trabajás por tu cuenta? Usá Visitario como autónomo: tus jornadas solo las ves vos.</p>
+    <div className="mx-auto flex min-h-dvh w-full max-w-[560px] flex-col gap-6 px-5 py-8 lg:py-12">
+      <div className="flex items-center justify-between">
+        <Logo />
+        <Link to="/profile" aria-label="Mi perfil" className="no-underline">
+          {me?.person ? <Avatar name={initials(me.person.firstName, me.person.lastName)} size={36} /> : null}
+        </Link>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <p className="eyebrow">{me?.person ? `Hola, ${me.person.firstName}` : 'Hola'}</p>
+        <h1 className="text-title font-extrabold tracking-tight lg:text-display">Todavía no tenés empresa</h1>
+        <p className="text-ink-muted">Elegí cómo querés empezar. Podés sumarte a una empresa más adelante.</p>
+      </div>
+
+      {me?.invitations.length ? (
+        <div className="flex flex-col gap-2">
+          <Invitations invitations={me.invitations} />
         </div>
-        {error ? <Banner tone="error">No pudimos crear tu espacio. Probá de nuevo.</Banner> : null}
-        <Button loading={loading || hasCompany} onClick={startSelfEmployed}>
-          Empezar como autónomo
-        </Button>
-      </Card>
-      <Link to="/profile">Ver mi perfil</Link>
-      <button
-        type="button"
-        onClick={async () => {
-          await signOut()
-          queryClient.clear()
-          await navigate({ to: '/login' })
-        }}
-      >
-        Cerrar sesión
-      </button>
+      ) : null}
+
+      <div className="flex flex-col gap-3">
+        <Card className="gap-4">
+          <div className="flex items-start gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-lime-soft text-forest dark:bg-muted dark:text-lime">
+              <UserRound size={22} aria-hidden />
+            </span>
+            <div className="flex flex-col gap-1">
+              <h2 className="text-heading font-extrabold">Trabajo por mi cuenta</h2>
+              <p className="text-label text-ink-muted">Usá Visitario como autónomo: tus jornadas solo las ves vos.</p>
+            </div>
+          </div>
+          {error ? <Banner tone="error">No pudimos crear tu espacio. Probá de nuevo.</Banner> : null}
+          <Button loading={loading || hasCompany} onClick={startSelfEmployed}>
+            Empezar como autónomo
+          </Button>
+        </Card>
+
+        <Card className="flex-row items-start gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted text-ink-subtle">
+            <Briefcase size={22} aria-hidden />
+          </span>
+          <div className="flex flex-col gap-1">
+            <h2 className="text-heading font-extrabold">Trabajo para una empresa</h2>
+            <p className="text-label text-ink-muted">Pediles que te den de alta con tu DNI. La invitación te va a aparecer acá y en tu perfil.</p>
+          </div>
+        </Card>
+      </div>
+
+      <div className="mt-auto flex items-center justify-center gap-6 pt-4 text-label font-bold">
+        <Link to="/profile" className="text-ink-muted no-underline">Mi perfil</Link>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1.5 text-ink-muted"
+          onClick={async () => {
+            await signOut()
+            queryClient.clear()
+            await navigate({ to: '/login' })
+          }}
+        >
+          <LogOut size={16} aria-hidden />
+          Cerrar sesión
+        </button>
+      </div>
     </div>
   )
 }
