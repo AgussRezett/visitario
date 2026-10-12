@@ -1,26 +1,46 @@
 @use '@/styles/abstracts' as *;
 
 .page {
-  @include flex(column);
-  min-height: 100dvh;
+  // Phones: top bar / content that scrolls / finish bar, as grid rows.
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
 
   @include up(lg) {
-    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    height: auto;
     gap: space(5);
     padding: space(6) space(8) 0;
+  }
+}
+
+.scroll {
+  @include flex(column);
+  min-height: 0;
+  overflow-y: auto;
+
+  @include up(lg) {
+    gap: space(5);
+    overflow: visible; // desktop: the app's main area scrolls
   }
 }
 
 // ---- Phone top bar
 .appbar {
   @include flex(row, $gap: space(1), $align: center);
-  position: sticky;
-  top: 0;
-  z-index: 3;
   min-height: 60px;
-  padding: space(2) space(4) space(2) space(2);
+  padding: max(#{space(2)}, env(safe-area-inset-top)) space(4) space(2) space(2);
+  border-bottom: 1px solid $color-line;
   background: $color-ground;
 
+  @include up(lg) {
+    display: none;
+  }
+}
+
+// ---- Phone finish bar: the last grid row, always in reach
+.footer {
   @include up(lg) {
     display: none;
   }
@@ -83,7 +103,7 @@
 // ---- Content
 .content {
   @include flex(column, $gap: space(3));
-  padding: space(1) space(5) 0;
+  padding: space(3) space(5) 0;
 
   @include up(lg) {
     gap: space(5);
@@ -135,17 +155,16 @@
   order: 3;
 }
 
-// The sticky footer must be a direct flex child to stick to the viewport.
+// Desktop: the finish bar closes the second column (phones use .footer instead).
 .finish {
-  display: contents;
-  order: 6;
+  display: none;
+
+  @include up(lg) {
+    display: block;
+  }
 }
 
 .help {
   @include text(label);
   color: $color-ink-subtle;
-}
-
-.finish > * {
-  order: 6;
 }

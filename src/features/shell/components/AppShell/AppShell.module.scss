@@ -1,19 +1,32 @@
 @use '@/styles/abstracts' as *;
 
+// The whole screen is one grid that never scrolls; each region scrolls by itself.
+// Phones:  header / main / bottom navigation as rows.
+// Desktop: sidebar | main as columns.
 .shell {
-  display: flex;
-  min-height: 100dvh;
+  display: grid;
+  grid-template:
+    'header' auto
+    'main' minmax(0, 1fr)
+    'nav' auto
+    / minmax(0, 1fr);
+  height: 100%;
+  overflow: hidden;
+
+  @include up(lg) {
+    grid-template:
+      'sidebar main' minmax(0, 1fr)
+      / $sidebar-width minmax(0, 1fr);
+  }
 }
 
-// ---- Desktop sidebar
+// ---- Desktop sidebar (scrolls on its own if it ever runs long)
 .sidebar {
   @include flex(column, $gap: space(1));
-  position: sticky;
-  top: 0;
+  grid-area: sidebar;
   display: none;
-  flex-shrink: 0;
-  width: $sidebar-width;
-  height: 100dvh;
+  min-height: 0;
+  overflow-y: auto;
   padding: space(5) space(3);
   border-right: 1px solid $color-line;
   background: $color-card;
@@ -40,6 +53,7 @@
 .nav-link {
   @include flex(row, $gap: space(2.5), $align: center);
   @include text(small);
+  flex-shrink: 0;
   height: $touch-target;
   padding-inline: space(3);
   border-radius: $radius-md;
@@ -68,16 +82,12 @@
   }
 }
 
-// ---- Content column
-.content {
-  @include flex(column);
-  flex: 1;
-  min-width: 0;
-}
-
+// ---- Phone header
 .mobile-header {
   @include flex(row, $align: center, $justify: space-between);
-  padding: space(4) space(5) space(1);
+  grid-area: header;
+  padding: max(#{space(4)}, env(safe-area-inset-top)) space(5) space(2);
+  border-bottom: 1px solid $color-line;
 
   @include up(lg) {
     display: none;
@@ -89,21 +99,40 @@
   min-width: 0;
 }
 
+// ---- Main content: the only part that scrolls
 .main {
   @include flex(column);
-  flex: 1;
-  padding-bottom: space(24);
+  grid-area: main;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: space(24); // room for the floating action above the last item
 
   @include up(lg) {
     padding-bottom: space(10);
   }
 }
 
+// Floating actions over the content: same grid cell, stacked on top, clicks pass through
+// everywhere except on its children.
+.overlay {
+  @include flex(column, $align: flex-end, $justify: flex-end);
+  grid-area: main;
+  z-index: 1;
+  padding: space(4) space(5);
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
+
+  @include up(lg) {
+    display: none;
+  }
+}
+
 // ---- Phone bottom navigation (columns set inline from the number of items)
 .bottom-nav {
-  position: fixed;
-  inset-inline: 0;
-  bottom: 0;
+  grid-area: nav;
   display: grid;
   padding: space(1.5) space(2) max(10px, env(safe-area-inset-bottom));
   border-top: 1px solid $color-line;
@@ -123,15 +152,17 @@
   color: $color-ink-subtle;
 }
 
-// ---- Pages with their own bars on phones (visit sheet)
+// ---- Pages with their own bars on phones (visit sheet): the page manages its own scroll
 .phone-hidden {
   display: none;
 }
 
 .main-immersive {
   padding-bottom: 0;
+  overflow: hidden;
 
   @include up(lg) {
+    overflow-y: auto;
     padding-bottom: space(10);
   }
 }

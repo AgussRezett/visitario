@@ -28,8 +28,6 @@
 
   @include up(lg) {
     display: flex;
-    position: sticky;
-    top: space(6);
   }
 }
 
@@ -77,18 +75,7 @@
   padding-top: space(2);
 }
 
-// ---- Floating "Agregar dirección" (phone)
-.fab {
-  position: fixed;
-  right: space(5);
-  bottom: calc(#{space(24)} + env(safe-area-inset-bottom));
-  z-index: 5;
-
-  @include up(lg) {
-    display: none;
-  }
-}
-
+// ---- Floating "Agregar dirección" (phone): placed by the shell's overlay layer
 .fab-button {
   border-radius: $radius-full;
   box-shadow: 0 6px 16px rgb(23 59 48 / 0.28);

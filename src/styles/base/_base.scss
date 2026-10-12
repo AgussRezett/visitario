@@ -4,9 +4,39 @@ html {
   font-family: $font-sans;
 }
 
+// The document never scrolls: each region (main content, sidebar, a sheet's body) scrolls
+// on its own, so bars stay put without sticky or fixed positioning.
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+#root {
+  height: 100dvh;
+  overflow-y: auto; // pages outside the app shell (sign-in, onboarding)
+}
+
+// Every region that scrolls is marked [data-scroll]. While any dialog is open (sheet,
+// confirmation, photo viewer) the page behind stays still, also on iOS.
+[data-scroll] {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+// !important on purpose: this layer (base) is below the components' own styles, and an
+// important declaration in an earlier layer wins over any later or unlayered one.
+html:has(dialog[open]) [data-scroll] {
+  overflow: hidden !important;
+}
+
+dialog {
+  overscroll-behavior: contain;
+}
+
 body {
   @include text(body);
-  min-height: 100dvh;
   background: $color-ground;
   color: $color-ink;
   font-family: $font-sans;
