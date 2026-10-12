@@ -38,8 +38,35 @@ test('a stop added by mistake can be taken off the day', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Quitar de la jornada' })).toHaveCount(0)
 
   await page.goto('/visit/v1')
-  page.once('dialog', (d) => void d.accept())
+  const ask = page.getByRole('alertdialog', { name: '¿Quitar Moldes 1365 de la jornada?' })
   await page.getByRole('button', { name: 'Quitar de la jornada' }).click()
+  await ask.getByRole('button', { name: 'Cancelar' }).click()
+  await expect(ask).toBeHidden()
+  expect(state.visits).toHaveLength(2)
+
+  await page.getByRole('button', { name: 'Quitar de la jornada' }).click()
+  await expect(ask).toBeVisible()
+  await page.screenshot({ path: 'test-results/confirm-dialog.png' })
+  await ask.getByRole('button', { name: 'Quitar', exact: true }).click()
   await expect(page).toHaveURL(/\/s\/workday/)
   expect(state.visits.map((v) => v.id)).toEqual(['v2'])
+})
+
+test('a confirmation on top of a sheet closes only itself', async ({ page }) => {
+  const state: FakeState = {
+    workday: { id: 'w1', company_id: 'c1', work_date: '2026-10-12', status: 'published', created_by: 'p1' },
+    visits: [visitRow('v1', 0, 'Moldes 1365', { consent: 'yes', work_status: 'in_progress', display: [{ id: 'd1', display_type_id: 1, reference: 'Fernet', source: 'found', sort_order: 0, deleted_at: null }] })],
+    uploads: [],
+  }
+  await installFakeSupabase(page, state)
+  await page.goto('/visit/v1')
+  await page.getByText('Puntera').first().click()
+  const ask = page.getByRole('alertdialog', { name: '¿Quitar esta exhibición?' })
+  for (const dismiss of [() => page.keyboard.press('Escape'), () => ask.getByRole('button', { name: 'Cancelar' }).click()]) {
+    await page.getByRole('button', { name: 'Quitar exhibición' }).click()
+    await expect(ask).toBeVisible()
+    await dismiss()
+    await expect(ask).toBeHidden()
+    await expect(page.getByRole('button', { name: 'Quitar exhibición' })).toBeVisible()
+  }
 })

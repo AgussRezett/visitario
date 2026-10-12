@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Camera, Cloud, Download, RefreshCw, Share2, Trash2, X, Clock } from 'lucide-react'
 import { formatTime } from '@/domain/dates'
 import { canShare, share } from '@/lib/share'
+import { useConfirm } from '@/ui/ConfirmDialog'
 import type { Photo } from '@/features/workday/api/queries'
 import { localPhotoBlob } from '@/features/workday/api/photos'
 import { uploadStateOf, usePendingUploads } from '@/features/workday/api/uploads'
@@ -35,6 +36,7 @@ export function PhotoViewer({ photos, startId, title, subtitle, urlFor, onClose,
     } else if (dialog.open) dialog.close?.()
   }, [open, startId, photos])
 
+  const { confirm, dialog } = useConfirm()
   const photo = photos[index]
   const url = photo ? urlFor(photo.id) : undefined
   const uploads = usePendingUploads()
@@ -48,7 +50,7 @@ export function PhotoViewer({ photos, startId, title, subtitle, urlFor, onClose,
   }
 
   return (
-    <dialog ref={ref} className={styles.viewer} aria-label={title} onClose={onClose}>
+    <dialog ref={ref} className={styles.viewer} aria-label={title} onClose={(e) => e.target === e.currentTarget && onClose()}>
       {open && photo ? (
         <div className={styles.frame}>
           <div className={styles.bar}>
@@ -101,12 +103,19 @@ export function PhotoViewer({ photos, startId, title, subtitle, urlFor, onClose,
               <button
                 type="button"
                 className={styles.danger}
-                onClick={() => {
+                onClick={async () => {
                   const lastStorefront = photo.kind === 'storefront' && photos.filter((p) => p.kind === 'storefront').length === 1
-                  const question = lastStorefront
-                    ? '¿Borrar la foto de la fachada? La parada vuelve a quedar pendiente: se borran la hora de llegada y la respuesta del local. Las exhibiciones y sus fotos se mantienen.'
-                    : '¿Borrar esta foto?'
-                  if (window.confirm(question)) onDelete(photo)
+                  const ok = await confirm(
+                    lastStorefront
+                      ? {
+                          title: '¿Borrar la foto de la fachada?',
+                          description: 'La parada vuelve a quedar pendiente: se borran la hora de llegada y la respuesta del local. Las exhibiciones y sus fotos se mantienen.',
+                          confirmLabel: 'Borrar fachada',
+                          tone: 'danger',
+                        }
+                      : { title: '¿Borrar esta foto?', description: 'No se puede recuperar.', confirmLabel: 'Borrar', tone: 'danger' },
+                  )
+                  if (ok) onDelete(photo)
                 }}
               >
                 <Trash2 size={22} aria-hidden />Borrar
@@ -115,6 +124,7 @@ export function PhotoViewer({ photos, startId, title, subtitle, urlFor, onClose,
           </div>
         </div>
       ) : null}
+      {dialog}
     </dialog>
   )
 }

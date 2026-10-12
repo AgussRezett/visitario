@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Camera, Check, ImageIcon } from 'lucide-react'
 import { formatTime } from '@/domain/dates'
 import { Button } from '@/ui/Button'
+import { useConfirm } from '@/ui/ConfirmDialog'
 import { Field } from '@/ui/Field'
 import { Select } from '@/ui/Select'
 import { Sheet } from '@/ui/Sheet'
@@ -30,6 +31,7 @@ interface DisplaySheetProps {
 /** One display: type, reference, before and after photos (wireframe A10). */
 export function DisplaySheet({ visit: v, display: d, index, catalogs, urlFor, actions, mutations, onClose, onView, typeName }: DisplaySheetProps) {
   const [reference, setReference] = useState(d.reference ?? '')
+  const { confirm, dialog } = useConfirm()
   useEffect(() => setReference(d.reference ?? ''), [d.reference])
   const photos = (kind: 'before' | 'after') => v.photos.filter((p) => p.displayId === d.id && p.kind === kind)
   const after = photos('after')
@@ -117,7 +119,16 @@ export function DisplaySheet({ visit: v, display: d, index, catalogs, urlFor, ac
           variant="danger"
           size="sm"
           onClick={async () => {
-            if (!window.confirm('¿Quitar esta exhibición de la visita?')) return
+            const photoCount = v.photos.filter((p) => p.displayId === d.id).length
+            const ok = await confirm({
+              title: '¿Quitar esta exhibición?',
+              description: photoCount
+                ? `${label}${d.reference ? ` (${d.reference})` : ''} sale de la visita junto con sus ${photoCount === 1 ? 'foto' : `${photoCount} fotos`}.`
+                : `${label}${d.reference ? ` (${d.reference})` : ''} sale de la visita.`,
+              confirmLabel: 'Quitar',
+              tone: 'danger',
+            })
+            if (!ok) return
             await mutations.remove.mutateAsync(d.id)
             onClose()
           }}
@@ -125,6 +136,7 @@ export function DisplaySheet({ visit: v, display: d, index, catalogs, urlFor, ac
           Quitar exhibición
         </Button>
       </div>
+      {dialog}
     </Sheet>
   )
 }
