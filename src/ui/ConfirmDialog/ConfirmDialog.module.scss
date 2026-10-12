@@ -1,0 +1,89 @@
+@use '@/styles/abstracts' as *;
+
+@layer ui {
+  // A short question, centered on every screen size (unlike Sheet, which is a bottom sheet on phones).
+  .dialog {
+    inset: 0;
+    width: min(400px, calc(100% - #{space(8)}));
+    margin: auto;
+    padding: 0;
+    border: 0;
+    border-radius: $radius-xl;
+    background: $color-card;
+    color: $color-ink;
+    box-shadow: $shadow-sheet;
+
+    &::backdrop {
+      background: rgb(15 26 22 / 0.48);
+    }
+
+    &[open] {
+      animation: appear 160ms ease-out;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      &[open] {
+        animation: none;
+      }
+    }
+  }
+
+  .panel {
+    @include flex(column, $gap: space(2));
+    padding: space(6) space(5) space(5);
+  }
+
+  .icon {
+    @include icon-tile(space(11));
+    margin-bottom: space(1);
+  }
+
+  .icon-danger {
+    background: $color-refused-soft;
+    color: $color-refused-ink;
+
+    @include dark {
+      color: $color-refused-ink;
+    }
+  }
+
+  .title {
+    @include heading(title);
+    font-size: 20px;
+    line-height: 26px;
+  }
+
+  .description {
+    @include text(small);
+    color: $color-ink-muted;
+  }
+
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: space(2.5);
+    margin-top: space(3);
+  }
+
+  // Solid red: the decision in this dialog, not a secondary link like Button's `danger`.
+  .confirm-danger {
+    background: $color-refused;
+    color: $color-white;
+
+    @include hover {
+      background: $color-refused-ink;
+    }
+
+    @include dark {
+      background: $color-refused;
+      color: $color-white;
+    }
+  }
+
+  @keyframes appear {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+  }
+}

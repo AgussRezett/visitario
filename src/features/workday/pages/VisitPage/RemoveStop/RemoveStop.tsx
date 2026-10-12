@@ -2,6 +2,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { Trash2 } from 'lucide-react'
 import { canRemoveVisit } from '@/domain/visit'
 import { Banner } from '@/ui/Banner'
+import { useConfirm } from '@/ui/ConfirmDialog'
 import type { Visit } from '@/features/workday/api/queries'
 import { useRemoveVisit } from '@/features/workday/api/mutations'
 import styles from './RemoveStop.module.scss'
@@ -15,15 +16,21 @@ interface RemoveStopProps {
 export function RemoveStop({ visit: v, back }: RemoveStopProps) {
   const navigate = useNavigate()
   const remove = useRemoveVisit(v.id)
+  const { confirm, dialog } = useConfirm()
   if (!canRemoveVisit(v)) return null
 
   const place = v.store.name ?? v.store.address
   const onRemove = async () => {
-    const question =
-      v.workStatus === 'pending'
-        ? `¿Quitar ${place} de la jornada?`
-        : `¿Quitar ${place} de la jornada? Lo que cargaste en esta visita deja de contar en el día y en el informe.`
-    if (!window.confirm(question)) return
+    const ok = await confirm({
+      title: `¿Quitar ${place} de la jornada?`,
+      description:
+        v.workStatus === 'pending'
+          ? 'Deja de aparecer en tu día. Si era una dirección cargada por error, podés volver a agregarla cuando quieras.'
+          : 'Lo que cargaste en esta visita deja de contar en el día y en el informe.',
+      confirmLabel: 'Quitar',
+      tone: 'danger',
+    })
+    if (!ok) return
     try {
       await remove.mutateAsync()
       await navigate(back)
@@ -42,6 +49,7 @@ export function RemoveStop({ visit: v, back }: RemoveStopProps) {
       <p className={styles.hint}>
         {v.resumedFrom ? 'Vuelve a quedar para retomar más adelante.' : 'Para direcciones cargadas por error o que ya no vas a visitar.'}
       </p>
+      {dialog}
     </div>
   )
 }
