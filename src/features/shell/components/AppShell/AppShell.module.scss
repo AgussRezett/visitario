@@ -27,6 +27,11 @@
   padding: 0 space(2) space(4);
 }
 
+.sidebar-sync {
+  align-self: flex-start;
+  margin: space(2) space(1) 0;
+}
+
 .sidebar-nav {
   @include flex(column, $gap: space(1));
   margin-top: space(3);
