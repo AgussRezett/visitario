@@ -15,7 +15,8 @@
     "test": "vitest run",
     "test:db": "node supabase/tests/run.mjs",
     "test:e2e": "playwright test",
-    "db:types": "supabase gen types typescript --project-id mjpzawlyjjlmluozjwap > src/lib/database.types.ts"
+    "db:types": "supabase gen types typescript --project-id mjpzawlyjjlmluozjwap > src/lib/database.types.ts",
+    "test:api": "bash supabase/tests/api.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",

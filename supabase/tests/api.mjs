@@ -1,0 +1,84 @@
+// The app's own queries, built with the same PostgREST client supabase-js uses, against a
+// real PostgREST (started by api.sh). Every select with embeds is imported from the app.
+import crypto from 'node:crypto'
+import { execFileSync } from 'node:child_process'
+import { PostgrestClient } from '@supabase/postgrest-js'
+import { VISIT_SELECT } from '../../src/features/workday/api/selects.ts'
+
+let passed = 0, failed = 0
+const check = (name, ok, detail = '') => { ok ? passed++ : failed++; console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}${ok ? '' : ` → ${detail}`}`) }
+const sql = (q) => execFileSync('psql', ['-h', 'localhost', '-p', process.env.PGPORT, '-U', 'postgres', '-v', 'ON_ERROR_STOP=1', '-qAtc', q], { encoding: 'utf8' }).trim()
+
+// ---- Fixtures (as the database owner)
+const AUTH = '00000000-0000-7000-8000-0000000000aa', PERSON = '00000000-0000-7000-8000-0000000000a1', COMPANY = '00000000-0000-7000-8000-0000000000c1'
+sql(`insert into auth.users (id, email) values ('${AUTH}', 'agus@example.com');
+     insert into company (id, name, kind) values ('${COMPANY}', 'Panda', 'distributor');
+     insert into person (id, auth_user_id, first_name, last_name) values ('${PERSON}', '${AUTH}', 'Agustín', 'Rezett');
+     insert into person_private (person_id, dni) values ('${PERSON}', '34567890');
+     insert into membership (company_id, person_id, roles, status) values ('${COMPANY}', '${PERSON}', '{merchandiser,admin}', 'active');
+     insert into display_type (company_id, name) values ('${COMPANY}', 'Puntera');
+     insert into brand (company_id, name) values ('${COMPANY}', 'SKYY');
+     insert into work_metric (company_id, name, report_label) values ('${COMPANY}', 'Kits de bolsas', 'CUANTOS KIT DE BOLSAS ARME');`)
+const typeId = Number(sql(`select id from display_type limit 1`))
+const brandId = Number(sql(`select id from brand limit 1`))
+const metricId = Number(sql(`select id from work_metric limit 1`))
+
+const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url')
+const head = b64({ alg: 'HS256', typ: 'JWT' })
+const body = b64({ sub: AUTH, role: 'authenticated', exp: 9999999999 })
+const sig = crypto.createHmac('sha256', process.env.JWT_SECRET).update(`${head}.${body}`).digest('base64url')
+const db = new PostgrestClient(process.env.API_URL, { headers: { Authorization: `Bearer ${head}.${body}.${sig}` } })
+const ok = (name, r, extra = true) => check(name, !r.error && extra, r.error ? `${r.error.code} ${r.error.message}` : 'unexpected data')
+
+// ---- Profile ("me")
+ok('person by auth user', await db.from('person').select('id, first_name, last_name').eq('auth_user_id', AUTH).maybeSingle())
+ok('own private data', await db.from('person_private').select('dni, phone, birth_date').eq('person_id', PERSON).single())
+const ms = await db.from('membership').select('id, company_id, roles, status, starts_on, company:company_id (name)').eq('person_id', PERSON)
+ok('memberships with company name', ms, ms.data?.[0]?.company?.name === 'Panda')
+ok('has_password', await db.rpc('has_password'))
+
+// ---- Workday
+const wd = await db.rpc('open_workday', { p_company: COMPANY, p_date: '2026-10-12' })
+ok('open_workday', wd)
+const wid = wd.data
+ok('workday by date', await db.from('workday').select('id, company_id, work_date, status, created_by').eq('company_id', COMPANY).eq('merchandiser_id', PERSON).eq('work_date', '2026-10-12').is('deleted_at', null).maybeSingle())
+const v1 = await db.rpc('add_visit', { p_workday: wid, p_address: 'Moldes 1365', p_name: 'Autoservicio Lili', p_display_types: [typeId] })
+ok('add_visit (new store with a display)', v1)
+ok('add_visit (address only)', await db.rpc('add_visit', { p_workday: wid, p_address: 'Vidal 2044' }))
+const list = await db.from('visit').select(VISIT_SELECT).eq('workday_id', wid).is('deleted_at', null).order('sort_order')
+ok('visits of the day with store, displays and photos', list, list.data?.length === 2 && list.data[0].store?.address === 'Moldes 1365' && list.data[0].display.length === 1 && list.data[0].adder?.first_name === 'Agustín')
+ok('one visit', await db.from('visit').select(VISIT_SELECT).eq('id', v1.data).maybeSingle())
+ok('history', await db.from('workday').select('id, work_date').eq('company_id', COMPANY).eq('merchandiser_id', PERSON).is('deleted_at', null).order('work_date', { ascending: false }).limit(30))
+ok('daily progress', await db.from('daily_progress').select('work_date, total, visited').eq('company_id', COMPANY).eq('merchandiser_id', PERSON))
+ok('resumable visits', await db.rpc('resumable_visits', { p_company: COMPANY, p_before: '2026-10-13' }))
+const found = await db.rpc('search_stores', { p_company: COMPANY, p_query: 'lili' })
+ok('directory search', found, found.data?.length === 1)
+
+// ---- Catalogs
+for (const t of ['brand', 'display_type']) ok(`catalog ${t}`, await db.from(t).select('id, name').eq('company_id', COMPANY).eq('active', true).order('sort_order').order('name'))
+ok('catalog work_metric', await db.from('work_metric').select('id, name, report_label').eq('company_id', COMPANY).eq('active', true).order('sort_order'))
+ok('message templates', await db.from('message_template').select('kind, body').eq('company_id', COMPANY))
+
+// ---- Visit work, as the visit sheet does it
+const vid = v1.data
+const disp = await db.from('display').insert({ company_id: COMPANY, visit_id: vid, display_type_id: typeId, source: 'found', sort_order: 1 }).select('id').single()
+ok('add a found display', disp)
+ok('display reference', await db.from('display').update({ reference: 'Pasillo 3' }).eq('id', disp.data?.id))
+ok('photo row (as the photos function inserts it)', await db.from('photo').insert({ id: crypto.randomUUID(), company_id: COMPANY, visit_id: vid, kind: 'storefront', taken_at: new Date().toISOString(), bytes: 200000, width: 1400, height: 1050, created_by: PERSON }))
+ok('arrive', await db.from('visit').update({ work_status: 'in_progress', arrived_at: new Date().toISOString() }).eq('id', vid))
+ok('consent', await db.from('visit').update({ consent: 'with_objection', objection: 'Sin cartelería', retry_after: null }).eq('id', vid))
+ok('metric upsert', await db.from('visit_metric').upsert({ company_id: COMPANY, visit_id: vid, metric_id: metricId, quantity: 2 }, { onConflict: 'visit_id,metric_id' }))
+ok('metric upsert again', await db.from('visit_metric').upsert({ company_id: COMPANY, visit_id: vid, metric_id: metricId, quantity: 3 }, { onConflict: 'visit_id,metric_id' }))
+ok('brand on', await db.from('visit_brand').upsert({ company_id: COMPANY, visit_id: vid, brand_id: brandId }, { onConflict: 'visit_id,brand_id', ignoreDuplicates: true }))
+ok('brand on twice', await db.from('visit_brand').upsert({ company_id: COMPANY, visit_id: vid, brand_id: brandId }, { onConflict: 'visit_id,brand_id', ignoreDuplicates: true }))
+const work = await Promise.all([db.from('visit_metric').select('metric_id, quantity').eq('visit_id', vid), db.from('visit_brand').select('brand_id').eq('visit_id', vid)])
+ok('work read back', work[0], work[0].data?.[0]?.quantity === 3 && work[1].data?.length === 1)
+ok('notes', await db.from('visit').update({ notes: 'Faltó SKYY' }).eq('id', vid))
+ok('finish', await db.from('visit').update({ work_status: 'done' }).eq('id', vid))
+const m = await db.from('daily_metrics').select('metric_id, quantity').eq('company_id', COMPANY).eq('merchandiser_id', PERSON).eq('work_date', '2026-10-12')
+ok('day totals', m, m.data?.[0]?.quantity === 3)
+ok('brand off', await db.from('visit_brand').delete().eq('visit_id', vid).eq('brand_id', brandId))
+ok('soft-delete display', await db.from('display').update({ deleted_at: new Date().toISOString() }).eq('id', disp.data?.id))
+
+console.log(`\n${passed} passed, ${failed} failed`)
+process.exit(failed ? 1 : 0)
