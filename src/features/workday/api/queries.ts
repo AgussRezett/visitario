@@ -1,6 +1,7 @@
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import { supabase, type Enums } from '@/lib/supabase'
 import { DEFAULT_TEMPLATES, type TemplateKind } from '@/domain/templates'
+import { VISIT_SELECT } from './selects'
 
 // ---- Shapes the screens use (camelCase, already joined)
 
@@ -69,15 +70,6 @@ export interface Catalogs {
   metrics: { id: number; name: string; reportLabel: string | null }[]
   templates: Record<TemplateKind, string>
 }
-
-const VISIT_SELECT = `
-  id, company_id, workday_id, work_date, sort_order, task, source, added_by, resumed_from,
-  work_status, review_status, arrived_at, consent, objection, retry_after, finished_at, notes,
-  adder:added_by (first_name),
-  store:store_id (id, name, address, area, customer_number, lat, lng, location_status),
-  display (id, display_type_id, reference, source, sort_order, deleted_at),
-  photo (id, kind, display_id, taken_at, uploaded_at, deleted_at)
-`
 
 type VisitRow = {
   id: string
