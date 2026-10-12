@@ -10,6 +10,7 @@ import { useWorkContext } from '@/features/workday/context'
 import { useCatalogs, visitQuery, visitsQuery, type Catalogs, type Photo, type Visit } from '@/features/workday/api/queries'
 import { usePhotoUrls } from '@/features/workday/api/photos'
 import { PhotoViewer } from '@/features/workday/components/PhotoViewer'
+import { VisitSkeleton } from '@/features/workday/components/Skeletons'
 import { originLabel } from '@/features/workday/visit-text'
 import { useVisitActions } from './useVisitActions'
 import { StoreInfo } from './StoreInfo'
@@ -41,7 +42,7 @@ export function VisitPage({ visitId }: { visitId: string }) {
 
   if (!ctx) return null
   if (visit.isError) return <div className={styles.page}><Banner tone="error">No pudimos cargar la visita. Revisá la conexión.</Banner></div>
-  if (visit.isPending) return <div className={styles.page} aria-busy="true" />
+  if (visit.isPending) return <VisitSkeleton />
   if (!v) return <div className={styles.page}><Banner tone="error">Esa visita no existe o no es tuya.</Banner></div>
 
   const stop = (siblings.data?.findIndex((s) => s.id === v.id) ?? -1) + 1

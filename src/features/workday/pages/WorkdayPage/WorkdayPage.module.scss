@@ -1,12 +1,12 @@
 @use '@/styles/abstracts' as *;
 
 .page {
-  @include flex(column, $gap: space(3));
+  @include flex(column, $gap: space(4));
   min-height: 100%;
-  padding: space(1) space(5) 0;
+  padding: space(2) space(5) 0;
 
   @include up(lg) {
-    gap: space(5);
+    gap: space(6);
     padding: space(6) space(8) 0;
   }
 }

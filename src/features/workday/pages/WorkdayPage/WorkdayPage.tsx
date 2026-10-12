@@ -6,6 +6,7 @@ import { useWorkContext } from '@/features/workday/context'
 import { workdayQuery } from '@/features/workday/api/queries'
 import { NoWorkday } from './NoWorkday'
 import { DayView } from './DayView'
+import { DaySkeleton, HeaderSkeleton } from '@/features/workday/components/Skeletons'
 import styles from './WorkdayPage.module.scss'
 
 /** "Mi jornada": the day's stores, or how to start one (wireframes Main, A03, AD03, AD04). */
@@ -24,7 +25,14 @@ export function WorkdayPage({ date: requested }: { date?: string }) {
       </div>
     )
   }
-  if (workday.isPending) return <div className={styles.page} aria-busy="true" />
+  if (workday.isPending) {
+    return (
+      <div className={styles.page}>
+        <HeaderSkeleton />
+        <DaySkeleton />
+      </div>
+    )
+  }
 
   return (
     <div className={styles.page}>

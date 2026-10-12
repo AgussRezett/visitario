@@ -1,0 +1,89 @@
+@use '@/styles/abstracts' as *;
+
+.panel,
+.resume {
+  @include surface;
+  @include flex(column, $gap: space(3));
+  padding: space(4);
+}
+
+.resume {
+  border-color: $color-closed-soft;
+  background: linear-gradient($color-closed-soft, $color-closed-soft) top / 100% 4px no-repeat, $color-card;
+}
+
+.head {
+  @include flex(row, $gap: space(2), $align: center, $justify: space-between);
+}
+
+.title {
+  font-weight: $weight-extrabold;
+}
+
+.link {
+  @include flex(row, $gap: space(1.5), $align: center);
+  @include text(label);
+  font-weight: $weight-bold;
+  color: $color-forest;
+
+  @include dark {
+    color: $color-lime;
+  }
+}
+
+.rows {
+  @include flex(column);
+}
+
+.row {
+  @include flex(row, $gap: space(3), $align: baseline, $justify: space-between);
+  padding-block: space(2);
+  border-bottom: 1px solid $color-line;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  dt {
+    @include text(label);
+    color: $color-ink-muted;
+  }
+
+  dd {
+    @include text(heading);
+    font-weight: $weight-extrabold;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.badge {
+  @include text(tiny);
+  padding: space(0.5) space(2.5);
+  border-radius: $radius-full;
+  background: $color-closed;
+  font-weight: $weight-extrabold;
+  color: $color-white;
+}
+
+.items {
+  @include flex(column, $gap: space(2));
+
+  li {
+    @include flex(column);
+  }
+}
+
+.item-name {
+  @include text(label);
+  font-weight: $weight-bold;
+}
+
+.item-meta {
+  @include text(tiny);
+  color: $color-ink-subtle;
+}
+
+.help {
+  @include text(tiny);
+  color: $color-ink-subtle;
+}

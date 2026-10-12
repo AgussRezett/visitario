@@ -1,0 +1,106 @@
+@use '@/styles/abstracts' as *;
+
+.strip {
+  @include flex(row, $gap: space(1), $align: center);
+}
+
+.arrow {
+  @include center;
+  width: space(8);
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: $radius-md;
+  color: $color-ink-subtle;
+
+  @include hover {
+    background: $color-muted;
+  }
+}
+
+.days {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: space(1);
+}
+
+.day {
+  @include flex(column, $gap: 2px, $align: center, $justify: center);
+  @include transition-colors;
+  width: 100%;
+  height: 60px;
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  color: $color-ink-muted;
+
+  @include hover {
+    background: $color-muted;
+  }
+
+  @include up(lg) {
+    width: 52px;
+  }
+}
+
+.initial {
+  @include text(tiny);
+  font-weight: $weight-bold;
+  color: $color-ink-subtle;
+}
+
+.number {
+  @include text(heading);
+  font-weight: $weight-extrabold;
+  font-variant-numeric: tabular-nums;
+}
+
+.dot {
+  @include square(6px);
+  border-radius: $radius-full;
+}
+
+.done {
+  background: $color-done;
+}
+
+.open {
+  background: $color-active;
+}
+
+// A past day with stores still pending
+.left {
+  background: $color-closed;
+}
+
+.today {
+  border-color: $color-line;
+  color: $color-ink;
+}
+
+.selected {
+  border-color: $color-forest;
+  background: $color-forest;
+  color: $color-white;
+
+  .initial {
+    color: #c9dbd1;
+  }
+
+  @include dark {
+    border-color: $color-lime;
+    background: $color-lime;
+    color: $color-forest;
+
+    .initial {
+      color: $color-forest;
+    }
+  }
+
+  @include hover {
+    background: $color-forest;
+
+    @include dark {
+      background: $color-lime;
+    }
+  }
+}

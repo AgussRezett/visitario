@@ -1,0 +1,74 @@
+@use '@/styles/abstracts' as *;
+
+// One bordered strip split by hairlines, not separate cards.
+.stats {
+  @include surface;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  overflow: hidden;
+
+  @include up(sm) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  @include up(lg) {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.cell,
+.desktop-cell {
+  @include flex(column-reverse, $gap: space(0.5));
+  padding: space(3) space(4);
+  border-right: 1px solid $color-line;
+  border-bottom: 1px solid $color-line;
+  // Two columns on phones: the second of each row has no right line, the last row no bottom line
+  &:nth-child(2n) {
+    border-right: 0;
+  }
+
+  &:nth-child(n + 3) {
+    border-bottom: 0;
+  }
+
+  @include up(sm) {
+    border-bottom: 0;
+
+    &:nth-child(2n) {
+      border-right: 1px solid $color-line;
+    }
+
+    &:nth-child(4) {
+      border-right: 0;
+    }
+  }
+
+  @include up(lg) {
+    &:nth-child(4) {
+      border-right: 1px solid $color-line;
+    }
+
+    &:last-child {
+      border-right: 0;
+    }
+  }
+}
+
+.desktop-cell {
+  display: none;
+
+  @include up(lg) {
+    display: flex;
+  }
+}
+
+.value {
+  @include text(title);
+  font-weight: $weight-extrabold;
+  font-variant-numeric: tabular-nums;
+}
+
+.label {
+  @include text(tiny);
+  color: $color-ink-subtle;
+}

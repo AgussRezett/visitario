@@ -23,6 +23,18 @@
   @include heading(display);
 }
 
+.sub {
+  color: $color-ink-muted;
+}
+
+.week {
+  margin-inline: calc(-1 * #{space(2)});
+
+  @include up(lg) {
+    align-self: flex-start;
+  }
+}
+
 .desktop-actions {
   display: none;
   gap: space(2);

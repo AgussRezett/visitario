@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { Check, Copy, RefreshCw, Share2 } from 'lucide-react'
-import { todayInArgentina } from '@/domain/dates'
+import { formatLongDate, todayInArgentina } from '@/domain/dates'
 import { buildDailyReport, reportTotals } from '@/domain/report'
 import { canShare, share, useCopy } from '@/lib/share'
 import { Banner } from '@/ui/Banner'
@@ -12,7 +12,8 @@ import { Table } from '@/ui/Table'
 import { TextArea } from '@/ui/TextArea'
 import { useWorkContext } from '@/features/workday/context'
 import { dayMetricsQuery, historyQuery, useCatalogs, visitsQuery, workdayQuery } from '@/features/workday/api/queries'
-import { DaySwitcher } from '@/features/workday/components/DaySwitcher'
+import { WeekStrip } from '@/features/workday/components/WeekStrip'
+import { ReportSkeleton } from '@/features/workday/components/Skeletons'
 import styles from './ReportPage.module.scss'
 
 /** The day's report, generated from the visits, editable and ready to copy (wireframes A16 / AD13). */
@@ -53,8 +54,8 @@ export function ReportPage({ date: requested }: { date?: string }) {
     <div className={styles.page}>
       <div className={styles.top}>
         <div className={styles.titles}>
-          <DaySwitcher date={date} dates={(history.data ?? []).map((d) => d.workDate)} onChange={goTo} />
           <h1 className={styles.title}>Informe del día</h1>
+          <p className={styles.sub}>{formatLongDate(date)}</p>
         </div>
         <div className={styles.desktopActions}>
           <Button variant="secondary" size="md" onClick={() => setText(generated)}><RefreshCw size={18} aria-hidden />Regenerar</Button>
@@ -65,7 +66,13 @@ export function ReportPage({ date: requested }: { date?: string }) {
         </div>
       </div>
 
-      {workday.isSuccess && !workday.data ? (
+      <div className={styles.week}>
+        <WeekStrip date={date} days={history.data ?? []} onSelect={goTo} />
+      </div>
+
+      {workday.isPending || (workday.data && visits.isPending) ? (
+        <ReportSkeleton />
+      ) : workday.isSuccess && !workday.data ? (
         <Banner tone="info">No tenés jornada ese día. Elegí otro día arriba.</Banner>
       ) : (
         <>

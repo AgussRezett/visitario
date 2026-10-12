@@ -1,0 +1,78 @@
+@use '@/styles/abstracts' as *;
+
+.header {
+  @include flex(column, $gap: space(3));
+}
+
+.week {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: space(1);
+  padding-top: space(2);
+
+  @include up(lg) {
+    width: 420px;
+  }
+}
+
+.day {
+  display: grid;
+  gap: space(5);
+
+  @include up(lg) {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+}
+
+.main {
+  @include flex(column, $gap: space(4));
+}
+
+.aside {
+  display: none;
+
+  @include up(lg) {
+    display: block;
+  }
+}
+
+.row {
+  @include surface;
+  @include flex(row, $gap: space(3), $align: center);
+  padding: space(3.5);
+}
+
+.lines {
+  @include flex(column, $gap: space(1.5));
+  flex: 1;
+}
+
+.visit {
+  @include flex(column, $gap: space(3));
+  padding: space(4) space(5);
+
+  @include up(lg) {
+    padding: space(6) space(8);
+  }
+}
+
+.columns {
+  display: grid;
+  gap: space(3);
+  padding-top: space(2);
+
+  @include up(lg) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: space(4);
+  }
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: space(2);
+
+  @include up(lg) {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
