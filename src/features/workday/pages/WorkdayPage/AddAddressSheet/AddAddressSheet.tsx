@@ -17,6 +17,7 @@ import { useCatalogs } from '@/features/workday/api/queries'
 import { useAddVisit } from '@/features/workday/api/mutations'
 import { geocode, type GeocodeResult } from '@/features/workday/api/geocode'
 import styles from './AddAddressSheet.module.scss'
+import { useOnline } from '@/lib/online'
 
 interface AddAddressSheetProps {
   open: boolean
@@ -30,6 +31,7 @@ const EMPTY = { address: '', name: '', customerNumber: '', task: '', displayType
 
 /** Add a store from the directory, a new one, or several pasted addresses (wireframes A05 / AD06). */
 export function AddAddressSheet({ open, onClose, ctx, workdayId, date }: AddAddressSheetProps) {
+  const online = useOnline()
   const [mode, setMode] = useState<'one' | 'many'>('one')
   const [query, setQuery] = useState('')
   const [form, setForm] = useState(EMPTY)
@@ -108,15 +110,16 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date }: AddAddr
         <>
           <Button variant="secondary" size="md" className={styles.cancel} onClick={onClose}>Cancelar</Button>
           {mode === 'one' ? (
-            <Button size="md" disabled={!canAddNew} loading={add.isPending} onClick={addNew}>Agregar a mi jornada</Button>
+            <Button size="md" disabled={!canAddNew || !online} loading={add.isPending} onClick={addNew}>Agregar a mi jornada</Button>
           ) : (
-            <Button size="md" disabled={!lines.length} loading={add.isPending} onClick={addPasted}>
+            <Button size="md" disabled={!lines.length || !online} loading={add.isPending} onClick={addPasted}>
               Agregar {lines.length || ''} {lines.length === 1 ? 'dirección' : 'direcciones'}
             </Button>
           )}
         </>
       }
     >
+      {online ? null : <Banner tone="info">Sin señal: para buscar y agregar direcciones necesitás conexión. Las visitas que ya tenés siguen funcionando.</Banner>}
       <Segmented
         label="Cómo agregar"
         value={mode}

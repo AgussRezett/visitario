@@ -11,6 +11,7 @@ import { historyQuery, resumableQuery } from '@/features/workday/api/queries'
 import { useOpenWorkday } from '@/features/workday/api/mutations'
 import { ResumeSheet } from '../ResumeSheet'
 import styles from './NoWorkday.module.scss'
+import { useOnline } from '@/lib/online'
 
 interface NoWorkdayProps {
   ctx: WorkContext
@@ -30,6 +31,7 @@ function copy(date: string, personal: boolean) {
 
 /** No workday for the date: open one in a tap, resume what was left, see the week (wireframes A03 / AD03). */
 export function NoWorkday({ ctx, date, onOpen }: NoWorkdayProps) {
+  const online = useOnline()
   const [picking, setPicking] = useState(false)
   const [otherDate, setOtherDate] = useState(date)
   const [resuming, setResuming] = useState(false)
@@ -57,7 +59,7 @@ export function NoWorkday({ ctx, date, onOpen }: NoWorkdayProps) {
             <h2 className={styles.title}>{text.title}</h2>
             <p className={styles.lead}>{text.lead}</p>
             <div className={styles.actions}>
-              <Button onClick={() => openOn(date)} loading={open.isPending && !picking} className={styles.primary}>{text.action}</Button>
+              <Button onClick={() => openOn(date)} loading={open.isPending && !picking} disabled={!online} className={styles.primary}>{text.action}</Button>
               {!picking ? (
                 <Button variant="ghost" size="md" onClick={() => setPicking(true)}>Elegir otra fecha</Button>
               ) : null}
@@ -74,6 +76,7 @@ export function NoWorkday({ ctx, date, onOpen }: NoWorkdayProps) {
                 <Button type="submit" variant="secondary" size="md" loading={open.isPending}>Abrir</Button>
               </form>
             ) : null}
+            {online ? null : <Banner tone="info">Sin señal: para abrir una jornada necesitás conexión.</Banner>}
             {open.error ? <Banner tone="error">{open.error.message}</Banner> : null}
           </section>
 

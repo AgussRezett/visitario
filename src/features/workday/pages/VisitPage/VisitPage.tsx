@@ -10,6 +10,7 @@ import { useWorkContext } from '@/features/workday/context'
 import { useCatalogs, visitFromLists, visitQuery, visitsQuery, type Catalogs, type Photo, type Visit } from '@/features/workday/api/queries'
 import { usePhotoUrls } from '@/features/workday/api/photos'
 import { useVisitView } from '@/features/sync/hooks'
+import { SyncStatus } from '@/features/sync/components/SyncStatus'
 import { PhotoViewer } from '@/features/workday/components/PhotoViewer'
 import { VisitSkeleton } from '@/features/workday/components/Skeletons'
 import { originLabel } from '@/features/workday/visit-text'
@@ -95,6 +96,7 @@ function VisitBody(props: {
           <span className={styles.appbarTitle}>{title}</span>
           <span className={styles.appbarMeta}>{meta}</span>
         </span>
+        <SyncStatus />
         <StatusChip work={v.workStatus} review={v.reviewStatus} />
       </header>
 

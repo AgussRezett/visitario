@@ -10,6 +10,7 @@ import type { Role } from '@/domain/roles'
 import { SECTIONS } from '@/features/shell/sections'
 import { RoleSwitcher } from '@/features/shell/components/RoleSwitcher'
 import { ViewSwitcher } from '@/features/shell/components/ViewSwitcher'
+import { SyncStatus } from '@/features/sync/components/SyncStatus'
 import styles from './AppShell.module.scss'
 
 interface Props {
@@ -33,6 +34,7 @@ export function AppShell({ me, active, children }: Props) {
       <aside className={styles.sidebar}>
         <Link to="/" aria-label="Inicio" className={styles.sidebarLogo}><Logo /></Link>
         {active ? <RoleSwitcher memberships={me.memberships} active={active} /> : null}
+        <SyncStatus variant="full" className={styles.sidebarSync} />
         <nav aria-label="Secciones" className={styles.sidebarNav}>
           {sections.map((s) => (
             <Link key={s.slug} to="/s/$section" params={{ section: s.slug }} className={styles.navLink} activeProps={activeProps}>
@@ -52,6 +54,7 @@ export function AppShell({ me, active, children }: Props) {
         <header className={clsx(styles.mobileHeader, immersive && styles.phoneHidden)}>
           <Link to="/" aria-label="Inicio"><Logo /></Link>
           <div className={styles.headerEnd}>
+            <SyncStatus />
             {active ? <ViewSwitcher memberships={me.memberships} active={active} /> : null}
             {active?.role === 'merchandiser' ? null : (
               <Link to="/profile" aria-label="Mi perfil">

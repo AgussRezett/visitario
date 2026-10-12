@@ -124,6 +124,9 @@ export function forgetAll() {
   set({ rows: [], lastSyncAt: null })
 }
 
+/** "Reintentar ahora": skips the wait before the next attempt. */
+export const syncNow = () => kick()
+
 export function retryAll() {
   for (const r of state.rows) if (r.state === 'failed') retry(r.id)
   kick()

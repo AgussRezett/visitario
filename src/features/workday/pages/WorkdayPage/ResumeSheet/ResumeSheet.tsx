@@ -10,6 +10,7 @@ import type { WorkContext } from '@/features/workday/context'
 import { workdayKeys } from '@/features/workday/api/queries'
 import { workdayErrorMessage } from '@/features/workday/api/mutations'
 import styles from './ResumeSheet.module.scss'
+import { useOnline } from '@/lib/online'
 
 interface Resumable {
   visit_id: string
@@ -42,6 +43,7 @@ function describe(v: Resumable) {
 
 /** Pick pending or closed visits from earlier days and add them to this day (wireframes A04 / AD05). */
 export function ResumeSheet({ open, onClose, ctx, date, visits, workdayId, onDone }: ResumeSheetProps) {
+  const online = useOnline()
   const qc = useQueryClient()
   const [chosen, setChosen] = useState<string[]>([])
   useEffect(() => {
@@ -77,12 +79,13 @@ export function ResumeSheet({ open, onClose, ctx, date, visits, workdayId, onDon
       footer={
         <>
           <Button variant="secondary" size="md" className={styles.cancel} onClick={onClose}>Cancelar</Button>
-          <Button size="md" disabled={!chosen.length} loading={resume.isPending} onClick={() => resume.mutate()}>
+          <Button size="md" disabled={!chosen.length || !online} loading={resume.isPending} onClick={() => resume.mutate()}>
             Agregar {chosen.length} a mi jornada
           </Button>
         </>
       }
     >
+      {online ? null : <Banner tone="info">Sin señal: para retomar pendientes necesitás conexión.</Banner>}
       <div className={styles.counter}>
         <span>{chosen.length} de {visits.length} elegidas</span>
         <Button variant="ghost" size="sm" onClick={() => setChosen(all ? [] : visits.map((v) => v.visit_id))}>
