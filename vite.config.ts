@@ -27,7 +27,18 @@ export default defineConfig(({ mode }) => ({
           { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
-      workbox: { navigateFallback: '/index.html', globPatterns: ['**/*.{js,css,html,svg,png,woff2}'] },
+      workbox: {
+        navigateFallback: '/index.html',
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // Fonts come from Google: keep them so the app looks the same without signal.
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com',
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'fonts', expiration: { maxEntries: 20, maxAgeSeconds: 365 * 24 * 60 * 60 } },
+          },
+        ],
+      },
     }),
   ],
   build: {
