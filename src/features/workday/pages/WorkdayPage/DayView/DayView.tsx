@@ -15,6 +15,7 @@ import { DayStats } from '../DayStats'
 import { StopList, type StopFilter } from '../StopList'
 import { ReportPanel, ResumePanel } from '../SidePanels'
 import { DaySkeleton } from '@/features/workday/components/Skeletons'
+import { MainOverlay } from '@/features/shell/components/AppShell'
 import styles from './DayView.module.scss'
 
 /** Which sheet is open; the page header opens them too. */
@@ -104,11 +105,11 @@ export function DayView({ ctx, workday, sheet, onSheet }: DayViewProps) {
         </aside>
       </div>
 
-      <div className={styles.fab}>
+      <MainOverlay>
         <Button size="md" className={styles.fabButton} onClick={() => setAdding(true)}>
           <Plus size={20} aria-hidden />Agregar dirección
         </Button>
-      </div>
+      </MainOverlay>
       {sheets}
     </Refreshing>
   )
