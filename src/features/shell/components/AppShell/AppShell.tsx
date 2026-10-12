@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link, useMatches } from '@tanstack/react-router'
 import { UserRound } from 'lucide-react'
 import clsx from 'clsx'
@@ -11,6 +11,7 @@ import { SECTIONS } from '@/features/shell/sections'
 import { RoleSwitcher } from '@/features/shell/components/RoleSwitcher'
 import { ViewSwitcher } from '@/features/shell/components/ViewSwitcher'
 import { SyncStatus } from '@/features/sync/components/SyncStatus'
+import { MainOverlayContext } from './main-overlay-context'
 import styles from './AppShell.module.scss'
 
 interface Props {
@@ -21,8 +22,12 @@ interface Props {
 
 const activeProps = { className: styles.active }
 
-/** Responsive frame: bottom navigation on phones, sidebar on desktop. Same routes on both. */
+/**
+ * Responsive frame on a grid: header, content and bottom navigation on phones; sidebar and
+ * content on desktop. Only the content (and the sidebar) scroll; the bars never move.
+ */
 export function AppShell({ me, active, children }: Props) {
+  const [overlay, setOverlay] = useState<HTMLElement | null>(null)
   const sections = active ? SECTIONS[active.role] : []
   const name = `${me.person.firstName} ${me.person.lastName}`
   const short = initials(me.person.firstName, me.person.lastName)
@@ -31,7 +36,7 @@ export function AppShell({ me, active, children }: Props) {
 
   return (
     <div className={styles.shell}>
-      <aside className={styles.sidebar}>
+      <aside className={styles.sidebar} data-scroll>
         <Link to="/" aria-label="Inicio" className={styles.sidebarLogo}><Logo /></Link>
         {active ? <RoleSwitcher memberships={me.memberships} active={active} /> : null}
         <SyncStatus variant="full" className={styles.sidebarSync} />
@@ -50,38 +55,42 @@ export function AppShell({ me, active, children }: Props) {
         </Link>
       </aside>
 
-      <div className={styles.content}>
-        <header className={clsx(styles.mobileHeader, immersive && styles.phoneHidden)}>
-          <Link to="/" aria-label="Inicio"><Logo /></Link>
-          <div className={styles.headerEnd}>
-            <SyncStatus />
-            {active ? <ViewSwitcher memberships={me.memberships} active={active} /> : null}
-            {active?.role === 'merchandiser' ? null : (
-              <Link to="/profile" aria-label="Mi perfil">
-                <Avatar name={short} size={36} />
+      <header className={clsx(styles.mobileHeader, immersive && styles.phoneHidden)}>
+        <Link to="/" aria-label="Inicio"><Logo /></Link>
+        <div className={styles.headerEnd}>
+          <SyncStatus />
+          {active ? <ViewSwitcher memberships={me.memberships} active={active} /> : null}
+          {active?.role === 'merchandiser' ? null : (
+            <Link to="/profile" aria-label="Mi perfil">
+              <Avatar name={short} size={36} />
+            </Link>
+          )}
+        </div>
+      </header>
+
+      <main className={clsx(styles.main, immersive && styles.mainImmersive)} data-scroll>
+        <MainOverlayContext.Provider value={overlay}>{children}</MainOverlayContext.Provider>
+      </main>
+      {/* Same grid cell as <main>, on top: floating actions without fixed positioning */}
+      <div ref={setOverlay} className={clsx(styles.overlay, immersive && styles.phoneHidden)} />
+
+      {mobileItems.length ? (
+        <nav aria-label="Secciones" className={clsx(styles.bottomNav, immersive && styles.phoneHidden)} style={{ gridTemplateColumns: `repeat(${mobileItems.length}, minmax(0, 1fr))` }}>
+          {mobileItems.map((s) =>
+            s ? (
+              <Link key={s.slug} to="/s/$section" params={{ section: s.slug }} className={styles.tab} activeProps={activeProps}>
+                <s.icon size={22} aria-hidden />
+                {s.label}
               </Link>
-            )}
-          </div>
-        </header>
-        <main className={clsx(styles.main, immersive && styles.mainImmersive)}>{children}</main>
-        {mobileItems.length ? (
-          <nav aria-label="Secciones" className={clsx(styles.bottomNav, immersive && styles.phoneHidden)} style={{ gridTemplateColumns: `repeat(${mobileItems.length}, minmax(0, 1fr))` }}>
-            {mobileItems.map((s) =>
-              s ? (
-                <Link key={s.slug} to="/s/$section" params={{ section: s.slug }} className={styles.tab} activeProps={activeProps}>
-                  <s.icon size={22} aria-hidden />
-                  {s.label}
-                </Link>
-              ) : (
-                <Link key="profile" to="/profile" className={styles.tab} activeProps={activeProps}>
-                  <UserRound size={22} aria-hidden />
-                  Perfil
-                </Link>
-              ),
-            )}
-          </nav>
-        ) : null}
-      </div>
+            ) : (
+              <Link key="profile" to="/profile" className={styles.tab} activeProps={activeProps}>
+                <UserRound size={22} aria-hidden />
+                Perfil
+              </Link>
+            ),
+          )}
+        </nav>
+      ) : null}
     </div>
   )
 }

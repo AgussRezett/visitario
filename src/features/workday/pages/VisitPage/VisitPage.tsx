@@ -100,70 +100,77 @@ function VisitBody(props: {
         <StatusChip work={v.workStatus} review={v.reviewStatus} />
       </header>
 
-      <div className={styles.desktopTop}>
-        <Link {...back} className={styles.crumb}>Mi jornada</Link>
-        <div className={styles.desktopTitleRow}>
-          <h1 className={styles.desktopTitle}>{title}</h1>
-          <StatusChip work={v.workStatus} review={v.reviewStatus} />
+      {/* Phones: the only part that scrolls, between the top bar and the finish bar */}
+      <div className={styles.scroll} data-scroll>
+        <div className={styles.desktopTop}>
+          <Link {...back} className={styles.crumb}>Mi jornada</Link>
+          <div className={styles.desktopTitleRow}>
+            <h1 className={styles.desktopTitle}>{title}</h1>
+            <StatusChip work={v.workStatus} review={v.reviewStatus} />
+          </div>
+          <span className={styles.desktopMeta}>{[meta, v.task && `Tarea: ${v.task}`].filter(Boolean).join(' · ')}</span>
         </div>
-        <span className={styles.desktopMeta}>{[meta, v.task && `Tarea: ${v.task}`].filter(Boolean).join(' · ')}</span>
+
+        <div className={styles.content}>
+          <StoreInfo visit={v} />
+          <PhotoStrip
+            visit={v}
+            working={working}
+            onArrive={actions.arrive}
+            onViewStorefront={() => storefront[0] && onView({ photos: storefront, startId: storefront[0].id, title: 'Fachada' })}
+            onDisplayPhoto={(kind) => {
+              const target = v.displays.find((d) => !v.photos.some((p) => p.displayId === d.id && p.kind === kind)) ?? v.displays[0]
+              if (target) props.setDisplayToOpen({ id: target.id, kind })
+            }}
+            busy={actions.uploading}
+          />
+
+          <div className={styles.columns}>
+            <div className={styles.column}>
+              <div className={styles.arrival}>
+                <ArrivalSection visit={v} urlFor={urlFor} onArrive={actions.arrive} busy={actions.uploading} onView={(id) => onView({ photos: storefront, startId: id, title: 'Fachada' })} />
+              </div>
+              <div className={styles.consent}>
+                <ConsentSection visit={v} actions={actions} />
+              </div>
+              {working && catalogs ? (
+                <div className={styles.work}>
+                  <WorkSection visit={v} catalogs={catalogs} onNotes={actions.setNotes} />
+                </div>
+              ) : null}
+            </div>
+            <div className={styles.column}>
+              {working && catalogs ? (
+                <div className={styles.displays}>
+                  <DisplaysSection
+                    visit={v}
+                    catalogs={catalogs}
+                    urlFor={urlFor}
+                    actions={actions}
+                    openDisplay={props.displayToOpen}
+                    onOpened={() => props.setDisplayToOpen(null)}
+                    onView={onView}
+                  />
+                </div>
+              ) : closed ? (
+                <p className={styles.help}>Exhibiciones y trabajo se habilitan cuando el local te autorice.</p>
+              ) : null}
+              {catalogs ? (
+                <div className={styles.messages}>
+                  <MessagesSection visit={v} templates={catalogs.templates} firstName={firstName} />
+                </div>
+              ) : null}
+              <div className={styles.finish}>
+                <FinishBar visit={v} actions={actions} back={back} />
+              </div>
+            </div>
+          </div>
+          <RemoveStop visit={v} back={back} />
+        </div>
       </div>
 
-      <div className={styles.content}>
-        <StoreInfo visit={v} />
-        <PhotoStrip
-          visit={v}
-          working={working}
-          onArrive={actions.arrive}
-          onViewStorefront={() => storefront[0] && onView({ photos: storefront, startId: storefront[0].id, title: 'Fachada' })}
-          onDisplayPhoto={(kind) => {
-            const target = v.displays.find((d) => !v.photos.some((p) => p.displayId === d.id && p.kind === kind)) ?? v.displays[0]
-            if (target) props.setDisplayToOpen({ id: target.id, kind })
-          }}
-          busy={actions.uploading}
-        />
-
-        <div className={styles.columns}>
-          <div className={styles.column}>
-            <div className={styles.arrival}>
-              <ArrivalSection visit={v} urlFor={urlFor} onArrive={actions.arrive} busy={actions.uploading} onView={(id) => onView({ photos: storefront, startId: id, title: 'Fachada' })} />
-            </div>
-            <div className={styles.consent}>
-              <ConsentSection visit={v} actions={actions} />
-            </div>
-            {working && catalogs ? (
-              <div className={styles.work}>
-                <WorkSection visit={v} catalogs={catalogs} onNotes={actions.setNotes} />
-              </div>
-            ) : null}
-          </div>
-          <div className={styles.column}>
-            {working && catalogs ? (
-              <div className={styles.displays}>
-                <DisplaysSection
-                  visit={v}
-                  catalogs={catalogs}
-                  urlFor={urlFor}
-                  actions={actions}
-                  openDisplay={props.displayToOpen}
-                  onOpened={() => props.setDisplayToOpen(null)}
-                  onView={onView}
-                />
-              </div>
-            ) : closed ? (
-              <p className={styles.help}>Exhibiciones y trabajo se habilitan cuando el local te autorice.</p>
-            ) : null}
-            {catalogs ? (
-              <div className={styles.messages}>
-                <MessagesSection visit={v} templates={catalogs.templates} firstName={firstName} />
-              </div>
-            ) : null}
-            <div className={styles.finish}>
-              <FinishBar visit={v} actions={actions} back={back} />
-            </div>
-          </div>
-        </div>
-        <RemoveStop visit={v} back={back} />
+      <div className={styles.footer}>
+        <FinishBar visit={v} actions={actions} back={back} />
       </div>
 
       <PhotoViewer

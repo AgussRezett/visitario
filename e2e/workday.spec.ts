@@ -37,7 +37,7 @@ test('a visit cannot end without the storefront photo and the store’s answer',
 
   const finish = page.getByRole('button', { name: 'Terminar visita' })
   await expect(finish).toBeDisabled()
-  await expect(page.getByText('Falta la foto de la fachada. Falta marcar si el local te autorizó.')).toBeVisible()
+  await expect(page.getByText('Falta la foto de la fachada. Falta marcar si el local te autorizó.').filter({ visible: true })).toBeVisible()
 
   // A big phone photo with a GPS tag in its metadata
   const photo = await page.evaluate(async () => {
