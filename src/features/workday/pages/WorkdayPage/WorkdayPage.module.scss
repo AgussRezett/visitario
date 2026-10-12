@@ -10,3 +10,13 @@
     padding: space(6) space(8) 0;
   }
 }
+
+// The day under the fixed header: same rhythm as the page
+.body {
+  @include flex(column, $gap: space(4));
+  flex: 1;
+
+  @include up(lg) {
+    gap: space(6);
+  }
+}

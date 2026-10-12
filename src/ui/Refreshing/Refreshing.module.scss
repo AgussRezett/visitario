@@ -1,0 +1,19 @@
+@use '@/styles/abstracts' as *;
+
+@layer ui {
+  .refreshing {
+    transition: opacity 160ms ease;
+  }
+
+  // Waits a moment before fading so a fast load does not flicker; comes back at once.
+  .active {
+    opacity: 0.5;
+    transition-delay: 120ms;
+    pointer-events: none; // the faded content belongs to the previous selection
+    cursor: progress;
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+  }
+}

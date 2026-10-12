@@ -10,6 +10,14 @@
   }
 }
 
+.body {
+  @include flex(column, $gap: space(3));
+
+  @include up(lg) {
+    gap: space(5);
+  }
+}
+
 .top {
   @include flex(row, $gap: space(3), $align: flex-end, $justify: space-between);
   flex-wrap: wrap;

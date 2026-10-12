@@ -1,4 +1,4 @@
-import { queryOptions, useQuery } from '@tanstack/react-query'
+import { type QueryClient, queryOptions, useQuery } from '@tanstack/react-query'
 import { supabase, type Enums } from '@/lib/supabase'
 import { DEFAULT_TEMPLATES, type TemplateKind } from '@/domain/templates'
 import { VISIT_SELECT } from './selects'
@@ -177,6 +177,15 @@ export const visitsQuery = (workdayId: string, personId: string) =>
       return (data as unknown as VisitRow[]).map((r) => toVisit(r, personId))
     },
   })
+
+/** The visit as the day's list already has it, so opening it shows at once (then refreshes). */
+export function visitFromLists(qc: QueryClient, visitId: string) {
+  for (const [key, list] of qc.getQueriesData<Visit[]>({ queryKey: ['workday', 'visits'] })) {
+    const found = list?.find((v) => v.id === visitId)
+    if (found) return { data: found, updatedAt: qc.getQueryState(key)?.dataUpdatedAt ?? 0 }
+  }
+  return undefined
+}
 
 export const visitQuery = (visitId: string, personId: string) =>
   queryOptions({

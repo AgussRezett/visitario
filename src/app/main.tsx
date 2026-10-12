@@ -13,7 +13,9 @@ import { routeTree } from './routeTree.gen'
 applyTheme()
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme())
 
-const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false } } })
+// Data counts as fresh for 30 s: going back to a screen shows it at once without refetching.
+// Every change invalidates what it touches, so edits still show right away.
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: false, staleTime: 30_000 } } })
 
 const router = createRouter({
   routeTree,

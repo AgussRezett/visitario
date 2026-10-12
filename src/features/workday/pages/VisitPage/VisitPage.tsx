@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ChevronLeft } from 'lucide-react'
 import { canWork } from '@/domain/visit'
@@ -7,7 +7,7 @@ import { todayInArgentina } from '@/domain/dates'
 import { Banner } from '@/ui/Banner'
 import { StatusChip } from '@/ui/StatusChip'
 import { useWorkContext } from '@/features/workday/context'
-import { useCatalogs, visitQuery, visitsQuery, type Catalogs, type Photo, type Visit } from '@/features/workday/api/queries'
+import { useCatalogs, visitFromLists, visitQuery, visitsQuery, type Catalogs, type Photo, type Visit } from '@/features/workday/api/queries'
 import { usePhotoUrls } from '@/features/workday/api/photos'
 import { usePendingUploads, withPendingUploads } from '@/features/workday/api/uploads'
 import { PhotoViewer } from '@/features/workday/components/PhotoViewer'
@@ -34,7 +34,13 @@ export interface ViewerState {
 /** One visit in a single screen: arrival, consent, displays, work, messages (wireframes A09–A11, AD09, AD10). */
 export function VisitPage({ visitId }: { visitId: string }) {
   const ctx = useWorkContext()
-  const visit = useQuery({ ...visitQuery(visitId, ctx?.personId ?? ''), enabled: Boolean(ctx) })
+  const qc = useQueryClient()
+  const visit = useQuery({
+    ...visitQuery(visitId, ctx?.personId ?? ''),
+    enabled: Boolean(ctx),
+    initialData: () => visitFromLists(qc, visitId)?.data,
+    initialDataUpdatedAt: () => visitFromLists(qc, visitId)?.updatedAt,
+  })
   const uploads = usePendingUploads()
   const v = visit.data ? withPendingUploads(visit.data, uploads) : visit.data
   const siblings = useQuery({ ...visitsQuery(v?.workdayId ?? '', ctx?.personId ?? ''), enabled: Boolean(v && ctx) })
