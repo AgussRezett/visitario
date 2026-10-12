@@ -80,5 +80,17 @@ ok('day totals', m, m.data?.[0]?.quantity === 3)
 ok('brand off', await db.from('visit_brand').delete().eq('visit_id', vid).eq('brand_id', brandId))
 ok('soft-delete display', await db.from('display').update({ deleted_at: new Date().toISOString() }).eq('id', disp.data?.id))
 
+// ---- The outbox re-sends changes after a lost answer: each must be harmless the second time
+const offlineDisplay = crypto.randomUUID()
+const addDisplay = () => db.from('display').upsert({ id: offlineDisplay, company_id: COMPANY, visit_id: vid, display_type_id: typeId, source: 'found', sort_order: 2 }, { onConflict: 'id', ignoreDuplicates: true })
+ok('outbox: display created with the phone id', await addDisplay())
+ok('outbox: same display sent again', await addDisplay())
+const dCount = await db.from('display').select('id').eq('id', offlineDisplay)
+ok('outbox: still one display', dCount, dCount.data?.length === 1)
+const removeDisplay = () => db.from('display').update({ deleted_at: new Date().toISOString() }).eq('id', offlineDisplay).is('deleted_at', null)
+ok('outbox: remove display', await removeDisplay())
+ok('outbox: remove display again (no-op)', await removeDisplay())
+ok('outbox: same visit patch twice', await db.from('visit').update({ notes: 'Faltó SKYY' }).eq('id', vid))
+
 console.log(`\n${passed} passed, ${failed} failed`)
 process.exit(failed ? 1 : 0)
