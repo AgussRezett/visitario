@@ -71,7 +71,7 @@ export interface Catalogs {
   templates: Record<TemplateKind, string>
 }
 
-type VisitRow = {
+export type VisitRow = {
   id: string
   company_id: string
   workday_id: string
@@ -95,7 +95,7 @@ type VisitRow = {
   photo: { id: string; kind: Enums<'photo_kind'>; display_id: string | null; taken_at: string; uploaded_at: string | null; deleted_at: string | null }[]
 }
 
-function toVisit(r: VisitRow, personId: string): Visit {
+export function toVisit(r: VisitRow, personId: string): Visit {
   const s = r.store
   return {
     id: r.id,

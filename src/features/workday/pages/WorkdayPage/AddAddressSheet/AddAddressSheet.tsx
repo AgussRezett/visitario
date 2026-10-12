@@ -25,12 +25,14 @@ interface AddAddressSheetProps {
   ctx: WorkContext
   workdayId: string
   date: string
+  /** When a supervisor adds to someone's day: their first name, for the copy. */
+  forName?: string
 }
 
 const EMPTY = { address: '', name: '', customerNumber: '', task: '', displayTypes: [] as number[] }
 
 /** Add a store from the directory, a new one, or several pasted addresses (wireframes A05 / AD06). */
-export function AddAddressSheet({ open, onClose, ctx, workdayId, date }: AddAddressSheetProps) {
+export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }: AddAddressSheetProps) {
   const online = useOnline()
   const [mode, setMode] = useState<'one' | 'many'>('one')
   const [query, setQuery] = useState('')
@@ -104,13 +106,13 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date }: AddAddr
       open={open}
       onClose={onClose}
       wide
-      title="Agregar a mi jornada"
+      title={forName ? `Agregar a la jornada de ${forName}` : 'Agregar a mi jornada'}
       subtitle={formatLongDate(date)}
       footer={
         <>
           <Button variant="secondary" size="md" className={styles.cancel} onClick={onClose}>Cancelar</Button>
           {mode === 'one' ? (
-            <Button size="md" disabled={!canAddNew || !online} loading={add.isPending} onClick={addNew}>Agregar a mi jornada</Button>
+            <Button size="md" disabled={!canAddNew || !online} loading={add.isPending} onClick={addNew}>{forName ? 'Agregar a la jornada' : 'Agregar a mi jornada'}</Button>
           ) : (
             <Button size="md" disabled={!lines.length || !online} loading={add.isPending} onClick={addPasted}>
               Agregar {lines.length || ''} {lines.length === 1 ? 'dirección' : 'direcciones'}

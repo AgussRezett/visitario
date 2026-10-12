@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { History, MapPinPlus, Plus } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
+import { History, MapPinPlus, MessageSquareWarning, Plus } from 'lucide-react'
 import { isVisited, workdayProgress } from '@/domain/visit'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
@@ -42,6 +43,7 @@ export function DayView({ ctx, workday, sheet, onSheet }: DayViewProps) {
 
   const list = useVisitList(visits.data) ?? []
   const progress = workdayProgress(list)
+  const fixes = list.filter((v) => v.reviewStatus === 'needs_fix')
   const next = list.find((v) => v.workStatus === 'in_progress') ?? list.find((v) => v.workStatus === 'pending')
   const shown = filter === 'all' ? list : list.filter((v) => (filter === 'done' ? isVisited(v.workStatus) : !isVisited(v.workStatus)))
   const pending = resumable.data ?? []
@@ -92,6 +94,15 @@ export function DayView({ ctx, workday, sheet, onSheet }: DayViewProps) {
     <Refreshing active={visits.isPlaceholderData}>
       <div className={styles.layout}>
         <div className={styles.main}>
+          {fixes.length ? (
+            <Banner tone="warn" icon={<MessageSquareWarning size={18} aria-hidden />} title={fixes.length === 1 ? 'Te pidieron una corrección' : `Te pidieron ${fixes.length} correcciones`}>
+              <span className={styles.fixLinks}>
+                {fixes.map((v) => (
+                  <Link key={v.id} to="/visit/$visitId" params={{ visitId: v.id }} className={styles.fixLink}>{v.store.name ?? v.store.address}</Link>
+                ))}
+              </span>
+            </Banner>
+          ) : null}
           <DayHero progress={progress} next={next} stop={next ? list.indexOf(next) + 1 : 0} date={workday.workDate} />
           <DayStats visits={list} />
           <StopList visits={shown} all={list} filter={filter} onFilter={setFilter} />

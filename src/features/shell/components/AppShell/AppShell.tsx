@@ -11,6 +11,7 @@ import { SECTIONS } from '@/features/shell/sections'
 import { RoleSwitcher } from '@/features/shell/components/RoleSwitcher'
 import { ViewSwitcher } from '@/features/shell/components/ViewSwitcher'
 import { SyncStatus } from '@/features/sync/components/SyncStatus'
+import { useNavBadges } from '@/features/shell/useNavBadges'
 import { MainOverlayContext } from './main-overlay-context'
 import styles from './AppShell.module.scss'
 
@@ -28,6 +29,8 @@ const activeProps = { className: styles.active }
  */
 export function AppShell({ me, active, children }: Props) {
   const [overlay, setOverlay] = useState<HTMLElement | null>(null)
+  const badges = useNavBadges(me.person.id, active)
+  const badge = (slug: string) => (badges[slug] ? <span className={styles.badge} aria-label={`${badges[slug]} pendientes`}>{badges[slug]}</span> : null)
   const sections = active ? SECTIONS[active.role] : []
   const name = `${me.person.firstName} ${me.person.lastName}`
   const short = initials(me.person.firstName, me.person.lastName)
@@ -44,7 +47,8 @@ export function AppShell({ me, active, children }: Props) {
           {sections.map((s) => (
             <Link key={s.slug} to="/s/$section" params={{ section: s.slug }} className={styles.navLink} activeProps={activeProps}>
               <s.icon size={20} aria-hidden />
-              {s.title}
+              <span className={styles.navText}>{s.title}</span>
+              {badge(s.slug)}
             </Link>
           ))}
         </nav>
@@ -79,7 +83,10 @@ export function AppShell({ me, active, children }: Props) {
           {mobileItems.map((s) =>
             s ? (
               <Link key={s.slug} to="/s/$section" params={{ section: s.slug }} className={styles.tab} activeProps={activeProps}>
-                <s.icon size={22} aria-hidden />
+                <span className={styles.tabIcon}>
+                  <s.icon size={22} aria-hidden />
+                  {badge(s.slug)}
+                </span>
                 {s.label}
               </Link>
             ) : (

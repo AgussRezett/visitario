@@ -18,7 +18,7 @@ export function useOpenWorkday() {
   return useMutation({
     mutationFn: ({ companyId, date }: { companyId: string; date: string }) =>
       rpc<string>(supabase.rpc('open_workday', { p_company: companyId, p_date: date })),
-    onSuccess: () => qc.invalidateQueries({ queryKey: workdayKeys.all }),
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: workdayKeys.all }), qc.invalidateQueries({ queryKey: ['team'] })]),
   })
 }
 
@@ -54,6 +54,6 @@ export function useAddVisit(workdayId: string) {
           p_display_types: a.displayTypes ?? [],
         }),
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: workdayKeys.all }),
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: workdayKeys.all }), qc.invalidateQueries({ queryKey: ['team'] })]),
   })
 }
