@@ -73,3 +73,21 @@ test('a confirmation on top of a sheet closes only itself', async ({ page }) => 
     await expect(page.getByRole('button', { name: 'Quitar exhibición' })).toBeVisible()
   }
 })
+
+test('the WhatsApp messages show only while the company uses them', async ({ page }) => {
+  const state: FakeState = {
+    workday: { id: 'w1', company_id: 'c1', work_date: '2026-10-12', status: 'published', created_by: 'p1' },
+    visits: [visitRow('v1', 0, 'Moldes 1365', { consent: 'yes', work_status: 'in_progress' })],
+    uploads: [],
+    company: { id: 'c1', name: 'Panda', show_whatsapp: true },
+  }
+  await installFakeSupabase(page, state)
+  await page.goto('/visit/v1')
+  await expect(page.getByText('Mensajes para WhatsApp')).toBeVisible()
+
+  state.company = { ...state.company, show_whatsapp: false }
+  await page.reload()
+  await expect(page.getByText('Moldes 1365').filter({ visible: true }).first()).toBeVisible()
+  await page.waitForLoadState('networkidle')
+  await expect(page.getByText('Mensajes para WhatsApp')).toHaveCount(0)
+})

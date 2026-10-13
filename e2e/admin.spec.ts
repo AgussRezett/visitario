@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { installFakeSupabase, type FakeState } from './support/fake-supabase'
+import { installFakeSupabase, visitRow, type FakeState } from './support/fake-supabase'
 
 const admin = [{ id: 'm1', company_id: 'c1', roles: ['admin'], status: 'active', starts_on: '2026-10-01', company: { name: 'Panda', kind: 'distributor' } }]
 const member = (id: string, first: string, last: string, extra: Record<string, unknown> = {}) => ({
@@ -115,4 +115,31 @@ test('catalogs: add a brand, deactivate a work metric, rename and forget a forma
   await page.getByRole('button', { name: 'Olvidar formato' }).click()
   await page.getByRole('alertdialog').getByRole('button', { name: 'Olvidar formato' }).click()
   await expect.poll(() => state.formats?.length).toBe(0)
+})
+
+test('templates: write with Spanish data, preview on a real visit, save, hide WhatsApp', async ({ page }, info) => {
+  const store = { id: 's1', name: 'Mas Ahorro', address: 'Tres Arroyos 762', area: 'Paternal', customer_number: '12345', lat: null, lng: null, location_status: 'verified' }
+  const state = company({
+    company: { id: 'c1', name: 'Panda', geocoding_scope: 'caba', show_whatsapp: true, photo_retention_months: 12, logo_version: null },
+    templates: [{ kind: 'after', body: '*ACTIVACIÓN DE GONDOLA DESPUES\nFecha: {date}\nDireccion: {address}\nNum clte: {customer_number}\nZona: {area}\nObservación: {notes}' }],
+    visits: [visitRow('v1', 0, 'Tres Arroyos 762', { store, work_status: 'done', finished_at: '2026-10-09T15:00:00Z', notes: 'Faltó SKYY; reordené la puntera.', merchandiser: { first_name: 'Lucía', last_name: 'Gómez' } })],
+  })
+  await installFakeSupabase(page, state, 'admin')
+  await page.goto('/s/templates')
+  const preview = page.getByRole('region', { name: 'Vista previa' })
+  await expect(preview.getByText(/Num clte: 12345/)).toBeVisible()
+  await expect(preview.getByText(/Observación: Faltó SKYY/)).toBeVisible()
+
+  await page.getByLabel('Texto', { exact: true }).fill('HOLA {nombre}\nZona: {zona}\nTarea: ')
+  await page.getByRole('button', { name: 'Insertar Tarea' }).click()
+  await expect(page.getByLabel('Texto', { exact: true })).toHaveValue('HOLA {nombre}\nZona: {zona}\nTarea: {tarea}')
+  await expect(preview.getByText(/HOLA Mas Ahorro/)).toBeVisible()
+  await expect(preview.getByText(/Tarea:/)).toHaveCount(0) // no task: the line is left out
+  await page.screenshot({ path: `test-results/templates-${info.project.name}.png`, fullPage: true })
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click()
+  await expect(page.getByText('Guardada: los activadores la usan desde su próxima visita.')).toBeVisible()
+  expect(state.templates?.find((t) => t.kind === 'after')?.body).toBe('HOLA {nombre}\nZona: {zona}\nTarea: {tarea}')
+
+  await page.getByRole('switch', { name: /Mostrar los botones de WhatsApp/ }).click()
+  await expect.poll(() => state.company?.show_whatsapp).toBe(false)
 })
