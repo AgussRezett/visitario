@@ -86,7 +86,7 @@ export function TemplatesPage() {
           <div className={styles.kinds} role="radiogroup" aria-label="Plantilla">
             {KINDS.map((k) => (
               <button key={k.kind} type="button" role="radio" aria-checked={kind === k.kind} className={styles.kind} onClick={() => setKind(k.kind)}>
-                <span className={styles.kindTitle}>{k.title}{drafts[k.kind] !== undefined && drafts[k.kind] !== saved.data?.[k.kind] ? ' ·' : ''}</span>
+                <span className={styles.kindTitle}>{k.title}</span>
                 <span className={styles.kindHelp}>{k.help}</span>
               </button>
             ))}
