@@ -1,5 +1,8 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { installFakeSupabase, visitRow, type FakeState } from './support/fake-supabase'
+import { installFakeSupabase, visitRow, type FakeState, atFakeToday } from './support/fake-supabase'
+
+// Written for Monday 12 October: run as if it were that day.
+test.beforeEach(({ page }) => atFakeToday(page))
 
 const DATE = '2026-10-12'
 

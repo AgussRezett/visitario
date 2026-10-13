@@ -6,6 +6,10 @@ import type { Page, Request } from '@playwright/test'
 const b64 = (o: object) => Buffer.from(JSON.stringify(o)).toString('base64url')
 export const fakeToken = `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64({ sub: 'u1', exp: 9999999999, aud: 'authenticated', role: 'authenticated' })}.c2ln`
 
+/** The day the merchandiser's fixtures are written for: those tests run as if it were today. */
+export const FAKE_TODAY = '2026-10-12'
+export const atFakeToday = (page: Page) => page.clock.setFixedTime(new Date(`${FAKE_TODAY}T12:00:00-03:00`))
+
 export const COMPANY = 'c1'
 export const ME = 'p1'
 
@@ -156,7 +160,7 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
         let storeId = r.store as string | undefined
         if (!storeId) {
           storeId = `s-new-${(state.stores ??= []).length + 1}`
-          state.stores.push({ id: storeId, address: r.address, customer_number: r.customer_number ?? null, name: r.name ?? null, lat: r.lat ?? null, source: 'imported' })
+          state.stores.push({ id: storeId, address: r.address, customer_number: r.customer_number ?? null, name: r.name ?? null, area: r.area ?? null, lat: r.lat ?? null, source: 'imported' })
           stores++
         }
         const wid = `w-${r.merchandiser}-${b.p_date}`
