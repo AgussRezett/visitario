@@ -19,6 +19,7 @@ import { Route as AppProfileRouteImport } from './../routes/_app/profile'
 import { Route as AppReviewVisitIdRouteImport } from './../routes/_app/review.$visitId'
 import { Route as AppSSectionRouteImport } from './../routes/_app/s.$section'
 import { Route as AppSAssignRouteImport } from './../routes/_app/s.assign'
+import { Route as AppSImportRouteImport } from './../routes/_app/s.import'
 import { Route as AppSReportRouteImport } from './../routes/_app/s.report'
 import { Route as AppSReviewRouteImport } from './../routes/_app/s.review'
 import { Route as AppSTodayRouteImport } from './../routes/_app/s.today'
@@ -74,6 +75,11 @@ const AppSAssignRoute = AppSAssignRouteImport.update({
   path: '/s/assign',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSImportRoute = AppSImportRouteImport.update({
+  id: '/s/import',
+  path: '/s/import',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSReportRoute = AppSReportRouteImport.update({
   id: '/s/report',
   path: '/s/report',
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/review/$visitId': typeof AppReviewVisitIdRoute
   '/s/$section': typeof AppSSectionRoute
   '/s/assign': typeof AppSAssignRoute
+  '/s/import': typeof AppSImportRoute
   '/s/report': typeof AppSReportRoute
   '/s/review': typeof AppSReviewRoute
   '/s/today': typeof AppSTodayRoute
@@ -126,6 +133,7 @@ export interface FileRoutesByTo {
   '/review/$visitId': typeof AppReviewVisitIdRoute
   '/s/$section': typeof AppSSectionRoute
   '/s/assign': typeof AppSAssignRoute
+  '/s/import': typeof AppSImportRoute
   '/s/report': typeof AppSReportRoute
   '/s/review': typeof AppSReviewRoute
   '/s/today': typeof AppSTodayRoute
@@ -144,6 +152,7 @@ export interface FileRoutesById {
   '/_app/review/$visitId': typeof AppReviewVisitIdRoute
   '/_app/s/$section': typeof AppSSectionRoute
   '/_app/s/assign': typeof AppSAssignRoute
+  '/_app/s/import': typeof AppSImportRoute
   '/_app/s/report': typeof AppSReportRoute
   '/_app/s/review': typeof AppSReviewRoute
   '/_app/s/today': typeof AppSTodayRoute
@@ -162,6 +171,7 @@ export interface FileRouteTypes {
     | '/review/$visitId'
     | '/s/$section'
     | '/s/assign'
+    | '/s/import'
     | '/s/report'
     | '/s/review'
     | '/s/today'
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/review/$visitId'
     | '/s/$section'
     | '/s/assign'
+    | '/s/import'
     | '/s/report'
     | '/s/review'
     | '/s/today'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/_app/review/$visitId'
     | '/_app/s/$section'
     | '/_app/s/assign'
+    | '/_app/s/import'
     | '/_app/s/report'
     | '/_app/s/review'
     | '/_app/s/today'
@@ -283,6 +295,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSAssignRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/s/import': {
+      id: '/_app/s/import'
+      path: '/s/import'
+      fullPath: '/s/import'
+      preLoaderRoute: typeof AppSImportRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/s/report': {
       id: '/_app/s/report'
       path: '/s/report'
@@ -326,6 +345,7 @@ interface AppRouteChildren {
   AppReviewVisitIdRoute: typeof AppReviewVisitIdRoute
   AppSSectionRoute: typeof AppSSectionRoute
   AppSAssignRoute: typeof AppSAssignRoute
+  AppSImportRoute: typeof AppSImportRoute
   AppSReportRoute: typeof AppSReportRoute
   AppSReviewRoute: typeof AppSReviewRoute
   AppSTodayRoute: typeof AppSTodayRoute
@@ -338,6 +358,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppReviewVisitIdRoute: AppReviewVisitIdRoute,
   AppSSectionRoute: AppSSectionRoute,
   AppSAssignRoute: AppSAssignRoute,
+  AppSImportRoute: AppSImportRoute,
   AppSReportRoute: AppSReportRoute,
   AppSReviewRoute: AppSReviewRoute,
   AppSTodayRoute: AppSTodayRoute,

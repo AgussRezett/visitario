@@ -1,0 +1,1 @@
+export { PeopleBox } from './PeopleBox'
