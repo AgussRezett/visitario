@@ -32,7 +32,7 @@ export function CatalogsPage() {
         <div className={styles.head}>
           <span className={styles.titles}>
             <h2 className={styles.heading}>{k.title}</h2>
-            <span className={styles.count}>{active} {active === 1 ? 'activo' : 'activos'}{items.length > active ? ` · ${items.length - active} inactivos` : ''}</span>
+            <span className={styles.count}>{countText(active, items.length - active, k.fem)}</span>
           </span>
           <Button variant="secondary" size="sm" onClick={() => setEditing({ kind, item: null })} aria-label={`Agregar ${k.one}`}><Plus size={16} aria-hidden />Agregar</Button>
         </div>
@@ -103,4 +103,10 @@ export function CatalogsPage() {
       <FormatSheet format={format} companyId={ctx.companyId} onClose={() => setFormat(null)} />
     </div>
   )
+}
+
+/** "3 activas · 1 inactiva", with the catalog's gender. */
+function countText(active: number, inactive: number, fem?: boolean) {
+  const word = (n: number, base: string) => `${n} ${base}${fem ? 'a' : 'o'}${n === 1 ? '' : 's'}`
+  return [word(active, 'activ'), inactive ? word(inactive, 'inactiv') : null].filter(Boolean).join(' · ')
 }
