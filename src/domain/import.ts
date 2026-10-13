@@ -102,12 +102,32 @@ export function parseDelimited(text: string, separators = ['\t', ';', ',']): Tab
   return cleanTable(rows)
 }
 
-/** Pasted text: one address per line, or columns when copied from a spreadsheet (tabs or ;). */
+/**
+ * Pasted text. A store per line, its parts in any order and separated by ; , or tab:
+ * "12345; Tres Arroyos 762; Paternal". Rows copied from a spreadsheet with titles or more
+ * than three columns go through the column step instead.
+ */
 export function parsePasted(text: string): { kind: 'lines'; lines: string[] } | { kind: 'table'; table: Table } {
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
-  const withColumns = lines.filter((l) => l.includes('\t') || l.includes(';')).length
-  if (lines.length && withColumns >= Math.ceil(lines.length / 2)) return { kind: 'table', table: parseDelimited(text, ['\t', ';']) }
+  const columns = lines.filter((l) => l.includes('\t') || l.includes(';')).length >= Math.ceil(lines.length / 2)
+  if (lines.length && columns) {
+    const table = parseDelimited(text, ['\t', ';'])
+    if (looksLikeHeader(table) || (table[0]?.length ?? 0) > 3) return { kind: 'table', table }
+  }
   return { kind: 'lines', lines: lines.filter((l) => l.length >= 3) }
+}
+
+/**
+ * One pasted line: a number alone is the customer number, the part with street and number
+ * the address, the next words the area. "Tres Arroyos 762" alone is just the address.
+ */
+export function parseLine(line: string): Pick<ImportRow, 'customerNumber' | 'address' | 'area'> {
+  const parts = line.split(/[;\t,]/).map((p) => p.replace(/\s+/g, ' ').trim()).filter(Boolean)
+  const customerNumber = parts.find((p) => isNumber(p.replace(/^(n°|nro\.?|cliente)\s*/i, ''))) ?? ''
+  const rest = parts.filter((p) => p !== customerNumber)
+  const address = rest.find(isAddress) ?? rest.find((p) => /[a-zñ]/i.test(p)) ?? ''
+  const area = rest.find((p) => p !== address && /[a-zñ]/i.test(p)) ?? ''
+  return { customerNumber: customerNumber.replace(/\D/g, ''), address, area }
 }
 
 const KEYWORDS: [ImportField, RegExp][] = [
@@ -180,7 +200,7 @@ export function toRows(table: Table, columns: ImportField[], hasHeader: boolean)
 }
 
 export const linesToRows = (lines: string[]): ImportRow[] =>
-  lines.map((address, i) => ({ line: i + 1, customerNumber: '', name: '', address, area: '', merchandiser: '', task: '' }))
+  lines.map((l, i) => ({ line: i + 1, name: '', merchandiser: '', task: '', ...parseLine(l) })).filter((r) => r.address || r.customerNumber)
 
 export type PersonMatch = { kind: 'sure' | 'guess'; person: Person } | { kind: 'none' }
 

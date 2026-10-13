@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test'
-import { installFakeSupabase, visitRow, type FakeState } from './support/fake-supabase'
+import { installFakeSupabase, visitRow, type FakeState, atFakeToday } from './support/fake-supabase'
+
+// Written for Monday 12 October: run as if it were that day.
+test.beforeEach(({ page }) => atFakeToday(page))
 
 const DATE = '2026-10-12'
 const ADDRESSES = ['Amenábar 1260', 'Moldes 1365', 'Tres Arroyos 762', 'Vidal 2044', 'Cabildo 2280']

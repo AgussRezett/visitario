@@ -80,8 +80,12 @@ export function SourceStep({ draft, formats, onCancel, onRead }: SourceStepProps
             value={pasted}
             onChange={(e) => setPasted(e.target.value)}
             rows={7}
-            placeholder={'Una dirección por línea, o filas copiadas del Excel:\nTres Arroyos 762\nAmenábar 1260'}
-            help={pastedLines ? `${pastedLines} ${pastedLines === 1 ? 'línea' : 'líneas'}` : 'Si copiás varias columnas del Excel, te pregunta qué es cada una.'}
+            placeholder={'Un local por línea. Nro. de cliente y zona, si los tenés:\n12345; Tres Arroyos 762; Paternal\nAmenábar 1260'}
+            help={
+              pastedLines
+                ? `${pastedLines} ${pastedLines === 1 ? 'línea' : 'líneas'}`
+                : 'Separá con ; o coma, en cualquier orden. Si copiás del Excel con títulos o más columnas, te pregunta qué es cada una.'
+            }
           />
         </div>
       </div>

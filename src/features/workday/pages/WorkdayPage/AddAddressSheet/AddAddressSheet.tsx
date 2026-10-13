@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Check, MapPinOff, Plus, Search, Store } from 'lucide-react'
 import { formatLongDate } from '@/domain/dates'
+import { parseLine } from '@/domain/import'
 import { supabase } from '@/lib/supabase'
 import { useDebounced } from '@/lib/useDebounced'
 import { Banner } from '@/ui/Banner'
@@ -39,6 +40,8 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
   const [form, setForm] = useState(EMPTY)
   const [pasted, setPasted] = useState('')
   const [progress, setProgress] = useState<string | null>(null)
+  const [leftOut, setLeftOut] = useState<string | null>(null)
+  const [pasting, setPasting] = useState(false)
   const catalogs = useCatalogs(ctx.companyId)
   const add = useAddVisit(workdayId)
 
@@ -48,6 +51,7 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
       setForm(EMPTY)
       setPasted('')
       setProgress(null)
+      setLeftOut(null)
       add.reset()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when the sheet opens
@@ -74,7 +78,8 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
   const place: GeocodeResult | undefined = located.data?.[0]
 
   const set = (key: keyof typeof EMPTY) => (e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [key]: e.target.value }))
-  const lines = pasted.split('\n').map((l) => l.trim()).filter((l) => l.length >= 3)
+  // A store per line: "12345; Tres Arroyos 762; Paternal", parts in any order (; , or tab)
+  const lines = pasted.split('\n').map((l) => l.trim()).filter(Boolean).map((text) => ({ text, ...parseLine(text) })).filter((l) => l.address || l.customerNumber)
 
   const addNew = async () => {
     await add.mutateAsync({
@@ -92,11 +97,35 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
   }
 
   const addPasted = async () => {
-    for (const [i, address] of lines.entries()) {
-      setProgress(`Agregando ${i + 1} de ${lines.length}…`)
-      await add.mutateAsync({ address })
+    setPasting(true)
+    try {
+      await addLines()
+    } finally {
+      setPasting(false)
     }
-    onClose()
+  }
+
+  const addLines = async () => {
+    setLeftOut(null)
+    setProgress('Buscando en el directorio…')
+    // Stores already in the directory are reused (by customer number, then address).
+    const { data: found } = await supabase.rpc('match_stores', {
+      p_company: ctx.companyId,
+      p_rows: lines.map((l) => ({ customer_number: l.customerNumber, address: l.address })),
+    })
+    const known = new Map((found ?? []).map((m) => [m.idx, m.store_id]))
+    const missing: string[] = []
+    for (const [i, l] of lines.entries()) {
+      setProgress(`Agregando ${i + 1} de ${lines.length}…`)
+      const storeId = known.get(i)
+      if (storeId) await add.mutateAsync({ storeId })
+      else if (l.address.length >= 3) await add.mutateAsync({ address: l.address, customerNumber: l.customerNumber || undefined, area: l.area || null })
+      else missing.push(l.text)
+    }
+    if (!missing.length) return onClose()
+    // Only a customer number nobody knows: keep those lines for the merchandiser to complete.
+    setPasted(missing.join('\n'))
+    setLeftOut(`${missing.length === 1 ? 'Este cliente no está' : 'Estos clientes no están'} en el directorio: sumá la dirección en la misma línea.`)
   }
 
   const canAddNew = form.address.trim().length >= 3
@@ -114,7 +143,7 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
           {mode === 'one' ? (
             <Button size="md" disabled={!canAddNew || !online} loading={add.isPending} onClick={addNew}>{forName ? 'Agregar a la jornada' : 'Agregar a mi jornada'}</Button>
           ) : (
-            <Button size="md" disabled={!lines.length || !online} loading={add.isPending} onClick={addPasted}>
+            <Button size="md" disabled={!lines.length || !online} loading={pasting} onClick={addPasted}>
               Agregar {lines.length || ''} {lines.length === 1 ? 'dirección' : 'direcciones'}
             </Button>
           )}
@@ -207,21 +236,35 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
           </div>
         </>
       ) : (
-        <TextArea
-          label="Direcciones"
-          value={pasted}
-          onChange={(e) => setPasted(e.target.value)}
-          rows={8}
-          placeholder={'Una por línea, por ejemplo:\nAmenábar 1260\nMoldes 1365'}
-          help="Se agregan sin ubicación; las verificás después."
-        />
+        <>
+          <TextArea
+            label="Direcciones"
+            value={pasted}
+            onChange={(e) => setPasted(e.target.value)}
+            rows={8}
+            placeholder={'Una por línea. Nro. de cliente y zona, si los tenés:\n20114; Amenábar 1260; Belgrano\nMoldes 1365'}
+            help={pastedHelp(lines)}
+          />
+          {leftOut ? <Banner tone="warn">{leftOut}</Banner> : null}
+        </>
       )}
 
-      {progress && add.isPending ? <p className={styles.help}>{progress}</p> : null}
+      {progress && pasting ? <p className={styles.help}>{progress}</p> : null}
       {add.error ? <Banner tone="error">{add.error.message}</Banner> : null}
       <p className={styles.help}>
         Queda registrada como agregada por vos y tu supervisor la ve en tu jornada. Si no encontramos la altura exacta, la guardás sin ubicación y la verificás después.
       </p>
     </Sheet>
   )
+}
+
+/** "3 locales · 2 con nro. de cliente · 1 con zona", as the merchandiser types. */
+function pastedHelp(lines: { customerNumber: string; area: string }[]) {
+  if (!lines.length) return 'Separá con ; o coma, en cualquier orden. Los nuevos se agregan sin ubicación; los verificás después.'
+  const withNumber = lines.filter((l) => l.customerNumber).length
+  const withArea = lines.filter((l) => l.area).length
+  const parts = [`${lines.length} ${lines.length === 1 ? 'local' : 'locales'}`]
+  if (withNumber) parts.push(`${withNumber} con nro. de cliente`)
+  if (withArea) parts.push(`${withArea} con zona`)
+  return `${parts.join(' · ')}. Los que ya están en el directorio se reconocen.`
 }

@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test'
-import { installFakeSupabase, visitRow, type FakeState } from './support/fake-supabase'
+import { installFakeSupabase, visitRow, type FakeState, atFakeToday } from './support/fake-supabase'
+
+// Written for Monday 12 October: run as if it were that day.
+test.beforeEach(({ page }) => atFakeToday(page))
 
 const memberships = [
   { id: 'm0', company_id: 'own', roles: ['merchandiser', 'admin'], status: 'active', starts_on: '2026-10-01', company: { name: 'Agustín · uso propio', kind: 'personal' } },

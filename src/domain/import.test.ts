@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  classify, cleanTable, guessMapping, linesToRows, looksLikeHeader, matchPerson, normalize, parseDelimited, parsePasted, signatureOf, toRows,
+  classify, cleanTable, guessMapping, linesToRows, looksLikeHeader, matchPerson, normalize, parseDelimited, parseLine, parsePasted, signatureOf, toRows,
   type ImportRow, type Person,
 } from './import'
 
@@ -34,9 +34,20 @@ describe('reading the table', () => {
     expect(parseDelimited('a,b\n"say ""hi""",2')).toEqual([['a', 'b'], ['say "hi"', '2']])
   })
 
-  it('pasted text: one address per line, or columns copied from Excel', () => {
-    expect(parsePasted('Amenábar 1260\n\nMoldes 1365, Belgrano\n')).toEqual({ kind: 'lines', lines: ['Amenábar 1260', 'Moldes 1365, Belgrano'] })
-    expect(parsePasted('12345\tTres Arroyos 762\n20114\tAmenábar 1260')).toEqual({ kind: 'table', table: [['12345', 'Tres Arroyos 762'], ['20114', 'Amenábar 1260']] })
+  it('pasted text: a store per line, or a table when it has titles or many columns', () => {
+    expect(parsePasted('Amenábar 1260\n\n12345; Moldes 1365; Belgrano\n')).toEqual({ kind: 'lines', lines: ['Amenábar 1260', '12345; Moldes 1365; Belgrano'] })
+    expect(parsePasted('Cliente\tDomicilio\n12345\tTres Arroyos 762')).toEqual({ kind: 'table', table: [['Cliente', 'Domicilio'], ['12345', 'Tres Arroyos 762']] })
+    expect(parsePasted('12345\tMas Ahorro\tTres Arroyos 762\tPaternal\tAgus').kind).toBe('table')
+  })
+
+  it('a line: customer number, address and area in any order, with ; , or tab', () => {
+    const want = { customerNumber: '12345', address: 'Tres Arroyos 762', area: 'Paternal' }
+    expect(parseLine('12345; Tres Arroyos 762; Paternal')).toEqual(want)
+    expect(parseLine('Tres Arroyos 762, Paternal, 12345')).toEqual(want)
+    expect(parseLine('Nro. 12345\tTres Arroyos  762\tPaternal')).toEqual(want)
+    expect(parseLine('Juramento 2101, Belgrano')).toEqual({ customerNumber: '', address: 'Juramento 2101', area: 'Belgrano' })
+    expect(parseLine('Moldes 1365')).toEqual({ customerNumber: '', address: 'Moldes 1365', area: '' })
+    expect(parseLine('19008')).toEqual({ customerNumber: '19008', address: '', area: '' })
   })
 })
 
@@ -71,8 +82,11 @@ describe('rows', () => {
     expect(rows[0]).toMatchObject({ line: 2, customerNumber: '12345', name: 'Mas Ahorro', address: 'Tres Arroyos 762', area: 'Paternal', merchandiser: 'Agus' })
   })
 
-  it('pasted lines become rows with only the address', () => {
-    expect(linesToRows(['Moldes 1365'])).toEqual([{ line: 1, customerNumber: '', name: '', address: 'Moldes 1365', area: '', merchandiser: '', task: '' }])
+  it('pasted lines become rows with what each line has', () => {
+    expect(linesToRows(['Moldes 1365', '20577; Moldes 1365; Belgrano', '—'])).toEqual([
+      { line: 1, customerNumber: '', name: '', address: 'Moldes 1365', area: '', merchandiser: '', task: '' },
+      { line: 2, customerNumber: '20577', name: '', address: 'Moldes 1365', area: 'Belgrano', merchandiser: '', task: '' },
+    ])
   })
 })
 
