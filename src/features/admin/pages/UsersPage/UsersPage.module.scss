@@ -1,0 +1,202 @@
+@use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(4));
+  padding: space(4) space(5) space(6);
+
+  @include up(lg) {
+    gap: space(5);
+    padding: space(6) space(8);
+  }
+}
+
+.top {
+  @include flex(row, $gap: space(3), $align: flex-end, $justify: space-between);
+  flex-wrap: wrap;
+}
+
+.titles {
+  @include flex(column, $gap: space(0.5));
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+.title {
+  @include heading(title);
+
+  @include up(lg) {
+    @include heading(display);
+  }
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(2);
+  width: 100%;
+
+  @include up(lg) {
+    @include flex(row, $gap: space(3));
+    width: auto;
+  }
+}
+
+// Desktop: people | teams
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: space(6);
+  align-items: start;
+}
+
+.people,
+.teams {
+  @include flex(column, $gap: space(3));
+  min-width: 0;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(2);
+
+  @include up(lg) {
+    grid-template-columns: minmax(0, 1fr) 190px 190px;
+    align-items: end;
+  }
+}
+
+.search {
+  @include flex(row, $gap: space(2), $align: center);
+  grid-column: 1 / -1;
+  height: $control-height;
+  padding-inline: space(3.5);
+  border: 1.5px solid $color-control;
+  border-radius: $radius-md;
+  background: $color-card;
+  color: $color-ink-subtle;
+
+  &:focus-within {
+    border-color: $color-forest;
+  }
+
+  input {
+    @include text(base);
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: $color-ink;
+  }
+
+  @include up(lg) {
+    grid-column: auto;
+  }
+}
+
+// Filters keep their label for screen readers only: the first option says what they filter
+.filter {
+  @include text(small);
+  height: 44px;
+  padding-inline: space(3) space(7);
+}
+
+.filters > div > label {
+  @include visually-hidden;
+}
+
+.who {
+  @include flex(row, $gap: space(2.5), $align: center);
+  text-align: left;
+
+  @include hover {
+    .name {
+      text-decoration: underline;
+    }
+  }
+}
+
+.who-text {
+  @include flex(column);
+  min-width: 0;
+}
+
+.name {
+  @include truncate;
+  @include text(small);
+  font-weight: $weight-extrabold;
+}
+
+.meta {
+  @include truncate;
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.chip {
+  @include text(tiny);
+  display: inline-block;
+  flex-shrink: 0;
+  padding: space(1) space(2.5);
+  border-radius: $radius-full;
+  font-weight: $weight-extrabold;
+  white-space: nowrap;
+
+  &[data-tone='done'] {
+    background: $color-done-soft;
+    color: $color-done-ink;
+  }
+
+  &[data-tone='closed'] {
+    background: $color-closed-soft;
+    color: $color-closed-ink;
+  }
+
+  &[data-tone='pending'] {
+    background: $color-muted;
+    color: $color-ink-muted;
+  }
+}
+
+// Phone: rows in one card
+.list {
+  @include surface;
+  list-style: none;
+  overflow: hidden;
+
+  li + li {
+    border-top: 1px solid $color-line;
+  }
+}
+
+.row {
+  @include flex(row, $gap: space(3), $align: center);
+  width: 100%;
+  min-height: 64px;
+  padding: space(2.5) space(3.5);
+  text-align: left;
+
+  .who-text {
+    flex: 1;
+  }
+}
+
+.empty {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.heading {
+  @include heading(heading);
+}
+
+.roles {
+  @include text(label);
+  padding: space(3) space(3.5);
+  border-radius: $radius-lg;
+  background: $color-muted;
+  color: $color-ink-muted;
+}

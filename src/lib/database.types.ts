@@ -1436,6 +1436,22 @@ export type Database = {
         }
         Returns: string
       }
+      company_people: {
+        Args: { p_company: string }
+        Returns: {
+          first_name: string
+          invited_at: string
+          last_activity_at: string
+          last_name: string
+          membership_id: string
+          person_id: string
+          phone_last4: string
+          roles: Database["public"]["Enums"]["role"][]
+          starts_on: string
+          status: Database["public"]["Enums"]["membership_status"]
+          team_id: string
+        }[]
+      }
       complete_identity: {
         Args: {
           p_birth_date: string

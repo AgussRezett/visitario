@@ -23,8 +23,10 @@ import { Route as AppSImportRouteImport } from './../routes/_app/s.import'
 import { Route as AppSReportRouteImport } from './../routes/_app/s.report'
 import { Route as AppSReviewRouteImport } from './../routes/_app/s.review'
 import { Route as AppSTodayRouteImport } from './../routes/_app/s.today'
+import { Route as AppSUsersRouteImport } from './../routes/_app/s.users'
 import { Route as AppSWorkdayRouteImport } from './../routes/_app/s.workday'
 import { Route as AppVisitVisitIdRouteImport } from './../routes/_app/visit.$visitId'
+import { Route as AppSUsersNewRouteImport } from './../routes/_app/s.users_.new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -95,6 +97,11 @@ const AppSTodayRoute = AppSTodayRouteImport.update({
   path: '/s/today',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSUsersRoute = AppSUsersRouteImport.update({
+  id: '/s/users',
+  path: '/s/users',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSWorkdayRoute = AppSWorkdayRouteImport.update({
   id: '/s/workday',
   path: '/s/workday',
@@ -103,6 +110,11 @@ const AppSWorkdayRoute = AppSWorkdayRouteImport.update({
 const AppVisitVisitIdRoute = AppVisitVisitIdRouteImport.update({
   id: '/visit/$visitId',
   path: '/visit/$visitId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSUsersNewRoute = AppSUsersNewRouteImport.update({
+  id: '/s/users_/new',
+  path: '/s/users/new',
   getParentRoute: () => AppRoute,
 } as any)
 
@@ -120,8 +132,10 @@ export interface FileRoutesByFullPath {
   '/s/report': typeof AppSReportRoute
   '/s/review': typeof AppSReviewRoute
   '/s/today': typeof AppSTodayRoute
+  '/s/users': typeof AppSUsersRoute
   '/s/workday': typeof AppSWorkdayRoute
   '/visit/$visitId': typeof AppVisitVisitIdRoute
+  '/s/users/new': typeof AppSUsersNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -137,8 +151,10 @@ export interface FileRoutesByTo {
   '/s/report': typeof AppSReportRoute
   '/s/review': typeof AppSReviewRoute
   '/s/today': typeof AppSTodayRoute
+  '/s/users': typeof AppSUsersRoute
   '/s/workday': typeof AppSWorkdayRoute
   '/visit/$visitId': typeof AppVisitVisitIdRoute
+  '/s/users/new': typeof AppSUsersNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -156,8 +172,10 @@ export interface FileRoutesById {
   '/_app/s/report': typeof AppSReportRoute
   '/_app/s/review': typeof AppSReviewRoute
   '/_app/s/today': typeof AppSTodayRoute
+  '/_app/s/users': typeof AppSUsersRoute
   '/_app/s/workday': typeof AppSWorkdayRoute
   '/_app/visit/$visitId': typeof AppVisitVisitIdRoute
+  '/_app/s/users_/new': typeof AppSUsersNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -175,8 +193,10 @@ export interface FileRouteTypes {
     | '/s/report'
     | '/s/review'
     | '/s/today'
+    | '/s/users'
     | '/s/workday'
     | '/visit/$visitId'
+    | '/s/users/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -192,8 +212,10 @@ export interface FileRouteTypes {
     | '/s/report'
     | '/s/review'
     | '/s/today'
+    | '/s/users'
     | '/s/workday'
     | '/visit/$visitId'
+    | '/s/users/new'
   id:
     | '__root__'
     | '/'
@@ -210,8 +232,10 @@ export interface FileRouteTypes {
     | '/_app/s/report'
     | '/_app/s/review'
     | '/_app/s/today'
+    | '/_app/s/users'
     | '/_app/s/workday'
     | '/_app/visit/$visitId'
+    | '/_app/s/users_/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -323,6 +347,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSTodayRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/s/users': {
+      id: '/_app/s/users'
+      path: '/s/users'
+      fullPath: '/s/users'
+      preLoaderRoute: typeof AppSUsersRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/s/workday': {
       id: '/_app/s/workday'
       path: '/s/workday'
@@ -337,6 +368,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppVisitVisitIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/s/users_/new': {
+      id: '/_app/s/users_/new'
+      path: '/s/users/new'
+      fullPath: '/s/users/new'
+      preLoaderRoute: typeof AppSUsersNewRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -349,8 +387,10 @@ interface AppRouteChildren {
   AppSReportRoute: typeof AppSReportRoute
   AppSReviewRoute: typeof AppSReviewRoute
   AppSTodayRoute: typeof AppSTodayRoute
+  AppSUsersRoute: typeof AppSUsersRoute
   AppSWorkdayRoute: typeof AppSWorkdayRoute
   AppVisitVisitIdRoute: typeof AppVisitVisitIdRoute
+  AppSUsersNewRoute: typeof AppSUsersNewRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -362,8 +402,10 @@ const AppRouteChildren: AppRouteChildren = {
   AppSReportRoute: AppSReportRoute,
   AppSReviewRoute: AppSReviewRoute,
   AppSTodayRoute: AppSTodayRoute,
+  AppSUsersRoute: AppSUsersRoute,
   AppSWorkdayRoute: AppSWorkdayRoute,
   AppVisitVisitIdRoute: AppVisitVisitIdRoute,
+  AppSUsersNewRoute: AppSUsersNewRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

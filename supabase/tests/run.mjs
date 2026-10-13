@@ -314,6 +314,31 @@ await as('martin', `select import_workdays($1, $2, $3, $4)`, [panda, thu, JSON.s
 check('Saving the same columns again renames, never duplicates', (await sys(`select count(*)::int n, max(name) name from import_format`))[0].n === 1 && (await sys(`select name from import_format`))[0].name === 'Panda viernes')
 await expectError('A row without store or address is refused', () => as('martin', `select import_workdays($1, $2, $3)`, [panda, thu, JSON.stringify([{ merchandiser: agus, name: 'Sin dirección' }])]), /address/)
 
+// ---- Stage 5 · Admin: people and teams
+const people = await as('carla', `select * from company_people($1)`, [panda])
+const agusRow5 = people.find(r => r.person_id === agus)
+check(`Admin lists the company's people with role, team, state and last activity (${people.length})`, people.length >= 4 && agusRow5?.status === 'active' && agusRow5.team_id === north && agusRow5.phone_last4 === '4521' && agusRow5.last_activity_at !== null)
+await expectError('A supervisor cannot list people', () => as('martin', `select * from company_people($1)`, [panda]), /admin/)
+await expectError('Another company cannot list Panda’s people', () => as('beto', `select * from company_people($1)`, [panda]), /admin/)
+const agusM = (await sys(`select id from membership where company_id = $1 and person_id = $2`, [panda, agus]))[0].id
+await as('carla', `update membership set status = 'disabled' where id = $1`, [agusM])
+check('Admin deactivates someone: they lose access', (await as('agus', `select id from workday where company_id = $1`, [panda])).length === 0)
+await as('carla', `update membership set status = 'active' where id = $1`, [agusM])
+check('…and brings them back without a new invitation', (await sys(`select status::text s from membership where id = $1`, [agusM]))[0].s === 'active')
+await as('carla', `update membership set roles = '{merchandiser,supervisor}', team_id = $2 where id = $1`, [agusM, north])
+check('Admin changes roles and team', (await sys(`select roles::text r from membership where id = $1`, [agusM]))[0].r === '{merchandiser,supervisor}')
+await as('carla', `update membership set roles = '{merchandiser}' where id = $1`, [agusM])
+const sofiM = await as('carla', `select invite_person($1, '41207553', '{merchandiser}', $2, current_date, 'Sofía', 'Benítez', '+5491166667777') id`, [panda, north])
+await expectError('Admin cannot accept an invitation for someone', () => as('carla', `update membership set status = 'active' where id = $1`, [sofiM[0].id]), /invited person/)
+await as('carla', `update membership set status = 'declined' where id = $1`, [sofiM[0].id])
+check('Admin cancels a pending invitation', (await sys(`select status::text s from membership where id = $1`, [sofiM[0].id]))[0].s === 'declined')
+await expectError('A cancelled invitation cannot be turned active by the admin either', () => as('carla', `update membership set status = 'active' where id = $1`, [sofiM[0].id]), /invited person/)
+await expectError('A supervisor cannot change memberships', () => as('martin', `update membership set roles = '{admin}' where id = $1 returning id`, [agusM]).then(r => { if (!r.length) throw new Error('no rows: denied by RLS') }), /denied|RLS/)
+const west = (await as('carla', `insert into team (company_id, name, areas) values ($1, 'Oeste', 'Liniers, Mataderos') returning id`, [panda]))[0].id
+await as('carla', `update team set name = 'Equipo Oeste' where id = $1`, [west])
+check('Admin creates and renames a team', (await sys(`select name from team where id = $1`, [west]))[0].name === 'Equipo Oeste')
+await expectError('A supervisor cannot create teams', () => as('martin', `insert into team (company_id, name) values ($1, 'Mío')`, [panda]))
+
 // ---- MVP backup import (platform admin, own work)
 const mvp = {
   stores: [{ id: '01926f00-0000-5000-8000-0000000000b1', cn: '9874', name: null, address: 'Arce 730', area: 'Palermo 5', lat: -34.56, lng: -58.43 }],

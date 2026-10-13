@@ -26,6 +26,10 @@ export interface FakeState {
   people?: Row[]
   workdays?: Row[]
   reports?: Row[]
+  /** Admin: company_people rows, teams, and people Visitario knows by DNI. */
+  members?: Row[]
+  teams?: Row[]
+  dnis?: Record<string, Row>
   /** Import: the directory, saved formats and what the geocoder finds (by address). */
   stores?: Row[]
   formats?: Row[]
@@ -70,7 +74,7 @@ function matches(row: Row, params: URLSearchParams) {
   return true
 }
 
-export async function installFakeSupabase(page: Page, state: FakeState, role: 'merchandiser' | 'supervisor' = 'merchandiser') {
+export async function installFakeSupabase(page: Page, state: FakeState, role: 'merchandiser' | 'supervisor' | 'admin' = 'merchandiser') {
   await page.addInitScript(([token, r]) => {
     localStorage.setItem('visitario.activeRole', JSON.stringify({ companyId: 'c1', role: r }))
     localStorage.setItem('sb-mjpzawlyjjlmluozjwap-auth-token', JSON.stringify({ access_token: token, refresh_token: 'r', token_type: 'bearer', expires_in: 3600, expires_at: 9999999999, user: { id: 'u1' } }))
@@ -90,6 +94,48 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
     if (path.endsWith('/person')) return json([{ id: ME, first_name: 'Agustín', last_name: 'Rezett' }])
     if (path.endsWith('/person_private')) return json({ dni: '35111222', phone: null, birth_date: null })
     if (path.endsWith('/platform_admin')) return json(null)
+    // ---- Admin
+    if (path.endsWith('/rpc/company_people')) return json(state.members ?? [])
+    if (path.endsWith('/membership') && req.method() === 'PATCH') {
+      const id = url.searchParams.get('id')?.replace('eq.', '')
+      const m = (state.members ?? []).find((x) => x.membership_id === id)
+      if (m) Object.assign(m, body())
+      return json({ id })
+    }
+    if (path.endsWith('/team')) {
+      const id = url.searchParams.get('id')?.replace('eq.', '')
+      if (req.method() === 'POST') {
+        const t = { id: `t${(state.teams ??= []).length + 1}`, ...body() }
+        state.teams.push(t)
+        return json({ id: t.id })
+      }
+      if (req.method() === 'PATCH') {
+        Object.assign((state.teams ?? []).find((t) => t.id === id) ?? {}, body())
+        return json({ id })
+      }
+      if (req.method() === 'DELETE') {
+        state.teams = (state.teams ?? []).filter((t) => t.id !== id)
+        ;(state.members ?? []).forEach((m) => { if (m.team_id === id) m.team_id = null })
+        return json([{ id }])
+      }
+      return json(state.teams ?? [])
+    }
+    if (path.endsWith('/rpc/find_person_by_dni')) {
+      const p = state.dnis?.[String(body().p_dni)]
+      return json(p ? [p] : [])
+    }
+    if (path.endsWith('/rpc/invite_person')) {
+      const b = body()
+      const known = state.dnis?.[String(b.p_dni)]
+      const id = `m${(state.members ??= []).length + 1}`
+      state.members.push({
+        membership_id: id, person_id: known?.person_id ?? `p-${b.p_dni}`, first_name: known?.first_name ?? b.p_first_name, last_name: known?.last_name ?? b.p_last_name,
+        roles: b.p_roles, team_id: b.p_team ?? null, status: 'invited', starts_on: b.p_starts_on, phone_last4: String(b.p_phone ?? known?.phone_last4 ?? '').slice(-4) || null,
+        last_activity_at: null, invited_at: new Date().toISOString(),
+      })
+      return json(id)
+    }
+
     if (path.endsWith('/membership')) {
       return json(state.memberships ?? [{ id: 'm1', company_id: COMPANY, roles: ['merchandiser'], status: 'active', starts_on: '2026-10-01', company: { name: 'Panda' } }])
     }

@@ -1,0 +1,10 @@
+@use '@/styles/abstracts' as *;
+
+.cancel {
+  flex: 1;
+}
+
+.remove {
+  align-self: flex-start;
+  color: $color-refused-ink;
+}
