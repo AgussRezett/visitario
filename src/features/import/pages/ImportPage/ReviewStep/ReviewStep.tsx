@@ -114,9 +114,9 @@ export function ReviewStep({ companyId, draft, rows, people, names, date, onDate
       footer={
         <>
           <Button variant="secondary" size="md" onClick={discard} className={styles.discard}>Descartar</Button>
-          <Button size="md" disabled={!ready.length || matches.isPending} loading={run.isPending} onClick={save}>
+          <Button size="md" disabled={!ready.length || matches.isPending} loading={run.isPending} onClick={save} aria-label={matches.isPending ? undefined : `Agregar ${ready.length} ${target}`}>
             <Check size={18} aria-hidden />
-            {matches.isPending ? 'Buscando en el directorio…' : `Agregar ${ready.length} ${target}`}
+            {matches.isPending ? 'Buscando…' : desktop ? `Agregar ${ready.length} ${target}` : targets.length === 1 ? `Agregar ${ready.length} a ${targets[0]?.firstName}` : `Agregar ${ready.length}`}
           </Button>
         </>
       }
@@ -133,9 +133,9 @@ export function ReviewStep({ companyId, draft, rows, people, names, date, onDate
       {unsure ? <PeopleBox names={names} people={people} onConfirm={setAlias} /> : null}
 
       <div className={styles.summary}>
-        <span className={styles.kpi}><b>{count('recognized')}</b>reconocidas</span>
-        <span className={styles.kpi}><b>{count('new')}</b>nuevas</span>
-        <span className={styles.kpi} data-tone="fix"><b>{count('review')}</b>para revisar</span>
+        <span className={styles.kpi}><b>{count('recognized')}</b> {count('recognized') === 1 ? 'reconocida' : 'reconocidas'}</span>
+        <span className={styles.kpi}><b>{count('new')}</b> {count('new') === 1 ? 'nueva' : 'nuevas'}</span>
+        <span className={styles.kpi} data-tone="fix"><b>{count('review')}</b> para revisar</span>
       </div>
 
       <Segmented
@@ -143,10 +143,10 @@ export function ReviewStep({ companyId, draft, rows, people, names, date, onDate
         value={tab}
         onChange={setTab}
         options={[
-          { value: 'all', label: `Todas · ${visible.length}` },
-          { value: 'review', label: `Revisar · ${count('review')}` },
-          { value: 'new', label: `Nuevas · ${count('new')}` },
-          { value: 'recognized', label: `Reconocidas · ${count('recognized')}` },
+          { value: 'all', label: desktop ? `Todas · ${visible.length}` : 'Todas' },
+          { value: 'review', label: desktop ? `Revisar · ${count('review')}` : 'Revisar' },
+          { value: 'new', label: desktop ? `Nuevas · ${count('new')}` : 'Nuevas' },
+          { value: 'recognized', label: desktop ? `Reconocidas · ${count('recognized')}` : 'Reconocidas' },
         ]}
       />
 
@@ -169,12 +169,14 @@ export function ReviewStep({ companyId, draft, rows, people, names, date, onDate
                 </>
               )}
             </span>
-            <RowResult row={r} place={located.get(r.address)} />
-            <span className={styles.chip} data-status={r.status}>{STATUS_LABEL[r.status]}</span>
-            <span className={styles.rowActions}>
+            <span className={styles.resultCell}>
+              <RowResult row={r} place={located.get(r.address)} />
               {r.status === 'new' && located.get(r.address) === null ? (
-                <Button variant="ghost" size="sm" onClick={() => located.retry(r.address)}><RotateCw size={16} aria-hidden />Reintentar</Button>
+                <Button variant="ghost" size="sm" className={styles.retry} onClick={() => located.retry(r.address)}><RotateCw size={16} aria-hidden />Reintentar</Button>
               ) : null}
+            </span>
+            <span className={styles.side}>
+              <span className={styles.chip} data-status={r.status}>{STATUS_LABEL[r.status]}</span>
               <button type="button" className={styles.skip} onClick={() => skip(r.line)} aria-label={`Quitar la fila ${r.line}`}><X size={18} aria-hidden /></button>
             </span>
           </li>

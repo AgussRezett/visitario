@@ -46,9 +46,9 @@ test('Martín imports the spreadsheet: columns, names, review, into five drafts'
   await page.getByRole('button', { name: 'Revisar 78 filas' }).click()
 
   await expect(page.getByRole('heading', { name: 'Revisá antes de guardar' })).toBeVisible()
-  await expect(page.getByRole('radio', { name: 'Reconocidas · 10' })).toBeVisible()
-  await expect(page.getByRole('radio', { name: 'Nuevas · 68' })).toBeVisible()
-  await expect(page.getByRole('radio', { name: 'Revisar · 0' })).toBeVisible()
+  await expect(page.getByText('10 reconocidas')).toBeVisible()
+  await expect(page.getByText('68 nuevas')).toBeVisible()
+  await expect(page.getByText('0 para revisar')).toBeVisible()
   await expect(page.getByText('Reconocido por número de cliente').or(page.getByText(/Mismo número de cliente/)).first()).toBeVisible()
   await page.screenshot({ path: `test-results/import-review-${info.project.name}.png`, fullPage: info.project.name === 'desktop' })
   expect(state.visits).toHaveLength(0) // nothing created while reviewing
@@ -68,6 +68,7 @@ test('the same columns again need no mapping; discarding leaves nothing', async 
   await installFakeSupabase(page, state, 'supervisor')
   await page.goto(`/s/import?date=${FRIDAY}`)
   await expect(page.getByText('Panda diaria')).toBeVisible()
+  await page.screenshot({ path: `test-results/import-source-${test.info().project.name}.png` })
   await page.getByLabel('Subir planilla').setInputFiles(FILE)
 
   await expect(page.getByRole('heading', { name: 'Revisá antes de guardar' })).toBeVisible()

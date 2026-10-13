@@ -121,6 +121,7 @@ export function ColumnsStep({ draft, formats, people, names, rows, update, setCo
           <p className={styles.note}>Sin columna de activador, todo va a quien elijas en la revisión.</p>
         )}
         <section className={styles.settings} aria-label="Ajustes">
+          <span className={styles.settingsLabel} aria-hidden>Dónde buscar direcciones</span>
           <Segmented
             label="Dónde buscar direcciones"
             value={draft.mapping.scope}

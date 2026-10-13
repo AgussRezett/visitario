@@ -1,5 +1,5 @@
 import { Check, Users } from 'lucide-react'
-import type { Person } from '@/domain/import'
+import { normalize, type Person } from '@/domain/import'
 import { Button } from '@/ui/Button'
 import { Select } from '@/ui/Select'
 import type { NameCheck } from '@/features/import/draft'
@@ -12,6 +12,8 @@ interface PeopleBoxProps {
 }
 
 const full = (p: Person) => `${p.firstName} ${p.lastName}`
+/** "Lucía", or "Agus → Agustín" when the spreadsheet calls them differently. */
+const shown = (name: string, p: Person) => (normalize(name) === normalize(p.firstName) ? p.firstName : `${name} → ${p.firstName}`)
 
 /** "Repartir por activador": who each name in the spreadsheet is; the unsure ones get confirmed here. */
 export function PeopleBox({ names, people, onConfirm }: PeopleBoxProps) {
@@ -26,7 +28,7 @@ export function PeopleBox({ names, people, onConfirm }: PeopleBoxProps) {
         <p className={styles.sure}>
           <Check size={16} aria-hidden />
           <span>
-            {sure.map((n) => (n.match.kind === 'sure' ? `${n.name} → ${n.match.person.firstName}` : '')).join(' · ')}
+            {sure.map((n) => (n.match.kind === 'sure' ? shown(n.name, n.match.person) : '')).join(' · ')}
           </span>
         </p>
       ) : null}
