@@ -262,3 +262,12 @@ export function classify(row: ImportRow, match: StoreMatch | undefined, person: 
   if (row.address.length < 3) return { status: 'review', reason: `El cliente ${row.customerNumber} no está en el directorio y no tiene dirección` }
   return { status: 'new' }
 }
+
+/** "CLIENTE → Nro. de cliente · DOMICILIO → Dirección": what a saved format reads, ignored columns aside. */
+export function describeFormat(signature: string, columns: ImportField[]) {
+  const titles = signature.split('|')
+  return columns
+    .map((f, i) => (f === 'ignore' ? null : `${(titles[i] ?? `columna ${i + 1}`).toUpperCase()} → ${FIELD_LABELS[f]}`))
+    .filter(Boolean)
+    .join(' · ')
+}

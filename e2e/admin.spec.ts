@@ -79,3 +79,40 @@ test('inviting a new DNI asks for name and phone, and the WhatsApp goes to that 
   await expect(page.getByRole('link', { name: 'Mandar por WhatsApp' })).toHaveAttribute('href', /wa\.me\/5491155550000\?/)
   expect(state.members?.at(-1)).toMatchObject({ first_name: 'Nora', roles: ['merchandiser'], status: 'invited' })
 })
+
+test('catalogs: add a brand, deactivate a work metric, rename and forget a format', async ({ page }, info) => {
+  const state = company({
+    catalogs: {
+      brand: [{ id: 1, name: 'Campari', group_name: 'Grupo Campari', active: true }, { id: 2, name: 'SKYY', group_name: 'Grupo Campari', active: true }],
+      display_type: [{ id: 1, name: 'Puntera', active: true }, { id: 3, name: 'Góndola', active: true }],
+      work_metric: [{ id: 1, name: 'Unidades repuestas', report_label: null, active: true }, { id: 2, name: 'Kits de bolsas', report_label: 'CUANTOS KIT DE BOLSAS ARME', active: true }],
+    },
+    formats: [{ id: 'f1', company_id: 'c1', name: 'Panda diaria', signature: 'cliente|domicilio|repositor', mapping: { columns: ['customer_number', 'address', 'merchandiser'], hasHeader: true, scope: 'caba', aliases: {} }, last_used_at: '2026-10-09T22:00:00Z' }],
+  })
+  await installFakeSupabase(page, state, 'admin')
+  await page.goto('/s/catalogs')
+  await expect(page.getByRole('heading', { name: 'Catálogos', level: 1 })).toBeVisible()
+  await expect(page.getByText('CLIENTE → Nro. de cliente · DOMICILIO → Dirección · REPOSITOR → Activador')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Agregar marca' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Nueva marca' })
+  await sheet.getByLabel('Nombre').fill('Aperol')
+  await sheet.getByLabel('Grupo').fill('Grupo Campari')
+  await sheet.getByRole('button', { name: 'Agregar' }).click()
+  await expect.poll(() => state.catalogs?.brand.some((b) => b.name === 'Aperol' && b.group_name === 'Grupo Campari')).toBe(true)
+
+  await page.getByRole('switch', { name: 'Kits de bolsas activo' }).click()
+  await expect.poll(() => state.catalogs?.work_metric.find((m) => m.id === 2)?.active).toBe(false)
+  await expect(page.getByRole('switch', { name: 'Kits de bolsas activo' })).toHaveAttribute('aria-checked', 'false')
+  await page.waitForTimeout(300) // let the switch finish moving
+  await page.screenshot({ path: `test-results/catalogs-${info.project.name}.png`, fullPage: true })
+
+  await page.getByRole('button', { name: 'Editar Panda diaria' }).click()
+  await page.getByRole('dialog', { name: 'Panda diaria' }).getByLabel('Nombre').fill('Panda semanal')
+  await page.getByRole('dialog', { name: 'Panda diaria' }).getByRole('button', { name: 'Guardar' }).click()
+  await expect.poll(() => state.formats?.[0]?.name).toBe('Panda semanal')
+  await page.getByRole('button', { name: 'Editar Panda semanal' }).click()
+  await page.getByRole('button', { name: 'Olvidar formato' }).click()
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Olvidar formato' }).click()
+  await expect.poll(() => state.formats?.length).toBe(0)
+})

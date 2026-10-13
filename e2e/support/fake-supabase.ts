@@ -30,6 +30,7 @@ export interface FakeState {
   members?: Row[]
   teams?: Row[]
   dnis?: Record<string, Row>
+  catalogs?: Record<'brand' | 'display_type' | 'work_metric', Row[]>
   /** Import: the directory, saved formats and what the geocoder finds (by address). */
   stores?: Row[]
   formats?: Row[]
@@ -119,6 +120,28 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
         return json([{ id }])
       }
       return json(state.teams ?? [])
+    }
+    const table = (['brand', 'display_type', 'work_metric'] as const).find((t) => path.endsWith(`/${t}`))
+    if (table && state.catalogs) {
+      const list = state.catalogs[table]
+      const id = Number(url.searchParams.get('id')?.replace('eq.', ''))
+      if (req.method() === 'POST') {
+        const b = body()
+        if (list.some((x) => x.name === b.name)) return json({ code: '23505', message: `duplicate key value violates unique constraint "${table}_company_id_name_key"` }, 409)
+        list.push({ id: list.length + 100, active: true, group_name: null, report_label: null, ...b })
+        return route.fulfill({ status: 201 })
+      }
+      if (req.method() === 'PATCH') {
+        Object.assign(list.find((x) => x.id === id) ?? {}, body())
+        return route.fulfill({ status: 204 })
+      }
+      return json(list)
+    }
+    if (path.endsWith('/import_format') && req.method() !== 'GET') {
+      const id = url.searchParams.get('id')?.replace('eq.', '')
+      if (req.method() === 'DELETE') state.formats = (state.formats ?? []).filter((f) => f.id !== id)
+      else Object.assign((state.formats ?? []).find((f) => f.id === id) ?? {}, body())
+      return route.fulfill({ status: 204 })
     }
     if (path.endsWith('/rpc/find_person_by_dni')) {
       const p = state.dnis?.[String(body().p_dni)]

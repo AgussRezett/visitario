@@ -1,0 +1,144 @@
+@use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(4));
+  padding: space(4) space(5) space(6);
+
+  @include up(lg) {
+    gap: space(5);
+    padding: space(6) space(8);
+  }
+}
+
+.top {
+  @include flex(row, $gap: space(3), $align: flex-end, $justify: space-between);
+  flex-wrap: wrap;
+}
+
+.page-titles {
+  @include flex(column, $gap: space(0.5));
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+.title {
+  @include heading(title);
+
+  @include up(lg) {
+    @include heading(display);
+  }
+}
+
+.intro {
+  @include text(label);
+  max-width: 420px;
+  color: $color-ink-muted;
+}
+
+.grid {
+  display: grid;
+  gap: space(3);
+
+  @include up(lg) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: space(4);
+    align-items: start;
+  }
+}
+
+.card {
+  @include surface;
+  @include flex(column, $gap: space(2));
+  padding: space(4);
+}
+
+.head {
+  @include flex(row, $gap: space(3), $align: center, $justify: space-between);
+}
+
+.titles {
+  @include flex(column);
+}
+
+.heading {
+  @include heading(heading);
+}
+
+.count {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.items {
+  list-style: none;
+}
+
+.item {
+  @include flex(row, $gap: space(2), $align: center);
+  min-height: 52px;
+  padding-block: space(1.5);
+
+  & + & {
+    border-top: 1px solid $color-line;
+  }
+
+  &[data-inactive] .item-text {
+    opacity: 0.55;
+  }
+}
+
+.item-text {
+  @include flex(column);
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  @include text(small);
+  font-weight: $weight-bold;
+}
+
+.extra {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.switch {
+  min-height: 40px;
+}
+
+.sr-only {
+  @include visually-hidden;
+}
+
+.edit {
+  @include center;
+  @include square(40px);
+  @include transition-colors;
+  flex-shrink: 0;
+  border-radius: $radius-md;
+  color: $color-ink-muted;
+
+  @include hover {
+    background: $color-muted;
+    color: $color-ink;
+  }
+}
+
+.format-icon {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: space(1);
+  color: $color-forest;
+
+  @include dark {
+    color: $color-lime;
+  }
+}
+
+.empty {
+  @include text(label);
+  color: $color-ink-subtle;
+}

@@ -1,0 +1,18 @@
+@use '@/styles/abstracts' as *;
+
+.cancel {
+  flex: 1;
+}
+
+.columns {
+  @include text(label);
+  padding: space(3) space(3.5);
+  border-radius: $radius-md;
+  background: $color-muted;
+  color: $color-ink-muted;
+}
+
+.remove {
+  align-self: flex-start;
+  color: $color-refused-ink;
+}
