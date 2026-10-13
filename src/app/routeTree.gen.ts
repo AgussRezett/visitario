@@ -24,10 +24,12 @@ import { Route as AppSCompanyRouteImport } from './../routes/_app/s.company'
 import { Route as AppSImportRouteImport } from './../routes/_app/s.import'
 import { Route as AppSReportRouteImport } from './../routes/_app/s.report'
 import { Route as AppSReviewRouteImport } from './../routes/_app/s.review'
+import { Route as AppSStoresRouteImport } from './../routes/_app/s.stores'
 import { Route as AppSTemplatesRouteImport } from './../routes/_app/s.templates'
 import { Route as AppSTodayRouteImport } from './../routes/_app/s.today'
 import { Route as AppSUsersRouteImport } from './../routes/_app/s.users'
 import { Route as AppSWorkdayRouteImport } from './../routes/_app/s.workday'
+import { Route as AppStoresStoreIdRouteImport } from './../routes/_app/stores.$storeId'
 import { Route as AppVisitVisitIdRouteImport } from './../routes/_app/visit.$visitId'
 import { Route as AppSUsersNewRouteImport } from './../routes/_app/s.users_.new'
 
@@ -105,6 +107,11 @@ const AppSReviewRoute = AppSReviewRouteImport.update({
   path: '/s/review',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSStoresRoute = AppSStoresRouteImport.update({
+  id: '/s/stores',
+  path: '/s/stores',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSTemplatesRoute = AppSTemplatesRouteImport.update({
   id: '/s/templates',
   path: '/s/templates',
@@ -123,6 +130,11 @@ const AppSUsersRoute = AppSUsersRouteImport.update({
 const AppSWorkdayRoute = AppSWorkdayRouteImport.update({
   id: '/s/workday',
   path: '/s/workday',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppStoresStoreIdRoute = AppStoresStoreIdRouteImport.update({
+  id: '/stores/$storeId',
+  path: '/stores/$storeId',
   getParentRoute: () => AppRoute,
 } as any)
 const AppVisitVisitIdRoute = AppVisitVisitIdRouteImport.update({
@@ -151,10 +163,12 @@ export interface FileRoutesByFullPath {
   '/s/import': typeof AppSImportRoute
   '/s/report': typeof AppSReportRoute
   '/s/review': typeof AppSReviewRoute
+  '/s/stores': typeof AppSStoresRoute
   '/s/templates': typeof AppSTemplatesRoute
   '/s/today': typeof AppSTodayRoute
   '/s/users': typeof AppSUsersRoute
   '/s/workday': typeof AppSWorkdayRoute
+  '/stores/$storeId': typeof AppStoresStoreIdRoute
   '/visit/$visitId': typeof AppVisitVisitIdRoute
   '/s/users/new': typeof AppSUsersNewRoute
 }
@@ -173,10 +187,12 @@ export interface FileRoutesByTo {
   '/s/import': typeof AppSImportRoute
   '/s/report': typeof AppSReportRoute
   '/s/review': typeof AppSReviewRoute
+  '/s/stores': typeof AppSStoresRoute
   '/s/templates': typeof AppSTemplatesRoute
   '/s/today': typeof AppSTodayRoute
   '/s/users': typeof AppSUsersRoute
   '/s/workday': typeof AppSWorkdayRoute
+  '/stores/$storeId': typeof AppStoresStoreIdRoute
   '/visit/$visitId': typeof AppVisitVisitIdRoute
   '/s/users/new': typeof AppSUsersNewRoute
 }
@@ -197,10 +213,12 @@ export interface FileRoutesById {
   '/_app/s/import': typeof AppSImportRoute
   '/_app/s/report': typeof AppSReportRoute
   '/_app/s/review': typeof AppSReviewRoute
+  '/_app/s/stores': typeof AppSStoresRoute
   '/_app/s/templates': typeof AppSTemplatesRoute
   '/_app/s/today': typeof AppSTodayRoute
   '/_app/s/users': typeof AppSUsersRoute
   '/_app/s/workday': typeof AppSWorkdayRoute
+  '/_app/stores/$storeId': typeof AppStoresStoreIdRoute
   '/_app/visit/$visitId': typeof AppVisitVisitIdRoute
   '/_app/s/users_/new': typeof AppSUsersNewRoute
 }
@@ -221,10 +239,12 @@ export interface FileRouteTypes {
     | '/s/import'
     | '/s/report'
     | '/s/review'
+    | '/s/stores'
     | '/s/templates'
     | '/s/today'
     | '/s/users'
     | '/s/workday'
+    | '/stores/$storeId'
     | '/visit/$visitId'
     | '/s/users/new'
   fileRoutesByTo: FileRoutesByTo
@@ -243,10 +263,12 @@ export interface FileRouteTypes {
     | '/s/import'
     | '/s/report'
     | '/s/review'
+    | '/s/stores'
     | '/s/templates'
     | '/s/today'
     | '/s/users'
     | '/s/workday'
+    | '/stores/$storeId'
     | '/visit/$visitId'
     | '/s/users/new'
   id:
@@ -266,10 +288,12 @@ export interface FileRouteTypes {
     | '/_app/s/import'
     | '/_app/s/report'
     | '/_app/s/review'
+    | '/_app/s/stores'
     | '/_app/s/templates'
     | '/_app/s/today'
     | '/_app/s/users'
     | '/_app/s/workday'
+    | '/_app/stores/$storeId'
     | '/_app/visit/$visitId'
     | '/_app/s/users_/new'
   fileRoutesById: FileRoutesById
@@ -390,6 +414,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSReviewRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/s/stores': {
+      id: '/_app/s/stores'
+      path: '/s/stores'
+      fullPath: '/s/stores'
+      preLoaderRoute: typeof AppSStoresRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/s/templates': {
       id: '/_app/s/templates'
       path: '/s/templates'
@@ -416,6 +447,13 @@ declare module '@tanstack/react-router' {
       path: '/s/workday'
       fullPath: '/s/workday'
       preLoaderRoute: typeof AppSWorkdayRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/stores/$storeId': {
+      id: '/_app/stores/$storeId'
+      path: '/stores/$storeId'
+      fullPath: '/stores/$storeId'
+      preLoaderRoute: typeof AppStoresStoreIdRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/visit/$visitId': {
@@ -445,10 +483,12 @@ interface AppRouteChildren {
   AppSImportRoute: typeof AppSImportRoute
   AppSReportRoute: typeof AppSReportRoute
   AppSReviewRoute: typeof AppSReviewRoute
+  AppSStoresRoute: typeof AppSStoresRoute
   AppSTemplatesRoute: typeof AppSTemplatesRoute
   AppSTodayRoute: typeof AppSTodayRoute
   AppSUsersRoute: typeof AppSUsersRoute
   AppSWorkdayRoute: typeof AppSWorkdayRoute
+  AppStoresStoreIdRoute: typeof AppStoresStoreIdRoute
   AppVisitVisitIdRoute: typeof AppVisitVisitIdRoute
   AppSUsersNewRoute: typeof AppSUsersNewRoute
 }
@@ -463,10 +503,12 @@ const AppRouteChildren: AppRouteChildren = {
   AppSImportRoute: AppSImportRoute,
   AppSReportRoute: AppSReportRoute,
   AppSReviewRoute: AppSReviewRoute,
+  AppSStoresRoute: AppSStoresRoute,
   AppSTemplatesRoute: AppSTemplatesRoute,
   AppSTodayRoute: AppSTodayRoute,
   AppSUsersRoute: AppSUsersRoute,
   AppSWorkdayRoute: AppSWorkdayRoute,
+  AppStoresStoreIdRoute: AppStoresStoreIdRoute,
   AppVisitVisitIdRoute: AppVisitVisitIdRoute,
   AppSUsersNewRoute: AppSUsersNewRoute,
 }

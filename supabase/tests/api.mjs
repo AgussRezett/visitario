@@ -3,7 +3,7 @@
 import crypto from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { PostgrestClient } from '@supabase/postgrest-js'
-import { VISIT_SELECT, TEAM_VISIT_SELECT, COMMENT_SELECT } from '../../src/features/workday/api/selects.ts'
+import { VISIT_SELECT, TEAM_VISIT_SELECT, COMMENT_SELECT, STORE_SELECT, EXPORT_VISIT_SELECT } from '../../src/features/workday/api/selects.ts'
 
 let passed = 0, failed = 0
 const check = (name, ok, detail = '') => { ok ? passed++ : failed++; console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}${ok ? '' : ` → ${detail}`}`) }
@@ -118,6 +118,19 @@ const formats = await db.from('import_format').select('id, name, signature, mapp
 ok('import formats', formats, formats.data?.[0]?.name === 'Panda diaria' && formats.data[0].mapping.columns.length === 3)
 const noFormat = await db.rpc('import_workdays', { p_company: COMPANY, p_date: '2026-10-23', p_rows: [{ merchandiser: PERSON, address: 'Moldes 1365' }], p_format: undefined })
 ok('import_workdays without format, same store again', noFormat, noFormat.data?.visits === 0)
+
+// ---- Stage 5: admin and directory requests
+ok('company_people', await db.rpc('company_people', { p_company: COMPANY }))
+ok('company_usage', await db.rpc('company_usage', { p_company: COMPANY }))
+const exported = await db.from('visit').select(EXPORT_VISIT_SELECT).eq('company_id', COMPANY).is('deleted_at', null).order('work_date').order('sort_order').range(0, 999)
+ok('export visits select', exported, exported.data?.length >= 1 && exported.data[0].store?.address !== undefined)
+const directory = await db.rpc('store_directory', { p_company: COMPANY, p_query: 'moldes', p_filter: 'all', p_limit: 50, p_offset: 0 })
+ok('store_directory', directory, directory.data?.length >= 1 && Number(directory.data[0].total) >= 1)
+ok('store_directory_counts', await db.rpc('store_directory_counts', { p_company: COMPANY }))
+const oneStore = await db.from('store').select(STORE_SELECT).eq('id', directory.data?.[0]?.id).is('deleted_at', null).maybeSingle()
+ok('store card select (creator embed)', oneStore, oneStore.data?.creator?.first_name === 'Agustín')
+const storeVisits = await db.from('visit').select(TEAM_VISIT_SELECT).eq('store_id', directory.data?.[0]?.id).is('deleted_at', null).order('work_date', { ascending: false }).limit(60)
+ok('store visits', storeVisits, storeVisits.data?.length >= 1)
 
 console.log(`\n${passed} passed, ${failed} failed`)
 process.exit(failed ? 1 : 0)
