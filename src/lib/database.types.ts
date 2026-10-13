@@ -1537,6 +1537,10 @@ export type Database = {
           work_status: Database["public"]["Enums"]["work_status"]
         }[]
       }
+      merge_stores: {
+        Args: { p_drop: string; p_keep: string }
+        Returns: number
+      }
       open_workday: {
         Args: { p_company: string; p_date: string }
         Returns: string
@@ -1588,6 +1592,41 @@ export type Database = {
           id: string
           location_status: Database["public"]["Enums"]["location_status"]
           name: string
+        }[]
+      }
+      store_directory: {
+        Args: {
+          p_area?: string
+          p_company: string
+          p_filter?: string
+          p_limit?: number
+          p_offset?: number
+          p_query?: string
+        }
+        Returns: {
+          address: string
+          area: string
+          created_by_name: string
+          customer_number: string
+          id: string
+          last_merchandiser: string
+          last_visit_date: string
+          last_visit_review: Database["public"]["Enums"]["review_status"]
+          last_visit_status: Database["public"]["Enums"]["work_status"]
+          location_status: Database["public"]["Enums"]["location_status"]
+          name: string
+          source: Database["public"]["Enums"]["store_source"]
+          total: number
+          visits_30d: number
+        }[]
+      }
+      store_directory_counts: {
+        Args: { p_company: string }
+        Returns: {
+          added: number
+          areas: string[]
+          total: number
+          unverified: number
         }[]
       }
       team_day: {
