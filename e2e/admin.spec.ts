@@ -143,3 +143,35 @@ test('templates: write with Spanish data, preview on a real visit, save, hide Wh
   await page.getByRole('switch', { name: /Mostrar los botones de WhatsApp/ }).click()
   await expect.poll(() => state.company?.show_whatsapp).toBe(false)
 })
+
+test('company and plan: billing shows, settings save, data exports', async ({ page }, info) => {
+  const state = company({
+    company: { id: 'c1', name: 'Panda', kind: 'distributor', geocoding_scope: 'caba', show_whatsapp: true, photo_retention_months: 12, logo_version: null },
+    subscription: { company_id: 'c1', plan: 'pilot', status: 'active', ends_on: '2026-11-30', next_billing_on: '2026-12-01', auto_debit: false, payment_method_summary: null, estimated_amount_cents: null, currency: 'ARS' },
+    usage: { active_people: 7, photo_bytes: 2_100_000_000, photos: 9800, visits_this_month: 412, stores: 230, ai_captures_this_month: 0 },
+    visits: [visitRow('v1', 0, 'Tres Arroyos 762', { notes: 'Faltó "SKYY"; volver' })],
+  })
+  await installFakeSupabase(page, state, 'admin')
+  await page.goto('/s/company')
+  await expect(page.getByRole('heading', { name: 'Plan piloto' })).toBeVisible()
+  await expect(page.getByText('El piloto termina el 30/11/2026')).toBeVisible()
+  await expect(page.getByText('2,1 GB')).toBeVisible()
+  await expect(page.getByText('A definir')).toBeVisible()
+  await page.screenshot({ path: `test-results/company-${info.project.name}.png`, fullPage: true })
+
+  await page.getByLabel('Nombre').fill('Panda Distribuidora')
+  await page.getByRole('button', { name: 'Guardar' }).click()
+  await expect.poll(() => state.company?.name).toBe('Panda Distribuidora')
+  await page.getByRole('radio', { name: 'Toda Argentina' }).click()
+  await expect.poll(() => state.company?.geocoding_scope).toBe('argentina')
+  await page.getByLabel('Guardar fotos durante').selectOption('24')
+  await expect.poll(() => state.company?.photo_retention_months).toBe(24)
+
+  const download = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Exportar visitas' }).click()
+  const file = await download
+  expect(file.suggestedFilename()).toMatch(/^panda-distribuidora-visitas-\d{4}-\d{2}-\d{2}\.csv$/)
+  const text = await (await file.createReadStream()).toArray().then((chunks) => Buffer.concat(chunks).toString('utf8'))
+  expect(text).toContain('Fecha;Activador;Comercio;Dirección')
+  expect(text).toContain('"Faltó ""SKYY""; volver"')
+})

@@ -34,6 +34,8 @@ export interface FakeState {
   /** The company's own row and templates. */
   company?: Row
   templates?: Row[]
+  subscription?: Row
+  usage?: Row
   /** Import: the directory, saved formats and what the geocoder finds (by address). */
   stores?: Row[]
   formats?: Row[]
@@ -132,6 +134,8 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
       const one = (req.headers().accept ?? '').includes('vnd.pgrst.object')
       return json(one ? state.company : [state.company])
     }
+    if (path.endsWith('/subscription')) return json(state.subscription ?? null)
+    if (path.endsWith('/rpc/company_usage')) return json(state.usage ? [state.usage] : [])
     if (path.endsWith('/message_template')) {
       if (req.method() === 'POST') {
         const b = body()

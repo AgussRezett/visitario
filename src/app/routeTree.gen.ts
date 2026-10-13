@@ -20,6 +20,7 @@ import { Route as AppReviewVisitIdRouteImport } from './../routes/_app/review.$v
 import { Route as AppSSectionRouteImport } from './../routes/_app/s.$section'
 import { Route as AppSAssignRouteImport } from './../routes/_app/s.assign'
 import { Route as AppSCatalogsRouteImport } from './../routes/_app/s.catalogs'
+import { Route as AppSCompanyRouteImport } from './../routes/_app/s.company'
 import { Route as AppSImportRouteImport } from './../routes/_app/s.import'
 import { Route as AppSReportRouteImport } from './../routes/_app/s.report'
 import { Route as AppSReviewRouteImport } from './../routes/_app/s.review'
@@ -84,6 +85,11 @@ const AppSCatalogsRoute = AppSCatalogsRouteImport.update({
   path: '/s/catalogs',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSCompanyRoute = AppSCompanyRouteImport.update({
+  id: '/s/company',
+  path: '/s/company',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSImportRoute = AppSImportRouteImport.update({
   id: '/s/import',
   path: '/s/import',
@@ -141,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/s/$section': typeof AppSSectionRoute
   '/s/assign': typeof AppSAssignRoute
   '/s/catalogs': typeof AppSCatalogsRoute
+  '/s/company': typeof AppSCompanyRoute
   '/s/import': typeof AppSImportRoute
   '/s/report': typeof AppSReportRoute
   '/s/review': typeof AppSReviewRoute
@@ -162,6 +169,7 @@ export interface FileRoutesByTo {
   '/s/$section': typeof AppSSectionRoute
   '/s/assign': typeof AppSAssignRoute
   '/s/catalogs': typeof AppSCatalogsRoute
+  '/s/company': typeof AppSCompanyRoute
   '/s/import': typeof AppSImportRoute
   '/s/report': typeof AppSReportRoute
   '/s/review': typeof AppSReviewRoute
@@ -185,6 +193,7 @@ export interface FileRoutesById {
   '/_app/s/$section': typeof AppSSectionRoute
   '/_app/s/assign': typeof AppSAssignRoute
   '/_app/s/catalogs': typeof AppSCatalogsRoute
+  '/_app/s/company': typeof AppSCompanyRoute
   '/_app/s/import': typeof AppSImportRoute
   '/_app/s/report': typeof AppSReportRoute
   '/_app/s/review': typeof AppSReviewRoute
@@ -208,6 +217,7 @@ export interface FileRouteTypes {
     | '/s/$section'
     | '/s/assign'
     | '/s/catalogs'
+    | '/s/company'
     | '/s/import'
     | '/s/report'
     | '/s/review'
@@ -229,6 +239,7 @@ export interface FileRouteTypes {
     | '/s/$section'
     | '/s/assign'
     | '/s/catalogs'
+    | '/s/company'
     | '/s/import'
     | '/s/report'
     | '/s/review'
@@ -251,6 +262,7 @@ export interface FileRouteTypes {
     | '/_app/s/$section'
     | '/_app/s/assign'
     | '/_app/s/catalogs'
+    | '/_app/s/company'
     | '/_app/s/import'
     | '/_app/s/report'
     | '/_app/s/review'
@@ -350,6 +362,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSCatalogsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/s/company': {
+      id: '/_app/s/company'
+      path: '/s/company'
+      fullPath: '/s/company'
+      preLoaderRoute: typeof AppSCompanyRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/s/import': {
       id: '/_app/s/import'
       path: '/s/import'
@@ -422,6 +441,7 @@ interface AppRouteChildren {
   AppSSectionRoute: typeof AppSSectionRoute
   AppSAssignRoute: typeof AppSAssignRoute
   AppSCatalogsRoute: typeof AppSCatalogsRoute
+  AppSCompanyRoute: typeof AppSCompanyRoute
   AppSImportRoute: typeof AppSImportRoute
   AppSReportRoute: typeof AppSReportRoute
   AppSReviewRoute: typeof AppSReviewRoute
@@ -439,6 +459,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSSectionRoute: AppSSectionRoute,
   AppSAssignRoute: AppSAssignRoute,
   AppSCatalogsRoute: AppSCatalogsRoute,
+  AppSCompanyRoute: AppSCompanyRoute,
   AppSImportRoute: AppSImportRoute,
   AppSReportRoute: AppSReportRoute,
   AppSReviewRoute: AppSReviewRoute,
