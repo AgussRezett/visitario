@@ -1,1 +1,152 @@
 @use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(4));
+  padding: space(4) space(5) space(6);
+
+  @include up(lg) {
+    gap: space(5);
+    padding: space(6) space(8);
+  }
+}
+
+.titles {
+  @include flex(column, $gap: space(0.5));
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+.title {
+  @include heading(title);
+
+  @include up(lg) {
+    @include heading(display);
+  }
+}
+
+.grid {
+  display: grid;
+  gap: space(3);
+
+  // Desktop: two columns that fill top to bottom, so short cards leave no holes
+  @include up(lg) {
+    display: block;
+    columns: 2;
+    column-gap: space(4);
+
+    > * {
+      break-inside: avoid;
+      margin-bottom: space(4);
+    }
+  }
+}
+
+.card {
+  @include surface;
+  @include flex(column, $gap: space(3));
+  padding: space(4);
+
+  @include up(lg) {
+    padding: space(5);
+  }
+}
+
+.heading {
+  @include heading(heading);
+}
+
+.help {
+  @include text(label);
+  font-weight: $weight-medium;
+  color: $color-ink-subtle;
+}
+
+// The plan: the dark card, with what the company uses
+.plan {
+  @include flex(column, $gap: space(3));
+  padding: space(4);
+  border-radius: $radius-lg;
+  background: $color-forest;
+  color: $color-on-forest;
+
+  @include up(lg) {
+    padding: space(5);
+  }
+}
+
+.plan-title {
+  @include heading(title);
+}
+
+.plan-text {
+  @include text(small);
+  color: $color-on-forest-muted;
+}
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: space(2);
+}
+
+.kpi {
+  @include flex(column);
+  @include text(label);
+  padding: space(3);
+  border-radius: $radius-md;
+  background: color-mix(in srgb, $color-white 10%, transparent);
+  color: $color-on-forest-muted;
+
+  b {
+    @include heading(heading);
+    color: $color-on-forest;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.kv {
+  @include flex(column);
+
+  > div {
+    @include flex(row, $gap: space(3), $justify: space-between);
+    @include text(small);
+    padding-block: space(2.5);
+
+    & + div {
+      border-top: 1px solid $color-line;
+    }
+  }
+
+  dt {
+    color: $color-ink-muted;
+  }
+
+  dd {
+    font-weight: $weight-bold;
+    text-align: right;
+  }
+}
+
+.name-row {
+  @include flex(row, $gap: space(2), $align: flex-end);
+
+  > :first-child {
+    flex: 1;
+  }
+}
+
+.kind {
+  @include text(small);
+  color: $color-ink-muted;
+}
+
+.exports {
+  display: grid;
+  gap: space(2);
+
+  @include up(sm) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
