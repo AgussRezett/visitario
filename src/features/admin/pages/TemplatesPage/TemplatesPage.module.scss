@@ -1,1 +1,222 @@
 @use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(4));
+  padding: space(4) space(5) space(6);
+
+  @include up(lg) {
+    gap: space(5);
+    padding: space(6) space(8);
+  }
+}
+
+.top {
+  @include flex(row, $gap: space(3), $align: flex-end, $justify: space-between);
+  flex-wrap: wrap;
+}
+
+.titles {
+  @include flex(column, $gap: space(0.5));
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+.title {
+  @include heading(title);
+
+  @include up(lg) {
+    @include heading(display);
+  }
+}
+
+// Phone: template chips, editor, preview, WhatsApp switch. Desktop: three columns.
+.columns {
+  display: grid;
+  gap: space(4);
+
+  @include up(lg) {
+    grid-template-columns: 240px minmax(0, 1fr) minmax(0, 360px);
+    gap: space(6);
+    align-items: start;
+  }
+}
+
+.side {
+  @include flex(column, $gap: space(4));
+  display: contents;
+
+  @include up(lg) {
+    display: flex;
+  }
+}
+
+.kinds {
+  @include flex(row, $gap: space(2));
+  order: -1;
+  margin-inline: calc(-1 * #{space(5)});
+  padding-inline: space(5);
+  overflow-x: auto;
+
+  @include up(lg) {
+    flex-direction: column;
+    margin-inline: 0;
+    padding-inline: 0;
+    overflow: visible;
+  }
+}
+
+.kind {
+  @include flex(column);
+  @include transition-colors;
+  flex: 0 0 auto;
+  padding: space(2) space(3.5);
+  border: 1.5px solid $color-line;
+  border-radius: $radius-full;
+  background: $color-card;
+  text-align: left;
+
+  &[aria-checked='true'] {
+    border-color: $color-forest;
+    background: $color-forest;
+    color: $color-white;
+
+    .kind-help {
+      color: $color-on-forest-muted;
+    }
+  }
+
+  @include up(lg) {
+    padding: space(3) space(3.5);
+    border-radius: $radius-md;
+
+    &[aria-checked='true'] {
+      background: $color-lime-soft;
+      color: $color-ink;
+
+      .kind-help {
+        color: $color-ink-subtle;
+      }
+    }
+  }
+}
+
+.kind-title {
+  @include text(small);
+  font-weight: $weight-extrabold;
+}
+
+.kind-help {
+  @include text(label);
+  display: none;
+  color: $color-ink-subtle;
+
+  @include up(lg) {
+    display: block;
+  }
+}
+
+.whatsapp {
+  @include flex(column, $gap: space(1));
+  order: 3;
+  padding-top: space(3);
+  border-top: 1px solid $color-line;
+
+  @include up(lg) {
+    order: 0;
+  }
+}
+
+.editor {
+  @include flex(column, $gap: space(2.5));
+  min-width: 0;
+}
+
+.text textarea,
+textarea.text {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.label {
+  @include text(label);
+  font-weight: $weight-bold;
+  color: $color-ink-muted;
+}
+
+.tokens {
+  @include flex(row, $gap: space(1.5));
+  flex-wrap: wrap;
+}
+
+.token {
+  @include text(label);
+  @include transition-colors;
+  min-height: 32px;
+  padding-inline: space(2.5);
+  border-radius: $radius-full;
+  background: $color-muted;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: $weight-semibold;
+
+  @include hover {
+    background: $color-lime-soft;
+  }
+}
+
+.preview {
+  @include flex(column, $gap: space(2));
+  min-width: 0;
+}
+
+// A WhatsApp chat, so the admin sees the message as it arrives
+.chat {
+  @include flex(column);
+  padding: space(4);
+  border-radius: $radius-lg;
+  background: #e5ddd0;
+
+  @include dark {
+    background: #0b141a;
+  }
+}
+
+.bubble {
+  @include text(small);
+  align-self: flex-end;
+  max-width: 92%;
+  padding: space(2.5) space(3);
+  border-radius: 10px 10px 2px 10px;
+  background: #d9fdd3;
+  color: #111b21;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+
+  @include dark {
+    background: #005c4b;
+    color: #e9edef;
+  }
+}
+
+.another {
+  align-self: flex-start;
+}
+
+.help {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.footer {
+  @include flex(row, $gap: space(2), $justify: flex-end);
+
+  > * {
+    flex: 1;
+
+    @include up(lg) {
+      flex: 0 0 auto;
+    }
+  }
+}
