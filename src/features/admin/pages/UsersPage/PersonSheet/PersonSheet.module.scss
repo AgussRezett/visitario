@@ -1,1 +1,40 @@
 @use '@/styles/abstracts' as *;
+
+.block {
+  @include flex(column, $gap: space(2));
+}
+
+.label {
+  @include text(label);
+  font-weight: $weight-bold;
+}
+
+.help {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(3);
+}
+
+.actions {
+  @include flex(row, $gap: space(2), $align: center);
+  flex-wrap: wrap;
+  padding-top: space(3);
+  border-top: 1px solid $color-line;
+}
+
+.whatsapp {
+  @include flex(row, $gap: space(2), $align: center);
+  @include text(small);
+  min-height: $touch-target;
+  font-weight: $weight-bold;
+  color: $color-done-ink;
+}
+
+.cancel {
+  flex: 1;
+}

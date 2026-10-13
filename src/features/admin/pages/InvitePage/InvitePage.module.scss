@@ -1,1 +1,204 @@
 @use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(4));
+  padding: space(4) space(5) space(6);
+
+  @include up(lg) {
+    gap: space(5);
+    padding: space(6) space(8);
+  }
+}
+
+.back {
+  @include flex(row, $gap: space(1), $align: center);
+  @include text(label);
+  align-self: flex-start;
+  min-height: 32px;
+  font-weight: $weight-bold;
+  color: $color-ink-muted;
+}
+
+.titles {
+  @include flex(column, $gap: space(0.5));
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+.title {
+  @include heading(title);
+
+  @include up(lg) {
+    @include heading(display);
+  }
+}
+
+.columns {
+  display: grid;
+  gap: space(4);
+
+  @include up(lg) {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: space(6);
+    align-items: start;
+    max-width: 1080px;
+  }
+}
+
+.main {
+  @include flex(column, $gap: space(4));
+  min-width: 0;
+}
+
+.card {
+  @include surface;
+  @include flex(column, $gap: space(3));
+  padding: space(4);
+
+  @include up(lg) {
+    padding: space(5);
+    max-width: 1080px;
+  }
+}
+
+.heading {
+  @include heading(heading);
+}
+
+.search {
+  @include flex(row, $gap: space(2), $align: flex-end);
+
+  > :first-child {
+    flex: 1;
+  }
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(3);
+}
+
+.help {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+// Role: three big options
+.roles {
+  display: grid;
+  gap: space(2);
+
+  @include up(lg) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.role {
+  @include transition-colors;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'name check'
+    'help check';
+  align-items: center;
+  min-height: 60px;
+  padding: space(2.5) space(3.5);
+  border: 1.5px solid $color-line;
+  border-radius: $radius-md;
+  background: $color-card;
+  text-align: left;
+
+  &[aria-checked='true'] {
+    border-color: $color-forest;
+    background: $color-lime-soft;
+
+    @include dark {
+      background: $color-muted;
+    }
+  }
+}
+
+.role-name {
+  @include text(small);
+  grid-area: name;
+  font-weight: $weight-extrabold;
+}
+
+.role-help {
+  @include text(label);
+  grid-area: help;
+  color: $color-ink-subtle;
+}
+
+.role-check {
+  grid-area: check;
+  color: $color-forest;
+
+  @include dark {
+    color: $color-lime;
+  }
+}
+
+.aside {
+  @include flex(column, $gap: space(2));
+  padding: space(4);
+  border-radius: $radius-lg;
+  background: $color-muted;
+}
+
+.aside-title {
+  @include text(small);
+  font-weight: $weight-extrabold;
+}
+
+.steps {
+  @include flex(column, $gap: space(2));
+  @include text(label);
+  padding-left: space(5);
+  color: $color-ink-muted;
+}
+
+.footer {
+  @include flex(row, $gap: space(3), $align: center, $justify: flex-end);
+  flex-wrap: wrap;
+
+  @include up(lg) {
+    max-width: 1080px;
+  }
+}
+
+.cancel,
+.done {
+  @include text(small);
+  @include center;
+  min-height: $touch-target;
+  padding-inline: space(4);
+  font-weight: $weight-bold;
+  color: $color-ink-muted;
+}
+
+.message {
+  @include text(small);
+  padding: space(3) space(3.5);
+  border-radius: $radius-md;
+  background: $color-muted;
+}
+
+.row {
+  @include flex(row, $gap: space(2));
+  flex-wrap: wrap;
+}
+
+.whatsapp {
+  @include flex(row, $gap: space(2), $align: center, $justify: center);
+  @include text(small);
+  height: $control-height;
+  padding-inline: space(4);
+  border-radius: $radius-md;
+  background: $color-forest;
+  font-weight: $weight-bold;
+  color: $color-white;
+}

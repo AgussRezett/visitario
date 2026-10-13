@@ -1,1 +1,54 @@
 @use '@/styles/abstracts' as *;
+
+.list {
+  @include flex(column, $gap: space(2.5));
+  list-style: none;
+}
+
+.card {
+  @include surface;
+  @include flex(column, $gap: space(2));
+  padding: space(3.5) space(4);
+}
+
+.head {
+  @include flex(row, $align: center, $justify: space-between);
+}
+
+.name {
+  @include text(small);
+  font-weight: $weight-extrabold;
+}
+
+.edit {
+  @include text(label);
+  min-height: 32px;
+  font-weight: $weight-bold;
+  color: $color-action-ink;
+}
+
+.lead {
+  @include text(label);
+  color: $color-ink-muted;
+}
+
+// Overlapping avatars
+.stack {
+  display: flex;
+  padding-left: space(2);
+}
+
+.avatar {
+  margin-left: calc(-1 * #{space(2)});
+  box-shadow: 0 0 0 2px $color-card;
+}
+
+.meta {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.empty {
+  @include text(label);
+  color: $color-ink-subtle;
+}
