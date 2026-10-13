@@ -66,4 +66,13 @@
 
 Cómo quedó: Asignar → "Importar planilla" (.xlsx o .csv, o texto pegado) → columnas → revisión. Todo se agrega a borradores de cada activador para esa fecha y se publica desde Asignar, como siempre. La búsqueda en el directorio (`match_stores`) no crea nada; `import_workdays` guarda comercios, jornadas, visitas y el formato en una sola transacción. Las direcciones nuevas se ubican de a una (LocationIQ permite unas 2 por segundo); si se agrega antes de que terminen, esas quedan sin ubicar.
 
-Fuera de esta versión: migración del MVP, exportar informes, reportes con diseño, push, cobro automático, acceso para marcas.
+## Etapa 5 · criterios de aceptación
+- [x] Dar de alta a alguien que ya usa Visitario no le pide datos de nuevo, y la empresa no ve su historial con otras empresas (base + e2e).
+- [x] Cambiar el texto de una plantilla cambia los mensajes desde la próxima visita; los ya enviados quedan como estaban (dominio + e2e).
+- [x] Desactivar un número de trabajo lo saca de la ficha y del informe; los ítems no se borran (base + e2e).
+- [x] Fusionar dos comercios conserva todas sus visitas, también las aprobadas (base + e2e).
+- [x] La facturación se muestra aunque el cobro todavía sea manual (e2e).
+- [ ] Probado en el celular real.
+
+Cómo quedó: Usuarios y equipos (alta por DNI; la invitación se manda por WhatsApp porque todavía no hay SMS), Catálogos (con formatos de carga guardados), Plantillas (datos en castellano, vista previa con una visita real, las líneas con datos vacíos no salen, interruptor de WhatsApp), Empresa y plan (uso, facturación, búsqueda de direcciones, retención de fotos, exportar a CSV) y Directorio (para supervisores y admins: búsqueda, filtros, ficha con historial, verificar dirección, editar, fusionar). Quedan para después: logo de la empresa, captura con IA, "pedir antes y después" y "pisos y frentes" en la ficha, alta manual de comercios desde el directorio.
+ migración del MVP, exportar informes, reportes con diseño, push, cobro automático, acceso para marcas.

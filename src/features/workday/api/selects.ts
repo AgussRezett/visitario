@@ -29,3 +29,9 @@ export const EXPORT_VISIT_SELECT = `
   store:store!visit_company_id_store_id_fkey (name, address, customer_number, area),
   merchandiser:person!visit_merchandiser_id_fkey (first_name, last_name)
 `
+
+// A store's card in the directory: who added it.
+export const STORE_SELECT = `
+  id, company_id, name, address, area, customer_number, lat, lng, location_status, source, created_at,
+  creator:person!store_created_by_fkey (first_name)
+`

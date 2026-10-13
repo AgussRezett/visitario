@@ -1,0 +1,55 @@
+@use '@/styles/abstracts' as *;
+
+.search {
+  @include flex(row, $gap: space(2), $align: center);
+  height: $control-height;
+  padding-inline: space(3.5);
+  border: 1.5px solid $color-control;
+  border-radius: $radius-md;
+  background: $color-card;
+  color: $color-ink-subtle;
+
+  &:focus-within {
+    border-color: $color-forest;
+  }
+
+  input {
+    @include text(base);
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: $color-ink;
+  }
+}
+
+.list {
+  @include flex(column, $gap: space(2));
+  list-style: none;
+}
+
+.item {
+  @include flex(column);
+  @include transition-colors;
+  width: 100%;
+  padding: space(3) space(3.5);
+  border: 1.5px solid $color-line;
+  border-radius: $radius-md;
+  text-align: left;
+
+  @include hover {
+    border-color: $color-forest;
+  }
+}
+
+.name {
+  @include text(small);
+  font-weight: $weight-extrabold;
+}
+
+.meta,
+.help {
+  @include text(label);
+  color: $color-ink-subtle;
+}

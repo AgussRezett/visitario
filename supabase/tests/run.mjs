@@ -362,6 +362,32 @@ await expectError('The company kind is not editable by the admin', () => as('car
 check('Admin reads the plan; the subscription is not editable from the app', (await as('carla', `select plan::text p from subscription where company_id = $1`, [panda]))[0]?.p === 'pilot')
 await expectError('…not even by its admin', () => as('carla', `update subscription set plan = 'team' where company_id = $1`, [panda]))
 
+// ---- Stage 5 · Directory: list, counts, merge duplicates
+const dir = await as('martin', `select * from store_directory($1, 'olazabal')`, [panda])
+check(`Directory search by name or address, with total (${dir.length})`, dir.length >= 1 && Number(dir[0].total) === dir.length && dir[0].address === 'Olazábal 1550')
+const withVisit = (await as('martin', `select * from store_directory($1, 'echeverria')`, [panda]))[0]
+check('Directory row carries the last visit of my team', withVisit?.last_visit_date !== null && withVisit?.last_merchandiser === 'Agustín')
+const counts = (await as('martin', `select * from store_directory_counts($1)`, [panda]))[0]
+check(`Directory counts and areas (${JSON.stringify(counts)})`, counts.total >= 5 && counts.unverified >= 1 && Array.isArray(counts.areas))
+check('Another company sees nothing in Panda’s directory', (await as('beto', `select * from store_directory($1)`, [panda])).length === 0)
+check('The directory filters unverified and added stores', (await as('martin', `select * from store_directory($1, null, 'unverified')`, [panda])).every(r => r.location_status !== 'verified') && (await as('martin', `select * from store_directory($1, null, 'added')`, [panda])).every(r => r.source === 'merchandiser'))
+
+const dupKeep = (await sys(`insert into store (company_id, name, address, location_status, lat, lng) values ($1, 'Lili', 'Moldes 1365', 'verified', -34.56, -58.45) returning id`, [panda]))[0].id
+const dupDrop = (await sys(`insert into store (company_id, customer_number, address, area) values ($1, '20577', 'Moldes 1365 PB', 'Belgrano') returning id`, [panda]))[0].id
+const wMerge = (await as('martin', `select plan_workday($1, $2, '2026-10-26') id`, [panda, agus]))[0].id
+const vMergeA = (await as('martin', `select add_visit($1, p_store => $2) id`, [wMerge, dupDrop]))[0].id
+await sys(`insert into photo (id, company_id, visit_id, kind, taken_at, uploaded_at, bytes, width, height, created_by) values (gen_random_uuid(), $1, $2, 'storefront', now(), now(), 1, 1, 1, $3)`, [panda, vMergeA, agus])
+await sys(`update visit set work_status = 'in_progress', consent = 'yes', arrived_at = now() where id = $1`, [vMergeA])
+await sys(`update visit set work_status = 'done', review_status = 'approved' where id = $1`, [vMergeA])
+await expectError('A merchandiser cannot merge stores', () => as('agus', `select merge_stores($1, $2)`, [dupKeep, dupDrop]), /supervisors/)
+await expectError('Another company cannot merge Panda’s stores', () => as('beto', `select merge_stores($1, $2)`, [dupKeep, dupDrop]))
+check('Merging moves every visit, even an approved one', (await as('martin', `select merge_stores($1, $2) n`, [dupKeep, dupDrop]))[0].n === 1 && (await sys(`select store_id = $2 ok from visit where id = $1`, [vMergeA, dupKeep]))[0].ok)
+const merged = (await sys(`select (select deleted_at is not null and merged_into = $1 from store where id = $2) gone, customer_number, area, name, location_status::text loc from store where id = $1`, [dupKeep, dupDrop]))[0]
+check(`The one that stays takes what only the duplicate had (${JSON.stringify(merged)})`, merged.gone && merged.customer_number === '20577' && merged.area === 'Belgrano' && merged.name === 'Lili' && merged.loc === 'verified')
+await expectError('An approved visit still cannot be moved by hand', () => as('martin', `update visit set store_id = $2 where id = $1`, [vMergeA, s1]), /pending|locked/)
+await as('martin', `update store set name = 'Autoservicio Lili', area = 'Belgrano' where id = $1`, [dupKeep])
+check('A supervisor fixes a store’s data', (await sys(`select name from store where id = $1`, [dupKeep]))[0].name === 'Autoservicio Lili')
+
 // ---- MVP backup import (platform admin, own work)
 const mvp = {
   stores: [{ id: '01926f00-0000-5000-8000-0000000000b1', cn: '9874', name: null, address: 'Arce 730', area: 'Palermo 5', lat: -34.56, lng: -58.43 }],

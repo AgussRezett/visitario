@@ -28,6 +28,7 @@ export const SECTIONS: Record<Role, Section[]> = {
     { slug: 'catalogs', label: 'Catálogos', title: 'Catálogos', icon: Tags, stage: 5, summary: 'Marcas, tipos de exhibición y números de trabajo.' },
     { slug: 'templates', label: 'Plantillas', title: 'Plantillas de mensajes', icon: MessageSquareText, stage: 5, summary: 'Los mensajes ANTES, DESPUÉS y el informe.' },
     { slug: 'company', label: 'Empresa', title: 'Empresa y plan', icon: Building2, stage: 5, summary: 'Datos de la empresa, plan y facturación.' },
+    { slug: 'stores', label: 'Directorio', title: 'Directorio', icon: Store, stage: 5, summary: 'Los comercios de la empresa con su historial de visitas.' },
   ],
 }
 

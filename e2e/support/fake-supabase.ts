@@ -1,4 +1,5 @@
 import type { Page, Request } from '@playwright/test'
+import { handleAdmin } from './fake-admin'
 
 // A tiny in-memory stand-in for the Supabase endpoints the merchandiser's day uses.
 // It is only as smart as the tests need: the real rules are tested in supabase/tests.
@@ -13,7 +14,7 @@ export const atFakeToday = (page: Page) => page.clock.setFixedTime(new Date(`${F
 export const COMPANY = 'c1'
 export const ME = 'p1'
 
-type Row = Record<string, unknown>
+export type Row = Record<string, unknown>
 
 export interface FakeState {
   workday: Row | null
@@ -100,88 +101,8 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
     if (path.endsWith('/person')) return json([{ id: ME, first_name: 'Agustín', last_name: 'Rezett' }])
     if (path.endsWith('/person_private')) return json({ dni: '35111222', phone: null, birth_date: null })
     if (path.endsWith('/platform_admin')) return json(null)
-    // ---- Admin
-    if (path.endsWith('/rpc/company_people')) return json(state.members ?? [])
-    if (path.endsWith('/membership') && req.method() === 'PATCH') {
-      const id = url.searchParams.get('id')?.replace('eq.', '')
-      const m = (state.members ?? []).find((x) => x.membership_id === id)
-      if (m) Object.assign(m, body())
-      return json({ id })
-    }
-    if (path.endsWith('/team')) {
-      const id = url.searchParams.get('id')?.replace('eq.', '')
-      if (req.method() === 'POST') {
-        const t = { id: `t${(state.teams ??= []).length + 1}`, ...body() }
-        state.teams.push(t)
-        return json({ id: t.id })
-      }
-      if (req.method() === 'PATCH') {
-        Object.assign((state.teams ?? []).find((t) => t.id === id) ?? {}, body())
-        return json({ id })
-      }
-      if (req.method() === 'DELETE') {
-        state.teams = (state.teams ?? []).filter((t) => t.id !== id)
-        ;(state.members ?? []).forEach((m) => { if (m.team_id === id) m.team_id = null })
-        return json([{ id }])
-      }
-      return json(state.teams ?? [])
-    }
-    if (path.endsWith('/company') && state.company) {
-      if (req.method() === 'PATCH') {
-        Object.assign(state.company, Object.fromEntries(Object.entries(body()).filter(([, v]) => v !== undefined)))
-        return route.fulfill({ status: 204 })
-      }
-      const one = (req.headers().accept ?? '').includes('vnd.pgrst.object')
-      return json(one ? state.company : [state.company])
-    }
-    if (path.endsWith('/subscription')) return json(state.subscription ?? null)
-    if (path.endsWith('/rpc/company_usage')) return json(state.usage ? [state.usage] : [])
-    if (path.endsWith('/message_template')) {
-      if (req.method() === 'POST') {
-        const b = body()
-        state.templates = [...(state.templates ?? []).filter((t) => t.kind !== b.kind), b]
-        return route.fulfill({ status: 201 })
-      }
-      return json(state.templates ?? [])
-    }
-    const table = (['brand', 'display_type', 'work_metric'] as const).find((t) => path.endsWith(`/${t}`))
-    if (table && state.catalogs) {
-      const list = state.catalogs[table]
-      const id = Number(url.searchParams.get('id')?.replace('eq.', ''))
-      if (req.method() === 'POST') {
-        const b = body()
-        if (list.some((x) => x.name === b.name)) return json({ code: '23505', message: `duplicate key value violates unique constraint "${table}_company_id_name_key"` }, 409)
-        list.push({ id: list.length + 100, active: true, group_name: null, report_label: null, ...b })
-        return route.fulfill({ status: 201 })
-      }
-      if (req.method() === 'PATCH') {
-        Object.assign(list.find((x) => x.id === id) ?? {}, body())
-        return route.fulfill({ status: 204 })
-      }
-      return json(list)
-    }
-    if (path.endsWith('/import_format') && req.method() !== 'GET') {
-      const id = url.searchParams.get('id')?.replace('eq.', '')
-      if (req.method() === 'DELETE') state.formats = (state.formats ?? []).filter((f) => f.id !== id)
-      else Object.assign((state.formats ?? []).find((f) => f.id === id) ?? {}, body())
-      return route.fulfill({ status: 204 })
-    }
-    if (path.endsWith('/rpc/find_person_by_dni')) {
-      const p = state.dnis?.[String(body().p_dni)]
-      return json(p ? [p] : [])
-    }
-    if (path.endsWith('/rpc/invite_person')) {
-      const b = body()
-      const known = state.dnis?.[String(b.p_dni)]
-      const id = `m${(state.members ??= []).length + 1}`
-      state.members.push({
-        membership_id: id, person_id: known?.person_id ?? `p-${b.p_dni}`, first_name: known?.first_name ?? b.p_first_name, last_name: known?.last_name ?? b.p_last_name,
-        roles: b.p_roles, team_id: b.p_team ?? null, status: 'invited', starts_on: b.p_starts_on, phone_last4: String(b.p_phone ?? known?.phone_last4 ?? '').slice(-4) || null,
-        last_activity_at: null, invited_at: new Date().toISOString(),
-      })
-      return json(id)
-    }
-
+    const handled = await handleAdmin({ path, url, req, route, state, json, body })
+    if (handled) return handled
     if (path.endsWith('/membership')) {
       return json(state.memberships ?? [{ id: 'm1', company_id: COMPANY, roles: ['merchandiser'], status: 'active', starts_on: '2026-10-01', company: { name: 'Panda' } }])
     }
