@@ -86,7 +86,7 @@ test('pasted addresses go to the chosen merchandiser, located when found', async
   const state = team({ geocode: { 'Cabildo 2245': { label: 'Cabildo 2245, Belgrano', address: 'Cabildo 2245', area: 'Belgrano', lat: -34.56, lng: -58.45, exact: true } } })
   await installFakeSupabase(page, state, 'supervisor')
   await page.goto(`/s/import?date=${FRIDAY}&person=p2`)
-  await page.getByLabel('O pegá el texto').fill('Cabildo 2245\nDirección vieja 3\nCiudad de la Paz 1700')
+  await page.getByLabel('O pegá el texto').fill('20990; Cabildo 2245; Belgrano\nDirección vieja 3\nCiudad de la Paz 1700, Villa Urquiza')
   await page.getByRole('button', { name: 'Continuar con el texto' }).click()
 
   await expect(page.getByRole('heading', { name: 'Revisá antes de guardar' })).toBeVisible()
@@ -99,6 +99,6 @@ test('pasted addresses go to the chosen merchandiser, located when found', async
   await page.getByRole('button', { name: 'Agregar 3 a la jornada de Lucía' }).click()
   await expect(page.getByText('Se agregaron 3 locales.', { exact: false })).toBeVisible()
   expect(state.visits.every((v) => v.merchandiser_id === 'p2')).toBe(true)
-  expect(state.stores?.find((s) => s.address === 'Cabildo 2245')).toMatchObject({ lat: -34.56 })
-  expect(state.stores?.find((s) => s.address === 'Ciudad de la Paz 1700')).toMatchObject({ lat: null })
+  expect(state.stores?.find((s) => s.address === 'Cabildo 2245')).toMatchObject({ lat: -34.56, customer_number: '20990', area: 'Belgrano' })
+  expect(state.stores?.find((s) => s.address === 'Ciudad de la Paz 1700')).toMatchObject({ lat: null, area: 'Villa Urquiza' })
 })
