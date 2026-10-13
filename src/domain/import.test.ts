@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   classify, cleanTable, guessMapping, linesToRows, looksLikeHeader, matchPerson, normalize, parseDelimited, parsePasted, signatureOf, toRows,
-  type Person,
+  type ImportRow, type Person,
 } from './import'
 
 const panda = [
@@ -12,7 +12,7 @@ const panda = [
   ['18802', 'Maxi Juramento', 'Juramento 2101', 'Belgrano', 'Nico F.', 'Ortiz'],
 ]
 
-const team: Person[] = [
+const team: [Person, Person, Person, Person, Person] = [
   { id: 'p1', firstName: 'Agustín', lastName: 'Rezett' },
   { id: 'p2', firstName: 'Lucía', lastName: 'Gómez' },
   { id: 'p3', firstName: 'Valentina', lastName: 'Ortiz' },
@@ -59,7 +59,7 @@ describe('guessing the columns', () => {
   })
 
   it('the same titles give the same signature, whatever the accents or case', () => {
-    expect(signatureOf(panda[0])).toBe(signatureOf(['cliente', 'Razon Social', 'domicilio', 'Localidad', 'Repositor', 'Vendedor']))
+    expect(signatureOf(panda[0] ?? [])).toBe(signatureOf(['cliente', 'Razon Social', 'domicilio', 'Localidad', 'Repositor', 'Vendedor']))
     expect(normalize('  Olazábal  1.550 ')).toBe('olazabal 1 550')
   })
 })
@@ -102,7 +102,7 @@ describe('who each row is for', () => {
 })
 
 describe('before saving', () => {
-  const row = toRows(panda, guessMapping(panda, true), true)[0]
+  const [row] = toRows(panda, guessMapping(panda, true), true) as [ImportRow]
   const match = { storeId: 's1', name: 'Mas Ahorro', address: 'Tres Arroyos 762', area: null, customerNumber: '12345', matchedBy: 'customer' as const }
 
   it('recognised, new, or to review', () => {

@@ -140,7 +140,7 @@ export function looksLikeHeader(table: Table): boolean {
   if (!first) return false
   if (first.some((c) => KEYWORDS.some(([, re]) => re.test(normalize(c))))) return true
   const hasDigits = (r: string[]) => r.some((c) => /\d/.test(c))
-  return Boolean(second) && !hasDigits(first) && hasDigits(second)
+  return Boolean(second) && !hasDigits(first) && hasDigits(second ?? [])
 }
 
 /** One field per column; a field already taken by a column to the left stays ignored. */
@@ -149,7 +149,7 @@ export function guessMapping(table: Table, hasHeader: boolean): ImportField[] {
   const body = (hasHeader ? table.slice(1) : table).slice(0, 30)
   const used = new Set<ImportField>()
   return Array.from({ length: width }, (_, i) => {
-    const field = guessField(hasHeader ? table[0][i] : '', body.map((r) => r[i]))
+    const field = guessField(hasHeader ? (table[0]?.[i] ?? '') : '', body.map((r) => r[i] ?? ''))
     if (field === 'ignore' || used.has(field)) return 'ignore'
     used.add(field)
     return field
@@ -185,17 +185,15 @@ export const linesToRows = (lines: string[]): ImportRow[] =>
 export type PersonMatch = { kind: 'sure' | 'guess'; person: Person } | { kind: 'none' }
 
 function distance(a: string, b: string) {
-  const d = Array.from({ length: b.length + 1 }, (_, j) => j)
+  let row = Array.from({ length: b.length + 1 }, (_, j) => j)
   for (let i = 1; i <= a.length; i++) {
-    let prev = d[0]
-    d[0] = i
+    const next = [i]
     for (let j = 1; j <= b.length; j++) {
-      const keep = d[j]
-      d[j] = Math.min(d[j] + 1, d[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1))
-      prev = keep
+      next[j] = Math.min((row[j] ?? 0) + 1, (next[j - 1] ?? 0) + 1, (row[j - 1] ?? 0) + (a[i - 1] === b[j - 1] ? 0 : 1))
     }
+    row = next
   }
-  return d[b.length]
+  return row[b.length] ?? 0
 }
 
 /**
@@ -206,12 +204,12 @@ function distance(a: string, b: string) {
 export function matchPerson(raw: string, people: Person[], aliases: Record<string, string> = {}): PersonMatch {
   const n = normalize(raw)
   if (!n) return { kind: 'none' }
-  const one = (list: Person[], kind: 'sure' | 'guess'): PersonMatch | null => (list.length === 1 ? { kind, person: list[0] } : null)
+  const one = (list: Person[], kind: 'sure' | 'guess'): PersonMatch | null => (list.length === 1 && list[0] ? { kind, person: list[0] } : null)
   const first = (p: Person) => normalize(p.firstName)
   const last = (p: Person) => normalize(p.lastName)
   const aliased = people.find((p) => p.id === aliases[n])
   if (aliased) return { kind: 'sure', person: aliased }
-  const [a, b = ''] = n.split(' ')
+  const [a = '', b = ''] = n.split(' ')
   const exact =
     one(people.filter((p) => `${first(p)} ${last(p)}` === n), 'sure') ??
     one(people.filter((p) => first(p) === n), 'sure') ??
