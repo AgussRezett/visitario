@@ -1,1 +1,108 @@
 @use '@/styles/abstracts' as *;
+
+.options {
+  display: grid;
+  gap: space(3);
+
+  @include up(lg) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: space(4);
+    max-width: 960px;
+  }
+}
+
+// The whole card is the file input's label: tap anywhere to pick a file
+.drop {
+  @include flex(column, $gap: space(2), $align: center, $justify: center);
+  @include transition-colors;
+  min-height: 180px;
+  padding: space(6) space(5);
+  border: 1.5px dashed $color-control;
+  border-radius: $radius-lg;
+  background: $color-card;
+  text-align: center;
+  cursor: pointer;
+
+  @include hover {
+    border-color: $color-forest;
+  }
+
+  &:focus-within {
+    outline: 2px solid $color-focus;
+    outline-offset: 2px;
+  }
+
+  &[data-busy] {
+    cursor: progress;
+    opacity: 0.7;
+  }
+}
+
+.file {
+  @include visually-hidden;
+}
+
+.drop-icon {
+  @include icon-tile(space(12));
+  background: $color-lime-soft;
+  color: $color-forest;
+
+  @include dark {
+    background: $color-muted;
+    color: $color-lime;
+  }
+}
+
+.drop-title {
+  @include heading(heading);
+}
+
+.drop-help {
+  @include text(label);
+  max-width: 320px;
+  color: $color-ink-muted;
+}
+
+.paste {
+  @include flex(column);
+}
+
+.cancel {
+  @include up(lg) {
+    order: 0;
+  }
+}
+
+.formats {
+  @include flex(row, $gap: space(2), $align: center);
+  flex-wrap: wrap;
+}
+
+.eyebrow {
+  @include eyebrow;
+  flex-basis: 100%;
+}
+
+.format {
+  @include flex(row, $gap: space(1.5), $align: center);
+  @include text(label);
+  min-height: 36px;
+  padding: 0 space(3);
+  border: 1px solid $color-line;
+  border-radius: $radius-full;
+  background: $color-card;
+}
+
+.format-name {
+  font-weight: $weight-bold;
+}
+
+.format-meta {
+  color: $color-ink-subtle;
+}
+
+.help {
+  @include text(label);
+  flex-basis: 100%;
+  color: $color-ink-subtle;
+}

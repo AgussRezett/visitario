@@ -1,1 +1,148 @@
 @use '@/styles/abstracts' as *;
+
+.file {
+  @include surface;
+  @include flex(row, $gap: space(3), $align: center);
+  flex-wrap: wrap;
+  padding: space(3) space(4);
+}
+
+.file-icon {
+  flex-shrink: 0;
+  color: $color-forest;
+
+  @include dark {
+    color: $color-lime;
+  }
+}
+
+.file-text {
+  @include flex(column);
+  flex: 1;
+  min-width: 180px;
+}
+
+.file-name {
+  @include truncate;
+  @include text(small);
+  font-weight: $weight-extrabold;
+}
+
+.file-meta {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.check {
+  @include flex(row, $gap: space(2.5), $align: center);
+  @include text(small);
+  min-height: $touch-target;
+  font-weight: $weight-semibold;
+
+  input {
+    @include square(20px);
+    flex-shrink: 0;
+    accent-color: $color-forest;
+  }
+}
+
+// Desktop: the spreadsheet's first rows, a choice on top of each column
+.table {
+  th,
+  td {
+    min-width: 150px;
+  }
+
+  td[data-ignored] {
+    color: $color-ink-subtle;
+  }
+}
+
+.select-cell {
+  padding-block: space(2) !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+
+  // The column's own title is the label; the choice is what shows
+  label {
+    @include visually-hidden;
+  }
+}
+
+.select {
+  @include text(label);
+  height: 40px;
+  padding-inline: space(2.5) space(7);
+  font-weight: $weight-bold;
+
+  &[data-field='ignore'] {
+    color: $color-ink-subtle;
+  }
+}
+
+// Phone: one card per column with what is in it
+.cards {
+  @include flex(column, $gap: space(2.5));
+}
+
+.column-card {
+  @include surface;
+  @include flex(column, $gap: space(2));
+  padding: space(3) space(3.5);
+
+  label {
+    @include visually-hidden;
+  }
+}
+
+.column-head {
+  @include flex(row, $gap: space(2), $justify: space-between);
+}
+
+.column-title {
+  @include text(label);
+  flex-shrink: 0;
+  font-weight: $weight-extrabold;
+}
+
+.column-sample {
+  @include truncate;
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.cards2 {
+  display: grid;
+  gap: space(3);
+
+  @include up(lg) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: space(4);
+    align-items: start;
+  }
+}
+
+.settings {
+  @include surface;
+  @include flex(column, $gap: space(3));
+  padding: space(4);
+}
+
+.settings-label {
+  @include text(label);
+  margin-bottom: calc(-1 * #{space(1.5)});
+  font-weight: $weight-bold;
+}
+
+.note {
+  @include surface;
+  @include text(label);
+  padding: space(4);
+  color: $color-ink-muted;
+}
+
+.cancel {
+  @include up(lg) {
+    min-width: 120px;
+  }
+}
