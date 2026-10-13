@@ -1,0 +1,162 @@
+@use '@/styles/abstracts' as *;
+
+// Phone: top bar / content that scrolls / actions, as grid rows (like the visit sheet).
+// Desktop: everything in the page flow, actions at the end on the right.
+.frame {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
+
+  @include up(lg) {
+    @include flex(column, $gap: space(4));
+    height: auto;
+    padding: space(6) space(8);
+  }
+}
+
+.appbar {
+  @include flex(row, $gap: space(1), $align: center);
+  min-height: 60px;
+  padding: max(#{space(2)}, env(safe-area-inset-top)) space(4) space(2) space(2);
+  border-bottom: 1px solid $color-line;
+  background: $color-ground;
+
+  @include up(lg) {
+    display: none;
+  }
+}
+
+.back {
+  @include center;
+  @include square($touch-target);
+  flex-shrink: 0;
+  border-radius: $radius-md;
+}
+
+.app-titles {
+  @include flex(column);
+  min-width: 0;
+}
+
+.app-title {
+  @include truncate;
+  @include heading(heading);
+}
+
+.app-meta {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.scroll {
+  @include flex(column, $gap: space(3));
+  min-height: 0;
+  overflow-y: auto;
+  padding: space(4) space(5) space(6);
+
+  @include up(lg) {
+    gap: space(4);
+    overflow: visible;
+    padding: 0;
+  }
+}
+
+.back-link {
+  @include flex(row, $gap: space(1), $align: center);
+  @include text(label);
+  display: none;
+  align-self: flex-start;
+  font-weight: $weight-bold;
+  color: $color-ink-muted;
+
+  @include hover {
+    color: $color-ink;
+  }
+
+  @include up(lg) {
+    display: inline-flex;
+  }
+}
+
+.top {
+  @include flex(row, $gap: space(3), $align: flex-end, $justify: space-between);
+  flex-wrap: wrap;
+}
+
+.titles {
+  @include flex(column, $gap: space(0.5));
+}
+
+.eyebrow {
+  @include eyebrow;
+  display: none;
+
+  @include up(lg) {
+    display: block;
+  }
+}
+
+.title {
+  @include heading(title);
+
+  @include up(lg) {
+    @include heading(display);
+  }
+}
+
+.aside {
+  @include flex(row, $gap: space(3), $align: flex-end);
+  flex-wrap: wrap;
+}
+
+// Three bars: done, now, next
+.steps {
+  display: none;
+
+  @include up(lg) {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: space(1.5);
+    max-width: 520px;
+  }
+
+  i {
+    height: 4px;
+    border-radius: $radius-full;
+    background: $color-line;
+
+    &[data-state='done'] {
+      background: $color-forest;
+    }
+
+    &[data-state='now'] {
+      background: $color-lime;
+    }
+  }
+}
+
+.footer {
+  @include flex(row, $gap: space(2));
+  padding: space(3) space(5) max(#{space(4)}, env(safe-area-inset-bottom));
+  border-top: 1px solid $color-line;
+  background: $color-card;
+
+  > :last-child {
+    flex: 2;
+  }
+
+  > :first-child:not(:last-child) {
+    flex: 1;
+  }
+
+  @include up(lg) {
+    justify-content: flex-end;
+    padding: 0;
+    border: 0;
+    background: transparent;
+
+    > * {
+      flex: 0 0 auto !important;
+    }
+  }
+}

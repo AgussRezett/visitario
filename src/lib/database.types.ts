@@ -1463,6 +1463,15 @@ export type Database = {
         Args: { p_company: string; p_data: Json }
         Returns: Json
       }
+      import_workdays: {
+        Args: {
+          p_company: string
+          p_date: string
+          p_format?: Json
+          p_rows: Json
+        }
+        Returns: Json
+      }
       invite_person: {
         Args: {
           p_company: string
@@ -1475,6 +1484,19 @@ export type Database = {
           p_team: string
         }
         Returns: string
+      }
+      match_stores: {
+        Args: { p_company: string; p_rows: Json }
+        Returns: {
+          address: string
+          area: string
+          customer_number: string
+          idx: number
+          location_status: Database["public"]["Enums"]["location_status"]
+          matched_by: string
+          name: string
+          store_id: string
+        }[]
       }
       merchandiser_pending: {
         Args: { p_before: string; p_company: string; p_merchandiser: string }

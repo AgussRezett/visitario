@@ -249,3 +249,11 @@
     color: $color-refused-ink;
   }
 }
+
+.import-button {
+  flex: 1 0 auto;
+
+  @include up(lg) {
+    flex: 0 0 auto;
+  }
+}

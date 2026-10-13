@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { CalendarPlus, Check, Copy, History, Plus, Send, X } from 'lucide-react'
+import { CalendarPlus, Check, Copy, FileUp, History, Plus, Send, X } from 'lucide-react'
 import { addDays, formatDayMonth, formatLongDate, todayInArgentina } from '@/domain/dates'
 import { planLabel, type TeamMember } from '@/domain/team'
 import { initials } from '@/lib/format'
@@ -24,10 +24,12 @@ import styles from './AssignPage.module.scss'
 export interface AssignSearch {
   date?: string
   person?: string
+  /** Visits just added by an import, to say so once. */
+  imported?: number
 }
 
 /** Assigning workdays: pick a date and a merchandiser, add stores, publish (S03 / SM03). */
-export function AssignPage({ date: requested, person }: AssignSearch) {
+export function AssignPage({ date: requested, person, imported }: AssignSearch) {
   const ctx = useWorkContext()
   const navigate = useNavigate()
   const date = requested ?? addDays(todayInArgentina(), 1)
@@ -38,7 +40,7 @@ export function AssignPage({ date: requested, person }: AssignSearch) {
 
   const members = (team.data ?? []).filter((m) => m.personId !== ctx.personId)
   const selected = members.find((m) => m.personId === person) ?? members[0]
-  const go = (s: AssignSearch) => navigate({ to: '/s/assign', search: { date: s.date ?? date, person: s.person ?? selected?.personId }, replace: true })
+  const go = (s: AssignSearch) => navigate({ to: '/s/assign', search: { date: s.date ?? date, person: s.person ?? selected?.personId, imported: s.date ? undefined : imported }, replace: true })
   const drafts = members.filter((m) => m.workdayStatus === 'draft' && m.total > 0)
 
   const publish = async () => {
@@ -60,12 +62,20 @@ export function AssignPage({ date: requested, person }: AssignSearch) {
         </div>
         <div className={styles.actions}>
           <Field label="Fecha" type="date" value={date} onChange={(e) => e.target.value && go({ date: e.target.value })} className={styles.dateField} />
+          <Button variant="secondary" size="md" onClick={() => navigate({ to: '/s/import', search: { date, person: selected?.personId } })} className={styles.importButton}>
+            <FileUp size={18} aria-hidden />Importar planilla
+          </Button>
           <Button size="md" onClick={publish} disabled={!drafts.length} loading={assign.publish.isPending} className={styles.publishDesktop}>
             <Send size={18} aria-hidden />{drafts.length ? `Publicar a ${drafts.length} ${drafts.length === 1 ? 'activador' : 'activadores'}` : 'Nada para publicar'}
           </Button>
         </div>
       </header>
 
+      {imported !== undefined && !assign.publish.isSuccess ? (
+        <Banner tone="ok" icon={<Check size={18} aria-hidden />}>
+          {imported ? `Se agregaron ${imported} ${imported === 1 ? 'local' : 'locales'}. Revisá cada jornada y publicá.` : 'Esos locales ya estaban en las jornadas: no se agregó nada.'}
+        </Banner>
+      ) : null}
       {assign.publish.error ? <Banner tone="error">{assign.publish.error.message}</Banner> : null}
       {assign.publish.isSuccess && !drafts.length ? <Banner tone="ok" icon={<Check size={18} aria-hidden />}>Publicada: cada activador ya ve su jornada.</Banner> : null}
 

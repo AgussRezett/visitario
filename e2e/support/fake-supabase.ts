@@ -22,6 +22,10 @@ export interface FakeState {
   people?: Row[]
   workdays?: Row[]
   reports?: Row[]
+  /** Import: the directory, saved formats and what the geocoder finds (by address). */
+  stores?: Row[]
+  formats?: Row[]
+  geocode?: Record<string, Row>
   /** Simulates a slow connection when loading a day. */
   workdayDelayMs?: number
   /** Answer photo uploads with this status (e.g. 503 down, 403 refused) instead of storing them. */
@@ -130,6 +134,47 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
       return json((state.comments ?? []).filter((c) => matches(c, url.searchParams)))
     }
     if (path.endsWith('/visit_event')) return json([])
+
+    // ---- Import
+    if (path.endsWith('/import_format')) return json((state.formats ?? []).filter((f) => matches(f, url.searchParams)))
+    if (path.endsWith('/rpc/match_stores')) {
+      const norm = (t: unknown) => String(t ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim()
+      const rows = body().p_rows as Row[]
+      return json(rows.flatMap((r, idx) => {
+        const byCustomer = r.customer_number ? (state.stores ?? []).find((x) => x.customer_number === r.customer_number) : undefined
+        const byAddress = (state.stores ?? []).find((x) => norm(x.address) === norm(r.address))
+        const s = byCustomer ?? byAddress
+        return s ? [{ idx, store_id: s.id, name: s.name ?? null, address: s.address, area: s.area ?? null, customer_number: s.customer_number ?? null, location_status: 'verified', matched_by: byCustomer ? 'customer' : 'address' }] : []
+      }))
+    }
+    if (path.endsWith('/rpc/import_workdays')) {
+      const b = body()
+      const rows = b.p_rows as Row[]
+      const plans = new Set<string>()
+      let stores = 0
+      for (const r of rows) {
+        let storeId = r.store as string | undefined
+        if (!storeId) {
+          storeId = `s-new-${(state.stores ??= []).length + 1}`
+          state.stores.push({ id: storeId, address: r.address, customer_number: r.customer_number ?? null, name: r.name ?? null, lat: r.lat ?? null, source: 'imported' })
+          stores++
+        }
+        const wid = `w-${r.merchandiser}-${b.p_date}`
+        if (!(state.workdays ??= []).some((w) => w.id === wid)) state.workdays.push({ id: wid, company_id: COMPANY, merchandiser_id: r.merchandiser, work_date: b.p_date, status: 'draft' })
+        plans.add(wid)
+        state.visits.push(visitRow(`v${state.visits.length + 1}`, state.visits.length, String(r.address ?? storeId), { workday_id: wid, work_date: b.p_date, merchandiser_id: r.merchandiser, source: 'assigned', task: r.task ?? null, store_id: storeId }))
+      }
+      if (b.p_format) {
+        const f = b.p_format as Row
+        state.formats = [...(state.formats ?? []).filter((x) => x.signature !== f.signature), { id: `f${(state.formats ?? []).length + 1}`, company_id: COMPANY, ...f, last_used_at: new Date().toISOString() }]
+      }
+      return json({ workdays: plans.size, visits: rows.length, stores })
+    }
+    if (path.endsWith('/functions/v1/geocode')) {
+      const q = String(body().query)
+      const hit = state.geocode?.[q]
+      return json({ results: hit ? [hit] : [] })
+    }
 
     if (path.endsWith('/rpc/open_workday')) {
       state.workday = { id: 'w1', company_id: COMPANY, work_date: body().p_date, status: 'published', created_by: ME }
