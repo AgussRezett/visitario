@@ -54,4 +54,16 @@
 - [x] El activador ve el aviso de corrección, responde y reenvía, también sin señal (e2e).
 - [ ] Revisar 15 visitas desde el celular lleva menos de 10 minutos (prueba con Martín).
 
+## Etapa 4 · criterios de aceptación
+- [x] Una planilla de 78 filas se importa en menos de 2 minutos, mapeo incluido (e2e con una planilla armada como la de Panda).
+- [ ] Lo mismo con la planilla real de Panda (falta conseguirla).
+- [x] La segunda planilla con las mismas columnas no pide mapeo: el formato guardado la reconoce y va directo a la revisión (e2e).
+- [x] Un comercio ya cargado se reconoce por número de cliente aunque la dirección venga distinta (base + API + e2e).
+- [x] Descartar la importación no deja nada creado; si una fila falla al guardar, no se guarda ninguna (base + e2e).
+- [x] Nombres aproximados en la columna de activador ("Agus", "Nico F.") se reconocen o se confirman una vez y quedan en el formato (dominio + e2e).
+- [x] Pegar texto: una dirección por línea, o columnas copiadas del Excel (dominio + e2e).
+- [x] Las filas sin ubicación exacta se guardan igual y quedan para verificar (base + e2e).
+
+Cómo quedó: Asignar → "Importar planilla" (.xlsx o .csv, o texto pegado) → columnas → revisión. Todo se agrega a borradores de cada activador para esa fecha y se publica desde Asignar, como siempre. La búsqueda en el directorio (`match_stores`) no crea nada; `import_workdays` guarda comercios, jornadas, visitas y el formato en una sola transacción. Las direcciones nuevas se ubican de a una (LocationIQ permite unas 2 por segundo); si se agrega antes de que terminen, esas quedan sin ubicar.
+
 Fuera de esta versión: migración del MVP, exportar informes, reportes con diseño, push, cobro automático, acceso para marcas.

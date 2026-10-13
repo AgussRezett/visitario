@@ -108,5 +108,16 @@ const reviewCount = await db.from('visit').select('id', { count: 'exact', head: 
 ok('review count (head)', reviewCount, typeof reviewCount.count === 'number')
 ok('merchandiser_pending', await db.rpc('merchandiser_pending', { p_company: COMPANY, p_merchandiser: PERSON, p_before: '2026-10-20' }))
 
+// ---- Stage 4: import, with the same request shapes as src/features/import/api/import.ts
+const fmt = { name: 'Panda diaria', signature: 'cliente|domicilio|repositor', mapping: { hasHeader: true, columns: ['customer_number', 'address', 'merchandiser'], scope: 'caba', aliases: {} } }
+const imp = await db.rpc('import_workdays', { p_company: COMPANY, p_date: '2026-10-23', p_rows: [{ merchandiser: PERSON, customer_number: '20990', address: 'Cabildo 2245', lat: -34.56, lng: -58.45, location_status: 'verified' }, { merchandiser: PERSON, address: 'Moldes 1365' }], p_format: fmt })
+ok('import_workdays (Moldes 1365 already in the directory)', imp, imp.data?.visits === 2 && imp.data?.stores === 1)
+const matched = await db.rpc('match_stores', { p_company: COMPANY, p_rows: [{ customer_number: '20990', address: 'otra' }, { customer_number: '', address: 'MOLDES 1365' }, { customer_number: '', address: 'Nada 1' }] })
+ok('match_stores', matched, matched.data?.length === 2 && matched.data[0].matched_by === 'customer' && matched.data[1].idx === 1)
+const formats = await db.from('import_format').select('id, name, signature, mapping, last_used_at').eq('company_id', COMPANY).order('last_used_at', { ascending: false, nullsFirst: false })
+ok('import formats', formats, formats.data?.[0]?.name === 'Panda diaria' && formats.data[0].mapping.columns.length === 3)
+const noFormat = await db.rpc('import_workdays', { p_company: COMPANY, p_date: '2026-10-23', p_rows: [{ merchandiser: PERSON, address: 'Moldes 1365' }], p_format: undefined })
+ok('import_workdays without format, same store again', noFormat, noFormat.data?.visits === 0)
+
 console.log(`\n${passed} passed, ${failed} failed`)
 process.exit(failed ? 1 : 0)
