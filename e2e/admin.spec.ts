@@ -1,0 +1,81 @@
+import { expect, test } from '@playwright/test'
+import { installFakeSupabase, type FakeState } from './support/fake-supabase'
+
+const admin = [{ id: 'm1', company_id: 'c1', roles: ['admin'], status: 'active', starts_on: '2026-10-01', company: { name: 'Panda', kind: 'distributor' } }]
+const member = (id: string, first: string, last: string, extra: Record<string, unknown> = {}) => ({
+  membership_id: `m-${id}`, person_id: id, first_name: first, last_name: last, roles: ['merchandiser'], team_id: 'north', status: 'active',
+  starts_on: '2026-10-01', phone_last4: '4521', last_activity_at: new Date(Date.now() - 4 * 60_000).toISOString(), invited_at: '2026-10-01T12:00:00Z', ...extra,
+})
+const company = (extra: Partial<FakeState> = {}): FakeState => ({
+  workday: null, visits: [], uploads: [], memberships: admin,
+  teams: [{ id: 'north', name: 'Equipo Norte', areas: 'Belgrano, Paternal' }, { id: 'west', name: 'Equipo Oeste', areas: null }],
+  members: [
+    member('p2', 'Martín', 'Sosa', { roles: ['supervisor'] }),
+    member('p3', 'Lucía', 'Gómez'),
+    member('p4', 'Sofía', 'Benítez', { status: 'invited', last_activity_at: null }),
+    member('p5', 'Juan', 'Pérez', { status: 'disabled', team_id: 'west', last_activity_at: '2026-08-01T12:00:00Z' }),
+    member('p1', 'Carla', 'López', { roles: ['admin'], team_id: null }),
+  ],
+  ...extra,
+})
+
+test('the admin sees people and teams, changes a role, brings someone back and adds a team', async ({ page }, info) => {
+  const state = company()
+  await installFakeSupabase(page, state, 'admin')
+  await page.goto('/s/users')
+  await expect(page.getByRole('heading', { name: 'Usuarios y equipos' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /Lucía Gómez/ })).toBeVisible()
+  await page.screenshot({ path: `test-results/users-${info.project.name}.png`, fullPage: true })
+
+  await page.getByRole('button', { name: /Lucía Gómez/ }).click()
+  const sheet = page.getByRole('dialog', { name: 'Lucía Gómez' })
+  await sheet.getByRole('button', { name: 'Supervisor', exact: true }).click()
+  await sheet.getByRole('button', { name: 'Guardar cambios' }).click()
+  await expect.poll(() => state.members?.find((m) => m.person_id === 'p3')?.roles).toEqual(['merchandiser', 'supervisor'])
+
+  await page.getByRole('button', { name: /Juan Pérez/ }).click()
+  await page.getByRole('dialog', { name: 'Juan Pérez' }).getByRole('button', { name: 'Reactivar' }).click()
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Reactivar' }).click()
+  await expect.poll(() => state.members?.find((m) => m.person_id === 'p5')?.status).toBe('active')
+
+  if (info.project.name !== 'desktop') await page.getByRole('radio', { name: /Equipos/ }).click()
+  await expect(page.getByText('Supervisor: Martín Sosa')).toBeVisible()
+  await page.getByRole('button', { name: 'Nuevo equipo' }).click()
+  await page.getByRole('dialog', { name: 'Nuevo equipo' }).getByLabel('Nombre', { exact: true }).fill('Equipo Sur')
+  await page.getByRole('button', { name: 'Crear equipo' }).click()
+  await expect.poll(() => state.teams?.some((t) => t.name === 'Equipo Sur')).toBe(true)
+})
+
+test('inviting someone Visitario already knows: nothing personal is asked again', async ({ page }, info) => {
+  const state = company({ dnis: { '38112904': { person_id: 'p9', first_name: 'Lucas', last_name: 'Méndez', phone_last4: '7782', is_member: false } } })
+  await installFakeSupabase(page, state, 'admin')
+  await page.goto('/s/users')
+  await page.getByRole('button', { name: 'Dar de alta' }).click()
+  await page.getByLabel('DNI', { exact: true }).fill('38.112.904')
+  await page.getByRole('button', { name: 'Buscar' }).click()
+  await expect(page.getByText('Ya tiene perfil en Visitario')).toBeVisible()
+  await expect(page.getByLabel('Nombre', { exact: true })).toHaveCount(0)
+  await page.getByRole('radio', { name: /Supervisor/ }).click()
+  await page.getByLabel('Equipo que supervisa').selectOption({ label: 'Equipo Norte' })
+  await page.screenshot({ path: `test-results/invite-${info.project.name}.png`, fullPage: true })
+  await page.getByRole('button', { name: 'Invitar a Lucas' }).click()
+
+  await expect(page.getByText('Listo: Lucas tiene la invitación')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Mandar por WhatsApp' })).toHaveAttribute('href', /^https:\/\/wa\.me\/\?text=Hola%20Lucas/)
+  expect(state.members?.find((m) => m.person_id === 'p9')).toMatchObject({ roles: ['supervisor'], team_id: 'north', status: 'invited' })
+})
+
+test('inviting a new DNI asks for name and phone, and the WhatsApp goes to that phone', async ({ page }) => {
+  const state = company()
+  await installFakeSupabase(page, state, 'admin')
+  await page.goto('/s/users/new')
+  await page.getByLabel('DNI', { exact: true }).fill('40555666')
+  await page.getByRole('button', { name: 'Buscar' }).click()
+  await expect(page.getByText('El DNI 40.555.666 no está en Visitario')).toBeVisible()
+  await page.getByLabel('Nombre', { exact: true }).fill('Nora')
+  await page.getByLabel('Apellido').fill('Ibarra')
+  await page.getByLabel('Celular').fill('11 15 5555-0000')
+  await page.getByRole('button', { name: 'Invitar a Nora' }).click()
+  await expect(page.getByRole('link', { name: 'Mandar por WhatsApp' })).toHaveAttribute('href', /wa\.me\/5491155550000\?/)
+  expect(state.members?.at(-1)).toMatchObject({ first_name: 'Nora', roles: ['merchandiser'], status: 'invited' })
+})
