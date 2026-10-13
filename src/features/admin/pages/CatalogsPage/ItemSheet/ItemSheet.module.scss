@@ -1,1 +1,11 @@
 @use '@/styles/abstracts' as *;
+
+.cancel {
+  flex: 1;
+}
+
+.help {
+  @include text(label);
+  font-weight: $weight-medium;
+  color: $color-ink-subtle;
+}
