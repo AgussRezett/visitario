@@ -49,9 +49,9 @@ export function UsersPage() {
           <input value={filter.query} onChange={(e) => setFilter((f) => ({ ...f, query: e.target.value }))} placeholder="Nombre o celular" aria-label="Buscar personas" />
         </label>
         <Select label="Rol" value={filter.role} onChange={(e) => setFilter((f) => ({ ...f, role: e.target.value as PeopleFilter['role'] }))}
-          options={[{ value: 'all', label: 'Todos los roles' }, ...ROLE_PRIORITY.map((r) => ({ value: r, label: ROLE_LABEL[r] }))]} className={styles.filter} />
+          options={[{ value: 'all', label: 'Rol: todos' }, ...ROLE_PRIORITY.map((r) => ({ value: r, label: ROLE_LABEL[r] }))]} className={styles.filter} />
         <Select label="Equipo" value={filter.team} onChange={(e) => setFilter((f) => ({ ...f, team: e.target.value }))}
-          options={[{ value: 'all', label: 'Todos los equipos' }, ...(teams.data ?? []).map((t) => ({ value: t.id, label: t.name })), { value: 'none', label: 'Sin equipo' }]} className={styles.filter} />
+          options={[{ value: 'all', label: 'Equipo: todos' }, ...(teams.data ?? []).map((t) => ({ value: t.id, label: t.name })), { value: 'none', label: 'Sin equipo' }]} className={styles.filter} />
       </div>
       {people.isPending ? (
         <Skeleton height={240} />
