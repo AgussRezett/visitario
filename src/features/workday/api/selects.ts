@@ -22,3 +22,10 @@ export const COMMENT_SELECT = `
   id, visit_id, display_id, author_id, kind, body, created_at,
   author:person!comment_author_id_fkey (first_name, last_name)
 `
+
+// Exporting the company's visits: one row each, with store and merchandiser.
+export const EXPORT_VISIT_SELECT = `
+  work_date, work_status, review_status, consent, arrived_at, finished_at, task, notes,
+  store:store!visit_company_id_store_id_fkey (name, address, customer_number, area),
+  merchandiser:person!visit_merchandiser_id_fkey (first_name, last_name)
+`
