@@ -13,13 +13,67 @@ export const DEFAULT_TEMPLATES: Record<TemplateKind, string> = {
   visit_report: '{store_name} · {address}\nFecha: {date}\nTarea: {task}\nObservación: {notes}',
 }
 
-/** Replaces {placeholders}; unknown or empty ones become empty and empty lines are tidied. */
-export function fillTemplate(body: string, values: Record<string, string | number | null | undefined>) {
+export interface TemplateField {
+  /** What the admin types: {fecha}, {direccion}… */
+  token: string
+  /** The value it takes (English, as the code and the first templates use it). */
+  key: string
+  label: string
+}
+
+const VISIT_FIELDS: TemplateField[] = [
+  { token: 'fecha', key: 'date', label: 'Fecha de la visita' },
+  { token: 'direccion', key: 'address', label: 'Dirección' },
+  { token: 'nombre', key: 'store_name', label: 'Nombre del comercio' },
+  { token: 'nro_cliente', key: 'customer_number', label: 'Número de cliente' },
+  { token: 'zona', key: 'area', label: 'Zona' },
+  { token: 'tarea', key: 'task', label: 'Tarea' },
+  { token: 'llegada', key: 'arrival', label: 'Hora de llegada' },
+  { token: 'autorizacion', key: 'consent', label: 'Si autorizó' },
+  { token: 'exhibiciones', key: 'displays', label: 'Exhibiciones' },
+  { token: 'notas', key: 'notes', label: 'Observaciones' },
+  { token: 'activador', key: 'merchandiser', label: 'Activador' },
+]
+
+/** What each template can show, in the admin's words. */
+export const TEMPLATE_FIELDS: Record<TemplateKind, TemplateField[]> = {
+  before: VISIT_FIELDS,
+  after: VISIT_FIELDS,
+  visit_report: VISIT_FIELDS,
+  daily_report: [
+    { token: 'fecha', key: 'date', label: 'Fecha del día' },
+    { token: 'cantidad_visitados', key: 'visited_count', label: 'Cuántos visitó' },
+    { token: 'numeros', key: 'metrics', label: 'Números de trabajo' },
+    { token: 'visitados', key: 'visited', label: 'Lista de visitados' },
+    { token: 'no_visitados', key: 'not_visited', label: 'Lista de no visitados' },
+    { token: 'extras', key: 'added', label: 'Lista de extras' },
+    { token: 'activador', key: 'merchandiser', label: 'Activador' },
+  ],
+}
+
+const ALIASES: Record<string, string> = Object.fromEntries(
+  Object.values(TEMPLATE_FIELDS).flat().map((f) => [f.token, f.key]),
+)
+
+type Values = Record<string, string | number | null | undefined>
+const valueOf = (values: Values, token: string) => {
+  const v = values[token] ?? values[ALIASES[token] ?? '']
+  return v === null || v === undefined ? '' : String(v)
+}
+
+/**
+ * Replaces {placeholders}, in Spanish ({fecha}) or as the code names them ({date}).
+ * A line whose data are all empty is left out ("Zona: " with no zone does not show).
+ */
+export function fillTemplate(body: string, values: Values) {
   return body
-    .replace(/\{([a-z_]+)\}/g, (_, key: string) => {
-      const v = values[key]
-      return v === null || v === undefined ? '' : String(v)
+    .split('\n')
+    .flatMap((line) => {
+      const tokens = [...line.matchAll(/\{([a-z_]+)\}/g)].map((m) => m[1] ?? '')
+      if (tokens.length && tokens.every((t) => !valueOf(values, t))) return []
+      return [line.replace(/\{([a-z_]+)\}/g, (_, t: string) => valueOf(values, t))]
     })
+    .join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
 }
