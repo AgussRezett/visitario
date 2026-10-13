@@ -1452,6 +1452,17 @@ export type Database = {
           team_id: string
         }[]
       }
+      company_usage: {
+        Args: { p_company: string }
+        Returns: {
+          active_people: number
+          ai_captures_this_month: number
+          photo_bytes: number
+          photos: number
+          stores: number
+          visits_this_month: number
+        }[]
+      }
       complete_identity: {
         Args: {
           p_birth_date: string

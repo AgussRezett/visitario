@@ -351,6 +351,17 @@ await expectError('A supervisor cannot edit catalogs', () => as('martin', `inser
 await expectError('Names are unique per company', () => as('carla', `insert into display_type (company_id, name) values ($1, 'Puntera')`, [panda]), /unique|duplicate/)
 check('Another company does not see Panda’s catalogs', (await as('beto', `select * from brand where company_id = $1`, [panda])).length === 0)
 
+// ---- Stage 5 · Admin: company and plan
+const usage = (await as('carla', `select * from company_usage($1)`, [panda]))[0]
+check(`Usage: active people, photos, visits this month, stores (${JSON.stringify(usage)})`, usage.active_people >= 4 && usage.photos >= 1 && Number(usage.photo_bytes) >= 1 && usage.stores >= 2)
+await expectError('A supervisor cannot see usage', () => as('martin', `select * from company_usage($1)`, [panda]), /admin/)
+await as('carla', `update company set geocoding_scope = 'argentina', photo_retention_months = 24, show_whatsapp = false where id = $1`, [panda])
+check('Admin changes address search, photo retention and WhatsApp', (await sys(`select geocoding_scope::text g, photo_retention_months m, show_whatsapp w from company where id = $1`, [panda]))[0].m === 24)
+await sys(`update company set geocoding_scope = 'caba', show_whatsapp = true where id = $1`, [panda])
+await expectError('The company kind is not editable by the admin', () => as('carla', `update company set kind = 'brand' where id = $1`, [panda]))
+check('Admin reads the plan; the subscription is not editable from the app', (await as('carla', `select plan::text p from subscription where company_id = $1`, [panda]))[0]?.p === 'pilot')
+await expectError('…not even by its admin', () => as('carla', `update subscription set plan = 'team' where company_id = $1`, [panda]))
+
 // ---- MVP backup import (platform admin, own work)
 const mvp = {
   stores: [{ id: '01926f00-0000-5000-8000-0000000000b1', cn: '9874', name: null, address: 'Arce 730', area: 'Palermo 5', lat: -34.56, lng: -58.43 }],
