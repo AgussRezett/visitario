@@ -284,6 +284,36 @@ await as('martin', `update visit set review_status = 'approved' where id = $1`, 
 check('Approved', (await sys(`select review_status::text r from visit where id = $1`, [vAssign]))[0].r === 'approved')
 check('The conversation is visible to both, not to Lucía', (await as('agus', `select * from comment where visit_id = $1`, [vAssign])).length === 2 && (await as('lucia', `select * from comment where visit_id = $1`, [vAssign])).length === 0)
 
+// ---- Stage 4 · Import: match against the directory, then one transaction
+const thu = '2026-10-22'
+const s19008 = (await sys(`insert into store (company_id, customer_number, name, address) values ($1, '19008', 'Maxi Olazábal', 'Olazábal 1550') returning id`, [panda]))[0].id
+const matched = await as('martin', `select * from match_stores($1, $2)`, [panda, JSON.stringify([{ customer_number: '19008', address: 'Olazabal 155O' }, { address: 'OLAZÁBAL  1550' }, { address: 'Cabildo 2245' }])])
+check('Match by customer number even with another address, then by address', matched.length === 2 && matched[0].idx === 0 && matched[0].matched_by === 'customer' && matched[1].idx === 1 && matched[1].matched_by === 'address')
+check('Another company matches nothing in Panda', (await as('beto', `select * from match_stores($1, $2)`, [panda, JSON.stringify([{ customer_number: '19008' }])])).length === 0)
+const rows = [
+  { merchandiser: agus, customer_number: '19008', address: 'Olazabal 155O', task: 'Armar isla' },
+  { merchandiser: agus, customer_number: '20990', name: 'Kiosco Cabildo', address: 'Cabildo 2245', area: 'Belgrano', lat: -34.56, lng: -58.45, location_status: 'verified' },
+  { merchandiser: agus, address: 'cabildo 2245' },
+  { merchandiser: agus, address: 'Ciudad de la Paz 1700' },
+]
+const fmt = { name: 'Panda diaria', signature: 'cliente|razon social|domicilio|repositor', mapping: { columns: ['customer_number', 'name', 'address', 'merchandiser'], hasHeader: true } }
+await expectError('A merchandiser cannot import', () => as('lucia', `select import_workdays($1, $2, $3)`, [panda, thu, JSON.stringify(rows)]), /supervisors/)
+await expectError('Importing for someone of another team fails as a whole', () => as('martin', `select import_workdays($1, $2, $3, $4)`, [panda, thu, JSON.stringify([{ merchandiser: agus, address: 'Atómica 100' }, { merchandiser: luciaId, address: 'Atómica 200' }]), fmt]))
+check('…and leaves nothing created: no store, no workday, no format', (await sys(`select (select count(*)::int from store where address like 'Atómica%') s, (select count(*)::int from workday where work_date = $1) w, (select count(*)::int from import_format) f`, [thu]))[0].s + (await sys(`select count(*)::int n from workday where work_date = $1`, [thu]))[0].n + (await sys(`select count(*)::int n from import_format`))[0].n === 0)
+const result = (await as('martin', `select import_workdays($1, $2, $3, $4) r`, [panda, thu, JSON.stringify(rows), fmt]))[0].r
+check(`Import: 1 draft, 3 visits, 2 new stores (${JSON.stringify(result)})`, result.workdays === 1 && result.visits === 3 && result.stores === 2)
+const wThu = (await sys(`select id, status::text s from workday where work_date = $1 and merchandiser_id = $2`, [thu, agus]))[0]
+check('The imported day is a draft Agus does not see yet', wThu.s === 'draft' && (await as('agus', `select id from workday where id = $1`, [wThu.id])).length === 0)
+check('Recognised store keeps its address; the task is on the visit', (await sys(`select s.address, v.task, v.source::text src from visit v join store s on s.id = v.store_id where v.workday_id = $1 and s.id = $2`, [wThu.id, s19008]))[0]?.task === 'Armar isla')
+const newStores = await sys(`select address, source::text src, location_status::text loc, customer_number cn from store where address in ('Cabildo 2245', 'Ciudad de la Paz 1700') order by address`)
+check('New stores: imported, located or left to verify', newStores.length === 2 && newStores.every(s => s.src === 'imported') && newStores[0].loc === 'verified' && newStores[1].loc === 'unverified')
+check('Importing the same file again adds nothing', (await as('martin', `select import_workdays($1, $2, $3) r`, [panda, thu, JSON.stringify(rows)]))[0].r.visits === 0)
+check('The format is saved for the company', (await as('martin', `select name from import_format where signature = $1`, [fmt.signature]))[0]?.name === 'Panda diaria')
+check('Merchandisers and other companies do not see formats', (await as('agus', `select * from import_format`)).length === 0 && (await as('beto', `select * from import_format`)).length === 0)
+await as('martin', `select import_workdays($1, $2, $3, $4)`, [panda, thu, JSON.stringify(rows.slice(0, 1)), { ...fmt, name: 'Panda viernes' }])
+check('Saving the same columns again renames, never duplicates', (await sys(`select count(*)::int n, max(name) name from import_format`))[0].n === 1 && (await sys(`select name from import_format`))[0].name === 'Panda viernes')
+await expectError('A row without store or address is refused', () => as('martin', `select import_workdays($1, $2, $3)`, [panda, thu, JSON.stringify([{ merchandiser: agus, name: 'Sin dirección' }])]), /address/)
+
 // ---- MVP backup import (platform admin, own work)
 const mvp = {
   stores: [{ id: '01926f00-0000-5000-8000-0000000000b1', cn: '9874', name: null, address: 'Arce 730', area: 'Palermo 5', lat: -34.56, lng: -58.43 }],
