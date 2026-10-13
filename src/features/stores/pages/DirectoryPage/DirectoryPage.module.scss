@@ -1,1 +1,219 @@
 @use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(4));
+  padding: space(4) space(5) space(6);
+
+  @include up(lg) {
+    gap: space(5);
+    padding: space(6) space(8);
+  }
+}
+
+.titles {
+  @include flex(column, $gap: space(0.5));
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+.title {
+  @include heading(title);
+
+  @include up(lg) {
+    @include heading(display);
+  }
+}
+
+.filters {
+  @include flex(column, $gap: space(2));
+
+  @include up(lg) {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+}
+
+.search {
+  @include flex(row, $gap: space(2), $align: center);
+  height: $control-height;
+  padding-inline: space(3.5);
+  border: 1.5px solid $color-control;
+  border-radius: $radius-md;
+  background: $color-card;
+  color: $color-ink-subtle;
+
+  &:focus-within {
+    border-color: $color-forest;
+  }
+
+  input {
+    @include text(base);
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: $color-ink;
+  }
+
+  @include up(lg) {
+    flex: 1 1 320px;
+  }
+}
+
+// Phone: a row of chips that scrolls sideways
+.chips {
+  @include flex(row, $gap: space(2), $align: center);
+  margin-inline: calc(-1 * #{space(5)});
+  padding-inline: space(5);
+  overflow-x: auto;
+
+  > * {
+    flex-shrink: 0;
+  }
+
+  label {
+    @include visually-hidden;
+  }
+
+  @include up(lg) {
+    flex-wrap: wrap;
+    margin-inline: 0;
+    padding-inline: 0;
+    overflow: visible;
+  }
+}
+
+.area {
+  @include text(label);
+  height: 40px;
+  padding-inline: space(3) space(7);
+  font-weight: $weight-bold;
+}
+
+.chip {
+  @include flex(row, $gap: space(1.5), $align: center);
+  @include text(label);
+  @include transition-colors;
+  height: 40px;
+  padding-inline: space(3);
+  border: 1.5px solid $color-line;
+  border-radius: $radius-full;
+  background: $color-card;
+  font-weight: $weight-bold;
+  white-space: nowrap;
+
+  &[data-tone='warn'] {
+    color: $color-closed-ink;
+  }
+
+  &[aria-pressed='true'] {
+    border-color: $color-forest;
+    background: $color-forest;
+    color: $color-white;
+  }
+}
+
+.store {
+  @include flex(column);
+
+  @include hover {
+    .name {
+      text-decoration: underline;
+    }
+  }
+}
+
+.name {
+  @include flex(row, $gap: space(2), $align: center);
+  @include text(small);
+  font-weight: $weight-extrabold;
+}
+
+.added {
+  @include text(tiny);
+  padding: 1px space(2);
+  border-radius: $radius-full;
+  background: $color-muted;
+  font-weight: $weight-bold;
+  color: $color-ink-muted;
+}
+
+.meta {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.location {
+  @include text(tiny);
+  display: inline-block;
+  padding: space(1) space(2.5);
+  border-radius: $radius-full;
+  font-weight: $weight-extrabold;
+  background: $color-closed-soft;
+  color: $color-closed-ink;
+
+  &[data-status='verified'] {
+    background: $color-done-soft;
+    color: $color-done-ink;
+  }
+}
+
+.last {
+  @include flex(row, $gap: space(2), $align: center);
+  flex-wrap: wrap;
+}
+
+.list {
+  @include surface;
+  list-style: none;
+  overflow: hidden;
+
+  li + li {
+    border-top: 1px solid $color-line;
+  }
+}
+
+.row {
+  @include flex(row, $gap: space(3), $align: center);
+  min-height: 64px;
+  padding: space(2.5) space(3.5);
+}
+
+.row-text {
+  @include flex(column);
+  flex: 1;
+  min-width: 0;
+
+  .meta {
+    @include truncate;
+  }
+}
+
+.row-last {
+  @include text(label);
+  flex-shrink: 0;
+  font-weight: $weight-bold;
+  color: $color-ink-muted;
+}
+
+.empty {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.pager {
+  @include flex(row, $gap: space(3), $align: center, $justify: space-between);
+  flex-wrap: wrap;
+}
+
+.pager-buttons {
+  @include flex(row, $gap: space(2));
+}
