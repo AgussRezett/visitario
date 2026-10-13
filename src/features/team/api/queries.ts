@@ -61,7 +61,7 @@ type TeamVisitRow = VisitRow & {
   merchandiser: { first_name: string; last_name: string } | null
 }
 
-const toTeamVisit = (r: TeamVisitRow, personId: string): TeamVisit => ({
+export const toTeamVisit = (r: TeamVisitRow, personId: string): TeamVisit => ({
   ...toVisit(r, personId),
   merchandiserId: r.merchandiser_id,
   merchandiserName: r.merchandiser ? `${r.merchandiser.first_name} ${r.merchandiser.last_name}`.trim() : '',

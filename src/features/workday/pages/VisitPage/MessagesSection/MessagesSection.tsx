@@ -9,9 +9,9 @@ import { messageValues } from '@/features/workday/visit-text'
 import styles from './MessagesSection.module.scss'
 
 /** The ANTES / DESPUÉS messages, while WhatsApp is still the bridge with the supervisor. */
-export function MessagesSection({ visit: v, templates, firstName }: { visit: Visit; templates: Record<TemplateKind, string>; firstName: string }) {
+export function MessagesSection({ visit: v, templates, firstName, typeName }: { visit: Visit; templates: Record<TemplateKind, string>; firstName: string; typeName?: (id: number) => string }) {
   const { copied, copy } = useCopy()
-  const values = messageValues(v, firstName)
+  const values = messageValues(v, firstName, typeName)
   const items: { key: string; label: string; text: string }[] = [
     { key: 'address', label: 'Dirección', text: v.store.address },
     { key: 'before', label: 'ANTES', text: fillTemplate(templates.before, values) },

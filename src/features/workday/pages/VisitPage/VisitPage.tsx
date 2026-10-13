@@ -167,9 +167,9 @@ function VisitBody(props: {
               ) : closed ? (
                 <p className={styles.help}>Exhibiciones y trabajo se habilitan cuando el local te autorice.</p>
               ) : null}
-              {catalogs ? (
+              {catalogs && catalogs.showWhatsapp !== false ? (
                 <div className={styles.messages}>
-                  <MessagesSection visit={v} templates={catalogs.templates} firstName={firstName} />
+                  <MessagesSection visit={v} templates={catalogs.templates} firstName={firstName} typeName={(id) => catalogs.displayTypes.find((t) => t.id === id)?.name ?? 'Exhibición'} />
                 </div>
               ) : null}
               <div className={styles.finish}>

@@ -23,6 +23,7 @@ import { Route as AppSCatalogsRouteImport } from './../routes/_app/s.catalogs'
 import { Route as AppSImportRouteImport } from './../routes/_app/s.import'
 import { Route as AppSReportRouteImport } from './../routes/_app/s.report'
 import { Route as AppSReviewRouteImport } from './../routes/_app/s.review'
+import { Route as AppSTemplatesRouteImport } from './../routes/_app/s.templates'
 import { Route as AppSTodayRouteImport } from './../routes/_app/s.today'
 import { Route as AppSUsersRouteImport } from './../routes/_app/s.users'
 import { Route as AppSWorkdayRouteImport } from './../routes/_app/s.workday'
@@ -98,6 +99,11 @@ const AppSReviewRoute = AppSReviewRouteImport.update({
   path: '/s/review',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSTemplatesRoute = AppSTemplatesRouteImport.update({
+  id: '/s/templates',
+  path: '/s/templates',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSTodayRoute = AppSTodayRouteImport.update({
   id: '/s/today',
   path: '/s/today',
@@ -138,6 +144,7 @@ export interface FileRoutesByFullPath {
   '/s/import': typeof AppSImportRoute
   '/s/report': typeof AppSReportRoute
   '/s/review': typeof AppSReviewRoute
+  '/s/templates': typeof AppSTemplatesRoute
   '/s/today': typeof AppSTodayRoute
   '/s/users': typeof AppSUsersRoute
   '/s/workday': typeof AppSWorkdayRoute
@@ -158,6 +165,7 @@ export interface FileRoutesByTo {
   '/s/import': typeof AppSImportRoute
   '/s/report': typeof AppSReportRoute
   '/s/review': typeof AppSReviewRoute
+  '/s/templates': typeof AppSTemplatesRoute
   '/s/today': typeof AppSTodayRoute
   '/s/users': typeof AppSUsersRoute
   '/s/workday': typeof AppSWorkdayRoute
@@ -180,6 +188,7 @@ export interface FileRoutesById {
   '/_app/s/import': typeof AppSImportRoute
   '/_app/s/report': typeof AppSReportRoute
   '/_app/s/review': typeof AppSReviewRoute
+  '/_app/s/templates': typeof AppSTemplatesRoute
   '/_app/s/today': typeof AppSTodayRoute
   '/_app/s/users': typeof AppSUsersRoute
   '/_app/s/workday': typeof AppSWorkdayRoute
@@ -202,6 +211,7 @@ export interface FileRouteTypes {
     | '/s/import'
     | '/s/report'
     | '/s/review'
+    | '/s/templates'
     | '/s/today'
     | '/s/users'
     | '/s/workday'
@@ -222,6 +232,7 @@ export interface FileRouteTypes {
     | '/s/import'
     | '/s/report'
     | '/s/review'
+    | '/s/templates'
     | '/s/today'
     | '/s/users'
     | '/s/workday'
@@ -243,6 +254,7 @@ export interface FileRouteTypes {
     | '/_app/s/import'
     | '/_app/s/report'
     | '/_app/s/review'
+    | '/_app/s/templates'
     | '/_app/s/today'
     | '/_app/s/users'
     | '/_app/s/workday'
@@ -359,6 +371,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSReviewRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/s/templates': {
+      id: '/_app/s/templates'
+      path: '/s/templates'
+      fullPath: '/s/templates'
+      preLoaderRoute: typeof AppSTemplatesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/s/today': {
       id: '/_app/s/today'
       path: '/s/today'
@@ -406,6 +425,7 @@ interface AppRouteChildren {
   AppSImportRoute: typeof AppSImportRoute
   AppSReportRoute: typeof AppSReportRoute
   AppSReviewRoute: typeof AppSReviewRoute
+  AppSTemplatesRoute: typeof AppSTemplatesRoute
   AppSTodayRoute: typeof AppSTodayRoute
   AppSUsersRoute: typeof AppSUsersRoute
   AppSWorkdayRoute: typeof AppSWorkdayRoute
@@ -422,6 +442,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSImportRoute: AppSImportRoute,
   AppSReportRoute: AppSReportRoute,
   AppSReviewRoute: AppSReviewRoute,
+  AppSTemplatesRoute: AppSTemplatesRoute,
   AppSTodayRoute: AppSTodayRoute,
   AppSUsersRoute: AppSUsersRoute,
   AppSWorkdayRoute: AppSWorkdayRoute,

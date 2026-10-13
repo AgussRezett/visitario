@@ -1,4 +1,5 @@
-import { formatDayMonth } from '@/domain/dates'
+import { formatDayMonth, formatTime } from '@/domain/dates'
+import { CONSENT_LABEL } from '@/domain/visit'
 import type { Visit } from './api/queries'
 
 /** Who added the visit, as the wireframes say it. */
@@ -12,8 +13,13 @@ export function mapsUrl(v: Visit) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
 }
 
-/** Values a company template can use. */
-export function messageValues(v: Visit, merchandiser: string) {
+/** Values a company template can use. `typeName` names the displays ("2 Puntera, Góndola"). */
+export function messageValues(v: Visit, merchandiser: string, typeName?: (id: number) => string) {
+  const counts = new Map<string, number>()
+  for (const d of v.displays) {
+    const name = typeName?.(d.typeId) ?? 'Exhibición'
+    counts.set(name, (counts.get(name) ?? 0) + 1)
+  }
   return {
     date: formatDayMonth(v.workDate, true),
     address: v.store.address,
@@ -23,5 +29,8 @@ export function messageValues(v: Visit, merchandiser: string) {
     task: v.task,
     notes: v.notes,
     merchandiser,
+    arrival: v.arrivedAt ? formatTime(v.arrivedAt) : null,
+    consent: v.consent ? CONSENT_LABEL[v.consent] : null,
+    displays: [...counts].map(([name, n]) => (n > 1 ? `${n} ${name}` : name)).join(', ') || null,
   }
 }

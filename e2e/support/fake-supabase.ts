@@ -31,6 +31,9 @@ export interface FakeState {
   teams?: Row[]
   dnis?: Record<string, Row>
   catalogs?: Record<'brand' | 'display_type' | 'work_metric', Row[]>
+  /** The company's own row and templates. */
+  company?: Row
+  templates?: Row[]
   /** Import: the directory, saved formats and what the geocoder finds (by address). */
   stores?: Row[]
   formats?: Row[]
@@ -120,6 +123,22 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
         return json([{ id }])
       }
       return json(state.teams ?? [])
+    }
+    if (path.endsWith('/company') && state.company) {
+      if (req.method() === 'PATCH') {
+        Object.assign(state.company, Object.fromEntries(Object.entries(body()).filter(([, v]) => v !== undefined)))
+        return route.fulfill({ status: 204 })
+      }
+      const one = (req.headers().accept ?? '').includes('vnd.pgrst.object')
+      return json(one ? state.company : [state.company])
+    }
+    if (path.endsWith('/message_template')) {
+      if (req.method() === 'POST') {
+        const b = body()
+        state.templates = [...(state.templates ?? []).filter((t) => t.kind !== b.kind), b]
+        return route.fulfill({ status: 201 })
+      }
+      return json(state.templates ?? [])
     }
     const table = (['brand', 'display_type', 'work_metric'] as const).find((t) => path.endsWith(`/${t}`))
     if (table && state.catalogs) {
