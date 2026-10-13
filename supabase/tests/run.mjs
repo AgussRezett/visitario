@@ -388,6 +388,21 @@ await expectError('An approved visit still cannot be moved by hand', () => as('m
 await as('martin', `update store set name = 'Autoservicio Lili', area = 'Belgrano' where id = $1`, [dupKeep])
 check('A supervisor fixes a store’s data', (await sys(`select name from store where id = $1`, [dupKeep]))[0].name === 'Autoservicio Lili')
 
+// ---- Maintenance: retention and purge keep how visits ended
+const wOld = (await sys(`insert into workday (company_id, merchandiser_id, work_date, status, created_by) values ($1, $2, '2024-03-01', 'published', $2) returning id`, [panda, agus]))[0].id
+const vOld = (await sys(`insert into visit (company_id, workday_id, merchandiser_id, work_date, store_id, added_by) values ($1, $2, $3, '2024-03-01', $4, $3) returning id`, [panda, wOld, agus, s1]))[0].id
+const fOld = (await sys(`insert into photo (id, company_id, visit_id, kind, taken_at, uploaded_at, bytes, width, height, created_by) values (gen_random_uuid(), $1, $2, 'storefront', '2024-03-01T12:00:00Z', '2024-03-01T12:00:00Z', 1, 1, 1, $3) returning id`, [panda, vOld, agus]))[0].id
+await sys(`update visit set work_status = 'in_progress', arrived_at = '2024-03-01T12:00:00Z', consent = 'yes' where id = $1`, [vOld])
+await sys(`update visit set work_status = 'done' where id = $1`, [vOld])
+const vGone = (await sys(`insert into visit (company_id, workday_id, merchandiser_id, work_date, store_id, added_by) values ($1, $2, $3, '2024-03-01', $4, $3) returning id`, [panda, wOld, agus, s1]))[0].id
+const fGone = (await sys(`insert into photo (id, company_id, visit_id, kind, taken_at, uploaded_at, bytes, width, height, created_by) values (gen_random_uuid(), $1, $2, 'storefront', now(), now(), 1, 1, 1, $3) returning id`, [panda, vGone, agus]))[0].id
+await sys(`update visit set deleted_at = now() - interval '40 days' where id = $1`, [vGone])
+const purged = await sys(`select * from private.purge()`)
+check('Purge returns the photos past retention and those of visits deleted long ago', purged.some(r => r.photo_id === fOld) && purged.some(r => r.photo_id === fGone))
+check('An old finished visit stays finished when its storefront photo expires', (await sys(`select work_status::text s, arrived_at is not null a from visit where id = $1`, [vOld]))[0].s === 'done')
+check('Visits deleted 30+ days ago are gone, with their photos', (await sys(`select (select count(*)::int from visit where id = $1) v, (select count(*)::int from photo where id = $2) f`, [vGone, fGone]))[0].v + (await sys(`select count(*)::int n from photo where id = $1`, [fGone]))[0].n === 0)
+await expectError('Nobody can run the purge from the app', () => as('carla', `select * from private.purge()`))
+
 // ---- MVP backup import (platform admin, own work)
 const mvp = {
   stores: [{ id: '01926f00-0000-5000-8000-0000000000b1', cn: '9874', name: null, address: 'Arce 730', area: 'Palermo 5', lat: -34.56, lng: -58.43 }],
