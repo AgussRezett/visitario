@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  classify, cleanTable, guessMapping, linesToRows, looksLikeHeader, matchPerson, normalize, parseDelimited, parseLine, parsePasted, signatureOf, toRows,
+  classify, cleanTable, describeFormat, guessMapping, linesToRows, looksLikeHeader, matchPerson, normalize, parseDelimited, parseLine, parsePasted, signatureOf, toRows,
   type ImportRow, type Person,
 } from './import'
 
@@ -67,6 +67,10 @@ describe('guessing the columns', () => {
 
   it('a field is used once: the second address column is ignored', () => {
     expect(guessMapping([['Dirección', 'Domicilio'], ['Moldes 1365', 'Moldes 1365']], true)).toEqual(['address', 'ignore'])
+  })
+
+  it('a saved format reads as title → field', () => {
+    expect(describeFormat('cliente|razon social|vendedor', ['customer_number', 'name', 'ignore'])).toBe('CLIENTE → Nro. de cliente · RAZON SOCIAL → Nombre del comercio')
   })
 
   it('the same titles give the same signature, whatever the accents or case', () => {

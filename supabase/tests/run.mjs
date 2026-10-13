@@ -312,6 +312,9 @@ check('The format is saved for the company', (await as('martin', `select name fr
 check('Merchandisers and other companies do not see formats', (await as('agus', `select * from import_format`)).length === 0 && (await as('beto', `select * from import_format`)).length === 0)
 await as('martin', `select import_workdays($1, $2, $3, $4)`, [panda, thu, JSON.stringify(rows.slice(0, 1)), { ...fmt, name: 'Panda viernes' }])
 check('Saving the same columns again renames, never duplicates', (await sys(`select count(*)::int n, max(name) name from import_format`))[0].n === 1 && (await sys(`select name from import_format`))[0].name === 'Panda viernes')
+const fid = (await sys(`select id from import_format limit 1`))[0].id
+await as('carla', `update import_format set name = 'Panda semanal' where id = $1`, [fid])
+check('Admin renames a saved format', (await sys(`select name from import_format where id = $1`, [fid]))[0].name === 'Panda semanal')
 await expectError('A row without store or address is refused', () => as('martin', `select import_workdays($1, $2, $3)`, [panda, thu, JSON.stringify([{ merchandiser: agus, name: 'Sin dirección' }])]), /address/)
 
 // ---- Stage 5 · Admin: people and teams
@@ -338,6 +341,15 @@ const west = (await as('carla', `insert into team (company_id, name, areas) valu
 await as('carla', `update team set name = 'Equipo Oeste' where id = $1`, [west])
 check('Admin creates and renames a team', (await sys(`select name from team where id = $1`, [west]))[0].name === 'Equipo Oeste')
 await expectError('A supervisor cannot create teams', () => as('martin', `insert into team (company_id, name) values ($1, 'Mío')`, [panda]))
+
+// ---- Stage 5 · Admin: catalogs (deactivated, never deleted: past visits keep their names)
+const aperol = (await as('carla', `insert into brand (company_id, name, group_name) values ($1, 'Aperol', 'Grupo Campari') returning id`, [panda]))[0].id
+await as('carla', `update brand set active = false where id = $1`, [aperol])
+check('Admin adds and deactivates a brand', (await as('agus', `select active from brand where id = $1`, [aperol]))[0]?.active === false)
+await expectError('Catalog items are not deleted', () => as('carla', `delete from brand where id = $1`, [aperol]))
+await expectError('A supervisor cannot edit catalogs', () => as('martin', `insert into work_metric (company_id, name) values ($1, 'Otra cosa')`, [panda]))
+await expectError('Names are unique per company', () => as('carla', `insert into display_type (company_id, name) values ($1, 'Puntera')`, [panda]), /unique|duplicate/)
+check('Another company does not see Panda’s catalogs', (await as('beto', `select * from brand where company_id = $1`, [panda])).length === 0)
 
 // ---- MVP backup import (platform admin, own work)
 const mvp = {
