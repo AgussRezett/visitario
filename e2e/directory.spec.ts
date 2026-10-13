@@ -36,7 +36,7 @@ test('the directory: search, filters, a store and merging its duplicate', async 
   await expect(page.getByText('46 min')).toBeVisible()
   await page.screenshot({ path: `test-results/store-${info.project.name}.png`, fullPage: true })
 
-  await page.getByRole('button', { name: 'Fusionar duplicado' }).click()
+  await page.getByRole('button', { name: /^Fusionar/ }).click()
   const sheet = page.getByRole('dialog', { name: 'Fusionar duplicado' })
   await sheet.getByRole('button', { name: /Tres Arroyos 762 PB/ }).click()
   await page.getByRole('alertdialog').getByRole('button', { name: 'Fusionar' }).click()

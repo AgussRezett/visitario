@@ -56,7 +56,7 @@ export function StorePage({ storeId }: { storeId: string }) {
         </div>
         <div className={styles.actions}>
           <Button variant="secondary" size="md" onClick={() => setSheet('edit')}><Pencil size={16} aria-hidden />Editar datos</Button>
-          <Button variant="secondary" size="md" onClick={() => setSheet('merge')}><Copy size={16} aria-hidden />Fusionar duplicado</Button>
+          <Button variant="secondary" size="md" onClick={() => setSheet('merge')}><Copy size={16} aria-hidden />{desktop ? 'Fusionar duplicado' : 'Fusionar'}</Button>
           <Button size="md" onClick={() => navigate({ to: '/s/assign' })}><CalendarPlus size={16} aria-hidden />Asignar a una jornada</Button>
         </div>
       </header>
