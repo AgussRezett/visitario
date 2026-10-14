@@ -1,0 +1,269 @@
+@use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(3.5));
+  padding: space(4) space(5) space(6);
+
+  @include up(lg) {
+    gap: space(5);
+    padding: space(6) space(8);
+  }
+}
+
+.top {
+  @include flex(row, $gap: space(3), $align: flex-end, $justify: space-between);
+  flex-wrap: wrap;
+}
+
+.titles {
+  @include flex(column, $gap: space(0.5));
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+.title {
+  @include heading(display);
+}
+
+.actions {
+  @include flex(row, $gap: space(2), $align: center);
+  flex-wrap: wrap;
+}
+
+.date input {
+  @include text(label);
+  height: space(10);
+  padding-inline: space(3);
+  border: 1.5px solid $color-control;
+  border-radius: $radius-md;
+  background: $color-card;
+  font-weight: $weight-bold;
+  color: $color-ink;
+}
+
+.sr-only {
+  @include visually-hidden;
+}
+
+.desktop-only {
+  @media (max-width: 1023.98px) {
+    display: none !important;
+  }
+}
+
+.body {
+  @include flex(column, $gap: space(3.5));
+
+  @include up(lg) {
+    gap: space(5);
+  }
+}
+
+// ---- Phone: totals and people
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(2);
+
+  @include up(lg) {
+    display: none;
+  }
+}
+
+.kpi {
+  @include surface;
+  @include flex(column);
+  padding: space(3);
+
+  b {
+    font-size: 22px;
+    line-height: 28px;
+    font-weight: $weight-extrabold;
+    font-variant-numeric: tabular-nums;
+  }
+
+  span {
+    @include text(tiny);
+    color: $color-ink-subtle;
+  }
+}
+
+.people {
+  @include surface;
+  @include flex(column);
+  padding: space(1) space(3);
+
+  li + li {
+    border-top: 1px solid $color-line;
+  }
+
+  @include up(lg) {
+    display: none;
+  }
+}
+
+.person {
+  @include flex(row, $gap: space(3), $align: center);
+  width: 100%;
+  min-height: 56px;
+  padding: space(2) space(1);
+  border-radius: $radius-sm;
+  text-align: left;
+
+  &[aria-pressed='true'] {
+    background: $color-lime-soft;
+  }
+}
+
+.person-text {
+  @include flex(column);
+  flex: 1;
+  min-width: 0;
+}
+
+.person-name {
+  font-weight: $weight-bold;
+}
+
+.person-note {
+  @include text(tiny);
+  @include truncate;
+  color: $color-ink-subtle;
+}
+
+.person-count {
+  @include text(label);
+  font-weight: $weight-extrabold;
+  font-variant-numeric: tabular-nums;
+}
+
+// ---- Desktop table
+.table {
+  display: none;
+
+  @include up(lg) {
+    display: block;
+  }
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.row-button {
+  @include flex(row, $gap: space(2.5), $align: center);
+  font-weight: $weight-bold;
+  color: $color-ink;
+  white-space: nowrap;
+}
+
+.row-on td {
+  background: $color-lime-soft;
+}
+
+.total-row td {
+  font-weight: $weight-extrabold;
+}
+
+.chip {
+  @include text(tiny);
+  display: inline-flex;
+  padding: space(1) space(2.5);
+  border-radius: $radius-full;
+  font-weight: $weight-bold;
+  white-space: nowrap;
+}
+
+.chip-approved {
+  background: $color-done-soft;
+  color: $color-done-ink;
+}
+
+.chip-pending {
+  background: $color-pending-soft;
+  color: $color-pending-ink;
+}
+
+.chip-fix {
+  background: $color-fix-soft;
+  color: $color-fix-ink;
+}
+
+.chip-none {
+  background: $color-muted;
+  color: $color-ink-subtle;
+}
+
+// ---- The chosen report
+.side {
+  @include flex(column, $gap: space(3.5));
+
+  @include up(lg) {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    align-items: start;
+    gap: space(5);
+  }
+}
+
+.card {
+  @include surface;
+  @include flex(column, $gap: space(3));
+  padding: space(4);
+}
+
+.card-head {
+  @include flex(row, $gap: space(2), $align: center);
+  flex-wrap: wrap;
+}
+
+.card-title {
+  @include text(heading);
+  flex: 1;
+  font-weight: $weight-extrabold;
+}
+
+.card-actions {
+  @include flex(row, $gap: space(1.5));
+}
+
+.report {
+  @include text(label);
+  margin: 0;
+  max-height: 420px;
+  overflow: auto;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  white-space: pre-wrap;
+  color: $color-ink-muted;
+}
+
+.paid {
+  @include text(tiny);
+  margin-left: space(1.5);
+  padding: space(0.5) space(2);
+  border-radius: $radius-full;
+  background: $color-lime-soft;
+  font-weight: $weight-bold;
+  color: $color-forest;
+  vertical-align: middle;
+}
+
+.muted {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.phone-footer {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  padding-top: space(2);
+  background: linear-gradient(to bottom, transparent, $color-ground 30%);
+
+  @include up(lg) {
+    display: none;
+  }
+}

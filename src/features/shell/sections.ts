@@ -1,4 +1,4 @@
-import { Building2, CalendarDays, FileText, Inbox, LayoutGrid, MapPin, MessageSquareText, Route, Store, Tags, Users, type LucideIcon } from 'lucide-react'
+import { BarChart3, Building2, CalendarDays, FileText, Inbox, LayoutGrid, MapPin, MessageSquareText, Route, Store, Tags, Users, type LucideIcon } from 'lucide-react'
 import type { Role } from '@/domain/roles'
 
 export interface Section {
@@ -22,6 +22,7 @@ export const SECTIONS: Record<Role, Section[]> = {
     { slug: 'review', label: 'Revisión', title: 'Revisión', icon: Inbox, stage: 3, summary: 'Aprobar visitas o pedir correcciones con un comentario.' },
     { slug: 'assign', label: 'Asignar', title: 'Asignar jornadas', icon: CalendarDays, stage: 3, summary: 'Armar y publicar la jornada de cada activador.' },
     { slug: 'stores', label: 'Directorio', title: 'Directorio', icon: Store, stage: 5, summary: 'Los comercios de la empresa con su historial de visitas.' },
+    { slug: 'reports', label: 'Informes', title: 'Informes', icon: BarChart3, stage: 6, summary: 'Los números del día por activador y sus informes para copiar.' },
   ],
   admin: [
     { slug: 'users', label: 'Usuarios', title: 'Usuarios y equipos', icon: Users, stage: 5, summary: 'Altas por DNI, roles y equipos.' },

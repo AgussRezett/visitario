@@ -35,3 +35,9 @@ export const STORE_SELECT = `
   id, company_id, name, address, area, customer_number, lat, lng, location_status, source, created_at,
   creator:person!store_created_by_fkey (first_name)
 `
+
+// The team's reports: what each visit adds to its merchandiser's day.
+export const REPORT_VISIT_SELECT = `
+  id, merchandiser_id, sort_order, source, work_status, review_status,
+  store:store!visit_company_id_store_id_fkey (address)
+`

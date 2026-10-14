@@ -44,6 +44,8 @@ export interface FakeState {
   /** What the route function answers by streets (503 without it) and what it was asked. */
   route?: Row
   routeAsked?: Row[]
+  /** Work totals per day and merchandiser (the daily_metrics view). */
+  dailyMetrics?: Row[]
   /** Simulates a slow connection when loading a day. */
   workdayDelayMs?: number
   /** Answer photo uploads with this status (e.g. 503 down, 403 refused) instead of storing them. */
@@ -190,6 +192,7 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
       }
       return json({ workdays: plans.size, visits: rows.length, stores })
     }
+    if (path.endsWith('/daily_metrics')) return json((state.dailyMetrics ?? []).filter((r) => matches(r, url.searchParams)))
     if (path.endsWith('/functions/v1/route')) {
       ;(state.routeAsked ??= []).push(body())
       return state.route ? json(state.route) : json({ error: 'not_configured' }, 503)
