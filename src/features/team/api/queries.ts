@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import type { TeamMember } from '@/domain/team'
+import type { Shift, TeamMember } from '@/domain/team'
 import { TEAM_VISIT_SELECT } from '@/features/workday/api/selects'
 import { toVisit, type Visit, type VisitRow } from '@/features/workday/api/queries'
 
@@ -156,3 +156,29 @@ export const memberPendingQuery = (companyId: string, merchandiserId: string, be
       return data ?? []
     },
   })
+
+/** Working hours: the company's, and each person's own when it differs. */
+export interface Shifts {
+  company: Shift
+  byPerson: Record<string, Shift>
+}
+
+export const shiftsQuery = (companyId: string) =>
+  queryOptions({
+    queryKey: ['team', 'shifts', companyId],
+    staleTime: 10 * 60_000,
+    queryFn: async (): Promise<Shifts> => {
+      const [company, own] = await Promise.all([
+        supabase.from('company').select('shift_start, shift_end').eq('id', companyId).single(),
+        supabase.from('membership').select('person_id, shift_start, shift_end').eq('company_id', companyId).not('shift_start', 'is', null),
+      ])
+      if (company.error) throw company.error
+      if (own.error) throw own.error
+      return {
+        company: { start: company.data.shift_start.slice(0, 5), end: company.data.shift_end.slice(0, 5) },
+        byPerson: Object.fromEntries((own.data ?? []).map((m) => [m.person_id, { start: (m.shift_start ?? '').slice(0, 5), end: (m.shift_end ?? '').slice(0, 5) }])),
+      }
+    },
+  })
+
+export const shiftOf = (shifts: Shifts | undefined, personId: string): Shift | undefined => (shifts ? shifts.byPerson[personId] ?? shifts.company : undefined)

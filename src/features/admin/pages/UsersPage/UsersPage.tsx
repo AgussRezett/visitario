@@ -15,6 +15,7 @@ import { Skeleton } from '@/ui/Skeleton'
 import { Table } from '@/ui/Table'
 import { useWorkContext } from '@/features/workday/context'
 import { peopleQuery, teamsQuery } from '@/features/admin/api/people'
+import { companyQuery } from '@/features/admin/api/company'
 import { PersonSheet } from './PersonSheet'
 import { TeamSheet } from './TeamSheet'
 import { TeamsList } from './TeamsList'
@@ -29,6 +30,7 @@ export function UsersPage() {
   const desktop = useIsDesktop()
   const people = useQuery({ ...peopleQuery(ctx?.companyId ?? ''), enabled: Boolean(ctx) })
   const teams = useQuery({ ...teamsQuery(ctx?.companyId ?? ''), enabled: Boolean(ctx) })
+  const company = useQuery({ ...companyQuery(ctx?.companyId ?? ''), enabled: Boolean(ctx) })
   const [filter, setFilter] = useState<PeopleFilter>({ query: '', role: 'all', team: 'all' })
   const [tab, setTab] = useState<'people' | 'teams'>('people')
   const [editing, setEditing] = useState<string | null>(null)
@@ -132,7 +134,8 @@ export function UsersPage() {
         </>
       )}
 
-      <PersonSheet person={all.find((p) => p.membershipId === editing) ?? null} teams={teams.data ?? []} companyId={ctx.companyId} companyName={ctx.companyName} onClose={() => setEditing(null)} />
+      <PersonSheet person={all.find((p) => p.membershipId === editing) ?? null} teams={teams.data ?? []} companyId={ctx.companyId} companyName={ctx.companyName}
+        companyShift={company.data ? { start: company.data.shiftStart, end: company.data.shiftEnd } : null} onClose={() => setEditing(null)} />
       <TeamSheet team={team} companyId={ctx.companyId} onClose={() => setTeam(null)} />
     </div>
   )

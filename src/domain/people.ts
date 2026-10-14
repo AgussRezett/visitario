@@ -16,6 +16,8 @@ export interface CompanyPerson {
   phoneLast4: string | null
   lastActivityAt: string | null
   invitedAt: string
+  /** Own working hours; null = the company's. */
+  shift: { start: string; end: string } | null
 }
 
 export interface Team {
