@@ -120,7 +120,7 @@ test('catalogs: add a brand, deactivate a work metric, rename and forget a forma
 test('templates: write with Spanish data, preview on a real visit, save, hide WhatsApp', async ({ page }, info) => {
   const store = { id: 's1', name: 'Mas Ahorro', address: 'Tres Arroyos 762', area: 'Paternal', customer_number: '12345', lat: null, lng: null, location_status: 'verified' }
   const state = company({
-    company: { id: 'c1', name: 'Panda', geocoding_scope: 'caba', show_whatsapp: true, photo_retention_months: 12, logo_version: null },
+    company: { id: 'c1', name: 'Panda', geocoding_scope: 'caba', show_whatsapp: true, photo_retention_months: 12, logo_version: null, shift_start: '09:00:00', shift_end: '14:00:00' },
     templates: [{ kind: 'after', body: '*ACTIVACIÓN DE GONDOLA DESPUES\nFecha: {date}\nDireccion: {address}\nNum clte: {customer_number}\nZona: {area}\nObservación: {notes}' }],
     visits: [visitRow('v1', 0, 'Tres Arroyos 762', { store, work_status: 'done', finished_at: '2026-10-09T15:00:00Z', notes: 'Faltó SKYY; reordené la puntera.', merchandiser: { first_name: 'Lucía', last_name: 'Gómez' } })],
   })
