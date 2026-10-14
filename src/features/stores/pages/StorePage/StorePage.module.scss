@@ -223,3 +223,26 @@
 .result {
   @include flex(column, $gap: space(1), $align: flex-start);
 }
+
+.archived {
+  @include flex(column, $gap: space(2));
+
+  @include up(lg) {
+    flex-direction: row;
+    align-items: center;
+
+    > :first-child {
+      flex: 1;
+    }
+  }
+}
+
+.inline-link {
+  color: inherit;
+  font-weight: $weight-bold;
+  text-decoration: underline;
+}
+
+.archive {
+  align-self: flex-start;
+}

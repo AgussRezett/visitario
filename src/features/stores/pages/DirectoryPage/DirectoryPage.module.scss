@@ -64,31 +64,28 @@
   }
 }
 
-// Phone: a row of chips that scrolls sideways
+// Filters wrap onto a second line instead of scrolling sideways; the zone takes a line
+// of its own on phones.
 .chips {
   @include flex(row, $gap: space(2), $align: center);
-  margin-inline: calc(-1 * #{space(5)});
-  padding-inline: space(5);
-  overflow-x: auto;
+  flex-wrap: wrap;
 
-  > * {
-    flex-shrink: 0;
+  > :first-child:has(select) {
+    flex-basis: 100%;
+
+    @include up(lg) {
+      flex-basis: auto;
+    }
   }
 
   label {
     @include visually-hidden;
   }
-
-  @include up(lg) {
-    flex-wrap: wrap;
-    margin-inline: 0;
-    padding-inline: 0;
-    overflow: visible;
-  }
 }
 
 .area {
   @include text(label);
+  width: 100%;
   height: 40px;
   padding-inline: space(3) space(7);
   font-weight: $weight-bold;
@@ -216,4 +213,20 @@
 
 .pager-buttons {
   @include flex(row, $gap: space(2));
+}
+
+.sr-only {
+  @include visually-hidden;
+}
+
+.row-action {
+  width: 1%;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.icon-only {
+  @include square(36px);
+  padding: 0;
+  color: $color-ink-subtle;
 }
