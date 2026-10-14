@@ -2,8 +2,8 @@ import { forwardRef, type ButtonHTMLAttributes } from 'react'
 import clsx from 'clsx'
 import styles from './Button.module.scss'
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'lime'
-type Size = 'lg' | 'md' | 'sm'
+export type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'lime'
+export type Size = 'lg' | 'md' | 'sm'
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant
@@ -29,3 +29,4 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     </button>
   )
 })
+

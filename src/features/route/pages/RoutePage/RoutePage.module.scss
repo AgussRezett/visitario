@@ -1,0 +1,425 @@
+@use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(3));
+  padding: space(4) space(5) space(6);
+
+  @include up(lg) {
+    gap: space(5);
+    padding: space(6) space(8);
+  }
+}
+
+.titles {
+  @include flex(column, $gap: space(0.5));
+}
+
+.title {
+  @include heading(display);
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+// On the phone the result replaces the options (A07 → A08), title included.
+.top[data-step='result'] {
+  display: none;
+
+  @include up(lg) {
+    display: flex;
+  }
+}
+
+.columns {
+  @include flex(column, $gap: space(4));
+
+  &[data-step='result'] .setup,
+  &[data-step='setup'] .result {
+    display: none;
+  }
+
+  @include up(lg) {
+    display: grid;
+    grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
+    align-items: start;
+    gap: space(5);
+
+    &[data-step] .setup,
+    &[data-step] .result {
+      display: block;
+    }
+  }
+}
+
+.card {
+  @include surface;
+  @include flex(column, $gap: space(3.5));
+  padding: space(4);
+
+  @include up(lg) {
+    padding: space(5);
+  }
+}
+
+.card-title {
+  @include text(heading);
+  font-weight: $weight-extrabold;
+}
+
+.help {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.block {
+  display: block;
+}
+
+.inline-link {
+  color: inherit;
+  font-weight: $weight-bold;
+  text-decoration: underline;
+}
+
+.text-button {
+  @include text(label);
+  font-weight: $weight-bold;
+  color: $color-forest;
+
+  @include dark {
+    color: $color-lime;
+  }
+}
+
+// ---- Options
+.modes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(1);
+  padding: space(1);
+  border-radius: $radius-md;
+  background: $color-muted;
+
+  button {
+    @include flex(row, $gap: space(2), $align: center, $justify: center);
+    @include text(label);
+    height: space(10);
+    border-radius: $radius-sm;
+    font-weight: $weight-bold;
+    color: $color-ink-muted;
+
+    &[aria-checked='true'] {
+      background: $color-card;
+      color: $color-ink;
+      box-shadow: $shadow-raised;
+    }
+  }
+}
+
+.locate {
+  @include flex(row, $gap: space(3), $align: center);
+  @include transition-colors;
+  min-height: 56px;
+  padding: space(2.5) space(3.5);
+  border: 1.5px solid $color-control;
+  border-radius: $radius-md;
+  background: $color-card;
+  text-align: left;
+
+  &[aria-pressed='true'] {
+    border-color: $color-forest;
+    background: $color-lime-soft;
+  }
+
+  &:disabled {
+    opacity: 0.7;
+  }
+}
+
+.locate-icon {
+  flex-shrink: 0;
+  color: $color-forest;
+
+  @include dark {
+    color: $color-lime;
+  }
+}
+
+.locate-text {
+  @include flex(column);
+  flex: 1;
+  min-width: 0;
+}
+
+.locate-title {
+  font-weight: $weight-bold;
+}
+
+.locate-help {
+  @include text(tiny);
+  color: $color-ink-subtle;
+}
+
+.ends {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(2.5);
+
+  @include up(lg) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.list-head {
+  @include flex(row, $align: center, $justify: space-between);
+}
+
+.choices {
+  @include flex(column, $gap: space(1.5));
+}
+
+.choice {
+  @include flex(row, $gap: space(3), $align: center);
+  min-height: 52px;
+  padding: space(1.5) space(3.5);
+  border: 1px solid $color-line;
+  border-radius: $radius-md;
+  background: $color-card;
+  cursor: pointer;
+
+  input {
+    @include square(20px);
+    flex-shrink: 0;
+    accent-color: $color-forest;
+  }
+}
+
+.choice-text,
+.stop-text {
+  @include flex(column);
+  flex: 1;
+  min-width: 0;
+}
+
+.choice-name {
+  @include truncate;
+  font-weight: $weight-bold;
+}
+
+.choice-note {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+// The main action stays in reach on the phone, above the bottom bar.
+.footer {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  margin-inline: calc(-1 * #{space(1)});
+  padding: space(3) space(1) space(1);
+  background: linear-gradient(to bottom, transparent, $color-ground 30%);
+
+  @include up(lg) {
+    position: static;
+    margin: 0;
+    padding: 0;
+    background: none;
+  }
+}
+
+// Inside the options card the fade goes to the card's color.
+.footer-card {
+  background: linear-gradient(to bottom, transparent, $color-card 30%);
+
+  @include up(lg) {
+    background: none;
+  }
+}
+
+// ---- Result
+.waiting {
+  align-items: center;
+  padding: space(10) space(6);
+  text-align: center;
+}
+
+.waiting-icon {
+  color: $color-ink-subtle;
+}
+
+.result-body {
+  @include flex(column, $gap: space(3));
+
+  @include up(lg) {
+    gap: space(4);
+  }
+}
+
+.appbar {
+  @include flex(row, $gap: space(2), $align: center);
+
+  @include up(lg) {
+    padding-top: space(1);
+  }
+}
+
+.appbar-text {
+  @include flex(column);
+  flex: 1;
+  min-width: 0;
+}
+
+.icon-button {
+  @include center;
+  @include square(44px);
+  @include transition-colors;
+  flex-shrink: 0;
+  border-radius: $radius-md;
+  color: $color-ink;
+
+  @include hover {
+    background: $color-muted;
+  }
+}
+
+// Back to the options only makes sense on the phone.
+.appbar > .icon-button:first-child {
+  @include up(lg) {
+    display: none;
+  }
+}
+
+.summary {
+  @include flex(row, $gap: space(4), $align: center);
+  padding: space(4);
+  border-radius: $radius-lg;
+  background: $color-forest;
+  color: $color-on-forest;
+}
+
+.figure {
+  @include flex(column);
+
+  b {
+    @include text(heading);
+    font-weight: $weight-extrabold;
+    font-variant-numeric: tabular-nums;
+  }
+
+  span {
+    @include text(label);
+    color: $color-on-forest-subtle;
+  }
+}
+
+.rule {
+  align-self: stretch;
+  width: 1px;
+  background: rgb(255 255 255 / 0.2);
+}
+
+// ---- Map sketch (desktop)
+.map {
+  position: relative;
+  display: none;
+  width: 100%;
+  max-height: 420px;
+  border-radius: $radius-lg;
+  background: $color-muted;
+  overflow: hidden;
+
+  @include up(lg) {
+    display: block;
+  }
+}
+
+.map-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.map-line {
+  fill: none;
+  stroke: $color-forest;
+  stroke-width: 0.6;
+  stroke-dasharray: 1.5 1;
+  vector-effect: non-scaling-stroke;
+
+  @include dark {
+    stroke: $color-lime;
+  }
+}
+
+.map-origin {
+  fill: $color-active;
+}
+
+.map-pin {
+  @include center;
+  @include square(26px);
+  @include text(tiny);
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: $radius-sm;
+  background: $color-forest;
+  font-weight: $weight-extrabold;
+  color: $color-on-forest;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.2);
+}
+
+// ---- Order
+.order-card {
+  @include surface;
+  padding: space(1) space(3.5);
+}
+
+.order {
+  @include flex(column);
+}
+
+.stop {
+  @include flex(row, $gap: space(3), $align: center);
+  min-height: 56px;
+  padding-block: space(2);
+
+  & + & {
+    border-top: 1px solid $color-line;
+  }
+}
+
+.num {
+  @include center;
+  @include square(28px);
+  @include text(label);
+  flex-shrink: 0;
+  border-radius: $radius-sm;
+  background: $color-muted;
+  font-weight: $weight-extrabold;
+}
+
+.num-first {
+  background: $color-forest;
+  color: $color-on-forest;
+}
+
+.go {
+  flex-shrink: 0;
+}
+
+.legs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(2);
+
+  @include up(lg) {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
+.leg {
+  width: 100%;
+}

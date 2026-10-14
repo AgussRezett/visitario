@@ -75,4 +75,15 @@ Cómo quedó: Asignar → "Importar planilla" (.xlsx o .csv, o texto pegado) →
 - [ ] Probado en el celular real.
 
 Cómo quedó: Usuarios y equipos (alta por DNI; la invitación se manda por WhatsApp porque todavía no hay SMS), Catálogos (con formatos de carga guardados), Plantillas (datos en castellano, vista previa con una visita real, las líneas con datos vacíos no salen, interruptor de WhatsApp), Empresa y plan (uso, facturación, búsqueda de direcciones, retención de fotos, exportar a CSV) y Directorio (para supervisores y admins: búsqueda, filtros, ficha con historial, verificar dirección, editar, fusionar). Quedan para después: logo de la empresa, captura con IA, "pedir antes y después" y "pisos y frentes" en la ficha, alta manual de comercios desde el directorio.
+
+## Etapa 6 · criterios de aceptación
+Cada punto sale en su propio PR.
+
+**Recorrido**
+- [x] El recorrido de 14 locales se calcula en menos de 3 segundos en el celular (dominio: exacto hasta 11 locales, vecino más cercano + 2-opt arriba; e2e < 3 s).
+- [x] Sin permiso de ubicación, el recorrido arranca desde el primer local (dominio + e2e).
+- [x] Aplicar el orden reordena la jornada, también sin señal; las visitas terminadas o aprobadas no se mueven (dominio + e2e).
+- [ ] Probado en el celular real.
+
+Cómo quedó: Recorrido (auto o a pie, ubicación opcional que no se guarda, primer y último local —un local cerrado va último por defecto—, locales a incluir). El orden se calcula en el celular en línea recta y, si hay señal y `LOCATIONIQ_KEY`, se reemplaza por el orden por calles con km y minutos (función `route`). Google Maps en tramos de 3 paradas intermedias en el celular y completo en la computadora. En la computadora se ve un croquis del recorrido sin mapa de fondo.
  migración del MVP, exportar informes, reportes con diseño, push, cobro automático, acceso para marcas.

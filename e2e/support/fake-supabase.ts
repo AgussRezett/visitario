@@ -41,6 +41,9 @@ export interface FakeState {
   stores?: Row[]
   formats?: Row[]
   geocode?: Record<string, Row>
+  /** What the route function answers by streets (503 without it) and what it was asked. */
+  route?: Row
+  routeAsked?: Row[]
   /** Simulates a slow connection when loading a day. */
   workdayDelayMs?: number
   /** Answer photo uploads with this status (e.g. 503 down, 403 refused) instead of storing them. */
@@ -187,6 +190,10 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
       }
       return json({ workdays: plans.size, visits: rows.length, stores })
     }
+    if (path.endsWith('/functions/v1/route')) {
+      ;(state.routeAsked ??= []).push(body())
+      return state.route ? json(state.route) : json({ error: 'not_configured' }, 503)
+    }
     if (path.endsWith('/functions/v1/geocode')) {
       const q = String(body().query)
       const hit = state.geocode?.[q]
@@ -229,6 +236,7 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
         return route.fulfill({ status: 204 })
       }
       const found = state.visits.filter((v) => matches(v, url.searchParams))
+      if (url.searchParams.get('order')?.startsWith('sort_order')) found.sort((a, b) => Number(a.sort_order) - Number(b.sort_order))
       if (req.method() === 'HEAD') return route.fulfill({ status: 200, headers: { 'content-range': `*/${found.length}`, 'access-control-allow-origin': '*', 'access-control-expose-headers': 'content-range' } })
       return json(id ? found : found)
     }
