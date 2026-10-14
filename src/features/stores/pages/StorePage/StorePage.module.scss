@@ -218,3 +218,8 @@
   @include text(small);
   font-weight: $weight-extrabold;
 }
+
+// Result chip with "retomada del 08/10" under it.
+.result {
+  @include flex(column, $gap: space(1), $align: flex-start);
+}

@@ -369,6 +369,9 @@ const withVisit = (await as('martin', `select * from store_directory($1, 'echeve
 check('Directory row carries the last visit of my team', withVisit?.last_visit_date !== null && withVisit?.last_merchandiser === 'Agustín')
 const counts = (await as('martin', `select * from store_directory_counts($1)`, [panda]))[0]
 check(`Directory counts and areas (${JSON.stringify(counts)})`, counts.total >= 5 && counts.unverified >= 1 && Array.isArray(counts.areas))
+const carried = (await sys(`select s.id, s.address, (select count(*)::int from visit x where x.store_id = s.id and x.deleted_at is null and x.work_date >= current_date - 30) n from visit v join store s on s.id = v.store_id where v.id = $1`, [v2]))[0]
+const carriedRow = (await as('martin', `select * from store_directory($1)`, [panda])).find(r => r.id === carried.id)
+check(`A pending visit resumed later counts once in the directory (${carriedRow?.visits_30d} of ${carried.n} rows)`, carriedRow?.visits_30d === carried.n - 1)
 check('Another company sees nothing in Panda’s directory', (await as('beto', `select * from store_directory($1)`, [panda])).length === 0)
 check('The directory filters unverified and added stores', (await as('martin', `select * from store_directory($1, null, 'unverified')`, [panda])).every(r => r.location_status !== 'verified') && (await as('martin', `select * from store_directory($1, null, 'added')`, [panda])).every(r => r.source === 'merchandiser'))
 

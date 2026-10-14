@@ -14,14 +14,13 @@ import { Table } from '@/ui/Table'
 import { useCatalogs } from '@/features/workday/api/queries'
 import { useWorkContext } from '@/features/workday/context'
 import { companyQuery } from '@/features/admin/api/company'
-import { storeQuery, storeVisitsQuery, useStoreAdmin } from '@/features/stores/api/stores'
-import type { TeamVisit } from '@/features/team/api/queries'
+import { storeQuery, storeVisitsQuery, useStoreAdmin, type StoreHistoryVisit } from '@/features/stores/api/stores'
 import { EditSheet } from './EditSheet'
 import { MergeSheet } from './MergeSheet'
 import styles from './StorePage.module.scss'
 
-const when = (v: TeamVisit) => `${v.workDate === todayInArgentina() ? 'Hoy' : formatDayMonth(v.workDate)}${v.arrivedAt ? ` · ${formatTime(v.arrivedAt)}` : ''}`
-const arranged = (v: TeamVisit) => v.displays.filter((d) => v.photos.some((p) => p.displayId === d.id && p.kind === 'after')).length
+const when = (v: StoreHistoryVisit) => `${v.workDate === todayInArgentina() ? 'Hoy' : formatDayMonth(v.workDate)}${v.arrivedAt ? ` · ${formatTime(v.arrivedAt)}` : ''}`
+const arranged = (v: StoreHistoryVisit) => v.displays.filter((d) => v.photos.some((p) => p.displayId === d.id && p.kind === 'after')).length
 
 const VERIFY_MESSAGE = {
   verified: { tone: 'ok', text: 'Ubicación verificada: encontramos la dirección con su altura.' },
@@ -111,7 +110,7 @@ export function StorePage({ storeId }: { storeId: string }) {
                   <tr key={v.id}>
                     <td><Link to="/review/$visitId" params={{ visitId: v.id }} className={styles.visitLink}>{when(v)}</Link></td>
                     <td>{v.merchandiserName.split(' ')[0]}</td>
-                    <td><StatusChip work={v.workStatus} review={v.reviewStatus} /></td>
+                    <td><span className={styles.result}><StatusChip work={v.workStatus} review={v.reviewStatus} />{v.resumedOn ? <span className={styles.help}>retomada del {formatDayMonth(v.resumedOn)}</span> : null}</span></td>
                     <td>{v.displays.length ? `${arranged(v)} de ${v.displays.length}` : '—'}</td>
                     <td>{v.photos.length || '—'}</td>
                   </tr>
@@ -125,7 +124,7 @@ export function StorePage({ storeId }: { storeId: string }) {
                   <Link to="/review/$visitId" params={{ visitId: v.id }} className={styles.visit}>
                     <span className={styles.visitText}>
                       <span className={styles.visitWhen}>{when(v)}</span>
-                      <span className={styles.help}>{v.merchandiserName.split(' ')[0]}{v.displays.length ? ` · ${arranged(v)} de ${v.displays.length} exhib.` : ''}</span>
+                      <span className={styles.help}>{v.merchandiserName.split(' ')[0]}{v.displays.length ? ` · ${arranged(v)} de ${v.displays.length} exhib.` : ''}{v.resumedOn ? ` · retomada del ${formatDayMonth(v.resumedOn)}` : ''}</span>
                     </span>
                     <StatusChip work={v.workStatus} review={v.reviewStatus} />
                   </Link>

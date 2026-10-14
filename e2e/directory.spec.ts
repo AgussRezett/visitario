@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { installFakeSupabase, visitRow, type FakeState } from './support/fake-supabase'
+import { atFakeToday, installFakeSupabase, visitRow, type FakeState } from './support/fake-supabase'
 
 const supervisor = [{ id: 'm1', company_id: 'c1', roles: ['supervisor'], status: 'active', starts_on: '2026-10-01', company: { name: 'Panda', kind: 'distributor' } }]
 const directory = (): FakeState => ({
@@ -78,4 +78,22 @@ test('a store found only by its street: Maps searches the address, and the exact
   await sheet.getByRole('button', { name: 'Guardar' }).click()
   await expect.poll(() => state.stores?.[0]?.location_status).toBe('verified')
   expect(state.stores?.[0]).toMatchObject({ lat: -34.5878425, lng: -58.4936994 })
+})
+
+test('a pending visit resumed the next day shows once in the history, done', async ({ page }, info) => {
+  await atFakeToday(page)
+  const state: FakeState = {
+    ...directory(),
+    visits: [
+      visitRow('v8', 0, 'Arce 552', { store_id: 's3', work_date: '2026-10-08', source: 'assigned' }),
+      visitRow('v9', 0, 'Arce 552', { store_id: 's3', work_date: '2026-10-09', source: 'assigned', resumed_from: 'v8', work_status: 'done', review_status: 'approved', arrived_at: '2026-10-09T14:00:00Z', finished_at: '2026-10-09T14:30:00Z' }),
+    ],
+  }
+  await installFakeSupabase(page, state, 'supervisor')
+  await page.goto('/stores/s3')
+  const history = info.project.name === 'desktop' ? page.getByRole('table', { name: 'Visitas del comercio' }).locator('tbody tr') : page.getByRole('listitem').filter({ hasText: '·' })
+  await expect(history).toHaveCount(1)
+  await expect(history.first()).toContainText('retomada del 08/10')
+  await expect(page.getByText('Pendiente')).toHaveCount(0)
+  await expect(page.getByText('visitas en 30 días')).toContainText('1')
 })
