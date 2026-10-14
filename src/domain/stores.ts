@@ -48,3 +48,18 @@ export function usualDisplays(visits: StoreVisit[], typeName: (id: number) => st
   }
   return [...counts].sort((a, b) => b[1] - a[1]).map(([id]) => typeName(id))
 }
+
+/**
+ * A pending visit that was resumed on a later day is the same work, carried over: the
+ * history shows only the later one, which says where it came from ("retomada del 08/10").
+ * `continued` holds the ids of visits that have a later visit resumed from them.
+ */
+export function collapseResumed<T extends { id: string; workDate: string; resumedFrom: string | null }>(
+  visits: readonly T[],
+  continued: ReadonlySet<string>,
+): (T & { resumedOn: string | null })[] {
+  const dates = new Map(visits.map((v) => [v.id, v.workDate]))
+  return visits
+    .filter((v) => !continued.has(v.id))
+    .map((v) => ({ ...v, resumedOn: v.resumedFrom ? dates.get(v.resumedFrom) ?? null : null }))
+}

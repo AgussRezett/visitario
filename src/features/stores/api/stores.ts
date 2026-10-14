@@ -1,7 +1,7 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { Enums } from '@/lib/supabase'
-import type { LocationStatus, StoreSource } from '@/domain/stores'
+import { collapseResumed, type LocationStatus, type StoreSource } from '@/domain/stores'
 import { geocode } from '@/features/workday/api/geocode'
 import { STORE_SELECT, TEAM_VISIT_SELECT } from '@/features/workday/api/selects'
 import { toTeamVisit, type TeamVisit } from '@/features/team/api/queries'
@@ -100,14 +100,23 @@ export const storeQuery = (storeId: string) =>
   })
 
 /** The store's visits that I can see (a supervisor: their team's), newest first. */
+/** A visit in a store's history; `resumedOn` is the day it was carried over from. */
+export type StoreHistoryVisit = TeamVisit & { resumedOn: string | null }
+
 export const storeVisitsQuery = (storeId: string, personId: string) =>
   queryOptions({
     queryKey: ['stores', 'visits', storeId],
-    queryFn: async (): Promise<TeamVisit[]> => {
+    queryFn: async (): Promise<StoreHistoryVisit[]> => {
       const { data, error } = await supabase.from('visit').select(TEAM_VISIT_SELECT).eq('store_id', storeId).is('deleted_at', null)
         .order('work_date', { ascending: false }).limit(60)
       if (error) throw error
-      return (data as unknown as Parameters<typeof toTeamVisit>[0][]).map((r) => toTeamVisit(r, personId))
+      const visits = (data as unknown as Parameters<typeof toTeamVisit>[0][]).map((r) => toTeamVisit(r, personId))
+      // Pending visits carried to a later day: the later one stands for both.
+      const next = visits.length
+        ? await supabase.from('visit').select('resumed_from').in('resumed_from', visits.map((v) => v.id)).is('deleted_at', null)
+        : { data: [], error: null }
+      if (next.error) throw next.error
+      return collapseResumed(visits, new Set(next.data.flatMap((r) => (r.resumed_from ? [r.resumed_from] : []))))
     },
   })
 
