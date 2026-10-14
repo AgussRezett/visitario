@@ -1,20 +1,21 @@
 import { useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { ChevronLeft, ChevronRight, MapPinOff, Search, UserRound } from 'lucide-react'
+import { Archive, ArchiveRestore, ChevronLeft, ChevronRight, MapPinOff, Search, UserRound } from 'lucide-react'
 import { formatDayMonth, todayInArgentina } from '@/domain/dates'
 import { LOCATION_LABEL } from '@/domain/stores'
 import { useDebounced } from '@/lib/useDebounced'
 import { useIsDesktop } from '@/lib/useMedia'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
+import { useConfirm } from '@/ui/ConfirmDialog'
 import { Refreshing } from '@/ui/Refreshing'
 import { Select } from '@/ui/Select'
 import { Skeleton } from '@/ui/Skeleton'
 import { StatusChip } from '@/ui/StatusChip'
 import { Table } from '@/ui/Table'
 import { useWorkContext } from '@/features/workday/context'
-import { PAGE_SIZE, directoryCountsQuery, directoryQuery, type DirectoryFilter, type DirectoryRow } from '@/features/stores/api/stores'
+import { PAGE_SIZE, directoryCountsQuery, directoryQuery, useArchiveStore, type DirectoryFilter, type DirectoryRow } from '@/features/stores/api/stores'
 import styles from './DirectoryPage.module.scss'
 
 const when = (date: string) => (date === todayInArgentina() ? 'Hoy' : formatDayMonth(date))
@@ -31,6 +32,8 @@ export function DirectoryPage() {
   const companyId = ctx?.companyId ?? ''
   const list = useQuery({ ...directoryQuery(companyId, { query: q, filter, area, page }), enabled: Boolean(ctx), placeholderData: keepPreviousData })
   const counts = useQuery({ ...directoryCountsQuery(companyId), enabled: Boolean(ctx) })
+  const archive = useArchiveStore()
+  const { confirm, dialog } = useConfirm()
   if (!ctx) return null
 
   const toggle = (f: DirectoryFilter) => { setFilter((x) => (x === f ? 'all' : f)); setPage(0) }
@@ -38,6 +41,16 @@ export function DirectoryPage() {
   const total = list.data?.total ?? 0
   const name = (r: DirectoryRow) => r.name ?? r.address
   const last = (r: DirectoryRow) => (r.lastVisit ? `${when(r.lastVisit.date)} · ${r.lastVisit.by}` : 'Nunca')
+  const archived = filter === 'archived'
+  const askArchive = async (r: DirectoryRow) => {
+    const ok = await confirm({
+      title: `¿Archivar ${name(r)}?`,
+      description: 'Sale del directorio y de las búsquedas para agregar o importar. Sus visitas quedan en el historial y lo podés restaurar desde "Archivados".',
+      confirmLabel: 'Archivar',
+      tone: 'danger',
+    })
+    if (ok) archive.mutate({ id: r.id, archived: true })
+  }
 
   return (
     <div className={styles.page}>
@@ -62,20 +75,26 @@ export function DirectoryPage() {
           <button type="button" className={styles.chip} aria-pressed={filter === 'added'} onClick={() => toggle('added')}>
             <UserRound size={16} aria-hidden />Agregados por activadores · {counts.data?.added ?? 0}
           </button>
+          {counts.data?.archived || archived ? (
+            <button type="button" className={styles.chip} aria-pressed={archived} onClick={() => toggle('archived')}>
+              <Archive size={16} aria-hidden />Archivados · {counts.data?.archived ?? 0}
+            </button>
+          ) : null}
         </div>
       </div>
 
+      {archive.error ? <Banner tone="error">{archive.error.message}</Banner> : null}
       {list.isPending ? (
         <Skeleton height={320} />
       ) : list.error ? (
         <Banner tone="error">No pudimos cargar el directorio. Revisá la conexión.</Banner>
       ) : !rows.length ? (
-        <p className={styles.empty}>{q || filter !== 'all' || area ? 'Ningún comercio coincide.' : 'Todavía no hay comercios. Se suman al importar planillas o agregar direcciones.'}</p>
+        <p className={styles.empty}>{archived && !q && !area ? 'No hay comercios archivados.' : q || filter !== 'all' || area ? 'Ningún comercio coincide.' : 'Todavía no hay comercios. Se suman al importar planillas o agregar direcciones.'}</p>
       ) : (
         <Refreshing active={list.isPlaceholderData}>
           {desktop ? (
             <Table label="Comercios">
-              <thead><tr><th>Comercio</th><th>Cliente</th><th>Zona</th><th>Ubicación</th><th>Última visita</th><th>Visitas 30 días</th></tr></thead>
+              <thead><tr><th>Comercio</th><th>Cliente</th><th>Zona</th><th>Ubicación</th><th>Última visita</th><th>Visitas 30 días</th><th><span className={styles.srOnly}>Acciones</span></th></tr></thead>
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.id}>
@@ -95,6 +114,13 @@ export function DirectoryPage() {
                       </span>
                     </td>
                     <td className={styles.num}>{r.visits30d}</td>
+                    <td className={styles.rowAction}>
+                      {archived ? (
+                        <Button variant="secondary" size="sm" onClick={() => archive.mutate({ id: r.id, archived: false })}><ArchiveRestore size={16} aria-hidden />Restaurar</Button>
+                      ) : (
+                        <Button variant="ghost" size="sm" className={styles.iconOnly} aria-label={`Archivar ${name(r)}`} title="Archivar" onClick={() => void askArchive(r)}><Archive size={18} aria-hidden /></Button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -128,6 +154,7 @@ export function DirectoryPage() {
           </div>
         </div>
       ) : null}
+      {dialog}
     </div>
   )
 }

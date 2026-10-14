@@ -1,20 +1,22 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { CalendarPlus, ChevronLeft, Copy, ExternalLink, Pencil, RotateCw } from 'lucide-react'
+import { Archive, ArchiveRestore, CalendarPlus, ChevronLeft, Copy, ExternalLink, Pencil, RotateCw } from 'lucide-react'
 import { mapsSearchUrl } from '@/domain/places'
 import { formatDayMonth, formatTime, todayInArgentina } from '@/domain/dates'
 import { LOCATION_LABEL, originText, storeStats, usualDisplays } from '@/domain/stores'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 import { useIsDesktop } from '@/lib/useMedia'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
+import { useConfirm } from '@/ui/ConfirmDialog'
 import { Skeleton } from '@/ui/Skeleton'
 import { StatusChip } from '@/ui/StatusChip'
 import { Table } from '@/ui/Table'
 import { useCatalogs } from '@/features/workday/api/queries'
 import { useWorkContext } from '@/features/workday/context'
 import { companyQuery } from '@/features/admin/api/company'
-import { storeQuery, storeVisitsQuery, useStoreAdmin, type StoreHistoryVisit } from '@/features/stores/api/stores'
+import { storeQuery, storeVisitsQuery, useArchiveStore, useStoreAdmin, type StoreHistoryVisit } from '@/features/stores/api/stores'
 import { EditSheet } from './EditSheet'
 import { MergeSheet } from './MergeSheet'
 import styles from './StorePage.module.scss'
@@ -39,7 +41,10 @@ export function StorePage({ storeId }: { storeId: string }) {
   const company = useQuery({ ...companyQuery(ctx?.companyId ?? ''), enabled: Boolean(ctx), retry: false })
   const catalogs = useCatalogs(ctx?.companyId ?? '')
   const { verify } = useStoreAdmin(storeId)
+  const archive = useArchiveStore()
+  const { confirm, dialog } = useConfirm()
   const [sheet, setSheet] = useState<'edit' | 'merge' | null>(null)
+  useDocumentTitle(store.data ? store.data.name ?? store.data.address : null)
   if (!ctx) return null
   if (store.isPending) return <div className={styles.page}><Skeleton height={320} /></div>
   const s = store.data
@@ -52,6 +57,16 @@ export function StorePage({ storeId }: { storeId: string }) {
   const usual = usualDisplays(asStats, typeName)
   const maps = mapsSearchUrl(s)
   const recheck = () => verify.mutate({ address: s.address, area: s.area, scope: company.data?.geocodingScope ?? 'caba', current: s.locationStatus })
+  const active = !s.archivedAt && !s.mergedInto
+  const askArchive = async () => {
+    const ok = await confirm({
+      title: `¿Archivar ${s.name ?? s.address}?`,
+      description: 'Sale del directorio y de las búsquedas para agregar o importar. Sus visitas quedan en el historial y lo podés restaurar desde "Archivados".',
+      confirmLabel: 'Archivar',
+      tone: 'danger',
+    })
+    if (ok) archive.mutate({ id: s.id, archived: true })
+  }
 
   return (
     <div className={styles.page}>
@@ -61,12 +76,26 @@ export function StorePage({ storeId }: { storeId: string }) {
           <span className={styles.eyebrow}>{s.customerNumber ? `Cliente ${s.customerNumber}` : 'Sin número de cliente'}</span>
           <h1 className={styles.title}>{s.name ?? s.address}</h1>
         </div>
-        <div className={styles.actions}>
-          <Button variant="secondary" size="md" onClick={() => setSheet('edit')}><Pencil size={16} aria-hidden />Editar datos</Button>
-          <Button variant="secondary" size="md" onClick={() => setSheet('merge')}><Copy size={16} aria-hidden />{desktop ? 'Fusionar duplicado' : 'Fusionar'}</Button>
-          <Button size="md" onClick={() => navigate({ to: '/s/assign' })}><CalendarPlus size={16} aria-hidden />Asignar a una jornada</Button>
-        </div>
+        {active ? (
+          <div className={styles.actions}>
+            <Button variant="secondary" size="md" onClick={() => setSheet('edit')}><Pencil size={16} aria-hidden />Editar datos</Button>
+            <Button variant="secondary" size="md" onClick={() => setSheet('merge')}><Copy size={16} aria-hidden />{desktop ? 'Fusionar duplicado' : 'Fusionar'}</Button>
+            <Button size="md" onClick={() => navigate({ to: '/s/assign' })}><CalendarPlus size={16} aria-hidden />Asignar a una jornada</Button>
+          </div>
+        ) : null}
       </header>
+
+      {s.mergedInto ? (
+        <Banner tone="info" title="Se fusionó con otro comercio">
+          Sus visitas pasaron a ese comercio. <Link to="/stores/$storeId" params={{ storeId: s.mergedInto }} className={styles.inlineLink}>Ver el comercio</Link>
+        </Banner>
+      ) : s.archivedAt ? (
+        <div className={styles.archived}>
+          <Banner tone="warn" title={`Archivado el ${formatDayMonth(s.archivedAt.slice(0, 10))}`}>No aparece en el directorio ni en las búsquedas. Sus visitas siguen en el historial.</Banner>
+          <Button variant="secondary" size="md" loading={archive.isPending} onClick={() => archive.mutate({ id: s.id, archived: false })}><ArchiveRestore size={16} aria-hidden />Restaurar</Button>
+        </div>
+      ) : null}
+      {archive.error ? <Banner tone="error">{archive.error.message}</Banner> : null}
 
       <div className={styles.columns}>
         <section className={styles.side} aria-label="Datos del comercio">
@@ -89,6 +118,11 @@ export function StorePage({ storeId }: { storeId: string }) {
               <div className={styles.tags}>{usual.map((u) => <span key={u} className={styles.tag}>{u}</span>)}</div>
               <span className={styles.help}>De las últimas visitas.</span>
             </div>
+          ) : null}
+          {active ? (
+            <Button variant="danger" size="sm" className={styles.archive} loading={archive.isPending} onClick={() => void askArchive()}>
+              <Archive size={16} aria-hidden />Archivar comercio
+            </Button>
           ) : null}
         </section>
 
@@ -136,6 +170,7 @@ export function StorePage({ storeId }: { storeId: string }) {
       </div>
       <EditSheet store={s} open={sheet === 'edit'} onClose={() => setSheet(null)} />
       <MergeSheet store={s} open={sheet === 'merge'} onClose={() => setSheet(null)} />
+      {dialog}
     </div>
   )
 }

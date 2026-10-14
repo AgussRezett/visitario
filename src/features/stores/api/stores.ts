@@ -6,7 +6,7 @@ import { geocode } from '@/features/workday/api/geocode'
 import { STORE_SELECT, TEAM_VISIT_SELECT } from '@/features/workday/api/selects'
 import { toTeamVisit, type TeamVisit } from '@/features/team/api/queries'
 
-export type DirectoryFilter = 'all' | 'unverified' | 'added'
+export type DirectoryFilter = 'all' | 'unverified' | 'added' | 'archived'
 export const PAGE_SIZE = 50
 
 export interface DirectoryRow {
@@ -57,10 +57,14 @@ export const directoryCountsQuery = (companyId: string) =>
   queryOptions({
     queryKey: ['stores', 'counts', companyId],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('store_directory_counts', { p_company: companyId })
+      const [{ data, error }, archived] = await Promise.all([
+        supabase.rpc('store_directory_counts', { p_company: companyId }),
+        supabase.from('store').select('id', { count: 'exact', head: true }).eq('company_id', companyId).not('deleted_at', 'is', null).is('merged_into', null),
+      ])
       if (error) throw error
+      if (archived.error) throw archived.error
       const r = data?.[0]
-      return { total: r?.total ?? 0, unverified: r?.unverified ?? 0, added: r?.added ?? 0, areas: r?.areas ?? [] }
+      return { total: r?.total ?? 0, unverified: r?.unverified ?? 0, added: r?.added ?? 0, archived: archived.count ?? 0, areas: r?.areas ?? [] }
     },
   })
 
@@ -77,6 +81,10 @@ export interface StoreDetail {
   source: StoreSource
   createdAt: string
   createdByName: string | null
+  /** Taken out of the directory by hand. */
+  archivedAt: string | null
+  /** Merged into this store: it is out for good. */
+  mergedInto: string | null
 }
 
 export const storeQuery = (storeId: string) =>
@@ -87,7 +95,6 @@ export const storeQuery = (storeId: string) =>
         .from('store')
         .select(STORE_SELECT)
         .eq('id', storeId)
-        .is('deleted_at', null)
         .maybeSingle()
       if (error) throw error
       if (!data) return null
@@ -95,14 +102,16 @@ export const storeQuery = (storeId: string) =>
         id: data.id, companyId: data.company_id, name: data.name, address: data.address, area: data.area, customerNumber: data.customer_number,
         lat: data.lat, lng: data.lng, locationStatus: data.location_status, source: data.source, createdAt: data.created_at,
         createdByName: (data.creator as { first_name: string } | null)?.first_name ?? null,
+        archivedAt: data.merged_into ? null : data.deleted_at,
+        mergedInto: data.merged_into,
       }
     },
   })
 
-/** The store's visits that I can see (a supervisor: their team's), newest first. */
 /** A visit in a store's history; `resumedOn` is the day it was carried over from. */
 export type StoreHistoryVisit = TeamVisit & { resumedOn: string | null }
 
+/** The store's visits that I can see (a supervisor: their team's), newest first. */
 export const storeVisitsQuery = (storeId: string, personId: string) =>
   queryOptions({
     queryKey: ['stores', 'visits', storeId],
@@ -176,4 +185,19 @@ export function useStoreAdmin(storeId: string) {
     onSettled: refresh,
   })
   return { update, verify, merge }
+}
+
+/**
+ * Archiving: the store leaves the directory and the searches; its visits stay.
+ * Restoring brings it back (unless its customer number went to another store meanwhile).
+ */
+export function useArchiveStore() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, archived }: { id: string; archived: boolean }) => {
+      const { error } = await supabase.from('store').update({ deleted_at: archived ? new Date().toISOString() : null }).eq('id', id)
+      if (error) throw new Error(storeError(error.message))
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['stores'] }),
+  })
 }
