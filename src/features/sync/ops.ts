@@ -10,6 +10,8 @@ export type VisitFields = Partial<{
   retry_after: string | null
   notes: string | null
   task: string | null
+  /** The visit's place in the day (applying a route). */
+  sort_order: number
   /** Only 'unreviewed': the merchandiser resubmits a visit after a fix. */
   review_status: 'unreviewed'
 }>

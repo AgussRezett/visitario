@@ -60,6 +60,12 @@ describe('applyToList', () => {
   it('a stop taken off the day disappears', () => {
     expect(applyToList([visit, { ...visit, id: 'v2' } as Visit], [row({ kind: 'visit.remove' })]).map((v) => v.id)).toEqual(['v2'])
   })
+
+  it('a route applied without signal reorders the day at once', () => {
+    const day = ['v1', 'v2', 'v3'].map((id, i) => ({ ...visit, id, sortOrder: i }) as Visit)
+    const moves = [row({ kind: 'visit.patch', patch: { sort_order: 2 } }), row({ kind: 'visit.patch', visitId: 'v3', patch: { sort_order: 0 } })]
+    expect(applyToList(day, moves).map((v) => v.id)).toEqual(['v3', 'v2', 'v1'])
+  })
 })
 
 describe('applyToWork', () => {

@@ -20,6 +20,7 @@ function patchVisit(v: Visit, p: VisitFields, at: string): Visit {
     ...(p.retry_after !== undefined ? { retryAfter: p.retry_after } : {}),
     ...(p.notes !== undefined ? { notes: p.notes } : {}),
     ...(p.task !== undefined ? { task: p.task } : {}),
+    ...(p.sort_order !== undefined ? { sortOrder: p.sort_order } : {}),
     ...(p.review_status !== undefined ? { reviewStatus: p.review_status } : {}),
   }
   if (p.work_status !== undefined) {
@@ -82,7 +83,9 @@ export function applyToVisit(visit: Visit, rows: readonly OutboxRow[]): Visit | 
 /** The day's list with pending changes applied; stops taken off the day are left out. */
 export function applyToList(list: readonly Visit[], rows: readonly OutboxRow[]): Visit[] {
   if (!rows.length) return list as Visit[]
-  return list.flatMap((v) => applyToVisit(v, rows) ?? [])
+  const next = list.flatMap((v) => applyToVisit(v, rows) ?? [])
+  // A route applied on the phone moves visits before it reaches the server.
+  return rows.some((r) => r.op.kind === 'visit.patch' && r.op.patch.sort_order !== undefined) ? next.sort((a, b) => a.sortOrder - b.sortOrder) : next
 }
 
 export interface VisitWork {

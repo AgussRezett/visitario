@@ -24,6 +24,7 @@ import { Route as AppSCompanyRouteImport } from './../routes/_app/s.company'
 import { Route as AppSImportRouteImport } from './../routes/_app/s.import'
 import { Route as AppSReportRouteImport } from './../routes/_app/s.report'
 import { Route as AppSReviewRouteImport } from './../routes/_app/s.review'
+import { Route as AppSChar91routeChar93RouteImport } from './../routes/_app/s.[route]'
 import { Route as AppSStoresRouteImport } from './../routes/_app/s.stores'
 import { Route as AppSTemplatesRouteImport } from './../routes/_app/s.templates'
 import { Route as AppSTodayRouteImport } from './../routes/_app/s.today'
@@ -107,6 +108,11 @@ const AppSReviewRoute = AppSReviewRouteImport.update({
   path: '/s/review',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSChar91routeChar93Route = AppSChar91routeChar93RouteImport.update({
+  id: '/s/route',
+  path: '/s/route',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSStoresRoute = AppSStoresRouteImport.update({
   id: '/s/stores',
   path: '/s/stores',
@@ -163,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/s/import': typeof AppSImportRoute
   '/s/report': typeof AppSReportRoute
   '/s/review': typeof AppSReviewRoute
+  '/s/route': typeof AppSChar91routeChar93Route
   '/s/stores': typeof AppSStoresRoute
   '/s/templates': typeof AppSTemplatesRoute
   '/s/today': typeof AppSTodayRoute
@@ -187,6 +194,7 @@ export interface FileRoutesByTo {
   '/s/import': typeof AppSImportRoute
   '/s/report': typeof AppSReportRoute
   '/s/review': typeof AppSReviewRoute
+  '/s/route': typeof AppSChar91routeChar93Route
   '/s/stores': typeof AppSStoresRoute
   '/s/templates': typeof AppSTemplatesRoute
   '/s/today': typeof AppSTodayRoute
@@ -213,6 +221,7 @@ export interface FileRoutesById {
   '/_app/s/import': typeof AppSImportRoute
   '/_app/s/report': typeof AppSReportRoute
   '/_app/s/review': typeof AppSReviewRoute
+  '/_app/s/route': typeof AppSChar91routeChar93Route
   '/_app/s/stores': typeof AppSStoresRoute
   '/_app/s/templates': typeof AppSTemplatesRoute
   '/_app/s/today': typeof AppSTodayRoute
@@ -239,6 +248,7 @@ export interface FileRouteTypes {
     | '/s/import'
     | '/s/report'
     | '/s/review'
+    | '/s/route'
     | '/s/stores'
     | '/s/templates'
     | '/s/today'
@@ -263,6 +273,7 @@ export interface FileRouteTypes {
     | '/s/import'
     | '/s/report'
     | '/s/review'
+    | '/s/route'
     | '/s/stores'
     | '/s/templates'
     | '/s/today'
@@ -288,6 +299,7 @@ export interface FileRouteTypes {
     | '/_app/s/import'
     | '/_app/s/report'
     | '/_app/s/review'
+    | '/_app/s/route'
     | '/_app/s/stores'
     | '/_app/s/templates'
     | '/_app/s/today'
@@ -414,6 +426,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSReviewRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/s/route': {
+      id: '/_app/s/route'
+      path: '/s/route'
+      fullPath: '/s/route'
+      preLoaderRoute: typeof AppSChar91routeChar93RouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/s/stores': {
       id: '/_app/s/stores'
       path: '/s/stores'
@@ -483,6 +502,7 @@ interface AppRouteChildren {
   AppSImportRoute: typeof AppSImportRoute
   AppSReportRoute: typeof AppSReportRoute
   AppSReviewRoute: typeof AppSReviewRoute
+  AppSChar91routeChar93Route: typeof AppSChar91routeChar93Route
   AppSStoresRoute: typeof AppSStoresRoute
   AppSTemplatesRoute: typeof AppSTemplatesRoute
   AppSTodayRoute: typeof AppSTodayRoute
@@ -503,6 +523,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSImportRoute: AppSImportRoute,
   AppSReportRoute: AppSReportRoute,
   AppSReviewRoute: AppSReviewRoute,
+  AppSChar91routeChar93Route: AppSChar91routeChar93Route,
   AppSStoresRoute: AppSStoresRoute,
   AppSTemplatesRoute: AppSTemplatesRoute,
   AppSTodayRoute: AppSTodayRoute,
