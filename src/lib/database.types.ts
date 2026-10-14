@@ -686,6 +686,24 @@ export type Database = {
           },
         ]
       }
+      r2_trash: {
+        Row: {
+          attempts: number
+          created_at: string
+          key: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          key: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          key?: string
+        }
+        Relationships: []
+      }
       store: {
         Row: {
           address: string
@@ -1561,6 +1579,7 @@ export type Database = {
         Args: { p_company: string; p_date: string; p_merchandiser: string }
         Returns: string
       }
+      purge_authorized: { Args: { p_secret: string }; Returns: boolean }
       report_sync: {
         Args: {
           p_company: string
@@ -1595,6 +1614,7 @@ export type Database = {
         Args: { p_id?: string; p_visit: string; p_workday: string }
         Returns: string
       }
+      run_purge: { Args: never; Returns: number }
       search_stores: {
         Args: { p_company: string; p_limit?: number; p_query: string }
         Returns: {

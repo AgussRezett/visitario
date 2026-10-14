@@ -11,24 +11,21 @@ URL: `https://mjpzawlyjjlmluozjwap.supabase.co`
 | `20261011184414_permissions_and_guards.sql` | applied | `private` permission helpers and business-rule triggers |
 | `20261011184443_row_level_security.sql` | applied | Forced RLS, 55 policies, column grants |
 | `20261011184517_rpc_and_views.sql` | applied | 6 RPCs and 3 security-invoker views |
-| `20261011190000_maintenance.sql` | **pending** | `private.purge()` (retention + hard delete of soft-deleted rows) |
-| `20261011190100_team_policies.sql` | **pending** | Splits the team admin policy (advisor: multiple permissive policies) |
+| `20261011190000_maintenance.sql` | applied (by hand) | `private.purge()` (retention + hard delete of soft-deleted rows) |
+| `20261011190100_team_policies.sql` | applied (by hand) | Splits the team admin policy (advisor: multiple permissive policies) |
+| … | applied | Stages 3–5 (see each file's header) |
+| `20261014160000_r2_trash.sql` | applied | `r2_trash` queue, `run_purge()`, `purge_authorized()` |
 
-The two pending files contain `delete`/`drop` statements, which the agent connector refuses to run.
-Apply them from the repo with the CLI:
+Files with `delete`/`drop` statements are refused by the agent connector; apply those with the CLI (`supabase link --project-ref mjpzawlyjjlmluozjwap && supabase db push`) or the SQL Editor.
 
-```bash
-supabase link --project-ref mjpzawlyjjlmluozjwap
-supabase db push
-```
+### Daily purge
 
-After that, schedule the purge (Dashboard → Integrations → Cron, or SQL):
+`supabase/cron/purge.sql` (applied once, not a migration: it needs pg_cron, pg_net and the Vault) schedules `visitario-purge` at 06:00 UTC (03:00 in Argentina). It calls the `purge` function with a random `purge_secret` that is created in and never leaves the Vault. The function:
 
-```sql
-select cron.schedule('visitario-purge', '30 6 * * *', $$select private.purge()$$);
-```
+1. runs `run_purge()`: `private.purge()` removes what was deleted 30+ days ago and marks photos past the company's retention; their R2 keys go to `r2_trash`;
+2. deletes up to 500 queued files from R2; a key leaves the queue only when R2 confirms (404 counts), failures are retried the next day (`attempts`).
 
-The returned photo ids must still be deleted from R2 (pending: a cleanup function with the R2 keys).
+Check the runs: `select * from cron.job_run_details order by start_time desc limit 5;` and `select status_code, content from net._http_response order by id desc limit 5;`
 
 ## Edge Functions
 
@@ -37,10 +34,11 @@ The returned photo ids must still be deleted from R2 (pending: a cleanup functio
 | `sign-in-with-dni` | deployed (v1, `verify_jwt = false`) | Resolves DNI → account email server-side and returns a session. Same 401 for every failure. |
 | `photos` | deployed (v1, `verify_jwt = false`, checks the session itself) | `POST /photos` multipart JPEG + meta: inserts the row with the caller's token (RLS + guards), puts the file in R2 at `c/<company>/v/<visit>/<photo>.jpg`, then marks it uploaded. `POST /photos/urls`: 1 h signed links for photos the caller can see. |
 | `geocode` | deployed (v1, `verify_jwt = false`, checks the session itself) | LocationIQ search bounded to CABA; says if the street number was found. |
+| `purge` | deployed (v1, `verify_jwt = false`, checks the Vault secret) | Daily purge, called by pg_cron (see above). `{ queued, deleted, failed, left }`. |
 
 Deploy: `supabase functions deploy <name> --no-verify-jwt` (the functions call `auth.getUser()`, which works with the new JWT signing keys).
 
-Secrets (Dashboard → Edge Functions → Secrets; never in the repo): `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, optional `R2_BUCKET` (default `visitario-photos`), `LOCATIONIQ_KEY`. Without them `photos` and `geocode` answer 503; the app saves addresses unverified.
+Secrets (Dashboard → Edge Functions → Secrets; never in the repo): `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, optional `R2_BUCKET` (default `visitario-photos`), `LOCATIONIQ_KEY`. Without them `photos`, `purge` and `geocode` answer 503; the app saves addresses unverified.
 Known limit: all DNI sign-ins reach Supabase Auth from the function's IP, so Auth's per-IP rate limit applies to the whole user base. Fine for the pilot; add a per-DNI attempt counter before opening to more companies.
 
 ## Seed
