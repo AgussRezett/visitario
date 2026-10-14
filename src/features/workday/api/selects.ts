@@ -32,7 +32,7 @@ export const EXPORT_VISIT_SELECT = `
 
 // A store's card in the directory: who added it.
 export const STORE_SELECT = `
-  id, company_id, name, address, area, customer_number, lat, lng, location_status, source, created_at,
+  id, company_id, name, address, area, customer_number, lat, lng, location_status, source, created_at, deleted_at, merged_into,
   creator:person!store_created_by_fkey (first_name)
 `
 

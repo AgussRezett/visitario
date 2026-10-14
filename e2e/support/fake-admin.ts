@@ -55,7 +55,7 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
     if (path.endsWith('/rpc/store_directory')) {
       const b = body()
       const q = String(b.p_query ?? '').toLowerCase()
-      const rows = (state.stores ?? []).filter((x) => !x.deleted_at)
+      const rows = (state.stores ?? []).filter((x) => (b.p_filter === 'archived' ? Boolean(x.deleted_at) && !x.merged_into : !x.deleted_at))
         .filter((x) => !q || `${x.name ?? ''} ${x.address} ${x.customer_number ?? ''}`.toLowerCase().includes(q))
         .filter((x) => b.p_filter !== 'unverified' || x.location_status !== 'verified')
         .filter((x) => b.p_filter !== 'added' || x.source === 'merchandiser')
@@ -76,6 +76,7 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
       const keep = (state.stores ?? []).find((x) => x.id === b.p_keep)
       if (drop && keep) {
         drop.deleted_at = new Date().toISOString()
+        drop.merged_into = keep.id
         keep.customer_number ??= drop.customer_number
       }
       const moved = state.visits.filter((v) => v.store_id === b.p_drop)
@@ -84,13 +85,17 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
     }
     if (path.endsWith('/store') && state.stores) {
       const id = url.searchParams.get('id')?.replace('eq.', '')
-      const found = state.stores.find((x) => x.id === id && !x.deleted_at)
+      const found = state.stores.find((x) => x.id === id)
+      if (req.method() === 'HEAD') {
+        const n = state.stores.filter((x) => x.deleted_at && !x.merged_into).length // the "Archivados" count
+        return done(route.fulfill({ status: 200, headers: { 'content-range': `*/${n}`, 'access-control-allow-origin': '*', 'access-control-expose-headers': 'content-range' } }))
+      }
       if (req.method() === 'PATCH') {
         Object.assign(found ?? {}, Object.fromEntries(Object.entries(body()).filter(([, v]) => v !== undefined)))
         return done(route.fulfill({ status: 204 }))
       }
       if (id) {
-        const row = found ? { company_id: COMPANY, created_at: '2026-10-01T12:00:00Z', source: 'manual', lat: null, lng: null, location_status: 'unverified', creator: null, ...found } : null
+        const row = found ? { company_id: COMPANY, created_at: '2026-10-01T12:00:00Z', source: 'manual', lat: null, lng: null, location_status: 'unverified', creator: null, deleted_at: null, merged_into: null, ...found } : null
         const one = (req.headers().accept ?? '').includes('vnd.pgrst.object')
         return done(one ? json(row) : json(row ? [row] : []))
       }

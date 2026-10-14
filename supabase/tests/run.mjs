@@ -372,6 +372,18 @@ check(`Directory counts and areas (${JSON.stringify(counts)})`, counts.total >= 
 const carried = (await sys(`select s.id, s.address, (select count(*)::int from visit x where x.store_id = s.id and x.deleted_at is null and x.work_date >= current_date - 30) n from visit v join store s on s.id = v.store_id where v.id = $1`, [v2]))[0]
 const carriedRow = (await as('martin', `select * from store_directory($1)`, [panda])).find(r => r.id === carried.id)
 check(`A pending visit resumed later counts once in the directory (${carriedRow?.visits_30d} of ${carried.n} rows)`, carriedRow?.visits_30d === carried.n - 1)
+// Archiving: out of the directory and the searches, back when restored
+const lili = (await as('martin', `select * from store_directory($1, 'mas ahorro')`, [panda]))[0]
+await expectError('A merchandiser cannot archive a store', async () => {
+  const r = await as('agus', `update store set deleted_at = now() where id = $1 returning id`, [lili.id])
+  if (!r.length) throw new Error('no rows: denied')
+})
+await as('martin', `update store set deleted_at = now() where id = $1`, [lili.id])
+check('An archived store leaves the directory and the searches', !(await as('martin', `select id from store_directory($1)`, [panda])).some(r => r.id === lili.id)
+  && !(await as('agus', `select name from search_stores($1, 'mas ahorro')`, [panda])).length)
+check('…and is listed under Archivados', (await as('martin', `select id from store_directory($1, null, 'archived')`, [panda])).some(r => r.id === lili.id))
+await as('martin', `update store set deleted_at = null where id = $1`, [lili.id])
+check('Restored, it is back in the directory', (await as('martin', `select id from store_directory($1)`, [panda])).some(r => r.id === lili.id))
 check('Another company sees nothing in Panda’s directory', (await as('beto', `select * from store_directory($1)`, [panda])).length === 0)
 check('The directory filters unverified and added stores', (await as('martin', `select * from store_directory($1, null, 'unverified')`, [panda])).every(r => r.location_status !== 'verified') && (await as('martin', `select * from store_directory($1, null, 'added')`, [panda])).every(r => r.source === 'merchandiser'))
 

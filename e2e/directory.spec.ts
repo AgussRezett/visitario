@@ -97,3 +97,42 @@ test('a pending visit resumed the next day shows once in the history, done', asy
   await expect(page.getByText('Pendiente')).toHaveCount(0)
   await expect(page.getByText('visitas en 30 días')).toContainText('1')
 })
+
+test('archiving a store from the table or its page, and back from Archivados; nothing scrolls sideways', async ({ page }, info) => {
+  const state = directory()
+  await installFakeSupabase(page, state, 'supervisor')
+  const lili = () => state.stores?.find((x) => x.id === 's3')
+  const noSideScroll = async () => {
+    const widths = await page.evaluate(() => Array.from(document.querySelectorAll('main, main *')).filter((el) => el.scrollWidth > el.clientWidth + 1 && getComputedStyle(el).overflowX !== 'hidden' && getComputedStyle(el).overflowX !== 'visible').map((el) => el.className))
+    expect(widths).toEqual([])
+  }
+
+  if (info.project.name === 'desktop') {
+    await page.goto('/s/stores')
+    await page.getByRole('button', { name: 'Archivar Autoservicio Lili' }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Archivar' }).click()
+    await expect.poll(() => lili()?.deleted_at).toBeTruthy()
+    await expect(page.getByRole('link', { name: /Autoservicio Lili/ })).toHaveCount(0)
+    await page.getByRole('button', { name: 'Archivados · 1' }).click()
+    await page.getByRole('row', { name: /Autoservicio Lili/ }).getByRole('button', { name: 'Restaurar' }).click()
+    await expect.poll(() => lili()?.deleted_at).toBeNull()
+    return
+  }
+
+  await page.goto('/s/stores')
+  await expect(page.getByRole('link', { name: /Mas Ahorro/ })).toBeVisible()
+  await noSideScroll()
+  await page.getByRole('link', { name: /Autoservicio Lili/ }).click()
+  await expect(page).toHaveTitle('Autoservicio Lili · Visitario')
+  await noSideScroll()
+  await page.getByRole('button', { name: 'Archivar comercio' }).click()
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Archivar' }).click()
+  await expect(page.getByText(/^Archivado el/)).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Editar datos' })).toHaveCount(0)
+  await page.screenshot({ path: 'test-results/store-archived-mobile.png', fullPage: true })
+  await page.getByRole('button', { name: 'Restaurar' }).click()
+  await expect(page.getByText(/^Archivado el/)).toHaveCount(0)
+  expect(lili()?.deleted_at).toBeNull()
+  await page.getByRole('link', { name: 'Directorio' }).first().click()
+  await expect(page).toHaveTitle('Visitario')
+})
