@@ -170,10 +170,8 @@ export function directionsUrl(place: string, mode: TravelMode): string {
   return `https://www.google.com/maps/dir/?${new URLSearchParams({ api: '1', travelmode: mode, destination: place })}`
 }
 
-/** How Maps should look a store up: the address and its neighbourhood. */
-export function placeQuery(store: { address: string; area: string | null }): string {
-  return store.area ? `${store.address}, ${store.area}` : store.address
-}
+/** How Maps should look a store up (see domain/places). */
+export { mapsQuery as placeQuery } from './places'
 
 /** What enters the route: what is still to do. Approved, finished or refused visits stay out. */
 export function inRoute(v: { workStatus: 'pending' | 'in_progress' | 'done' | 'refused' | 'closed'; reviewStatus: string }): boolean {

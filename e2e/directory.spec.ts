@@ -49,3 +49,33 @@ test('the directory: search, filters, a store and merging its duplicate', async 
   await page.getByRole('dialog', { name: 'Editar datos' }).getByRole('button', { name: 'Guardar' }).click()
   await expect.poll(() => state.stores?.find((x) => x.id === 's1')?.area).toBe('La Paternal')
 })
+
+test('a store found only by its street: Maps searches the address, and the exact place can be pasted by hand', async ({ page }) => {
+  const state: FakeState = {
+    ...directory(),
+    stores: [{ id: 's9', name: null, address: 'Gral. José Gervasio Artigas 4965', area: 'Villa Urquiza 2', customer_number: '422', location_status: 'unverified', lat: null, lng: null, source: 'merchandiser', created_by_name: 'Agustin' }],
+    visits: [],
+    // The geocoder knows the street but not the number: a point somewhere on Artigas.
+    geocode: { 'Gral. José Gervasio Artigas 4965': { label: 'Artigas, Villa Pueyrredón', address: 'Artigas', area: 'Villa Pueyrredón', lat: -34.5801, lng: -58.5002, exact: false } },
+  }
+  await installFakeSupabase(page, state, 'supervisor')
+  await page.goto('/stores/s9')
+
+  const maps = page.getByRole('link', { name: 'Abrir en Maps' })
+  expect(new URL(String(await maps.getAttribute('href'))).searchParams.get('query')).toBe('Gral. José Gervasio Artigas 4965, Buenos Aires, Argentina')
+
+  await page.getByRole('button', { name: 'Verificar dirección' }).click()
+  await expect(page.getByText(/Encontramos la calle pero no la altura/)).toBeVisible()
+  expect(state.stores?.[0]).toMatchObject({ location_status: 'approximate', area: 'Villa Urquiza 2' })
+
+  await page.getByRole('button', { name: 'Editar datos' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Editar datos' })
+  await sheet.getByLabel('Ubicación exacta').fill('Artigas 4965')
+  await expect(sheet.getByText(/No encontramos coordenadas ahí/)).toBeVisible()
+  await expect(sheet.getByRole('button', { name: 'Guardar' })).toBeDisabled()
+  await sheet.getByLabel('Ubicación exacta').fill('https://www.google.com/maps/place/Artigas+4965/@-34.5870,-58.4950,17z/data=!3d-34.5878425!4d-58.4936994')
+  await expect(sheet.getByText('Se guarda en -34.58784, -58.49370 como verificada.')).toBeVisible()
+  await sheet.getByRole('button', { name: 'Guardar' }).click()
+  await expect.poll(() => state.stores?.[0]?.location_status).toBe('verified')
+  expect(state.stores?.[0]).toMatchObject({ lat: -34.5878425, lng: -58.4936994 })
+})

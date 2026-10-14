@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { CalendarPlus, ChevronLeft, Copy, ExternalLink, Pencil, RotateCw } from 'lucide-react'
+import { mapsSearchUrl } from '@/domain/places'
 import { formatDayMonth, formatTime, todayInArgentina } from '@/domain/dates'
 import { LOCATION_LABEL, originText, storeStats, usualDisplays } from '@/domain/stores'
 import { useIsDesktop } from '@/lib/useMedia'
@@ -21,6 +22,13 @@ import styles from './StorePage.module.scss'
 
 const when = (v: TeamVisit) => `${v.workDate === todayInArgentina() ? 'Hoy' : formatDayMonth(v.workDate)}${v.arrivedAt ? ` · ${formatTime(v.arrivedAt)}` : ''}`
 const arranged = (v: TeamVisit) => v.displays.filter((d) => v.photos.some((p) => p.displayId === d.id && p.kind === 'after')).length
+
+const VERIFY_MESSAGE = {
+  verified: { tone: 'ok', text: 'Ubicación verificada: encontramos la dirección con su altura.' },
+  approximate: { tone: 'warn', text: 'Encontramos la calle pero no la altura, así que la ubicación es aproximada. Si no es ahí, cargala a mano en "Editar datos".' },
+  kept: { tone: 'info', text: 'No encontramos la altura exacta: dejamos la ubicación verificada que ya tenía.' },
+  not_found: { tone: 'warn', text: 'No encontramos esa dirección. Revisá cómo está escrita o cargá la ubicación a mano en "Editar datos".' },
+} as const
 
 /** A store: its data, location, usual displays and visit history (S07 / SM07). */
 export function StorePage({ storeId }: { storeId: string }) {
@@ -43,8 +51,8 @@ export function StorePage({ storeId }: { storeId: string }) {
   const asStats = list.map((v) => ({ workDate: v.workDate, workStatus: v.workStatus, reviewStatus: v.reviewStatus, arrivedAt: v.arrivedAt, finishedAt: v.finishedAt, displayTypeIds: v.displays.map((d) => d.typeId) }))
   const stats = storeStats(asStats, todayInArgentina())
   const usual = usualDisplays(asStats, typeName)
-  const maps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.lat !== null && s.lng !== null ? `${s.lat},${s.lng}` : `${s.address}, ${s.area ?? 'Buenos Aires'}, Argentina`)}`
-  const recheck = () => verify.mutate({ address: s.address, area: s.area, scope: company.data?.geocodingScope ?? 'caba' })
+  const maps = mapsSearchUrl(s)
+  const recheck = () => verify.mutate({ address: s.address, area: s.area, scope: company.data?.geocodingScope ?? 'caba', current: s.locationStatus })
 
   return (
     <div className={styles.page}>
@@ -73,8 +81,7 @@ export function StorePage({ storeId }: { storeId: string }) {
             <a className={styles.link} href={maps} target="_blank" rel="noreferrer"><ExternalLink size={16} aria-hidden />Abrir en Maps</a>
             <Button variant="ghost" size="sm" loading={verify.isPending} onClick={recheck}><RotateCw size={16} aria-hidden />{s.locationStatus === 'verified' ? 'Volver a verificar' : 'Verificar dirección'}</Button>
           </div>
-          {verify.data === false ? <Banner tone="warn">No encontramos esa dirección. Revisá cómo está escrita con "Editar datos".</Banner> : null}
-          {verify.data === true ? <Banner tone="ok">Ubicación actualizada.</Banner> : null}
+          {verify.data ? <Banner tone={VERIFY_MESSAGE[verify.data].tone}>{VERIFY_MESSAGE[verify.data].text}</Banner> : null}
           {verify.error ? <Banner tone="error">{verify.error.message}</Banner> : null}
           {s.lat !== null && s.lng !== null ? <p className={styles.help}>{s.lat.toFixed(5)}, {s.lng.toFixed(5)}</p> : null}
           {usual.length ? (

@@ -117,6 +117,9 @@ function storeError(m: string) {
   return 'No pudimos guardar el cambio. Probá de nuevo.'
 }
 
+/** What checking the address again did. */
+export type VerifyResult = 'verified' | 'approximate' | 'kept' | 'not_found'
+
 export interface StoreChange {
   name?: string | null
   address?: string
@@ -139,15 +142,19 @@ export function useStoreAdmin(storeId: string) {
     },
     onSettled: refresh,
   })
-  /** Looks the address up again; saves the place when found. Resolves whether it was found. */
+  /**
+   * Looks the address up again. Only the address: the zone can be the company's own name
+   * for an area. A street without the number never replaces a location already verified.
+   */
   const verify = useMutation({
-    mutationFn: async ({ address, area, scope }: { address: string; area: string | null; scope: 'caba' | 'argentina' }) => {
-      const [place] = await geocode(area ? `${address}, ${area}` : address, scope)
-      if (!place) return false
+    mutationFn: async ({ address, area, scope, current }: { address: string; area: string | null; scope: 'caba' | 'argentina'; current: LocationStatus }): Promise<VerifyResult> => {
+      const [place] = await geocode(address, scope)
+      if (!place) return 'not_found'
+      if (!place.exact && current === 'verified') return 'kept'
       const { error } = await supabase.from('store').update({ lat: place.lat, lng: place.lng, location_status: place.exact ? 'verified' : 'approximate', area: area ?? place.area })
         .eq('id', storeId)
       if (error) throw new Error(storeError(error.message))
-      return true
+      return place.exact ? 'verified' : 'approximate'
     },
     onSettled: refresh,
   })

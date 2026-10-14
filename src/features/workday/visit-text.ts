@@ -1,5 +1,6 @@
 import { formatDayMonth, formatTime } from '@/domain/dates'
 import { CONSENT_LABEL } from '@/domain/visit'
+import { mapsSearchUrl } from '@/domain/places'
 import type { Visit } from './api/queries'
 
 /** Who added the visit, as the wireframes say it. */
@@ -8,9 +9,9 @@ export function originLabel(v: Visit) {
   return `${v.source === 'added' ? 'agregada' : 'asignada'} por ${v.addedByName ?? 'tu supervisor'}`
 }
 
+/** Google Maps, searching the store's address (see domain/places). */
 export function mapsUrl(v: Visit) {
-  const q = v.store.lat !== null && v.store.lng !== null ? `${v.store.lat},${v.store.lng}` : `${v.store.address}, ${v.store.area ?? 'Buenos Aires'}, Argentina`
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
+  return mapsSearchUrl(v.store)
 }
 
 /** Values a company template can use. `typeName` names the displays ("2 Puntera, Góndola"). */

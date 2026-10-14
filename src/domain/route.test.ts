@@ -109,8 +109,7 @@ describe('Google Maps', () => {
     expect(p.get('waypoints')?.split('|')).toHaveLength(6)
   })
 
-  it('looks a store up by address and neighbourhood', () => {
-    expect(placeQuery({ address: 'Moldes 1365', area: 'Belgrano' })).toBe('Moldes 1365, Belgrano')
-    expect(placeQuery({ address: 'Moldes 1365', area: null })).toBe('Moldes 1365')
+  it('looks a store up by its address in the city', () => {
+    expect(placeQuery({ address: 'Moldes 1365' })).toBe('Moldes 1365, Buenos Aires, Argentina')
   })
 })
