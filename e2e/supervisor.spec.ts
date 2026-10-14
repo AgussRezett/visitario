@@ -106,3 +106,17 @@ test('the merchandiser sees the fix, answers and sends it back', async ({ page }
   await expect.poll(() => state.comments?.some((c) => c.body === 'Ahora la saco, sigo en la zona.' && c.kind === 'reply')).toBe(true)
   await expect.poll(() => state.visits[0]?.review_status).toBe('unreviewed')
 })
+
+test('working hours: no inactivity after the day ends, and it counts from the start the next morning', async ({ page }) => {
+  const day = '2026-10-16'
+  const state = team()
+  state.company = { id: 'c1', name: 'Panda', shift_start: '09:00:00', shift_end: '14:00:00' }
+  state.workdays = [{ id: 'w-p3', company_id: 'c1', merchandiser_id: 'p3', work_date: day, status: 'published' }]
+  state.visits = [visitRow('vd', 0, 'Olazábal 1550', { merchandiser_id: 'p3', workday_id: 'w-p3', work_date: day })]
+  state.people = [{ ...diego, last_activity_at: `${day}T13:40:00-03:00`, last_place: 'Olazábal 1550' }]
+  await page.clock.setFixedTime(new Date(`${day}T23:00:00-03:00`))
+  await installFakeSupabase(page, state, 'supervisor')
+  await page.goto(`/s/today?date=${day}`)
+  await expect(page.getByText('a las 13:40 · Olazábal 1550').filter({ visible: true })).toBeVisible()
+  await expect(page.getByText(/sin actividad/i)).toHaveCount(0)
+})

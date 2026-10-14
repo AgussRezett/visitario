@@ -3,7 +3,7 @@ import { filterPeople, invitationMessage, lastSeen, membersOf, nextActions, role
 
 const person = (id: string, first: string, last: string, extra: Partial<CompanyPerson> = {}): CompanyPerson => ({
   membershipId: `m-${id}`, personId: id, firstName: first, lastName: last, roles: ['merchandiser'], teamId: 'north',
-  status: 'active', startsOn: '2026-10-01', phoneLast4: '4521', lastActivityAt: null, invitedAt: '2026-10-01T12:00:00Z', ...extra,
+  status: 'active', startsOn: '2026-10-01', phoneLast4: '4521', lastActivityAt: null, invitedAt: '2026-10-01T12:00:00Z', shift: null, ...extra,
 })
 const people = [
   person('p1', 'Martín', 'Sosa', { roles: ['supervisor'], phoneLast4: '1020' }),

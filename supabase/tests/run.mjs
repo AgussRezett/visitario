@@ -388,6 +388,15 @@ await expectError('An approved visit still cannot be moved by hand', () => as('m
 await as('martin', `update store set name = 'Autoservicio Lili', area = 'Belgrano' where id = $1`, [dupKeep])
 check('A supervisor fixes a store’s data', (await sys(`select name from store where id = $1`, [dupKeep]))[0].name === 'Autoservicio Lili')
 
+// ---- Work hours
+check('Companies start with 9 to 14', (await sys(`select shift_start::text a, shift_end::text b from company where id = $1`, [panda]))[0].a === '09:00:00')
+await as('carla', `update company set shift_start = '08:30', shift_end = '15:00' where id = $1`, [panda])
+await as('carla', `update membership set shift_start = '10:00', shift_end = '16:00' where company_id = $1 and person_id = $2`, [panda, agus])
+check('Admin sets the company hours and someone’s own', (await as('martin', `select shift_start::text s from membership where company_id = $1 and person_id = $2`, [panda, agus]))[0]?.s === '10:00:00')
+await expectError('A schedule ends after it starts', () => as('carla', `update company set shift_start = '15:00', shift_end = '09:00' where id = $1`, [panda]), /check/)
+await expectError('Own hours come in pairs', () => as('carla', `update membership set shift_start = null where company_id = $1 and person_id = $2`, [panda, agus]), /check/)
+await expectError('A supervisor cannot change hours', () => as('martin', `update company set shift_end = '23:00' where id = $1 returning id`, [panda]).then(r => { if (!r.length) throw new Error('denied by RLS') }), /RLS|denied/)
+
 // ---- Maintenance: retention and purge keep how visits ended
 const wOld = (await sys(`insert into workday (company_id, merchandiser_id, work_date, status, created_by) values ($1, $2, '2024-03-01', 'published', $2) returning id`, [panda, agus]))[0].id
 const vOld = (await sys(`insert into visit (company_id, workday_id, merchandiser_id, work_date, store_id, added_by) values ($1, $2, $3, '2024-03-01', $4, $3) returning id`, [panda, wOld, agus, s1]))[0].id

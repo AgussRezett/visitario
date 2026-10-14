@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { agoText, canRequestFix, memberAlerts, planLabel, teamTotals, type TeamMember } from './team'
+import { agoText, canRequestFix, lastActivityText, memberAlerts, planLabel, shiftLabel, shiftPhase, teamTotals, type TeamMember } from './team'
 
 const now = new Date('2026-10-16T18:00:00Z')
 const base: TeamMember = {
@@ -19,6 +19,40 @@ describe('memberAlerts', () => {
   it('photos not uploaded, refused changes, fixes and not authorized', () => {
     const kinds = memberAlerts({ ...base, lastActivityAt: null, syncPending: 7, syncPhotos: 2, syncFailed: 1, needsFix: 1, refused: 2 }, now)
     expect(kinds.map((a) => a.text)).toEqual(['1 cambio rechazado', '2 fotos sin subir', '1 corrección', '2 no autorizadas'])
+  })
+})
+
+describe('working hours', () => {
+  const shift = { start: '09:00', end: '14:00' }
+  const at = (hhmm: string, day = '2026-10-16') => new Date(`${day}T${hhmm}:00-03:00`)
+
+  it('before, during and after the hours; other days as a whole', () => {
+    expect(shiftPhase(shift, at('08:40'))).toBe('before')
+    expect(shiftPhase(shift, at('11:00'))).toBe('during')
+    expect(shiftPhase(shift, at('14:00'))).toBe('after')
+    expect(shiftPhase(shift, at('11:00'), '2026-10-15')).toBe('after')
+    expect(shiftLabel({ start: '09:00:00', end: '14:30:00' })).toBe('9:00 a 14:30')
+  })
+
+  it('no inactivity alert outside the hours, even with stops left', () => {
+    const yesterday = { ...base, lastActivityAt: '2026-10-15T16:40:00Z' } // 13:40 the day before
+    expect(memberAlerts(yesterday, at('23:00'), shift)).toEqual([])
+    expect(memberAlerts(yesterday, at('08:30'), shift)).toEqual([])
+    expect(memberAlerts(base, at('20:00'), shift)).toEqual([])
+  })
+
+  it('inside the hours it counts from the start or the last activity, whichever is later', () => {
+    const yesterday = { ...base, lastActivityAt: '2026-10-15T16:40:00Z' }
+    expect(memberAlerts(yesterday, at('09:30'), shift)).toEqual([])
+    expect(memberAlerts(yesterday, at('10:15'), shift)[0]).toEqual({ kind: 'inactive', text: 'Sin actividad desde las 9:00' })
+    expect(memberAlerts({ ...base, lastActivityAt: at('10:00').toISOString() }, at('11:20'), shift)[0]).toEqual({ kind: 'inactive', text: 'Sin actividad 1 h 20 min' })
+  })
+
+  it('the last activity in words: how long ago while working, the time once the day is over', () => {
+    expect(lastActivityText(at('13:40').toISOString(), at('13:52'), shift)).toBe('hace 12 min')
+    expect(lastActivityText(at('13:40').toISOString(), at('23:00'), shift)).toBe('a las 13:40')
+    expect(lastActivityText(at('13:40', '2026-10-15').toISOString(), at('08:00'), shift)).toBe('ayer 13:40')
+    expect(lastActivityText(null, at('08:00'), shift)).toBe('Sin actividad')
   })
 })
 

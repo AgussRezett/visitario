@@ -8,7 +8,9 @@ import { useConfirm } from '@/ui/ConfirmDialog'
 import { Field } from '@/ui/Field'
 import { Select } from '@/ui/Select'
 import { Sheet } from '@/ui/Sheet'
+import { Switch } from '@/ui/Switch'
 import { ToggleTags } from '@/ui/ToggleTag'
+import { shiftLabel } from '@/domain/team'
 import { useAdminPeople } from '@/features/admin/api/people'
 import styles from './PersonSheet.module.scss'
 
@@ -17,31 +19,37 @@ interface PersonSheetProps {
   teams: Team[]
   companyId: string
   companyName: string
+  /** The company's hours, the default for everyone. */
+  companyShift: { start: string; end: string } | null
   onClose: () => void
 }
 
 /** Roles, team and start date of someone in the company; deactivate, bring back, cancel the invitation. */
-export function PersonSheet({ person, teams, companyId, companyName, onClose }: PersonSheetProps) {
+export function PersonSheet({ person, teams, companyId, companyName, companyShift, onClose }: PersonSheetProps) {
   const { update } = useAdminPeople(companyId)
   const { confirm, dialog } = useConfirm()
   const [roles, setRoles] = useState<Role[]>([])
   const [teamId, setTeamId] = useState<string | null>(null)
   const [startsOn, setStartsOn] = useState('')
+  const [ownHours, setOwnHours] = useState<{ start: string; end: string } | null>(null)
 
   useEffect(() => {
     if (!person) return
     setRoles(person.roles)
     setTeamId(person.teamId)
     setStartsOn(person.startsOn)
+    setOwnHours(person.shift)
     update.reset()
     // eslint-disable-next-line react-hooks/exhaustive-deps -- a new person starts a new form
   }, [person?.membershipId])
 
   if (!person) return null
   const name = `${person.firstName} ${person.lastName}`
-  const changed = roles.join() !== person.roles.join() || teamId !== person.teamId || startsOn !== person.startsOn
+  const hoursChanged = JSON.stringify(ownHours) !== JSON.stringify(person.shift)
+  const hoursValid = !ownHours || ownHours.start < ownHours.end
+  const changed = roles.join() !== person.roles.join() || teamId !== person.teamId || startsOn !== person.startsOn || hoursChanged
   const save = async () => {
-    await update.mutateAsync({ membershipId: person.membershipId, roles, teamId, startsOn })
+    await update.mutateAsync({ membershipId: person.membershipId, roles, teamId, startsOn, ...(hoursChanged ? { shift: ownHours } : {}) })
     onClose()
   }
   const setStatus = async (status: CompanyPerson['status'], question: { title: string; description: string; confirmLabel: string; tone?: 'danger' }) => {
@@ -60,7 +68,7 @@ export function PersonSheet({ person, teams, companyId, companyName, onClose }: 
       footer={
         <>
           <Button variant="secondary" size="md" onClick={onClose} className={styles.cancel}>Cancelar</Button>
-          <Button size="md" disabled={!changed || !roles.length} loading={update.isPending} onClick={save}>Guardar cambios</Button>
+          <Button size="md" disabled={!changed || !roles.length || !hoursValid} loading={update.isPending} onClick={save}>Guardar cambios</Button>
         </>
       }
     >
@@ -82,6 +90,19 @@ export function PersonSheet({ person, teams, companyId, companyName, onClose }: 
           onChange={(e) => setTeamId(e.target.value || null)}
         />
         <Field label="Desde" type="date" value={startsOn} onChange={(e) => setStartsOn(e.target.value)} />
+      </div>
+
+      <div className={styles.block}>
+        <Switch checked={Boolean(ownHours)} onChange={(on) => setOwnHours(on ? person.shift ?? companyShift ?? { start: '09:00', end: '14:00' } : null)}>
+          Horario propio
+          <span className={styles.help}>{ownHours ? 'Distinto del de la empresa.' : companyShift ? `Usa el de la empresa: ${shiftLabel(companyShift)}.` : 'Usa el de la empresa.'}</span>
+        </Switch>
+        {ownHours ? (
+          <div className={styles.pair}>
+            <Field label="Desde" type="time" value={ownHours.start} onChange={(e) => setOwnHours((h) => (h ? { ...h, start: e.target.value } : h))} />
+            <Field label="Hasta" type="time" value={ownHours.end} onChange={(e) => setOwnHours((h) => (h ? { ...h, end: e.target.value } : h))} error={hoursValid ? undefined : 'Tiene que terminar después de empezar.'} />
+          </div>
+        ) : null}
       </div>
 
       {update.error ? <Banner tone="error">{update.error.message}</Banner> : null}

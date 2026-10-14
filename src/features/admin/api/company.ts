@@ -14,6 +14,8 @@ export interface CompanySettings {
   showWhatsapp: boolean
   photoRetentionMonths: number
   logoVersion: number | null
+  shiftStart: string
+  shiftEnd: string
 }
 
 export const companyQuery = (companyId: string) =>
@@ -22,7 +24,7 @@ export const companyQuery = (companyId: string) =>
     queryFn: async (): Promise<CompanySettings> => {
       const { data, error } = await supabase
         .from('company')
-        .select('id, name, kind, geocoding_scope, show_whatsapp, photo_retention_months, logo_version')
+        .select('id, name, kind, geocoding_scope, show_whatsapp, photo_retention_months, logo_version, shift_start, shift_end')
         .eq('id', companyId)
         .single()
       if (error) throw error
@@ -34,6 +36,8 @@ export const companyQuery = (companyId: string) =>
         showWhatsapp: data.show_whatsapp,
         photoRetentionMonths: data.photo_retention_months,
         logoVersion: data.logo_version,
+        shiftStart: data.shift_start.slice(0, 5),
+        shiftEnd: data.shift_end.slice(0, 5),
       }
     },
   })
@@ -43,6 +47,8 @@ export interface CompanyChange {
   geocodingScope?: Enums<'geocoding_scope'>
   showWhatsapp?: boolean
   photoRetentionMonths?: number
+  shiftStart?: string
+  shiftEnd?: string
 }
 
 export function useCompanyUpdate(companyId: string) {
@@ -51,7 +57,7 @@ export function useCompanyUpdate(companyId: string) {
     mutationFn: async (c: CompanyChange) => {
       const { error } = await supabase
         .from('company')
-        .update({ name: c.name, geocoding_scope: c.geocodingScope, show_whatsapp: c.showWhatsapp, photo_retention_months: c.photoRetentionMonths })
+        .update({ name: c.name, geocoding_scope: c.geocodingScope, show_whatsapp: c.showWhatsapp, photo_retention_months: c.photoRetentionMonths, shift_start: c.shiftStart, shift_end: c.shiftEnd })
         .eq('id', companyId)
       if (error) throw new Error('No pudimos guardar el cambio. Probá de nuevo.')
     },
@@ -60,6 +66,7 @@ export function useCompanyUpdate(companyId: string) {
         qc.invalidateQueries({ queryKey: ['admin', 'company', companyId] }),
         qc.invalidateQueries({ queryKey: ['catalogs', companyId] }),
         qc.invalidateQueries({ queryKey: ['me'] }),
+        qc.invalidateQueries({ queryKey: ['team', 'shifts', companyId] }),
       ]),
   })
 }

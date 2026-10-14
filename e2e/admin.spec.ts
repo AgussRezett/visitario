@@ -120,7 +120,7 @@ test('catalogs: add a brand, deactivate a work metric, rename and forget a forma
 test('templates: write with Spanish data, preview on a real visit, save, hide WhatsApp', async ({ page }, info) => {
   const store = { id: 's1', name: 'Mas Ahorro', address: 'Tres Arroyos 762', area: 'Paternal', customer_number: '12345', lat: null, lng: null, location_status: 'verified' }
   const state = company({
-    company: { id: 'c1', name: 'Panda', geocoding_scope: 'caba', show_whatsapp: true, photo_retention_months: 12, logo_version: null },
+    company: { id: 'c1', name: 'Panda', geocoding_scope: 'caba', show_whatsapp: true, photo_retention_months: 12, logo_version: null, shift_start: '09:00:00', shift_end: '14:00:00' },
     templates: [{ kind: 'after', body: '*ACTIVACIÓN DE GONDOLA DESPUES\nFecha: {date}\nDireccion: {address}\nNum clte: {customer_number}\nZona: {area}\nObservación: {notes}' }],
     visits: [visitRow('v1', 0, 'Tres Arroyos 762', { store, work_status: 'done', finished_at: '2026-10-09T15:00:00Z', notes: 'Faltó SKYY; reordené la puntera.', merchandiser: { first_name: 'Lucía', last_name: 'Gómez' } })],
   })
@@ -146,7 +146,7 @@ test('templates: write with Spanish data, preview on a real visit, save, hide Wh
 
 test('company and plan: billing shows, settings save, data exports', async ({ page }, info) => {
   const state = company({
-    company: { id: 'c1', name: 'Panda', kind: 'distributor', geocoding_scope: 'caba', show_whatsapp: true, photo_retention_months: 12, logo_version: null },
+    company: { id: 'c1', name: 'Panda', kind: 'distributor', geocoding_scope: 'caba', show_whatsapp: true, photo_retention_months: 12, logo_version: null, shift_start: '09:00:00', shift_end: '14:00:00' },
     subscription: { company_id: 'c1', plan: 'pilot', status: 'active', ends_on: '2026-11-30', next_billing_on: '2026-12-01', auto_debit: false, payment_method_summary: null, estimated_amount_cents: null, currency: 'ARS' },
     usage: { active_people: 7, photo_bytes: 2_100_000_000, photos: 9800, visits_this_month: 412, stores: 230, ai_captures_this_month: 0 },
     visits: [visitRow('v1', 0, 'Tres Arroyos 762', { notes: 'Faltó "SKYY"; volver' })],
@@ -159,8 +159,14 @@ test('company and plan: billing shows, settings save, data exports', async ({ pa
   await expect(page.getByText('A definir')).toBeVisible()
   await page.screenshot({ path: `test-results/company-${info.project.name}.png`, fullPage: true })
 
+  const hours = page.getByRole('region', { name: 'Horario de trabajo' })
+  await hours.getByLabel('Desde').fill('08:30')
+  await hours.getByLabel('Hasta').fill('15:00')
+  await hours.getByRole('button', { name: 'Guardar' }).click()
+  await expect.poll(() => [state.company?.shift_start, state.company?.shift_end]).toEqual(['08:30', '15:00'])
+
   await page.getByLabel('Nombre').fill('Panda Distribuidora')
-  await page.getByRole('button', { name: 'Guardar' }).click()
+  await page.getByRole('region', { name: 'Datos de la empresa' }).getByRole('button', { name: 'Guardar' }).click()
   await expect.poll(() => state.company?.name).toBe('Panda Distribuidora')
   await page.getByRole('radio', { name: 'Toda Argentina' }).click()
   await expect.poll(() => state.company?.geocoding_scope).toBe('argentina')

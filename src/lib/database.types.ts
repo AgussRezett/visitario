@@ -155,6 +155,8 @@ export type Database = {
           photo_retention_months: number
           require_before_after: boolean
           require_shelf_facings: boolean
+          shift_end: string
+          shift_start: string
           show_whatsapp: boolean
           timezone: string
           updated_at: string
@@ -171,6 +173,8 @@ export type Database = {
           photo_retention_months?: number
           require_before_after?: boolean
           require_shelf_facings?: boolean
+          shift_end?: string
+          shift_start?: string
           show_whatsapp?: boolean
           timezone?: string
           updated_at?: string
@@ -187,6 +191,8 @@ export type Database = {
           photo_retention_months?: number
           require_before_after?: boolean
           require_shelf_facings?: boolean
+          shift_end?: string
+          shift_start?: string
           show_whatsapp?: boolean
           timezone?: string
           updated_at?: string
@@ -398,6 +404,8 @@ export type Database = {
           invited_by: string | null
           person_id: string
           roles: Database["public"]["Enums"]["role"][]
+          shift_end: string | null
+          shift_start: string | null
           starts_on: string
           status: Database["public"]["Enums"]["membership_status"]
           team_id: string | null
@@ -411,6 +419,8 @@ export type Database = {
           invited_by?: string | null
           person_id: string
           roles: Database["public"]["Enums"]["role"][]
+          shift_end?: string | null
+          shift_start?: string | null
           starts_on?: string
           status?: Database["public"]["Enums"]["membership_status"]
           team_id?: string | null
@@ -424,6 +434,8 @@ export type Database = {
           invited_by?: string | null
           person_id?: string
           roles?: Database["public"]["Enums"]["role"][]
+          shift_end?: string | null
+          shift_start?: string | null
           starts_on?: string
           status?: Database["public"]["Enums"]["membership_status"]
           team_id?: string | null

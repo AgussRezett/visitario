@@ -30,9 +30,13 @@ export function CompanyPage() {
   const usage = useQuery({ ...usageQuery(companyId), enabled: Boolean(ctx) })
   const update = useCompanyUpdate(companyId)
   const [name, setName] = useState('')
+  const [hours, setHours] = useState({ start: '09:00', end: '14:00' })
   const [exporting, setExporting] = useState<'stores' | 'visits' | null>(null)
   const [exportError, setExportError] = useState<string | null>(null)
   useEffect(() => setName(company.data?.name ?? ''), [company.data?.name])
+  useEffect(() => {
+    if (company.data) setHours({ start: company.data.shiftStart, end: company.data.shiftEnd })
+  }, [company.data])
   if (!ctx) return null
 
   const c = company.data
@@ -96,6 +100,18 @@ export function CompanyPage() {
               <p className={styles.help}>Dónde buscamos las direcciones nuevas al agregarlas o importarlas.</p>
             </>
           ) : <Skeleton height={160} />}
+        </section>
+
+        <section className={styles.card} aria-label="Horario de trabajo">
+          <h2 className={styles.heading}>Horario de trabajo</h2>
+          {c ? (
+            <form className={styles.hours} onSubmit={(e) => { e.preventDefault(); if (hours.start < hours.end) update.mutate({ shiftStart: hours.start, shiftEnd: hours.end }) }}>
+              <Field label="Desde" type="time" value={hours.start} onChange={(e) => setHours((h) => ({ ...h, start: e.target.value }))} />
+              <Field label="Hasta" type="time" value={hours.end} onChange={(e) => setHours((h) => ({ ...h, end: e.target.value }))} />
+              <Button type="submit" variant="secondary" size="md" disabled={!(hours.start < hours.end) || (hours.start === c.shiftStart && hours.end === c.shiftEnd)} loading={update.isPending && update.variables?.shiftStart !== undefined}>Guardar</Button>
+            </form>
+          ) : <Skeleton height={72} />}
+          <p className={styles.help}>{hours.start < hours.end ? 'El tablero solo cuenta la inactividad dentro de este horario. A quien trabaja otras horas le ponés las suyas en Usuarios.' : 'El horario tiene que terminar después de empezar.'}</p>
         </section>
 
         <section className={styles.card} aria-label="Funciones">

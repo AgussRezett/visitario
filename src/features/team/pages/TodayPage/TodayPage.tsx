@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { AlertTriangle, ChevronLeft, ChevronRight, CloudOff, Plus } from 'lucide-react'
 import { addDays, formatLongDate, formatTime, todayInArgentina } from '@/domain/dates'
-import { agoText, memberAlerts, teamTotals } from '@/domain/team'
+import { agoText, lastActivityText, memberAlerts, shiftLabel, shiftPhase, teamTotals, type TeamMember } from '@/domain/team'
 import { initials } from '@/lib/format'
 import { Avatar } from '@/ui/Avatar'
 import { Banner } from '@/ui/Banner'
@@ -12,7 +12,7 @@ import { Skeleton } from '@/ui/Skeleton'
 import { StatusChip } from '@/ui/StatusChip'
 import { Table } from '@/ui/Table'
 import { useWorkContext } from '@/features/workday/context'
-import { reviewQuery, teamDayQuery } from '@/features/team/api/queries'
+import { reviewQuery, shiftOf, shiftsQuery, teamDayQuery } from '@/features/team/api/queries'
 import { DaySegments } from '@/features/team/components/DaySegments'
 import { MemberAlerts } from '@/features/team/components/MemberAlerts'
 import styles from './TodayPage.module.scss'
@@ -26,13 +26,22 @@ export function TodayPage({ date: requested }: { date?: string }) {
   const on = Boolean(ctx)
   const team = useQuery({ ...teamDayQuery(ctx?.companyId ?? '', date), enabled: on, placeholderData: keepPreviousData })
   const queue = useQuery({ ...reviewQuery(ctx?.companyId ?? '', ctx?.personId ?? '', 'to_review', today), enabled: on })
+  const shifts = useQuery({ ...shiftsQuery(ctx?.companyId ?? ''), enabled: on })
   if (!ctx) return null
 
   const goTo = (d: string) => navigate({ to: '/s/today', search: d === today ? {} : { date: d } })
   const now = new Date()
   const members = team.data ?? []
   const totals = teamTotals(members)
-  const inactive = members.flatMap((m) => memberAlerts(m, now).filter((a) => a.kind === 'inactive').map((a) => ({ m, a })))
+  const shift = (m: TeamMember) => shiftOf(shifts.data, m.personId)
+  const alertsOf = (m: TeamMember) => memberAlerts(m, now, shift(m), date)
+  /** Activity in words; before the hours start, when they start. */
+  const activity = (m: TeamMember) => {
+    const s = shift(m)
+    if (s && date === today && shiftPhase(s, now) === 'before' && !(m.lastActivityAt && todayInArgentina(new Date(m.lastActivityAt)) === today)) return `Empieza ${shiftLabel(s).split(' a ')[0]}`
+    return `${lastActivityText(m.lastActivityAt, now, s)}${m.lastActivityAt && m.lastPlace ? ` · ${m.lastPlace}` : ''}`
+  }
+  const inactive = members.flatMap((m) => alertsOf(m).filter((a) => a.kind === 'inactive').map((a) => ({ m, a })))
   const waiting = queue.data ?? []
 
   return (
@@ -108,9 +117,9 @@ export function TodayPage({ date: requested }: { date?: string }) {
                             {m.total ? <DaySegments m={m} /> : null}
                           </span>
                         </td>
-                        <td className={styles.small}>{m.lastActivityAt ? `${agoText(m.lastActivityAt, now)}${m.lastPlace ? ` · ${m.lastPlace}` : ''}` : 'Sin actividad'}</td>
+                        <td className={styles.small}>{activity(m)}</td>
                         <td><SyncCell m={m} now={now} /></td>
-                        <td><MemberAlerts alerts={memberAlerts(m, now).filter((a) => a.kind !== 'unsynced')} className={styles.alerts} /></td>
+                        <td><MemberAlerts alerts={alertsOf(m).filter((a) => a.kind !== 'unsynced')} className={styles.alerts} /></td>
                       </tr>
                     ))}
                   </tbody>
@@ -123,8 +132,8 @@ export function TodayPage({ date: requested }: { date?: string }) {
                         <span className={styles.rowBody}>
                           <span className={styles.rowTop}><span className={styles.strong}>{m.firstName} {m.lastName}</span><span className={styles.count}>{m.workdayStatus ? `${m.visited}/${m.total}` : 'Sin jornada'}</span></span>
                           {m.total ? <DaySegments m={m} height={6} /> : null}
-                          <span className={styles.small}>{m.lastActivityAt ? `${agoText(m.lastActivityAt, now)}${m.lastPlace ? ` · ${m.lastPlace}` : ''}` : 'Sin actividad'}</span>
-                          <MemberAlerts alerts={memberAlerts(m, now)} empty="" className={styles.alerts} />
+                          <span className={styles.small}>{activity(m)}</span>
+                          <MemberAlerts alerts={alertsOf(m)} empty="" className={styles.alerts} />
                         </span>
                       </Link>
                     </li>

@@ -12,8 +12,12 @@ export const peopleQuery = (companyId: string) =>
   queryOptions({
     queryKey: adminKeys.people(companyId),
     queryFn: async (): Promise<CompanyPerson[]> => {
-      const { data, error } = await supabase.rpc('company_people', { p_company: companyId })
+      const [{ data, error }, hours] = await Promise.all([
+        supabase.rpc('company_people', { p_company: companyId }),
+        supabase.from('membership').select('id, shift_start, shift_end').eq('company_id', companyId).not('shift_start', 'is', null),
+      ])
       if (error) throw error
+      const own = new Map((hours.data ?? []).map((h) => [h.id, { start: (h.shift_start ?? '').slice(0, 5), end: (h.shift_end ?? '').slice(0, 5) }]))
       return (data ?? []).map((r) => ({
         membershipId: r.membership_id,
         personId: r.person_id,
@@ -26,6 +30,7 @@ export const peopleQuery = (companyId: string) =>
         phoneLast4: r.phone_last4,
         lastActivityAt: r.last_activity_at,
         invitedAt: r.invited_at,
+        shift: own.get(r.membership_id) ?? null,
       }))
     },
   })
@@ -62,14 +67,23 @@ export interface MembershipChange {
   teamId?: string | null
   status?: MembershipStatus
   startsOn?: string
+  /** Own hours, or null to use the company's. */
+  shift?: { start: string; end: string } | null
 }
 
 export function useAdminPeople(companyId: string) {
   const qc = useQueryClient()
   const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ['admin'] }), qc.invalidateQueries({ queryKey: ['team'] })])
   const update = useMutation({
-    mutationFn: ({ membershipId, roles, teamId, status, startsOn }: MembershipChange) =>
-      run(supabase.from('membership').update({ roles, team_id: teamId, status, starts_on: startsOn }).eq('id', membershipId).select('id').single()),
+    mutationFn: ({ membershipId, roles, teamId, status, startsOn, shift }: MembershipChange) =>
+      run(
+        supabase
+          .from('membership')
+          .update({ roles, team_id: teamId, status, starts_on: startsOn, ...(shift === undefined ? {} : { shift_start: shift?.start ?? null, shift_end: shift?.end ?? null }) })
+          .eq('id', membershipId)
+          .select('id')
+          .single(),
+      ),
     onSettled: refresh,
   })
   const saveTeam = useMutation({
