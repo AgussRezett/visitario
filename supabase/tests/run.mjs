@@ -411,6 +411,12 @@ check('Purge returns the photos past retention and those of visits deleted long 
 check('An old finished visit stays finished when its storefront photo expires', (await sys(`select work_status::text s, arrived_at is not null a from visit where id = $1`, [vOld]))[0].s === 'done')
 check('Visits deleted 30+ days ago are gone, with their photos', (await sys(`select (select count(*)::int from visit where id = $1) v, (select count(*)::int from photo where id = $2) f`, [vGone, fGone]))[0].v + (await sys(`select count(*)::int n from photo where id = $1`, [fGone]))[0].n === 0)
 await expectError('Nobody can run the purge from the app', () => as('carla', `select * from private.purge()`))
+const vTrash = (await sys(`insert into visit (company_id, workday_id, merchandiser_id, work_date, store_id, added_by) values ($1, $2, $3, '2024-03-01', $4, $3) returning id`, [panda, wOld, agus, s1]))[0].id
+const fTrash = (await sys(`insert into photo (id, company_id, visit_id, kind, taken_at, uploaded_at, bytes, width, height, created_by) values (gen_random_uuid(), $1, $2, 'storefront', now(), now(), 1, 1, 1, $3) returning id`, [panda, vTrash, agus]))[0].id
+await sys(`update visit set deleted_at = now() - interval '40 days' where id = $1`, [vTrash])
+check('run_purge queues the files to delete from R2', (await sys(`select public.run_purge() n`))[0].n >= 1 && (await sys(`select count(*)::int n from r2_trash where key = $1`, [`c/${panda}/v/${vTrash}/${fTrash}.jpg`]))[0].n === 1)
+await expectError('The app cannot run the daily purge', () => as('carla', `select public.run_purge()`))
+await expectError('The app cannot read the R2 trash', () => as('carla', `select * from r2_trash`))
 
 // ---- MVP backup import (platform admin, own work)
 const mvp = {
