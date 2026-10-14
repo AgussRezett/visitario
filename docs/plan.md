@@ -86,4 +86,11 @@ Cada punto sale en su propio PR.
 - [ ] Probado en el celular real.
 
 Cómo quedó: Recorrido (auto o a pie, ubicación opcional que no se guarda, primer y último local —un local cerrado va último por defecto—, locales a incluir). El orden se calcula en el celular en línea recta y, si hay señal y `LOCATIONIQ_KEY`, se reemplaza por el orden por calles con km y minutos (función `route`). Google Maps en tramos de 3 paradas intermedias en el celular y completo en la computadora. En la computadora se ve un croquis del recorrido sin mapa de fondo.
+
+**Informes del equipo**
+- [x] Tabla por activador (visitados, no visitados, extras, no autorizadas, cada número de trabajo y revisión) con los totales del equipo (dominio + e2e).
+- [x] El informe de cada activador es el mismo que manda él, con la plantilla de la empresa; se copia o se comparte (dominio + e2e).
+- [x] "Copiar informe del equipo" junta todos, cada uno bajo su nombre (dominio + e2e).
+
+Cómo quedó: sección Informes del supervisor (también en la barra del celular), con fecha elegible. Solo aparecen quienes tienen visitas ese día. Excel/PDF y reportes con diseño quedan como "próximamente".
  migración del MVP, exportar informes, reportes con diseño, push, cobro automático, acceso para marcas.

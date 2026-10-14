@@ -3,7 +3,7 @@
 import crypto from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import { PostgrestClient } from '@supabase/postgrest-js'
-import { VISIT_SELECT, TEAM_VISIT_SELECT, COMMENT_SELECT, STORE_SELECT, EXPORT_VISIT_SELECT } from '../../src/features/workday/api/selects.ts'
+import { VISIT_SELECT, TEAM_VISIT_SELECT, COMMENT_SELECT, STORE_SELECT, EXPORT_VISIT_SELECT, REPORT_VISIT_SELECT } from '../../src/features/workday/api/selects.ts'
 
 let passed = 0, failed = 0
 const check = (name, ok, detail = '') => { ok ? passed++ : failed++; console.log(`${ok ? 'ok  ' : 'FAIL'} ${name}${ok ? '' : ` → ${detail}`}`) }
@@ -124,6 +124,9 @@ ok('company_people', await db.rpc('company_people', { p_company: COMPANY }))
 ok('company_usage', await db.rpc('company_usage', { p_company: COMPANY }))
 const exported = await db.from('visit').select(EXPORT_VISIT_SELECT).eq('company_id', COMPANY).is('deleted_at', null).order('work_date').order('sort_order').range(0, 999)
 ok('export visits select', exported, exported.data?.length >= 1 && exported.data[0].store?.address !== undefined)
+const reportVisits = await db.from('visit').select(REPORT_VISIT_SELECT).eq('company_id', COMPANY).is('deleted_at', null).limit(5)
+ok('team report visits select', reportVisits, reportVisits.data?.length >= 1 && reportVisits.data[0].store?.address !== undefined)
+ok('team report metrics', await db.from('daily_metrics').select('merchandiser_id, metric_id, quantity').eq('company_id', COMPANY))
 const directory = await db.rpc('store_directory', { p_company: COMPANY, p_query: 'moldes', p_filter: 'all', p_limit: 50, p_offset: 0 })
 ok('store_directory', directory, directory.data?.length >= 1 && Number(directory.data[0].total) >= 1)
 ok('store_directory_counts', await db.rpc('store_directory_counts', { p_company: COMPANY }))
