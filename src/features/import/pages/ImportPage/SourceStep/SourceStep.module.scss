@@ -106,3 +106,22 @@
   flex-basis: 100%;
   color: $color-ink-subtle;
 }
+
+// Desktop: the file and the capture on the left, the pasted text on the right.
+.paste {
+  @include up(lg) {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+}
+
+.ai {
+  @include text(tiny);
+  margin-left: space(2);
+  padding: 1px space(2);
+  border-radius: $radius-full;
+  background: $color-lime-soft;
+  font-weight: $weight-extrabold;
+  color: $color-forest;
+  vertical-align: middle;
+}
