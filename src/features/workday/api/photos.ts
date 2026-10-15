@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
-import { fitWithin, PHOTO_QUALITY } from '@/domain/image'
+import { fitWithin, PHOTO_MAX_SIDE, PHOTO_QUALITY } from '@/domain/image'
 import { getSync } from '@/features/sync/outbox'
 
 /**
@@ -24,12 +24,12 @@ export const localPhotoUrl = (id: string) => local(id)?.url
 export const localPhotoBlob = (id: string) => local(id)?.blob
 
 /**
- * Resizes to 1400 px and re-encodes as JPEG 72 %. Drawing to a canvas drops all
- * EXIF metadata, so no location ever leaves the phone.
+ * Resizes to 1400 px and re-encodes as JPEG 72 % (other sizes for captures to read).
+ * Drawing to a canvas drops all EXIF metadata, so no location ever leaves the phone.
  */
-export async function compressPhoto(file: Blob) {
+export async function compressPhoto(file: Blob, maxSide = PHOTO_MAX_SIDE, quality = PHOTO_QUALITY) {
   const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
-  const size = fitWithin(bitmap.width, bitmap.height)
+  const size = fitWithin(bitmap.width, bitmap.height, maxSide)
   const canvas = document.createElement('canvas')
   canvas.width = size.width
   canvas.height = size.height
@@ -37,7 +37,7 @@ export async function compressPhoto(file: Blob) {
   if (!ctx) throw new Error('Canvas not available')
   ctx.drawImage(bitmap, 0, 0, size.width, size.height)
   bitmap.close()
-  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', PHOTO_QUALITY))
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality))
   if (!blob) throw new Error('Could not encode the photo')
   return { blob, ...size }
 }

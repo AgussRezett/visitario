@@ -127,6 +127,12 @@ export function ReviewStep({ companyId, draft, rows, people, names, date, onDate
           Formato "{draft.format.name}" reconocido: las columnas ya están elegidas.
         </Banner>
       ) : null}
+      {draft.capture ? (
+        <Banner tone="info" icon={<Sparkles size={18} aria-hidden />} title="Leído de una captura con IA">
+          La IA solo propone filas: revisá las direcciones contra la captura.
+          {draft.capture.unreadable ? ` No pudo leer ${draft.capture.unreadable === 1 ? '1 fila: agregala' : `${draft.capture.unreadable} filas: agregalas`} a mano.` : ''}
+        </Banner>
+      ) : null}
       <p className={styles.help}>Nada se crea ni se asigna hasta que confirmes. Va al borrador del {formatLongDate(date).toLowerCase()}: lo publicás desde Asignar.</p>
       {run.error ? <Banner tone="error">{run.error.message}</Banner> : null}
       {matches.error ? <Banner tone="error">No pudimos buscar en el directorio. Revisá la conexión y volvé a intentar.</Banner> : null}

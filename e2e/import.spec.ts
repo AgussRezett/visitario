@@ -102,3 +102,43 @@ test('pasted addresses go to the chosen merchandiser, located when found', async
   expect(state.stores?.find((s) => s.address === 'Cabildo 2245')).toMatchObject({ lat: -34.56, customer_number: '20990', area: 'Belgrano' })
   expect(state.stores?.find((s) => s.address === 'Ciudad de la Paz 1700')).toMatchObject({ lat: null, area: 'Villa Urquiza' })
 })
+
+// A 1×1 PNG: the fake reads nothing from it, but the phone still compresses it.
+const PIXEL = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64')
+
+test('a capture read by AI goes straight to the review, split by merchandiser', async ({ page }, info) => {
+  const state = team({
+    capture: {
+      unreadable: 1,
+      rows: [
+        { customer_number: '20003', name: 'Autoservicio 4', address: 'Dirección vieja 3', area: '', merchandiser: 'Lucia', task: '' },
+        { customer_number: '', name: '', address: 'Cabildo 2245', area: 'Belgrano', merchandiser: 'Diego', task: 'Armar puntera' },
+        { customer_number: '', name: 'TOTAL', address: '', area: '', merchandiser: '', task: '' },
+      ],
+    },
+  })
+  await installFakeSupabase(page, state, 'supervisor')
+  await page.goto(`/s/import?date=${FRIDAY}`)
+  await expect(page.getByLabel('Subir captura')).toBeAttached()
+  await page.screenshot({ path: `test-results/import-source-capture-${info.project.name}.png`, fullPage: true })
+  await page.getByLabel('Subir captura').setInputFiles({ name: 'captura_excel.png', mimeType: 'image/png', buffer: PIXEL })
+
+  await expect(page.getByRole('heading', { name: 'Revisá antes de guardar' })).toBeVisible()
+  await expect(page.getByText('Leído de una captura con IA')).toBeVisible()
+  await expect(page.getByText(/No pudo leer 1 fila: agregala a mano/)).toBeVisible()
+  await expect(page.getByText('Reconocido por número de cliente')).toBeVisible()
+  await page.screenshot({ path: `test-results/import-capture-${info.project.name}.png`, fullPage: info.project.name === 'desktop' })
+
+  await page.getByRole('button', { name: 'Agregar 2 a 2 jornadas' }).click()
+  await expect(page.getByText(/Se agregaron 2 locales/)).toBeVisible()
+  expect(state.visits.map((v) => v.merchandiser_id).sort()).toEqual(['p2', 'p3'])
+  expect(state.formats ?? []).toHaveLength(0) // a capture is not a format to remember
+})
+
+test('reading a capture without the feature on says so and stays put', async ({ page }) => {
+  await installFakeSupabase(page, team({ capture: { status: 402 } }), 'supervisor')
+  await page.goto(`/s/import?date=${FRIDAY}`)
+  await page.getByLabel('Subir captura').setInputFiles({ name: 'captura.png', mimeType: 'image/png', buffer: PIXEL })
+  await expect(page.getByText('La carga desde una captura es parte del plan pago.')).toBeVisible()
+  await expect(page.getByRole('heading', { name: '¿De dónde salen los locales?' })).toBeVisible()
+})

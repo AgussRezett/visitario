@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FileSpreadsheet, Upload } from 'lucide-react'
+import { FileSpreadsheet, ImageUp, Upload } from 'lucide-react'
 import { parsePasted } from '@/domain/import'
 import { formatDayMonth, todayInArgentina } from '@/domain/dates'
 import { Banner } from '@/ui/Banner'
@@ -7,11 +7,13 @@ import { Button } from '@/ui/Button'
 import { TextArea } from '@/ui/TextArea'
 import { FileError, readSpreadsheet } from '@/features/import/api/read-file'
 import type { SavedFormat } from '@/features/import/api/import'
-import { withSheets, type Draft } from '@/features/import/draft'
+import { CaptureError, readCapture } from '@/features/import/api/capture'
+import { withCapture, withSheets, type Draft } from '@/features/import/draft'
 import { StepFrame } from '../StepFrame'
 import styles from './SourceStep.module.scss'
 
 interface SourceStepProps {
+  companyId: string
   draft: Draft
   formats: SavedFormat[]
   onCancel: () => void
@@ -20,9 +22,10 @@ interface SourceStepProps {
 }
 
 /** Step 1: a spreadsheet file or pasted text. */
-export function SourceStep({ draft, formats, onCancel, onRead }: SourceStepProps) {
+export function SourceStep({ companyId, draft, formats, onCancel, onRead }: SourceStepProps) {
   const [pasted, setPasted] = useState('')
   const [reading, setReading] = useState(false)
+  const [capturing, setCapturing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const open = async (file: File | undefined) => {
@@ -42,9 +45,26 @@ export function SourceStep({ draft, formats, onCancel, onRead }: SourceStepProps
     }
   }
 
+  /** A capture or photo of the list, read by AI: straight to the review. */
+  const openCapture = async (file: File | undefined) => {
+    if (!file) return
+    setError(null)
+    setCapturing(true)
+    try {
+      const { rows, unreadable } = await readCapture(file, companyId)
+      const d = withCapture(draft, file.name, rows, unreadable)
+      if ((d.sheets[0]?.table.length ?? 0) < 2) throw new CaptureError('No encontramos locales en la captura. Probá con una más nítida, o pegá el texto.')
+      onRead(d, 3)
+    } catch (e) {
+      setError(e instanceof CaptureError ? e.message : 'No pudimos leer la captura. Revisá la conexión y probá de nuevo.')
+    } finally {
+      setCapturing(false)
+    }
+  }
+
   const usePasted = () => {
     const read = parsePasted(pasted)
-    if (read.kind === 'lines') onRead({ ...draft, fileName: null, sheets: [], lines: read.lines, format: null, edits: {}, skipped: [] }, 3)
+    if (read.kind === 'lines') onRead({ ...draft, fileName: null, sheets: [], lines: read.lines, format: null, edits: {}, skipped: [], capture: null }, 3)
     else {
       const d = withSheets(draft, null, [{ name: 'Texto pegado', table: read.table }], 0, formats)
       onRead(d, d.format ? 3 : 2)
@@ -72,6 +92,13 @@ export function SourceStep({ draft, formats, onCancel, onRead }: SourceStepProps
           <span className={styles.dropIcon}><Upload size={22} aria-hidden /></span>
           <span className={styles.dropTitle}>{reading ? 'Leyendo la planilla…' : 'Subir Excel o CSV'}</span>
           <span className={styles.dropHelp}>La planilla de ruteo como te llega: elegís qué hay en cada columna en el paso siguiente.</span>
+        </label>
+
+        <label className={styles.drop} data-busy={capturing || undefined}>
+          <input type="file" accept="image/*" className={styles.file} onChange={(e) => void openCapture(e.target.files?.[0])} disabled={capturing || reading} aria-label="Subir captura" />
+          <span className={styles.dropIcon}><ImageUp size={22} aria-hidden /></span>
+          <span className={styles.dropTitle}>{capturing ? 'Leyendo la captura…' : 'Desde una captura'}<span className={styles.ai}>IA</span></span>
+          <span className={styles.dropHelp}>{capturing ? 'La IA está leyendo las direcciones. Tarda unos segundos.' : 'Subí la foto o captura de tu Excel o del mensaje, y la IA lee las direcciones.'}</span>
         </label>
 
         <div className={styles.paste}>

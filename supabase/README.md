@@ -35,11 +35,12 @@ Check the runs: `select * from cron.job_run_details order by start_time desc lim
 | `photos` | deployed (v1, `verify_jwt = false`, checks the session itself) | `POST /photos` multipart JPEG + meta: inserts the row with the caller's token (RLS + guards), puts the file in R2 at `c/<company>/v/<visit>/<photo>.jpg`, then marks it uploaded. `POST /photos/urls`: 1 h signed links for photos the caller can see. |
 | `geocode` | deployed (v1, `verify_jwt = false`, checks the session itself) | LocationIQ search bounded to CABA; says if the street number was found. |
 | `route` | deployed (v1, `verify_jwt = false`, checks the session itself) | LocationIQ Optimize: the day's order by streets with km and minutes. Without `LOCATIONIQ_KEY` (or on failure) the app keeps its straight-line order. |
+| `read-capture` | deployed (v1, `verify_jwt = false`, checks the session itself) | Reads a capture of the routing list with Claude (`AI_MODEL`, default `claude-haiku-5-5`) into rows for the import review. Supervisors and admins of pilot/team/internal plans; `AI_MONTHLY_CAPTURES` per company (default 300); usage in `ai_usage`. |
 | `purge` | deployed (v1, `verify_jwt = false`, checks the Vault secret) | Daily purge, called by pg_cron (see above). `{ queued, deleted, failed, left }`. |
 
 Deploy: `supabase functions deploy <name> --no-verify-jwt` (the functions call `auth.getUser()`, which works with the new JWT signing keys).
 
-Secrets (Dashboard → Edge Functions → Secrets; never in the repo): `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, optional `R2_BUCKET` (default `visitario-photos`), `LOCATIONIQ_KEY`. Without them `photos`, `purge`, `geocode` and `route` answer 503; the app saves addresses unverified.
+Secrets (Dashboard → Edge Functions → Secrets; never in the repo): `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, optional `R2_BUCKET` (default `visitario-photos`), `LOCATIONIQ_KEY`, `ANTHROPIC_API_KEY` (optional `AI_MODEL`, `AI_MONTHLY_CAPTURES`). Without them `photos`, `purge`, `geocode` and `route` answer 503; the app saves addresses unverified.
 Known limit: all DNI sign-ins reach Supabase Auth from the function's IP, so Auth's per-IP rate limit applies to the whole user base. Fine for the pilot; add a per-DNI attempt counter before opening to more companies.
 
 ## Seed
