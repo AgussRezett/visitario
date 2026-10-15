@@ -93,4 +93,9 @@ Cómo quedó: Recorrido (auto o a pie, ubicación opcional que no se guarda, pri
 - [x] "Copiar informe del equipo" junta todos, cada uno bajo su nombre (dominio + e2e).
 
 Cómo quedó: sección Informes del supervisor (también en la barra del celular), con fecha elegible. Solo aparecen quienes tienen visitas ese día. Excel/PDF y reportes con diseño quedan como "próximamente".
+
+**Captura con IA**
+- [x] En Importar, "Desde una captura": la foto o captura del Excel o del mensaje se lee con Claude y va directo a la revisión, repartida por activador (dominio + e2e).
+- [x] Solo supervisores y administradores, de planes piloto o pagos, con un tope de capturas por mes; cada una suma al uso de la empresa (base).
+- [ ] La IA acierta al menos 9 de cada 10 direcciones en 10 capturas reales (pendiente: las capturas).
  migración del MVP, exportar informes, reportes con diseño, push, cobro automático, acceso para marcas.

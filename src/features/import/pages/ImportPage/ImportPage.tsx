@@ -40,7 +40,7 @@ export function ImportPage({ date: requested, person }: ImportSearch) {
     setStep(next)
   }
 
-  if (step === 1) return <SourceStep draft={draft} formats={formats.data ?? []} onCancel={() => void toAssign()} onRead={read} />
+  if (step === 1) return <SourceStep companyId={ctx.companyId} draft={draft} formats={formats.data ?? []} onCancel={() => void toAssign()} onRead={read} />
   if (step === 2) {
     return (
       <ColumnsStep

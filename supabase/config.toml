@@ -16,6 +16,9 @@ verify_jwt = false
 [functions.route]
 verify_jwt = false
 
+[functions.read-capture]
+verify_jwt = false
+
 [functions.purge]
 # Called by pg_cron with the x-purge-secret header (supabase/cron/purge.sql).
 verify_jwt = false

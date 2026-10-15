@@ -384,6 +384,12 @@ check('An archived store leaves the directory and the searches', !(await as('mar
 check('…and is listed under Archivados', (await as('martin', `select id from store_directory($1, null, 'archived')`, [panda])).some(r => r.id === lili.id))
 await as('martin', `update store set deleted_at = null where id = $1`, [lili.id])
 check('Restored, it is back in the directory', (await as('martin', `select id from store_directory($1)`, [panda])).some(r => r.id === lili.id))
+// Capture with AI: usage is added up per month, only by the server
+await sys(`select record_ai_usage($1, 3)`, [panda])
+const [{ record_ai_usage: nCaptures }] = await sys(`select record_ai_usage($1, 2)`, [panda])
+const aiRow = (await as('carla', `select captures, cost_usd_thousandths c from ai_usage where company_id = $1`, [panda]))[0]
+check(`AI captures add up in the month (${nCaptures} captures, ${aiRow?.c} thousandths)`, nCaptures === 2 && aiRow?.captures === 2 && aiRow?.c === 5)
+await expectError('The app cannot record AI usage', () => as('carla', `select record_ai_usage($1, 1)`, [panda]))
 check('Another company sees nothing in Panda’s directory', (await as('beto', `select * from store_directory($1)`, [panda])).length === 0)
 check('The directory filters unverified and added stores', (await as('martin', `select * from store_directory($1, null, 'unverified')`, [panda])).every(r => r.location_status !== 'verified') && (await as('martin', `select * from store_directory($1, null, 'added')`, [panda])).every(r => r.source === 'merchandiser'))
 

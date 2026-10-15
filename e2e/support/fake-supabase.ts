@@ -44,6 +44,8 @@ export interface FakeState {
   /** What the route function answers by streets (503 without it) and what it was asked. */
   route?: Row
   routeAsked?: Row[]
+  /** What reading a capture with AI answers: rows, or an error status. */
+  capture?: { rows?: Row[]; unreadable?: number; status?: number }
   /** Work totals per day and merchandiser (the daily_metrics view). */
   dailyMetrics?: Row[]
   /** Simulates a slow connection when loading a day. */
@@ -191,6 +193,10 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
         state.formats = [...(state.formats ?? []).filter((x) => x.signature !== f.signature), { id: `f${(state.formats ?? []).length + 1}`, company_id: COMPANY, ...f, last_used_at: new Date().toISOString() }]
       }
       return json({ workdays: plans.size, visits: rows.length, stores })
+    }
+    if (path.endsWith('/functions/v1/read-capture')) {
+      if (!state.capture || state.capture.status) return json({ error: 'fake' }, state.capture?.status ?? 503)
+      return json({ rows: state.capture.rows ?? [], unreadable: state.capture.unreadable ?? 0, model: 'fake' })
     }
     if (path.endsWith('/daily_metrics')) return json((state.dailyMetrics ?? []).filter((r) => matches(r, url.searchParams)))
     if (path.endsWith('/functions/v1/route')) {
