@@ -18,40 +18,46 @@ const day = (): FakeState => ({
   ],
 })
 
-test('discarding pending visits: one from the sheet, then the rest at once', async ({ page }, info) => {
+test('the chosen ones are discarded or added: the same choice works for both', async ({ page }, info) => {
   const state = day()
   await installFakeSupabase(page, state)
   await page.goto('/s/workday')
   const panel = page.getByRole('region', { name: 'De días anteriores' }).filter({ visible: true })
   await expect(panel).toContainText('Echeverría 1580')
+  await expect(panel.getByRole('button')).toHaveCount(1) // one action per moment
 
-  await panel.getByRole('button', { name: 'Elegir cuáles retomar' }).click()
-  const sheet = page.getByRole('dialog', { name: 'Retomar pendientes' })
+  await panel.getByRole('button', { name: 'Retomar o descartar' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Pendientes de días anteriores' })
   await expect(sheet.getByText('3 de 3 elegidas')).toBeVisible()
-  await sheet.getByRole('checkbox', { name: /Vidal 2044/ }).uncheck()
-  await sheet.getByRole('button', { name: 'No retomar Echeverría 1580' }).click()
-  await expect(sheet.getByText('Echeverría 1580')).toHaveCount(0)
-  await expect(sheet.getByText('1 de 2 elegidas')).toBeVisible() // Vidal stays unchecked
-  expect(state.dismissed).toEqual(['old1'])
+  await sheet.getByRole('button', { name: 'Quitar todas' }).click()
+  await expect(sheet.getByRole('button', { name: 'Descartar 0' })).toBeDisabled()
+  await sheet.getByRole('checkbox', { name: /Echeverría 1580/ }).check()
+  await sheet.getByRole('checkbox', { name: /Monroe 2650/ }).check()
   await page.screenshot({ path: `test-results/resume-sheet-${info.project.name}.png` })
-  await page.keyboard.press('Escape')
-  await expect(sheet).toBeHidden()
 
-  await panel.getByRole('button', { name: 'Descartar todas' }).click()
+  await sheet.getByRole('button', { name: 'Descartar 2' }).click()
   const confirm = page.getByRole('alertdialog')
-  await expect(confirm).toContainText('¿Descartar las 2 pendientes?')
+  await expect(confirm).toContainText('¿Descartar 2 pendientes?')
   await confirm.getByRole('button', { name: 'Descartar' }).click()
-  await expect(page.getByRole('region', { name: 'De días anteriores' })).toHaveCount(0)
-  expect(state.dismissed).toEqual(['old1', 'old2', 'old3'])
+  await expect(sheet.getByText('Echeverría 1580')).toHaveCount(0)
+  await expect(sheet.getByText('Monroe 2650')).toHaveCount(0)
+  await expect(sheet.getByText('0 de 1 elegidas')).toBeVisible()
+  expect(state.dismissed).toEqual(['old1', 'old3'])
+
+  // The one left can still be added.
+  await sheet.getByRole('checkbox', { name: /Vidal 2044/ }).check()
+  await expect(sheet.getByRole('button', { name: 'Agregar 1 a mi jornada' })).toBeEnabled()
 })
 
-test('discarding the last one in the sheet closes it', async ({ page }) => {
+test('discarding the last ones closes the sheet and the panel goes away', async ({ page }) => {
   const state = { ...day(), resumable: [pending('old1', '2026-10-09', 'Echeverría 1580')] }
   await installFakeSupabase(page, state)
   await page.goto('/s/workday')
-  await page.getByRole('region', { name: 'De días anteriores' }).filter({ visible: true }).getByRole('button', { name: 'Elegir cuáles retomar' }).click()
-  const sheet = page.getByRole('dialog', { name: 'Retomar pendientes' })
-  await sheet.getByRole('button', { name: 'No retomar Echeverría 1580' }).click()
+  await page.getByRole('region', { name: 'De días anteriores' }).filter({ visible: true }).getByRole('button', { name: 'Retomar o descartar' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Pendientes de días anteriores' })
+  await sheet.getByRole('button', { name: 'Descartar 1' }).click()
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Descartar' }).click()
   await expect(sheet).toBeHidden()
   await expect(page.getByRole('region', { name: 'De días anteriores' })).toHaveCount(0)
+  expect(state.dismissed).toEqual(['old1'])
 })

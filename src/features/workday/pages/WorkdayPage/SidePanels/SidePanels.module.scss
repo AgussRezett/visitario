@@ -87,12 +87,3 @@
   @include text(tiny);
   color: $color-ink-subtle;
 }
-
-// Resume is the main action; discarding them all sits below, smaller.
-.resume-actions {
-  @include flex(column, $gap: space(1));
-
-  > :last-child {
-    align-self: center;
-  }
-}

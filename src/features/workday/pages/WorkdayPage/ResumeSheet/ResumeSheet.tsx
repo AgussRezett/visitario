@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ImageIcon, X } from 'lucide-react'
+import { Info } from 'lucide-react'
 import { formatLongDate, formatShortWeekday, formatTime } from '@/domain/dates'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
@@ -47,7 +47,7 @@ export function ResumeSheet({ open, onClose, ctx, date, visits, workdayId, onDon
   const online = useOnline()
   const qc = useQueryClient()
   const [chosen, setChosen] = useState<string[]>([])
-  const { dismissOne, dismissAll, dismissing, error: dismissError, dialog } = useDismissPending()
+  const { dismissChosen, dismissing, error: dismissError, dialog } = useDismissPending()
   useEffect(() => {
     if (open) setChosen(visits.map((v) => v.visit_id))
     // eslint-disable-next-line react-hooks/exhaustive-deps -- all chosen when it opens
@@ -77,6 +77,9 @@ export function ResumeSheet({ open, onClose, ctx, date, visits, workdayId, onDon
     onSuccess: onDone,
   })
 
+  const discard = async () => {
+    if (await dismissChosen(chosen).catch(() => false)) setChosen([])
+  }
   const toggle = (id: string) => setChosen((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]))
   const all = chosen.length === visits.length
 
@@ -84,12 +87,15 @@ export function ResumeSheet({ open, onClose, ctx, date, visits, workdayId, onDon
     <Sheet
       open={open}
       onClose={onClose}
-      title="Retomar pendientes"
-      subtitle={`Elegí cuáles vas a visitar. Se suman a tu jornada del ${formatLongDate(date).toLowerCase()}.`}
+      title="Pendientes de días anteriores"
+      subtitle={`Elegí las que vas a visitar para sumarlas a tu jornada del ${formatLongDate(date).toLowerCase()}, o las que ya no van para descartarlas.`}
       footer={
         <>
-          <Button variant="secondary" size="md" className={styles.cancel} onClick={onClose}>Cancelar</Button>
-          <Button size="md" disabled={!chosen.length || !online} loading={resume.isPending} onClick={() => resume.mutate()}>
+          <Button variant="secondary" className={styles.cancel} onClick={onClose}>Cancelar</Button>
+          <Button variant="secondary" disabled={!chosen.length || !online || resume.isPending} loading={dismissing} onClick={() => void discard()}>
+            Descartar {chosen.length}
+          </Button>
+          <Button disabled={!chosen.length || !online || dismissing} loading={resume.isPending} onClick={() => resume.mutate()}>
             Agregar {chosen.length} a mi jornada
           </Button>
         </>
@@ -98,38 +104,27 @@ export function ResumeSheet({ open, onClose, ctx, date, visits, workdayId, onDon
       {online ? null : <Banner tone="info">Sin señal: para retomar pendientes necesitás conexión.</Banner>}
       <div className={styles.counter}>
         <span>{chosen.length} de {visits.length} elegidas</span>
-        <span className={styles.counterActions}>
-          <Button variant="ghost" size="sm" onClick={() => setChosen(all ? [] : visits.map((v) => v.visit_id))}>
-            {all ? 'Quitar todas' : 'Elegir todas'}
-          </Button>
-          <Button variant="danger" size="sm" disabled={dismissing} onClick={() => void dismissAll(visits.map((v) => v.visit_id))}>
-            Descartar todas
-          </Button>
-        </span>
+        <Button variant="ghost" size="md" onClick={() => setChosen(all ? [] : visits.map((v) => v.visit_id))}>
+          {all ? 'Quitar todas' : 'Elegir todas'}
+        </Button>
       </div>
       <div className={styles.list}>
         {visits.map((v) => {
           const on = chosen.includes(v.visit_id)
           return (
-            <div key={v.visit_id} className={on ? styles.optionOn : styles.option}>
-              <label className={styles.pick}>
-                <input type="checkbox" checked={on} onChange={() => toggle(v.visit_id)} className={styles.check} />
-                <span className={styles.text}>
-                  <span className={styles.name}>{v.store_name ?? v.address}</span>
-                  <span className={styles.meta}>{v.store_name ? `${v.address} · ` : ''}{describe(v)}</span>
-                </span>
-              </label>
-              <button type="button" className={styles.dismiss} onClick={() => dismissOne(v.visit_id)} disabled={dismissing} aria-label={`No retomar ${v.store_name ?? v.address}`} title="No retomar">
-                <X size={18} aria-hidden />
-              </button>
-            </div>
+            <label key={v.visit_id} className={on ? styles.optionOn : styles.option}>
+              <input type="checkbox" checked={on} onChange={() => toggle(v.visit_id)} className={styles.check} />
+              <span className={styles.text}>
+                <span className={styles.name}>{v.store_name ?? v.address}</span>
+                <span className={styles.meta}>{v.store_name ? `${v.address} · ` : ''}{describe(v)}</span>
+              </span>
+            </label>
           )
         })}
       </div>
-      <Banner tone="info" icon={<ImageIcon size={18} aria-hidden />}>
-        Se mantienen comercio, tarea y exhibiciones sin acomodar. Las fotos y registros anteriores quedan en el día original.
+      <Banner tone="info" icon={<Info size={18} aria-hidden />}>
+        Las que agregues traen comercio, tarea y exhibiciones sin acomodar. Las descartadas quedan en su día como no visitadas y no se vuelven a ofrecer. Ves las de los últimos 7 días.
       </Banner>
-      <p className={styles.hint}>Con la cruz descartás una: no se vuelve a ofrecer y queda en su día como no visitada. Solo se ofrecen las de los últimos 7 días.</p>
       {resume.error ? <Banner tone="error">{resume.error.message}</Banner> : null}
       {dismissError ? <Banner tone="error">{dismissError.message}</Banner> : null}
       {dialog}

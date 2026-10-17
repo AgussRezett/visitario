@@ -36,7 +36,7 @@ interface PendingItem {
 }
 
 /** Pending or closed stores from earlier days, ready to add to this one. */
-export function ResumePanel({ items, onResume, onDismissAll }: { items: PendingItem[]; onResume: () => void; onDismissAll: () => void }) {
+export function ResumePanel({ items, onResume }: { items: PendingItem[]; onResume: () => void }) {
   if (!items.length) return null
   return (
     <section className={styles.resume} aria-label="De días anteriores">
@@ -53,12 +53,9 @@ export function ResumePanel({ items, onResume, onDismissAll }: { items: PendingI
         ))}
       </ul>
       {items.length > 3 ? <p className={styles.help}>Y {items.length - 3} más.</p> : null}
-      <div className={styles.resumeActions}>
-        <Button variant="secondary" size="md" onClick={onResume}>
-          <History size={18} aria-hidden />Elegir cuáles retomar
-        </Button>
-        <Button variant="danger" size="sm" onClick={onDismissAll}>Descartar todas</Button>
-      </div>
+      <Button variant="secondary" size="md" onClick={onResume}>
+        <History size={18} aria-hidden />Retomar o descartar
+      </Button>
     </section>
   )
 }
