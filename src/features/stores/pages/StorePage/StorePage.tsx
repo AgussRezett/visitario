@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { Archive, ArchiveRestore, CalendarPlus, ChevronLeft, Copy, ExternalLink, Pencil, RotateCw } from 'lucide-react'
+import { Archive, ArchiveRestore, CalendarPlus, ChevronLeft, Copy, ExternalLink, Pencil, RotateCw, Trash2 } from 'lucide-react'
 import { mapsSearchUrl } from '@/domain/places'
 import { formatDayMonth, formatTime, todayInArgentina } from '@/domain/dates'
 import { LOCATION_LABEL, originText, storeStats, usualDisplays } from '@/domain/stores'
@@ -9,14 +9,14 @@ import { useDocumentTitle } from '@/lib/useDocumentTitle'
 import { useIsDesktop } from '@/lib/useMedia'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
-import { useConfirm } from '@/ui/ConfirmDialog'
 import { Skeleton } from '@/ui/Skeleton'
 import { StatusChip } from '@/ui/StatusChip'
 import { Table } from '@/ui/Table'
 import { useCatalogs } from '@/features/workday/api/queries'
 import { useWorkContext } from '@/features/workday/context'
 import { companyQuery } from '@/features/admin/api/company'
-import { storeQuery, storeVisitsQuery, useArchiveStore, useStoreAdmin, type StoreHistoryVisit } from '@/features/stores/api/stores'
+import { storeQuery, storeVisitsQuery, useStoreAdmin, type StoreHistoryVisit } from '@/features/stores/api/stores'
+import { useStoreArchive } from '@/features/stores/useStoreArchive'
 import { effectiveRapport, RAPPORT_SHORT } from '@/domain/reputation'
 import { useStoreReputation } from '@/features/reputation/api'
 import { RapportLevel } from '@/features/reputation/components/RapportLevel'
@@ -46,8 +46,7 @@ export function StorePage({ storeId }: { storeId: string }) {
   const catalogs = useCatalogs(ctx?.companyId ?? '')
   const { verify } = useStoreAdmin(storeId)
   const reputation = useStoreReputation(ctx?.companyId ?? '', [storeId]).data?.get(storeId)
-  const archive = useArchiveStore()
-  const { confirm, dialog } = useConfirm()
+  const { askArchive, askRemove, restore, busy, error: archiveError, dialog } = useStoreArchive()
   const [sheet, setSheet] = useState<'edit' | 'merge' | null>(null)
   useDocumentTitle(store.data ? store.data.name ?? store.data.address : null)
   if (!ctx) return null
@@ -62,16 +61,8 @@ export function StorePage({ storeId }: { storeId: string }) {
   const usual = usualDisplays(asStats, typeName)
   const maps = mapsSearchUrl(s)
   const recheck = () => verify.mutate({ address: s.address, area: s.area, scope: company.data?.geocodingScope ?? 'caba', current: s.locationStatus })
-  const active = !s.archivedAt && !s.mergedInto
-  const askArchive = async () => {
-    const ok = await confirm({
-      title: `¿Archivar ${s.name ?? s.address}?`,
-      description: 'Sale del directorio y de las búsquedas para agregar o importar. Sus visitas quedan en el historial y lo podés restaurar desde "Archivados".',
-      confirmLabel: 'Archivar',
-      tone: 'danger',
-    })
-    if (ok) archive.mutate({ id: s.id, archived: true })
-  }
+  const active = !s.archivedAt && !s.mergedInto && !s.removedAt
+  const target = { id: s.id, label: s.name ?? s.address }
 
   return (
     <div className={styles.page}>
@@ -94,13 +85,18 @@ export function StorePage({ storeId }: { storeId: string }) {
         <Banner tone="info" title="Se fusionó con otro comercio">
           Sus visitas pasaron a ese comercio. <Link to="/stores/$storeId" params={{ storeId: s.mergedInto }} className={styles.inlineLink}>Ver el comercio</Link>
         </Banner>
+      ) : s.removedAt ? (
+        <Banner tone="info" title={`Eliminado el ${formatDayMonth(s.removedAt.slice(0, 10))}`}>Ya no está en el directorio. Sus visitas siguen en el historial y en los informes.</Banner>
       ) : s.archivedAt ? (
         <div className={styles.archived}>
-          <Banner tone="warn" title={`Archivado el ${formatDayMonth(s.archivedAt.slice(0, 10))}`}>No aparece en el directorio ni en las búsquedas. Sus visitas siguen en el historial.</Banner>
-          <Button variant="secondary" size="md" loading={archive.isPending} onClick={() => archive.mutate({ id: s.id, archived: false })}><ArchiveRestore size={16} aria-hidden />Restaurar</Button>
+          <Banner tone="warn" title={`Archivado el ${formatDayMonth(s.archivedAt.slice(0, 10))}`}>No aparece en el directorio ni en las búsquedas ni en las jornadas. Sus visitas siguen en el historial.</Banner>
+          <div className={styles.archivedActions}>
+            <Button variant="secondary" size="md" loading={busy === s.id} onClick={() => restore(s.id)}><ArchiveRestore size={16} aria-hidden />Restaurar</Button>
+            <Button variant="ghost" size="md" disabled={busy === s.id} onClick={() => void askRemove(target)}><Trash2 size={16} aria-hidden />Eliminar</Button>
+          </div>
         </div>
       ) : null}
-      {archive.error ? <Banner tone="error">{archive.error.message}</Banner> : null}
+      {archiveError ? <Banner tone="error">{archiveError.message}</Banner> : null}
 
       <div className={styles.columns}>
         <section className={styles.side} aria-label="Datos del comercio">
@@ -112,7 +108,7 @@ export function StorePage({ storeId }: { storeId: string }) {
           </dl>
           <div className={styles.row}>
             <a className={styles.link} href={maps} target="_blank" rel="noreferrer"><ExternalLink size={16} aria-hidden />Abrir en Maps</a>
-            <Button variant="ghost" size="sm" loading={verify.isPending} onClick={recheck}><RotateCw size={16} aria-hidden />{s.locationStatus === 'verified' ? 'Volver a verificar' : 'Verificar dirección'}</Button>
+            <Button variant="ghost" size="md" loading={verify.isPending} onClick={recheck}><RotateCw size={16} aria-hidden />{s.locationStatus === 'verified' ? 'Volver a verificar' : 'Verificar dirección'}</Button>
           </div>
           {verify.data ? <Banner tone={VERIFY_MESSAGE[verify.data].tone}>{VERIFY_MESSAGE[verify.data].text}</Banner> : null}
           {verify.error ? <Banner tone="error">{verify.error.message}</Banner> : null}
@@ -126,7 +122,7 @@ export function StorePage({ storeId }: { storeId: string }) {
             </div>
           ) : null}
           {active ? (
-            <Button variant="danger" size="sm" className={styles.archive} loading={archive.isPending} onClick={() => void askArchive()}>
+            <Button variant="secondary" size="md" className={styles.archive} loading={busy === s.id} onClick={() => void askArchive(target)}>
               <Archive size={16} aria-hidden />Archivar comercio
             </Button>
           ) : null}

@@ -59,7 +59,7 @@ export const directoryCountsQuery = (companyId: string) =>
     queryFn: async () => {
       const [{ data, error }, archived] = await Promise.all([
         supabase.rpc('store_directory_counts', { p_company: companyId }),
-        supabase.from('store').select('id', { count: 'exact', head: true }).eq('company_id', companyId).not('deleted_at', 'is', null).is('merged_into', null),
+        supabase.from('store').select('id', { count: 'exact', head: true }).eq('company_id', companyId).not('deleted_at', 'is', null).is('merged_into', null).is('removed_at', null),
       ])
       if (error) throw error
       if (archived.error) throw archived.error
@@ -85,6 +85,8 @@ export interface StoreDetail {
   archivedAt: string | null
   /** Merged into this store: it is out for good. */
   mergedInto: string | null
+  /** Removed for good; its visits stay in the history. */
+  removedAt: string | null
 }
 
 export const storeQuery = (storeId: string) =>
@@ -102,8 +104,9 @@ export const storeQuery = (storeId: string) =>
         id: data.id, companyId: data.company_id, name: data.name, address: data.address, area: data.area, customerNumber: data.customer_number,
         lat: data.lat, lng: data.lng, locationStatus: data.location_status, source: data.source, createdAt: data.created_at,
         createdByName: (data.creator as { first_name: string } | null)?.first_name ?? null,
-        archivedAt: data.merged_into ? null : data.deleted_at,
+        archivedAt: data.merged_into || data.removed_at ? null : data.deleted_at,
         mergedInto: data.merged_into,
+        removedAt: data.removed_at,
       }
     },
   })
@@ -132,6 +135,8 @@ export const storeVisitsQuery = (storeId: string, personId: string) =>
 function storeError(m: string) {
   if (m.includes('store_customer_number') || m.includes('duplicate key')) return 'Ese número de cliente ya es de otro comercio. Si es el mismo, fusionalos.'
   if (m.includes('Only supervisors')) return 'Solo supervisores y administradores pueden hacerlo.'
+  if (m.includes('removed store')) return 'Este comercio se eliminó y ya no se puede cambiar.'
+  if (m.includes('Only an archived')) return 'Primero archivá el comercio.'
   return 'No pudimos guardar el cambio. Probá de nuevo.'
 }
 
@@ -187,17 +192,35 @@ export function useStoreAdmin(storeId: string) {
   return { update, verify, merge }
 }
 
+/** Pending stops of the store from today on: what archiving takes out of the open days. */
+export async function openStopsCount(storeId: string): Promise<number> {
+  const { data, error } = await supabase.rpc('store_open_stops_count', { p_store: storeId })
+  if (error) throw new Error(storeError(error.message))
+  return data
+}
+
 /**
- * Archiving: the store leaves the directory and the searches; its visits stay.
- * Restoring brings it back (unless its customer number went to another store meanwhile).
+ * Archiving: the store leaves the directory, the searches and its pending stops from today
+ * on (the database removes them); its visits stay. Restoring brings it back (unless its
+ * customer number went to another store meanwhile). Removing an archived store is for
+ * good: it leaves "Archivados", its visits stay in the history.
  */
 export function useArchiveStore() {
   const qc = useQueryClient()
-  return useMutation({
+  const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ['stores'] }), qc.invalidateQueries({ queryKey: ['workday'] }), qc.invalidateQueries({ queryKey: ['team'] })])
+  const archive = useMutation({
     mutationFn: async ({ id, archived }: { id: string; archived: boolean }) => {
       const { error } = await supabase.from('store').update({ deleted_at: archived ? new Date().toISOString() : null }).eq('id', id)
       if (error) throw new Error(storeError(error.message))
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: ['stores'] }),
+    onSettled: refresh,
   })
+  const remove = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.rpc('remove_store', { p_store: id })
+      if (error) throw new Error(storeError(error.message))
+    },
+    onSettled: refresh,
+  })
+  return { archive, remove }
 }

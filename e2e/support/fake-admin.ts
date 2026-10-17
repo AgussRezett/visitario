@@ -55,7 +55,7 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
     if (path.endsWith('/rpc/store_directory')) {
       const b = body()
       const q = String(b.p_query ?? '').toLowerCase()
-      const rows = (state.stores ?? []).filter((x) => (b.p_filter === 'archived' ? Boolean(x.deleted_at) && !x.merged_into : !x.deleted_at))
+      const rows = (state.stores ?? []).filter((x) => (b.p_filter === 'archived' ? Boolean(x.deleted_at) && !x.merged_into && !x.removed_at : !x.deleted_at))
         .filter((x) => !q || `${x.name ?? ''} ${x.address} ${x.customer_number ?? ''}`.toLowerCase().includes(q))
         .filter((x) => b.p_filter !== 'unverified' || x.location_status !== 'verified')
         .filter((x) => b.p_filter !== 'added' || x.source === 'merchandiser')
@@ -69,6 +69,13 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
     if (path.endsWith('/rpc/store_directory_counts')) {
       const live = (state.stores ?? []).filter((x) => !x.deleted_at)
       return done(json([{ total: live.length, unverified: live.filter((x) => x.location_status !== 'verified').length, added: live.filter((x) => x.source === 'merchandiser').length, areas: [...new Set(live.map((x) => x.area).filter(Boolean))] }]))
+    }
+    if (path.endsWith('/rpc/store_open_stops_count')) return done(json(state.openStops?.[String(body().p_store)] ?? 0))
+    if (path.endsWith('/rpc/remove_store')) {
+      const found = (state.stores ?? []).find((x) => x.id === body().p_store)
+      if (!found?.deleted_at) return done(json({ code: '23514', message: 'Only an archived store can be removed' }, 400))
+      found.removed_at = new Date().toISOString()
+      return done(route.fulfill({ status: 204 }))
     }
     if (path.endsWith('/rpc/merge_stores')) {
       const b = body()
@@ -87,7 +94,7 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
       const id = url.searchParams.get('id')?.replace('eq.', '')
       const found = state.stores.find((x) => x.id === id)
       if (req.method() === 'HEAD') {
-        const n = state.stores.filter((x) => x.deleted_at && !x.merged_into).length // the "Archivados" count
+        const n = state.stores.filter((x) => x.deleted_at && !x.merged_into && !x.removed_at).length // the "Archivados" count
         return done(route.fulfill({ status: 200, headers: { 'content-range': `*/${n}`, 'access-control-allow-origin': '*', 'access-control-expose-headers': 'content-range' } }))
       }
       if (req.method() === 'PATCH') {
@@ -95,7 +102,7 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
         return done(route.fulfill({ status: 204 }))
       }
       if (id) {
-        const row = found ? { company_id: COMPANY, created_at: '2026-10-01T12:00:00Z', source: 'manual', lat: null, lng: null, location_status: 'unverified', creator: null, deleted_at: null, merged_into: null, ...found } : null
+        const row = found ? { company_id: COMPANY, created_at: '2026-10-01T12:00:00Z', source: 'manual', lat: null, lng: null, location_status: 'unverified', creator: null, deleted_at: null, merged_into: null, removed_at: null, ...found } : null
         const one = (req.headers().accept ?? '').includes('vnd.pgrst.object')
         return done(one ? json(row) : json(row ? [row] : []))
       }

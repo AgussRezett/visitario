@@ -395,6 +395,33 @@ check('An archived store leaves the directory and the searches', !(await as('mar
 check('…and is listed under Archivados', (await as('martin', `select id from store_directory($1, null, 'archived')`, [panda])).some(r => r.id === lili.id))
 await as('martin', `update store set deleted_at = null where id = $1`, [lili.id])
 check('Restored, it is back in the directory', (await as('martin', `select id from store_directory($1)`, [panda])).some(r => r.id === lili.id))
+// Stores are saved tidy, however they come in
+const tidy = (await sys(`select private.tidy_text($1) a, private.tidy_text($2) b, private.tidy_text($3) c, private.tidy_text($4) d, private.tidy_text($5) e`,
+  ['  MANUELA   PEDRAZA 3526 ', 'SOLDADO DE LA INDEPENDENCIA 1065', 'almacen la esquina s.r.l.', "AV. O'HIGGINS 2001 4B", 'PASAJE JUAN XXIII']))[0]
+check(`Tidy text (${JSON.stringify(tidy)})`, tidy.a === 'Manuela Pedraza 3526' && tidy.b === 'Soldado de la Independencia 1065'
+  && tidy.c === 'Almacen La Esquina S.R.L.' && tidy.d === "Av. O'Higgins 2001 4B" && tidy.e === 'Pasaje Juan XXIII')
+const future = (await sys(`select ((now() at time zone 'America/Argentina/Buenos_Aires')::date + 37)::text d`))[0].d
+const wFut = (await as('agus', `select open_workday($1, $2) id`, [panda, future]))[0].id
+const vTidy = (await as('agus', `select add_visit($1, p_address => 'MANUELA PEDRAZA 3526', p_area => 'COGHLAN', p_customer_number => '9755') id`, [wFut]))[0].id
+const tidyStore = (await sys(`select s.id, s.address, s.area, s.customer_number from store s join visit v on v.store_id = s.id where v.id = $1`, [vTidy]))[0]
+check(`A store added by the merchandiser is saved tidy (${tidyStore.address}; ${tidyStore.area})`, tidyStore.address === 'Manuela Pedraza 3526' && tidyStore.area === 'Coghlan' && tidyStore.customer_number === '9755')
+await as('martin', `update store set address = 'CIUDAD DE LA PAZ 2001' where id = $1`, [tidyStore.id])
+check('…and edited from the directory too', (await sys(`select address from store where id = $1`, [tidyStore.id]))[0].address === 'Ciudad de la Paz 2001')
+// Archiving takes the store out of the open days; the past stays
+const vPast = (await as('agus', `select add_visit($1, p_store => $2) id`, [wOwn, tidyStore.id]))[0].id
+check('Before archiving, the supervisor sees how many open stops it has', (await as('martin', `select store_open_stops_count($1) n`, [tidyStore.id]))[0].n === 1
+  && (await as('agus', `select store_open_stops_count($1) n`, [tidyStore.id]))[0].n === 0)
+await as('martin', `update store set deleted_at = now() where id = $1`, [tidyStore.id])
+const after = await sys(`select id, deleted_at is not null gone from visit where id in ($1, $2)`, [vTidy, vPast])
+check('Archiving removes its pending stop from an open day, not the past one', after.find(r => r.id === vTidy)?.gone === true && after.find(r => r.id === vPast)?.gone === false)
+await expectError('No new stop for an archived store', () => as('agus', `select add_visit($1, p_store => $2)`, [wFut, tidyStore.id]), /archived/)
+// Removing: only archived stores, only supervisors and admins; the history stays
+await expectError('A merchandiser cannot remove a store', () => as('agus', `select remove_store($1)`, [tidyStore.id]), /supervisors and admins/)
+await expectError('A store in use cannot be removed', () => as('martin', `select remove_store($1)`, [lili.id]), /archived/)
+await as('martin', `select remove_store($1)`, [tidyStore.id])
+check('A removed store leaves Archivados', !(await as('martin', `select id from store_directory($1, null, 'archived')`, [panda])).some(r => r.id === tidyStore.id))
+await expectError('…and cannot come back', () => as('martin', `update store set deleted_at = null where id = $1`, [tidyStore.id]), /removed/)
+check('Its visits stay in the history, with the address', (await as('martin', `select s.address from visit v join store s on s.id = v.store_id where v.id = $1`, [vPast]))[0]?.address === 'Ciudad de la Paz 2001')
 // Capture with AI: usage is added up per month, only by the server
 await sys(`select record_ai_usage($1, 3)`, [panda])
 const [{ record_ai_usage: nCaptures }] = await sys(`select record_ai_usage($1, 2)`, [panda])
