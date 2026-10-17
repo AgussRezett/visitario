@@ -1,6 +1,6 @@
 // The day's route by streets (LocationIQ Optimize), for signed-in people only.
 //   POST { stops: [{ id, lat, lng }], origin?: { lat, lng }, firstId?, lastId?, mode: 'driving' | 'walking' }
-//   → { ids: string[], km: number, minutes: number }
+//   → { ids: string[], km: number, minutes: number, line: [lng, lat][] } (line: the path by streets, for the map)
 // The trip always starts at a fixed point: the origin, or the first store (the app sends one).
 // Without LOCATIONIQ_KEY it answers 503 and the app keeps its straight-line order.
 import { createClient } from 'npm:@supabase/supabase-js@2'
@@ -59,12 +59,12 @@ Deno.serve(async (req) => {
   if (lastId) ordered.sort((a, b) => (a.id === lastId ? 1 : b.id === lastId ? -1 : 0))
   const points: Point[] = origin ? [origin as Point, ...ordered] : ordered
   const url = new URL(`https://us1.locationiq.com/v1/optimize/${mode}/${points.map((p) => `${p.lng},${p.lat}`).join(';')}`)
-  url.search = new URLSearchParams({ key, roundtrip: 'false', source: 'first', destination: lastId ? 'last' : 'any', overview: 'false', steps: 'false' }).toString()
+  url.search = new URLSearchParams({ key, roundtrip: 'false', source: 'first', destination: lastId ? 'last' : 'any', overview: 'full', geometries: 'geojson', steps: 'false' }).toString()
 
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(12000) })
     if (!res.ok) return json({ error: 'router_failed' }, 502)
-    const result = (await res.json()) as { code?: string; waypoints?: { waypoint_index?: number }[]; trips?: { distance?: number; duration?: number }[] }
+    const result = (await res.json()) as { code?: string; waypoints?: { waypoint_index?: number }[]; trips?: { distance?: number; duration?: number; geometry?: { coordinates?: unknown } }[] }
     const trip = result.trips?.[0]
     const waypoints = result.waypoints ?? []
     const distance = trip?.distance ?? NaN
@@ -79,10 +79,18 @@ Deno.serve(async (req) => {
       (lastId && placed.find((p) => p.id === lastId)?.at !== points.length - 1) ||
       !Number.isFinite(distance) || !Number.isFinite(duration)
     ) return json({ error: 'router_failed' }, 502)
+    // The path, rounded to ~1 m and at most 4000 points: enough to draw it, light to send.
+    const raw = trip?.geometry?.coordinates
+    const coords: unknown[] = Array.isArray(raw) ? raw : []
+    const step = Math.max(1, Math.ceil(coords.length / 4000))
+    const line = coords
+      .filter((_, i) => i % step === 0 || i === coords.length - 1)
+      .flatMap((c) => (Array.isArray(c) && Number.isFinite(c[0]) && Number.isFinite(c[1]) ? [[Math.round(c[0] * 1e5) / 1e5, Math.round(c[1] * 1e5) / 1e5]] : []))
     return json({
       ids: placed.sort((a, b) => a.at - b.at).map((p) => p.id),
       km: Math.round(distance / 100) / 10,
       minutes: Math.round(duration / 60),
+      line,
     })
   } catch {
     return json({ error: 'router_failed' }, 502)

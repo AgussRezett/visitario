@@ -53,12 +53,12 @@ export function RoutePage({ date: requested }: { date?: string }) {
     const firstId = has(options.firstId) ? options.firstId : origin ? undefined : stops[0]?.id
     const last = has(lastId) && lastId !== firstId ? lastId : undefined
     const straight = approximateRoute({ stops, origin, firstId, lastId: last })
-    setPlan({ key, ids: straight.ids, km: straight.km, minutes: null, byStreet: false })
+    setPlan({ key, ids: straight.ids, km: straight.km, minutes: null, byStreet: false, line: null })
     setStep('result')
     setBusy(true)
     const byStreet = await streetRoute({ stops, origin, firstId, lastId: last, mode: options.mode })
     setBusy(false)
-    if (byStreet) setPlan({ key, ids: byStreet.ids, km: byStreet.km, minutes: byStreet.minutes, byStreet: true })
+    if (byStreet) setPlan({ key, ids: byStreet.ids, km: byStreet.km, minutes: byStreet.minutes, byStreet: true, line: byStreet.line })
   }
 
   const apply = async () => {

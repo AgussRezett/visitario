@@ -39,11 +39,19 @@ export default defineConfig(({ mode }) => ({
             handler: 'StaleWhileRevalidate',
             options: { cacheName: 'fonts', expiration: { maxEntries: 20, maxAgeSeconds: 365 * 24 * 60 * 60 } },
           },
+          // Street map (OpenFreeMap): the areas already seen keep showing without signal.
+          {
+            urlPattern: ({ url }) => url.origin === 'https://tiles.openfreemap.org',
+            handler: 'StaleWhileRevalidate',
+            options: { cacheName: 'map', expiration: { maxEntries: 1500, maxAgeSeconds: 30 * 24 * 60 * 60 } },
+          },
         ],
       },
     }),
   ],
   build: {
+    // The street map library (maplibre-gl, ~1 MB) is its own chunk, loaded only on the route.
+    chunkSizeWarningLimit: 1100,
     rollupOptions: {
       output: {
         manualChunks: {

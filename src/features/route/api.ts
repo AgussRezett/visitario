@@ -5,6 +5,8 @@ export interface StreetRoute {
   ids: string[]
   km: number
   minutes: number
+  /** The path by streets as [lng, lat], to draw on the map (empty if the service did not send it). */
+  line: [number, number][]
 }
 
 /**
@@ -25,7 +27,8 @@ export async function streetRoute(req: { stops: readonly Stop[]; origin?: Point;
   })
   if (error || !data) return null
   const known = new Set(req.stops.map((s) => s.id))
-  return data.ids.length === known.size && data.ids.every((id) => known.has(id)) ? data : null
+  if (data.ids.length !== known.size || !data.ids.every((id) => known.has(id))) return null
+  return { ...data, line: Array.isArray(data.line) ? data.line : [] }
 }
 
 /** The phone's position, once, when the person asks for it. Never stored. */
