@@ -1,6 +1,8 @@
 import { membersOf, supervisorsOf, type CompanyPerson, type Team } from '@/domain/people'
+import { Pencil } from 'lucide-react'
 import { initials } from '@/lib/format'
 import { Avatar } from '@/ui/Avatar'
+import { Button } from '@/ui/Button'
 import styles from './TeamsList.module.scss'
 
 /** One card per team: who supervises it, who works in it and its areas. */
@@ -15,7 +17,9 @@ export function TeamsList({ teams, people, onEdit }: { teams: Team[]; people: Co
           <li key={t.id} className={styles.card}>
             <div className={styles.head}>
               <span className={styles.name}>{t.name}</span>
-              <button type="button" className={styles.edit} onClick={() => onEdit(t)} aria-label={`Editar ${t.name}`}>Editar</button>
+              <Button variant="ghost" size="md" className={styles.edit} onClick={() => onEdit(t)} aria-label={`Editar ${t.name}`}>
+                <Pencil size={16} aria-hidden />Editar
+              </Button>
             </div>
             <span className={styles.lead}>Supervisor: {leads.length ? leads.map((p) => `${p.firstName} ${p.lastName}`).join(', ') : 'sin asignar'}</span>
             {members.length ? (

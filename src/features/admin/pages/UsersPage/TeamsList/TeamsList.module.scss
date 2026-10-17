@@ -20,11 +20,9 @@
   font-weight: $weight-extrabold;
 }
 
+// Ghost button: the text lines up with the card edge, its hover area overflows into the padding.
 .edit {
-  @include text(label);
-  min-height: 32px;
-  font-weight: $weight-bold;
-  color: $color-action-ink;
+  margin-right: calc(-1 * #{space(3)});
 }
 
 .lead {

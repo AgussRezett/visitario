@@ -46,6 +46,11 @@
 
     @include hover {
       background: $color-muted;
+
+      // On a dark card the gray hardly changes: the lime tint shows the hover.
+      @include dark {
+        background: $color-lime-soft;
+      }
     }
   }
 

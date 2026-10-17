@@ -26,6 +26,13 @@ test('the admin sees people and teams, changes a role, brings someone back and a
   await expect(page.getByRole('heading', { name: 'Usuarios y equipos' })).toBeVisible()
   await expect(page.getByRole('button', { name: /Lucía Gómez/ })).toBeVisible()
   await page.screenshot({ path: `test-results/users-${info.project.name}.png`, fullPage: true })
+  if (info.project.name === 'desktop') {
+    await page.evaluate(() => { document.documentElement.dataset.theme = 'dark' })
+    await page.getByRole('button', { name: 'Editar Equipo Norte' }).hover()
+    await page.waitForTimeout(400) // the theme's color transitions
+    await page.screenshot({ path: 'test-results/users-dark-desktop.png' })
+    await page.evaluate(() => { delete document.documentElement.dataset.theme })
+  }
 
   await page.getByRole('button', { name: /Lucía Gómez/ }).click()
   const sheet = page.getByRole('dialog', { name: 'Lucía Gómez' })
@@ -129,6 +136,13 @@ test('templates: write with Spanish data, preview on a real visit, save, hide Wh
   const preview = page.getByRole('region', { name: 'Vista previa' })
   await expect(preview.getByText(/Num clte: 12345/)).toBeVisible()
   await expect(preview.getByText(/Observación: Faltó SKYY/)).toBeVisible()
+  if (info.project.name === 'desktop') {
+    await page.evaluate(() => { document.documentElement.dataset.theme = 'dark' })
+    await page.getByRole('button', { name: 'Insertar Tarea' }).hover()
+    await page.waitForTimeout(400) // the theme's color transitions
+    await page.screenshot({ path: 'test-results/templates-dark-desktop.png' })
+    await page.evaluate(() => { delete document.documentElement.dataset.theme })
+  }
 
   await page.getByLabel('Texto', { exact: true }).fill('HOLA {nombre}\nZona: {zona}\nTarea: ')
   await page.getByRole('button', { name: 'Insertar Tarea' }).click()

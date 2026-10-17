@@ -98,6 +98,10 @@
       .kind-help {
         color: $color-ink-subtle;
       }
+
+      @include dark {
+        border-color: $color-lime;
+      }
     }
   }
 }
@@ -154,8 +158,8 @@ textarea.text {
 .token {
   @include text(label);
   @include transition-colors;
-  min-height: 32px;
-  padding-inline: space(2.5);
+  min-height: 44px; // a tap target, like any button
+  padding-inline: space(3);
   border-radius: $radius-full;
   background: $color-muted;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
