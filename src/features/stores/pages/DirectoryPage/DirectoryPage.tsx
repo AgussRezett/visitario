@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { Archive, ArchiveRestore, ChevronLeft, ChevronRight, MapPinOff, Search, UserRound } from 'lucide-react'
+import { Archive, ArchiveRestore, ChevronLeft, ChevronRight, MapPinOff, Search, Trash2, UserRound } from 'lucide-react'
 import { formatDayMonth, todayInArgentina } from '@/domain/dates'
 import { LOCATION_LABEL } from '@/domain/stores'
 import type { StoreReputation } from '@/domain/reputation'
@@ -9,7 +9,6 @@ import { useDebounced } from '@/lib/useDebounced'
 import { useIsDesktop } from '@/lib/useMedia'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
-import { useConfirm } from '@/ui/ConfirmDialog'
 import { Refreshing } from '@/ui/Refreshing'
 import { Select } from '@/ui/Select'
 import { Skeleton } from '@/ui/Skeleton'
@@ -19,7 +18,8 @@ import { useWorkContext } from '@/features/workday/context'
 import { useStoreReputation } from '@/features/reputation/api'
 import { DirectoryTabs } from '@/features/stores/components/DirectoryTabs'
 import { RapportLevel } from '@/features/reputation/components/RapportLevel'
-import { PAGE_SIZE, directoryCountsQuery, directoryQuery, useArchiveStore, type DirectoryFilter, type DirectoryRow } from '@/features/stores/api/stores'
+import { PAGE_SIZE, directoryCountsQuery, directoryQuery, type DirectoryFilter, type DirectoryRow } from '@/features/stores/api/stores'
+import { useStoreArchive } from '@/features/stores/useStoreArchive'
 import styles from './DirectoryPage.module.scss'
 
 const when = (date: string) => (date === todayInArgentina() ? 'Hoy' : formatDayMonth(date))
@@ -37,8 +37,7 @@ export function DirectoryPage() {
   const list = useQuery({ ...directoryQuery(companyId, { query: q, filter, area, page }), enabled: Boolean(ctx), placeholderData: keepPreviousData })
   const counts = useQuery({ ...directoryCountsQuery(companyId), enabled: Boolean(ctx) })
   const reputation = useStoreReputation(companyId, (list.data?.rows ?? []).map((r) => r.id)).data
-  const archive = useArchiveStore()
-  const { confirm, dialog } = useConfirm()
+  const { askArchive, askRemove, restore, busy, error: archiveError, dialog } = useStoreArchive()
   if (!ctx) return null
 
   const toggle = (f: DirectoryFilter) => { setFilter((x) => (x === f ? 'all' : f)); setPage(0) }
@@ -47,15 +46,6 @@ export function DirectoryPage() {
   const name = (r: DirectoryRow) => r.name ?? r.address
   const last = (r: DirectoryRow) => (r.lastVisit ? `${when(r.lastVisit.date)} · ${r.lastVisit.by}` : 'Nunca')
   const archived = filter === 'archived'
-  const askArchive = async (r: DirectoryRow) => {
-    const ok = await confirm({
-      title: `¿Archivar ${name(r)}?`,
-      description: 'Sale del directorio y de las búsquedas para agregar o importar. Sus visitas quedan en el historial y lo podés restaurar desde "Archivados".',
-      confirmLabel: 'Archivar',
-      tone: 'danger',
-    })
-    if (ok) archive.mutate({ id: r.id, archived: true })
-  }
 
   return (
     <div className={styles.page}>
@@ -89,7 +79,7 @@ export function DirectoryPage() {
         </div>
       </div>
 
-      {archive.error ? <Banner tone="error">{archive.error.message}</Banner> : null}
+      {archiveError ? <Banner tone="error">{archiveError.message}</Banner> : null}
       {list.isPending ? (
         <Skeleton height={320} />
       ) : list.error ? (
@@ -123,9 +113,12 @@ export function DirectoryPage() {
                     <td className={styles.num}>{r.visits30d}</td>
                     <td className={styles.rowAction}>
                       {archived ? (
-                        <Button variant="secondary" size="sm" onClick={() => archive.mutate({ id: r.id, archived: false })}><ArchiveRestore size={16} aria-hidden />Restaurar</Button>
+                        <span className={styles.rowButtons}>
+                          <Button variant="secondary" size="md" loading={busy === r.id} onClick={() => restore(r.id)}><ArchiveRestore size={16} aria-hidden />Restaurar</Button>
+                          <Button variant="ghost" size="md" disabled={busy === r.id} onClick={() => void askRemove({ id: r.id, label: name(r) })}><Trash2 size={16} aria-hidden />Eliminar</Button>
+                        </span>
                       ) : (
-                        <Button variant="ghost" size="sm" className={styles.iconOnly} aria-label={`Archivar ${name(r)}`} title="Archivar" onClick={() => void askArchive(r)}><Archive size={18} aria-hidden /></Button>
+                        <Button variant="ghost" size="md" loading={busy === r.id} onClick={() => void askArchive({ id: r.id, label: name(r) })}><Archive size={16} aria-hidden />Archivar</Button>
                       )}
                     </td>
                   </tr>
@@ -157,8 +150,8 @@ export function DirectoryPage() {
         <div className={styles.pager}>
           <span className={styles.meta}>Mostrando {page * PAGE_SIZE + 1} a {Math.min(total, (page + 1) * PAGE_SIZE)} de {total.toLocaleString('es-AR')}</span>
           <div className={styles.pagerButtons}>
-            <Button variant="secondary" size="sm" disabled={page === 0} onClick={() => setPage((p) => p - 1)}><ChevronLeft size={16} aria-hidden />Anterior</Button>
-            <Button variant="secondary" size="sm" disabled={(page + 1) * PAGE_SIZE >= total} onClick={() => setPage((p) => p + 1)}>Siguiente<ChevronRight size={16} aria-hidden /></Button>
+            <Button variant="secondary" size="md" disabled={page === 0} onClick={() => setPage((p) => p - 1)}><ChevronLeft size={16} aria-hidden />Anterior</Button>
+            <Button variant="secondary" size="md" disabled={(page + 1) * PAGE_SIZE >= total} onClick={() => setPage((p) => p + 1)}>Siguiente<ChevronRight size={16} aria-hidden /></Button>
           </div>
         </div>
       ) : null}

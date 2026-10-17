@@ -39,6 +39,8 @@ export interface FakeState {
   usage?: Row
   /** Import: the directory, saved formats and what the geocoder finds (by address). */
   stores?: Row[]
+  /** Pending stops from today on, per store (what archiving removes). */
+  openStops?: Record<string, number>
   formats?: Row[]
   geocode?: Record<string, Row>
   /** What the route function answers by streets (503 without it) and what it was asked. */

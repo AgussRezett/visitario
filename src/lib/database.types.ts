@@ -719,6 +719,7 @@ export type Database = {
           location_status: Database["public"]["Enums"]["location_status"]
           merged_into: string | null
           name: string | null
+          removed_at: string | null
           source: Database["public"]["Enums"]["store_source"]
           updated_at: string
           version: number
@@ -737,6 +738,7 @@ export type Database = {
           location_status?: Database["public"]["Enums"]["location_status"]
           merged_into?: string | null
           name?: string | null
+          removed_at?: string | null
           source?: Database["public"]["Enums"]["store_source"]
           updated_at?: string
           version?: number
@@ -755,6 +757,7 @@ export type Database = {
           location_status?: Database["public"]["Enums"]["location_status"]
           merged_into?: string | null
           name?: string | null
+          removed_at?: string | null
           source?: Database["public"]["Enums"]["store_source"]
           updated_at?: string
           version?: number
@@ -1606,6 +1609,7 @@ export type Database = {
         Args: { p_company: string; p_cost_thousandths: number }
         Returns: number
       }
+      remove_store: { Args: { p_store: string }; Returns: undefined }
       report_sync: {
         Args: {
           p_company: string
@@ -1687,6 +1691,7 @@ export type Database = {
           unverified: number
         }[]
       }
+      store_open_stops_count: { Args: { p_store: string }; Returns: number }
       store_reputation: {
         Args: { p_company: string; p_stores: string[] }
         Returns: {

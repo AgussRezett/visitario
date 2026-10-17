@@ -3,6 +3,7 @@
  * column holds, recognising the saved format, telling who each row is for and what still
  * needs a look. Pure rules; the screens and the database call live in features/import.
  */
+import { tidyText } from './text'
 
 export type ImportField = 'customer_number' | 'name' | 'address' | 'area' | 'merchandiser' | 'task' | 'ignore'
 
@@ -189,9 +190,9 @@ export function toRows(table: Table, columns: ImportField[], hasHeader: boolean)
     .map((r, i) => ({
       line: i + 1,
       customerNumber: pick(r, 'customer_number'),
-      name: pick(r, 'name'),
-      address: pick(r, 'address'),
-      area: pick(r, 'area'),
+      name: tidyText(pick(r, 'name')),
+      address: tidyText(pick(r, 'address')),
+      area: tidyText(pick(r, 'area')),
       merchandiser: pick(r, 'merchandiser'),
       task: pick(r, 'task'),
     }))
@@ -200,7 +201,12 @@ export function toRows(table: Table, columns: ImportField[], hasHeader: boolean)
 }
 
 export const linesToRows = (lines: string[]): ImportRow[] =>
-  lines.map((l, i) => ({ line: i + 1, name: '', merchandiser: '', task: '', ...parseLine(l) })).filter((r) => r.address || r.customerNumber)
+  lines
+    .map((l, i) => {
+      const r = parseLine(l)
+      return { line: i + 1, name: '', merchandiser: '', task: '', ...r, address: tidyText(r.address), area: tidyText(r.area) }
+    })
+    .filter((r) => r.address || r.customerNumber)
 
 export type PersonMatch = { kind: 'sure' | 'guess'; person: Person } | { kind: 'none' }
 
