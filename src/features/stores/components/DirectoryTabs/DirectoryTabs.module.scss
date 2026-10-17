@@ -1,0 +1,31 @@
+@use '@/styles/abstracts' as *;
+
+// Same look as the segmented control: two equal halves, 44 px tall.
+.tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(1);
+  padding: space(1);
+  border-radius: $radius-md;
+  background: $color-muted;
+
+  @include up(lg) {
+    width: 360px;
+  }
+}
+
+.tab {
+  @include center;
+  @include text(label);
+  @include transition-colors;
+  min-height: $touch-target;
+  border-radius: $radius-sm;
+  font-weight: $weight-bold;
+  color: $color-ink-muted;
+
+  &[aria-current='page'] {
+    background: $color-card;
+    color: $color-ink;
+    box-shadow: $shadow-raised;
+  }
+}

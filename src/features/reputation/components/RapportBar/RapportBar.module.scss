@@ -1,0 +1,53 @@
+@use '@/styles/abstracts' as *;
+
+// One stacked bar: segments best to worst, 2 px surface gap, rounded ends.
+.bar {
+  display: flex;
+  gap: 2px;
+  width: 100%;
+  height: space(3);
+  min-width: space(16);
+}
+
+.thin {
+  height: space(2);
+}
+
+.segment,
+.empty {
+  flex-basis: 0;
+  min-width: 4px;
+  border-radius: 4px;
+}
+
+.empty {
+  flex-grow: 1;
+  background: $color-muted;
+}
+
+.segment[data-level='welcoming'],
+.swatch[data-level='welcoming'] { background: $color-rapport-welcoming; }
+.segment[data-level='restricted'],
+.swatch[data-level='restricted'] { background: $color-rapport-restricted; }
+.segment[data-level='indifferent'],
+.swatch[data-level='indifferent'] { background: $color-rapport-indifferent; }
+.segment[data-level='unwilling'],
+.swatch[data-level='unwilling'] { background: $color-rapport-unwilling; }
+
+.legend {
+  @include flex(row, $gap: space(3));
+  @include text(tiny);
+  flex-wrap: wrap;
+  font-weight: $weight-semibold;
+  color: $color-ink-muted;
+
+  li {
+    @include flex(row, $gap: space(1.5), $align: center);
+  }
+}
+
+.swatch {
+  @include square(10px);
+  flex-shrink: 0;
+  border-radius: 3px;
+}

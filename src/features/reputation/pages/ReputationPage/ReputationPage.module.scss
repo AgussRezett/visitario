@@ -1,0 +1,251 @@
+@use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(4));
+  padding: space(4) space(5) space(6);
+
+  @include up(lg) {
+    gap: space(5);
+    padding: space(6) space(8);
+  }
+}
+
+.titles {
+  @include flex(column, $gap: space(0.5));
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+.title {
+  @include heading(title);
+
+  @include up(lg) {
+    @include heading(display);
+  }
+}
+
+.filters {
+  @include up(lg) {
+    width: 360px;
+  }
+}
+
+.body {
+  @include flex(column, $gap: space(4));
+
+  @include up(lg) {
+    gap: space(5);
+  }
+}
+
+// ---- Headline numbers
+.kpis {
+  display: grid;
+  gap: space(2);
+
+  @include up(sm) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  @include up(lg) {
+    gap: space(3);
+  }
+}
+
+.kpi {
+  @include surface;
+  @include flex(column, $gap: space(0.5));
+  padding: space(3.5) space(4);
+}
+
+.kpi-label {
+  @include eyebrow;
+}
+
+.kpi-value {
+  font-size: 30px;
+  line-height: 36px;
+  font-weight: $weight-extrabold;
+  font-variant-numeric: tabular-nums;
+
+  small {
+    @include text(label);
+    font-weight: $weight-semibold;
+    color: $color-ink-subtle;
+  }
+}
+
+.kpi-note {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+// ---- Cards
+.card {
+  @include surface;
+  @include flex(column, $gap: space(3));
+  min-width: 0;
+  padding: space(4);
+
+  @include up(lg) {
+    padding: space(5);
+  }
+}
+
+.card-head {
+  @include flex(column, $gap: space(2));
+
+  @include up(lg) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.card-title {
+  @include text(heading);
+  font-weight: $weight-extrabold;
+}
+
+.help {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.columns {
+  @include flex(column, $gap: space(4));
+
+  @include up(lg) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: space(5);
+  }
+}
+
+// ---- Week by week: 100 % stacked columns, 2 px gaps, rounded ends
+.weeks {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: space(1);
+  align-items: end;
+
+  @include up(lg) {
+    gap: space(2);
+  }
+}
+
+.week {
+  @include flex(column, $gap: space(1), $align: center);
+  min-width: 0;
+}
+
+.column {
+  @include flex(column-reverse, $gap: 2px);
+  width: 100%;
+  max-width: 40px;
+  height: 160px;
+}
+
+.segment,
+.empty-column {
+  flex-basis: 0;
+  min-height: 4px;
+  border-radius: 4px;
+}
+
+.empty-column {
+  flex-grow: 1;
+  background: $color-muted;
+}
+
+// Best at the top: the column stacks from the bottom (column-reverse), worst first.
+.segment[data-level='welcoming'] { order: 4; background: $color-rapport-welcoming; }
+.segment[data-level='restricted'] { order: 3; background: $color-rapport-restricted; }
+.segment[data-level='indifferent'] { order: 2; background: $color-rapport-indifferent; }
+.segment[data-level='unwilling'] { order: 1; background: $color-rapport-unwilling; }
+
+.week-count {
+  @include text(tiny);
+  font-weight: $weight-bold;
+  font-variant-numeric: tabular-nums;
+}
+
+.week-label {
+  @include text(tiny);
+  color: $color-ink-subtle;
+  white-space: nowrap;
+
+  // Phones: every other date, so they never overlap.
+  .week:nth-child(even) & {
+    visibility: hidden;
+
+    @include up(lg) {
+      visibility: visible;
+    }
+  }
+}
+
+// ---- Rows by area or merchandiser
+.groups {
+  @include flex(column, $gap: space(3.5));
+}
+
+.group {
+  @include flex(column, $gap: space(1.5));
+}
+
+.group-head {
+  @include flex(row, $gap: space(3), $align: baseline, $justify: space-between);
+}
+
+.group-name {
+  @include truncate;
+  font-weight: $weight-bold;
+}
+
+.group-index {
+  @include text(label);
+  flex-shrink: 0;
+  font-weight: $weight-extrabold;
+  font-variant-numeric: tabular-nums;
+
+  small {
+    font-weight: $weight-semibold;
+    color: $color-ink-subtle;
+  }
+}
+
+.group-meta {
+  @include text(tiny);
+  color: $color-ink-subtle;
+}
+
+// ---- Stores that got worse
+.stores {
+  @include flex(column);
+
+  li + li {
+    border-top: 1px solid $color-line;
+  }
+}
+
+.store {
+  @include flex(row, $gap: space(3), $align: center);
+  min-height: 56px;
+  padding-block: space(2);
+}
+
+.store-text {
+  @include flex(column, $gap: space(1));
+  flex: 1;
+  min-width: 0;
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: $color-ink-subtle;
+}

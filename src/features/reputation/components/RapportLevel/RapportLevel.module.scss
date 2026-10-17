@@ -1,0 +1,42 @@
+@use '@/styles/abstracts' as *;
+
+// Meter steps take the ordinal ramp; the words stay in ink (never the series color).
+.level {
+  @include flex(row, $gap: space(2), $align: center);
+  @include text(label);
+  font-weight: $weight-bold;
+  color: $color-ink-muted;
+}
+
+.meter {
+  @include flex(row, $gap: 2px, $align: flex-end);
+  flex-shrink: 0;
+
+  i {
+    width: 4px;
+    border-radius: 2px;
+    background: $color-line;
+
+    &:nth-child(1) { height: 6px; }
+    &:nth-child(2) { height: 9px; }
+    &:nth-child(3) { height: 12px; }
+    &:nth-child(4) { height: 15px; }
+  }
+
+  .on {
+    background: currentColor;
+  }
+}
+
+.level[data-level='welcoming'] .meter { color: $color-rapport-welcoming; }
+.level[data-level='restricted'] .meter { color: $color-rapport-restricted; }
+.level[data-level='indifferent'] .meter { color: $color-rapport-indifferent; }
+.level[data-level='unwilling'] .meter { color: $color-rapport-unwilling; }
+
+.text {
+  min-width: 0;
+}
+
+.trend[data-trend='worse'] {
+  color: $color-ink;
+}
