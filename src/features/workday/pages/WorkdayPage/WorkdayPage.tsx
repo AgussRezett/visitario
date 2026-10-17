@@ -59,7 +59,7 @@ export function WorkdayPage({ date: requested }: { date?: string }) {
             <>
               {pending.length ? (
                 <Button variant="secondary" size="md" onClick={() => setSheet('resume')}>
-                  <History size={18} aria-hidden />Retomar pendientes
+                  <History size={18} aria-hidden />{pending.length} {pending.length === 1 ? 'pendiente anterior' : 'pendientes anteriores'}
                 </Button>
               ) : null}
               <Button size="md" onClick={() => setSheet('add')}>
