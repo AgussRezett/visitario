@@ -85,7 +85,7 @@ Cada punto sale en su propio PR.
 - [x] Aplicar el orden reordena la jornada, también sin señal; las visitas terminadas o aprobadas no se mueven (dominio + e2e).
 - [ ] Probado en el celular real.
 
-Cómo quedó: Recorrido (auto o a pie, ubicación opcional que no se guarda, primer y último local —un local cerrado va último por defecto—, locales a incluir). El orden se calcula en el celular en línea recta y, si hay señal y `LOCATIONIQ_KEY`, se reemplaza por el orden por calles con km y minutos (función `route`). Google Maps en tramos de 3 paradas intermedias en el celular y completo en la computadora. En la computadora se ve un croquis del recorrido sin mapa de fondo.
+Cómo quedó: Recorrido (auto o a pie, ubicación opcional que no se guarda, primer y último local —un local cerrado va último por defecto—, locales a incluir). El orden se calcula en el celular en línea recta y, si hay señal y `LOCATIONIQ_KEY`, se reemplaza por el orden por calles con km y minutos (función `route`). Google Maps en tramos de 3 paradas intermedias en el celular y completo en la computadora. El recorrido se ve sobre un mapa real de calles (MapLibre + OpenFreeMap, sin clave), con las paradas numeradas para tocar y el camino por calles; sin señal, un croquis.
 
 **Informes del equipo**
 - [x] Tabla por activador (visitados, no visitados, extras, no autorizadas, cada número de trabajo y revisión) con los totales del equipo (dominio + e2e).
