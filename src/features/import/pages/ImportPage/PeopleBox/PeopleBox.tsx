@@ -11,7 +11,7 @@ interface PeopleBoxProps {
   onConfirm: (name: string, personId: string) => void
 }
 
-const full = (p: Person) => `${p.firstName} ${p.lastName}`
+const full = (p: Person) => `${p.firstName} ${p.lastName}${p.me ? " (vos)" : ""}`
 /** "Lucía", or "Agus → Agustín" when the spreadsheet calls them differently. */
 const shown = (name: string, p: Person) => (normalize(name) === normalize(p.firstName) ? p.firstName : `${name} → ${p.firstName}`)
 

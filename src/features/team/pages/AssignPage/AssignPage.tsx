@@ -38,7 +38,8 @@ export function AssignPage({ date: requested, person, imported }: AssignSearch) 
   const { confirm, dialog } = useConfirm()
   if (!ctx) return null
 
-  const members = (team.data ?? []).filter((m) => m.personId !== ctx.personId)
+  // A supervisor who is also a merchandiser plans their own days here too.
+  const members = team.data ?? []
   const selected = members.find((m) => m.personId === person) ?? members[0]
   const go = (s: AssignSearch) => navigate({ to: '/s/assign', search: { date: s.date ?? date, person: s.person ?? selected?.personId, imported: s.date ? undefined : imported }, replace: true })
   const drafts = members.filter((m) => m.workdayStatus === 'draft' && m.total > 0)
@@ -89,7 +90,7 @@ export function AssignPage({ date: requested, person, imported }: AssignSearch) 
             <button key={m.personId} type="button" role="radio" aria-checked={m.personId === selected?.personId} className={styles.person} data-on={m.personId === selected?.personId || undefined} onClick={() => go({ person: m.personId })}>
               <Avatar name={initials(m.firstName, m.lastName)} size={28} />
               <span className={styles.personText}>
-                <span className={styles.personName}>{m.firstName}</span>
+                <span className={styles.personName}>{m.firstName}{m.personId === ctx.personId ? ' (vos)' : ''}</span>
                 <span className={styles.personMeta}>{planLabel(m)}</span>
               </span>
             </button>
