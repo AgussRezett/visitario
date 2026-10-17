@@ -87,31 +87,32 @@ begin
   from jsonb_to_recordset(j->'visits') as v(id uuid, wd uuid, date date, store uuid, sort int, task text, resumed uuid)
   join mvp_store s on s.src = v.store
   join mvp_day d on d.src = v.wd;
-  delete from mvp_visit where done_before;  -- imported before: nothing to add, nothing skipped
+  -- A visit imported before (done_before) adds nothing and is not skipped.
 
   select coalesce(jsonb_agg(jsonb_build_object('id', v.id, 'date', v.date, 'address', st.address) order by v.date, v.sort), '[]')
   into skipped
   from mvp_visit v join public.store st on st.id = v.store
-  where v.already is not null;
+  where not v.done_before and v.already is not null;
 
   -- Added after what the day already has, in the backup's order.
   insert into public.visit (id, company_id, workday_id, merchandiser_id, work_date, store_id, sort_order, task, source, added_by, resumed_from)
   select v.id, p_company, v.day, me, v.date, v.store,
          (row_number() over (partition by v.day order by v.sort))::int - 1
-           + coalesce((select max(x.sort_order) + 1 from public.visit x where x.workday_id = v.day and x.id not in (select id from mvp_visit)), 0),
+           + coalesce((select max(x.sort_order) + 1 from public.visit x
+                       where x.workday_id = v.day and x.id not in (select n.id from mvp_visit n where not n.done_before)), 0),
          v.task, 'assigned', me,
          -- A resumed visit points to what stands for its original: the original, or the stop that replaced it.
          case
            when v.resumed is null then null
-           when exists (select 1 from mvp_visit o where o.id = v.resumed)
+           when exists (select 1 from mvp_visit o where o.id = v.resumed and not o.done_before)
              then (select coalesce(o.already, o.id) from mvp_visit o where o.id = v.resumed)  -- in this same backup
            else (select x.id from public.visit x where x.id = v.resumed)                        -- imported before, or gone
          end
   from mvp_visit v
-  where v.already is null
+  where not v.done_before and v.already is null
   order by v.date;
 
-  create temp table mvp_skip on commit drop as select id from mvp_visit where already is not null;
+  create temp table mvp_skip on commit drop as select id from mvp_visit where not done_before and already is not null;
 
   insert into public.display (id, company_id, visit_id, display_type_id, reference, source, sort_order, created_by)
   select x.id, p_company, x.visit, t.id, x.ref, x.source::public.display_source, x.sort, me

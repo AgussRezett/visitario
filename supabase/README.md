@@ -17,6 +17,8 @@ URL: `https://mjpzawlyjjlmluozjwap.supabase.co`
 | `20261014160000_r2_trash.sql` | applied | `r2_trash` queue, `run_purge()`, `purge_authorized()` |
 | `20261017140000_reputation.sql` | applied | `visit.rapport`, `store_reputation()` (numbers only), `rapport_facts()` (under RLS), guard: only the merchandiser rates |
 | `20261017160000_store_tidy_and_remove.sql` | applied | `private.tidy_text()` on every store save (+ one-time tidy), archiving removes pending stops from today on, `remove_store()` / `store.removed_at`, `store_open_stops_count()` |
+| `20261017180000_supervisor_pending.sql` | applied | `merchandiser_pending`: last 7 days, same rules as `resumable_visits`, never draft days |
+| `20261017200000_mvp_backup_merge.sql` | applied (in two parts) | `import_mvp_backup` merges into existing days, reuses known stores, skips addresses the day already has |
 
 Files with `delete`/`drop` statements are refused by the agent connector; apply those with the CLI (`supabase link --project-ref mjpzawlyjjlmluozjwap && supabase db push`) or the SQL Editor.
 
@@ -88,3 +90,8 @@ where c.name = 'Panda' and pp.dni = '<DNI>';
 work: it signs in, calls `import_mvp_backup` (platform admins only; the company is the backup's, where the
 caller must be an active merchandiser) and uploads the photos through `photos`, without EXIF. Ids are
 deterministic, so running it again only uploads what is missing. Needs `.env.local` and the R2 secrets.
+
+It merges into what Visitario already has: a day that already has a workday gets the backup's stops there
+(after the ones it had), a store already in the directory is reused (earlier import, customer number or same
+address), and an address the day already had is skipped with its photos; the script lists the skipped ones.
+Type the password only in the terminal (it is hidden there).
