@@ -84,6 +84,44 @@ test('assigning: plan a day, add a store, publish', async ({ page }, info) => {
   await expect.poll(() => state.workdays?.find((w) => w.merchandiser_id === 'p2')?.status).toBe('published')
 })
 
+test('assigning: copy a task to other stops, and add only the pending stops chosen', async ({ page }, info) => {
+  const state = team()
+  state.people = [lucia]
+  state.pending = [
+    { visit_id: 'old1', work_date: '2026-10-14', store_name: null, address: 'Cabildo 2280', work_status: 'pending', finished_at: null, pending_displays: 0 },
+    { visit_id: 'old2', work_date: '2026-10-13', store_name: 'Kiosco Ana', address: 'Monroe 2650', work_status: 'closed', finished_at: null, pending_displays: 1 },
+  ]
+  await installFakeSupabase(page, state, 'supervisor')
+  const friday = '2026-10-16'
+  await page.goto(`/s/assign?date=${friday}`)
+  await expect(page.getByRole('button', { name: 'Copiar de otro día' })).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Agregar locales' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Agregar a la jornada de Lucía' })
+  await sheet.getByRole('radio', { name: 'Pegar varias' }).click()
+  await sheet.getByLabel('Direcciones').fill('Moldes 1365\nVidal 2044\nCuba 2100')
+  await sheet.getByRole('button', { name: 'Agregar 3 direcciones' }).click()
+  await expect.poll(() => state.visits.length).toBe(3)
+  await page.keyboard.press('Escape')
+
+  await page.getByLabel('Tarea en Moldes 1365', { exact: true }).fill('Activar grupo Campari')
+  await page.getByRole('button', { name: 'Copiar la tarea de Moldes 1365' }).click()
+  await expect(page.getByText('Tarea copiada: "Activar grupo Campari"')).toBeVisible()
+  await page.getByRole('button', { name: 'Pegar la tarea en Vidal 2044' }).click()
+  await page.getByRole('button', { name: 'Pegar la tarea en Cuba 2100' }).click()
+  await expect.poll(() => state.visits.filter((v) => v.task === 'Activar grupo Campari').length).toBe(3)
+  await expect(page.getByRole('button', { name: 'Pegar la tarea en Cuba 2100' })).toBeDisabled()
+  await page.screenshot({ path: `test-results/assign-tasks-${info.project.name}.png`, fullPage: true })
+
+  await page.getByRole('button', { name: 'Pendientes · 2' }).click()
+  const pending = page.getByRole('dialog', { name: 'Pendientes de Lucía' })
+  await expect(pending.getByText('0 de 2 elegidos')).toBeVisible()
+  await pending.getByText('Kiosco Ana').click()
+  await page.screenshot({ path: `test-results/assign-pending-${info.project.name}.png` })
+  await pending.getByRole('button', { name: 'Agregar 1 a la jornada' }).click()
+  await expect.poll(() => state.resumed).toEqual(['old2'])
+})
+
 test('the merchandiser sees the fix, answers and sends it back', async ({ page }, info) => {
   const state: FakeState = {
     workday: { id: 'w1', company_id: 'c1', work_date: TODAY, status: 'published', created_by: 'p1' },

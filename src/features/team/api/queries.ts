@@ -129,24 +129,6 @@ export const teamVisitQuery = (visitId: string, personId: string) =>
     },
   })
 
-/** The merchandiser's workday on a date (drafts included for the supervisor), or null. */
-export const memberWorkdayQuery = (companyId: string, merchandiserId: string, date: string) =>
-  queryOptions({
-    queryKey: ['team', 'workday', companyId, merchandiserId, date] as const,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('workday')
-        .select('id, status')
-        .eq('company_id', companyId)
-        .eq('merchandiser_id', merchandiserId)
-        .eq('work_date', date)
-        .is('deleted_at', null)
-        .maybeSingle()
-      if (error) throw error
-      return data
-    },
-  })
-
 export const memberPendingQuery = (companyId: string, merchandiserId: string, before: string) =>
   queryOptions({
     queryKey: ['team', 'pending', companyId, merchandiserId, before] as const,

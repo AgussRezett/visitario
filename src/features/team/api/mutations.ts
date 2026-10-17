@@ -39,14 +39,6 @@ export function useAssign(companyId: string) {
       },
       onSettled: refresh,
     }),
-    copy: useMutation({
-      mutationFn: async (p: { from: string; to: string }) => {
-        const { data, error } = await supabase.rpc('copy_workday', { p_from: p.from, p_to: p.to })
-        check(error)
-        return data as number
-      },
-      onSettled: refresh,
-    }),
     resume: useMutation({
       mutationFn: async (p: { visitIds: string[]; workdayId: string }) => {
         for (const id of p.visitIds) check((await supabase.rpc('resume_visit', { p_visit: id, p_workday: p.workdayId })).error)

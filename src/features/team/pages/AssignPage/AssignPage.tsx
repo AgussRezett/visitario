@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { CalendarPlus, Check, Copy, FileUp, History, Plus, Send, X } from 'lucide-react'
-import { addDays, formatDayMonth, formatLongDate, todayInArgentina } from '@/domain/dates'
+import { CalendarPlus, Check, ClipboardPaste, FileUp, History, Plus, Send } from 'lucide-react'
+import { addDays, formatLongDate, todayInArgentina } from '@/domain/dates'
 import { planLabel, type TeamMember } from '@/domain/team'
 import { initials } from '@/lib/format'
 import { Avatar } from '@/ui/Avatar'
@@ -11,14 +11,14 @@ import { Button } from '@/ui/Button'
 import { useConfirm } from '@/ui/ConfirmDialog'
 import { Field } from '@/ui/Field'
 import { Refreshing } from '@/ui/Refreshing'
-import { Sheet } from '@/ui/Sheet'
 import { Skeleton } from '@/ui/Skeleton'
-import { StatusChip } from '@/ui/StatusChip'
 import { useWorkContext, type WorkContext } from '@/features/workday/context'
-import { useCatalogs, visitsQuery, type Visit } from '@/features/workday/api/queries'
+import { useCatalogs, visitsQuery } from '@/features/workday/api/queries'
 import { AddAddressSheet } from '@/features/workday/pages/WorkdayPage/AddAddressSheet'
-import { memberPendingQuery, memberWorkdayQuery, teamDayQuery } from '@/features/team/api/queries'
+import { memberPendingQuery, teamDayQuery } from '@/features/team/api/queries'
 import { useAssign } from '@/features/team/api/mutations'
+import { PendingSheet } from './PendingSheet'
+import { StopRow } from './StopRow'
 import styles from './AssignPage.module.scss'
 
 export interface AssignSearch {
@@ -118,7 +118,9 @@ function MemberPlan({ ctx, member: m, date }: { ctx: WorkContext; member: TeamMe
   const pending = useQuery(memberPendingQuery(ctx.companyId, m.personId, date))
   const catalogs = useCatalogs(ctx.companyId)
   const [adding, setAdding] = useState(false)
-  const [copying, setCopying] = useState(false)
+  const [picking, setPicking] = useState(false)
+  /** A task copied from one row, to paste in others. */
+  const [copied, setCopied] = useState<string | null>(null)
   const typeName = (id: number) => catalogs.data?.displayTypes.find((t) => t.id === id)?.name ?? 'Exhibición'
   const error = assign.plan.error ?? assign.resume.error ?? assign.remove.error ?? assign.setTask.error
 
@@ -138,16 +140,14 @@ function MemberPlan({ ctx, member: m, date }: { ctx: WorkContext; member: TeamMe
           {m.workdayStatus === 'published' ? <span className={styles.published}>Publicada</span> : m.workdayStatus === 'draft' ? <span className={styles.draft}>Sin publicar</span> : null}
         </h2>
         <div className={styles.planActions}>
-          <Button size="sm" onClick={async () => { setWorkdayForSheet(await ensureWorkday()); setAdding(true) }} loading={assign.plan.isPending}>
+          <Button size="md" onClick={async () => { setWorkdayForSheet(await ensureWorkday()); setAdding(true) }} loading={assign.plan.isPending}>
             <Plus size={16} aria-hidden />Agregar locales
           </Button>
           {toResume.length ? (
-            <Button variant="secondary" size="sm" loading={assign.resume.isPending}
-              onClick={async () => assign.resume.mutateAsync({ visitIds: toResume.map((p) => p.visit_id), workdayId: await ensureWorkday() })}>
-              <History size={16} aria-hidden />Sumar {toResume.length} {toResume.length === 1 ? 'pendiente' : 'pendientes'}
+            <Button variant="secondary" size="md" onClick={() => setPicking(true)}>
+              <History size={16} aria-hidden />Pendientes · {toResume.length}
             </Button>
           ) : null}
-          <Button variant="secondary" size="sm" onClick={() => setCopying(true)}><Copy size={16} aria-hidden />Copiar de otro día</Button>
         </div>
       </div>
 
@@ -157,102 +157,31 @@ function MemberPlan({ ctx, member: m, date }: { ctx: WorkContext; member: TeamMe
       {!m.workdayId ? (
         <div className={styles.emptyPlan}>
           <CalendarPlus size={28} aria-hidden />
-          <p>Agregá locales del directorio, sumá sus pendientes o copiá otro día. La jornada queda sin publicar hasta que la publiques.</p>
+          <p>Agregá locales del directorio o sumá sus pendientes de la última semana. La jornada queda sin publicar hasta que la publiques.</p>
         </div>
       ) : visits.isPending ? (
         <Skeleton height={160} />
       ) : !stops.length ? (
         <p className={styles.help}>Sin locales todavía.</p>
       ) : (
-        <ol className={styles.stops}>
-          {stops.map((v, i) => (
-            <StopRow key={v.id} v={v} n={i + 1} typeName={typeName} assign={assign} />
-          ))}
-        </ol>
+        <>
+          {copied !== null ? (
+            <Banner tone="info" icon={<ClipboardPaste size={18} aria-hidden />}>
+              Tarea copiada: "{copied}". Tocá Pegar en las filas que la llevan.
+            </Banner>
+          ) : null}
+          <ol className={styles.stops}>
+            {stops.map((v, i) => (
+              <StopRow key={v.id} v={v} n={i + 1} typeName={typeName} assign={assign} copied={copied} onCopy={setCopied} />
+            ))}
+          </ol>
+        </>
       )}
       {stops.length ? <p className={styles.help}>El orden es una sugerencia: el activador puede reordenar su recorrido.</p> : null}
 
       {workdayForSheet ? <AddAddressSheet open={adding} onClose={() => setAdding(false)} ctx={ctx} workdayId={workdayForSheet} date={date} forName={m.firstName} /> : null}
-      <CopySheet open={copying} onClose={() => setCopying(false)} ctx={ctx} member={m} date={date} ensureWorkday={ensureWorkday} />
+      <PendingSheet open={picking} onClose={() => setPicking(false)} name={m.firstName} visits={toResume} adding={assign.resume.isPending} error={assign.resume.error}
+        onAdd={async (visitIds) => assign.resume.mutateAsync({ visitIds, workdayId: await ensureWorkday() })} />
     </section>
-  )
-}
-
-function StopRow({ v, n, typeName, assign }: { v: Visit; n: number; typeName: (id: number) => string; assign: ReturnType<typeof useAssign> }) {
-  const [task, setTask] = useState(v.task ?? '')
-  useEffect(() => setTask(v.task ?? ''), [v.task])
-  const editable = v.workStatus === 'pending'
-  return (
-    <li className={styles.stop}>
-      <span className={styles.num}>{n}</span>
-      <span className={styles.stopBody}>
-        <span className={styles.stopName}>{v.store.name ?? v.store.address}</span>
-        <span className={styles.stopMeta}>
-          {[v.store.name ? v.store.address : null, v.store.area, v.store.customerNumber && `Cliente ${v.store.customerNumber}`, v.resumedFrom ? 'retomada' : null, v.source === 'added' ? 'agregada por el activador' : null].filter(Boolean).join(' · ')}
-        </span>
-        {v.displays.length ? (
-          <span className={styles.tags}>{v.displays.map((d) => <span key={d.id} className={styles.tag}>{typeName(d.typeId)}</span>)}</span>
-        ) : null}
-      </span>
-      {editable ? (
-        <input
-          className={styles.task}
-          aria-label={`Tarea en ${v.store.name ?? v.store.address}`}
-          placeholder="Tarea"
-          value={task}
-          maxLength={200}
-          onChange={(e) => setTask(e.target.value)}
-          onBlur={() => task.trim() !== (v.task ?? '') && assign.setTask.mutate({ visitId: v.id, task })}
-        />
-      ) : (
-        <StatusChip work={v.workStatus} review={v.reviewStatus} />
-      )}
-      {editable ? (
-        <button type="button" className={styles.remove} aria-label={`Quitar ${v.store.name ?? v.store.address}`} onClick={() => assign.remove.mutate(v.id)}>
-          <X size={18} aria-hidden />
-        </button>
-      ) : null}
-    </li>
-  )
-}
-
-/** Copy the stops of this merchandiser's workday on another date. */
-function CopySheet({ open, onClose, ctx, member: m, date, ensureWorkday }: { open: boolean; onClose: () => void; ctx: WorkContext; member: TeamMember; date: string; ensureWorkday: () => Promise<string> }) {
-  const [from, setFrom] = useState(addDays(date, -7))
-  const source = useQuery({ ...memberWorkdayQuery(ctx.companyId, m.personId, from), enabled: open && Boolean(from) })
-  const sourceVisits = useQuery({ ...visitsQuery(source.data?.id ?? '', ctx.personId), enabled: Boolean(source.data?.id) })
-  const assign = useAssign(ctx.companyId)
-  const [done, setDone] = useState<number | null>(null)
-  useEffect(() => {
-    if (open) setDone(null)
-  }, [open])
-  const count = sourceVisits.data?.length ?? 0
-  return (
-    <Sheet
-      open={open}
-      onClose={onClose}
-      title={`Copiar otro día de ${m.firstName}`}
-      subtitle={`Se suman a la jornada del ${formatDayMonth(date)} los locales, con su tarea y exhibiciones. Los que ya estén no se repiten.`}
-      footer={
-        <>
-          <Button variant="secondary" size="md" onClick={onClose}>{done === null ? 'Cancelar' : 'Listo'}</Button>
-          {done === null ? (
-            <Button size="md" disabled={!count} loading={assign.copy.isPending}
-              onClick={async () => setDone(await assign.copy.mutateAsync({ from: source.data?.id as string, to: await ensureWorkday() }))}>
-              <Copy size={18} aria-hidden />Copiar {count || ''} {count === 1 ? 'local' : 'locales'}
-            </Button>
-          ) : null}
-        </>
-      }
-    >
-      <Field label="Día a copiar" type="date" value={from} onChange={(e) => { setFrom(e.target.value); setDone(null) }} />
-      {source.isFetching ? <Skeleton height={44} /> : source.data ? (
-        <p className={styles.help}>{count ? `${count} ${count === 1 ? 'local' : 'locales'} ese día.` : 'Esa jornada no tiene locales.'}</p>
-      ) : (
-        <p className={styles.help}>{m.firstName} no tuvo jornada ese día.</p>
-      )}
-      {assign.copy.error ? <Banner tone="error">{assign.copy.error.message}</Banner> : null}
-      {done !== null ? <Banner tone="ok" icon={<Check size={18} aria-hidden />}>{done ? `Se sumaron ${done} ${done === 1 ? 'local' : 'locales'}.` : 'Ya estaban todos.'}</Banner> : null}
-    </Sheet>
   )
 }
