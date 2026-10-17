@@ -41,6 +41,9 @@ export interface FakeState {
   stores?: Row[]
   /** Pending stops from today on, per store (what archiving removes). */
   openStops?: Record<string, number>
+  /** Assigning: the merchandiser's pending stops offered, and the ones added. */
+  pending?: Row[]
+  resumed?: string[]
   formats?: Row[]
   geocode?: Record<string, Row>
   /** What the route function answers by streets (503 without it) and what it was asked. */
@@ -157,7 +160,8 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
       state.workdays.push(w)
       return json(w.id)
     }
-    if (path.endsWith('/rpc/merchandiser_pending') || path.endsWith('/rpc/copy_workday')) return json(path.endsWith('copy_workday') ? 0 : [])
+    if (path.endsWith('/rpc/merchandiser_pending')) return json(state.pending ?? [])
+    if (path.endsWith('/rpc/resume_visit')) { (state.resumed ??= []).push(String(body().p_visit)); return json('r') }
     if (path.endsWith('/comment')) {
       if (req.method() === 'POST') {
         ;(state.comments ??= []).push({ ...body(), created_at: new Date().toISOString(), author: { first_name: 'Agustín', last_name: 'Rezett' } })

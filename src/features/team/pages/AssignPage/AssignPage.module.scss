@@ -179,7 +179,7 @@
   padding: space(3);
 
   @include up(lg) {
-    grid-template-columns: auto minmax(0, 1fr) 260px auto;
+    grid-template-columns: auto minmax(0, 1fr) 240px auto;
   }
 }
 
@@ -238,15 +238,79 @@
   }
 }
 
-.remove {
-  @include center;
-  @include square($touch-target);
-  border-radius: $radius-md;
-  color: $color-ink-subtle;
+.stop-actions {
+  @include flex(row, $gap: space(1), $align: center);
+  grid-column: 1 / -1;
+  grid-row: 3;
 
-  @include hover {
-    background: $color-refused-soft;
-    color: $color-refused-ink;
+  // Phones: three equal buttons on one line under the task.
+  > * {
+    flex: 1;
+    padding-inline: space(2);
+  }
+
+  @include up(lg) {
+    grid-column: auto;
+    grid-row: auto;
+
+    > * {
+      flex: none;
+    }
+  }
+}
+
+.remove {
+  color: $color-ink-subtle;
+}
+
+// ---- Pending stops to add (sheet)
+.counter {
+  @include flex(row, $align: center, $justify: space-between);
+  @include text(label);
+  font-weight: $weight-bold;
+  color: $color-ink-subtle;
+}
+
+.pending-list {
+  @include flex(column, $gap: space(2));
+}
+
+.pending-option {
+  @include flex(row, $gap: space(3), $align: center);
+  min-height: 56px;
+  padding: space(3.5);
+  border: 1.5px solid $color-line;
+  border-radius: $radius-lg;
+  background: $color-card;
+  cursor: pointer;
+
+  &[data-on] {
+    border-color: $color-forest;
+    background: $color-lime-soft;
+
+    @include dark {
+      border-color: $color-lime;
+      background: $color-muted;
+    }
+  }
+}
+
+.check {
+  @include square(20px);
+  flex-shrink: 0;
+}
+
+.pending-text {
+  @include flex(column, $gap: space(0.5));
+  flex: 1;
+  min-width: 0;
+}
+
+.sheet-cancel {
+  display: none;
+
+  @include up(lg) {
+    display: inline-flex;
   }
 }
 

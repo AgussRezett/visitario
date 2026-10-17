@@ -264,6 +264,12 @@ check('Copy again adds nothing', (await as('martin', `select copy_workday($1, $2
 check('Copied stops keep task and indicated displays', (await sys(`select count(*)::int n from display d join visit v on v.id = d.visit_id where v.workday_id = $1`, [wSat]))[0].n === 2)
 check('Supervisor lists Agus’s pending stops', (await as('martin', `select * from merchandiser_pending($1, $2, '2026-10-18')`, [panda, agus])).length > 0)
 check('Lucía cannot list Agus’s pending stops', (await as('lucia', `select * from merchandiser_pending($1, $2, '2026-10-18')`, [panda, agus])).length === 0)
+const supPending = (await as('martin', `select visit_id from merchandiser_pending($1, $2, '2026-10-18')`, [panda, agus])).map(r => r.visit_id)
+const agusPending = (await as('agus', `select visit_id from resumable_visits($1, '2026-10-18')`, [panda])).map(r => r.visit_id)
+const drafted = (await sys(`select v.id from visit v join workday w on w.id = v.workday_id where w.status = 'draft' and v.merchandiser_id = $1`, [agus])).map(r => r.id)
+check(`The supervisor offers only what Agus could resume, never stops of a draft day (${supPending.length} of ${agusPending.length})`,
+  supPending.length > 0 && supPending.every(id => agusPending.includes(id)) && !supPending.some(id => drafted.includes(id)))
+check('…and nothing older than 7 days', (await as('martin', `select * from merchandiser_pending($1, $2, '2026-12-01')`, [panda, agus])).length === 0)
 
 await as('agus', `select report_sync($1, 7, 0, 2, now() - interval '10 minutes')`, [panda])
 await as('agus', `select report_sync($1, 3, 1, 1, null)`, [panda])
