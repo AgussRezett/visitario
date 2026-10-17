@@ -13,13 +13,48 @@
 
 .option,
 .option-on {
-  @include flex(row, $gap: space(3), $align: center);
+  @include flex(row, $gap: space(1), $align: center);
   min-height: 56px;
-  padding: space(3.5);
+  padding: space(1) space(1) space(1) space(3.5);
   border: 1.5px solid $color-line;
   border-radius: 14px;
   background: $color-card;
+}
+
+// The row's text picks it; the cross on the right discards it.
+.pick {
+  @include flex(row, $gap: space(3), $align: center);
+  flex: 1;
+  min-width: 0;
+  padding-block: space(2.5);
   cursor: pointer;
+}
+
+.dismiss {
+  @include center;
+  @include square(44px);
+  @include transition-colors;
+  flex-shrink: 0;
+  border-radius: $radius-md;
+  color: $color-ink-subtle;
+
+  @include hover {
+    background: $color-refused-soft;
+    color: $color-refused-ink;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+  }
+}
+
+.counter-actions {
+  @include flex(row, $gap: space(1), $align: center);
+}
+
+.hint {
+  @include text(label);
+  color: $color-ink-subtle;
 }
 
 .option-on {
