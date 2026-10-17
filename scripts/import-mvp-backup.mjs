@@ -2,7 +2,9 @@
 //   1. builds the data (workdays, stores, visits, displays, work, brands, photo rows),
 //   2. signs you in and calls import_mvp_backup (platform admins only),
 //   3. uploads every photo through the photos function, into R2.
-// Safe to run again: nothing is duplicated and uploaded photos are skipped.
+// Merges into what Visitario already has: a day that already has a workday gets the backup's
+// stops there, known stores are reused, and an address the day already had is skipped (with
+// its photos). Safe to run again: nothing is duplicated and uploaded photos are skipped.
 //
 //   node scripts/import-mvp-backup.mjs ruta/al/visitario-respaldo.json
 //
@@ -154,10 +156,20 @@ async function main() {
   if (!company) throw new Error(`No sos activador activo de ${backup.company}.`)
   const { data: result, error: importError } = await supabase.rpc('import_mvp_backup', { p_company: company.company_id, p_data: data })
   if (importError) throw new Error(`No se pudo importar: ${importError.message}`)
-  console.log(`Importado en ${backup.company}: ${result.workdays} jornadas, ${result.visits} visitas. Subiendo fotos…`)
+  console.log(`Importado en ${backup.company}: ${result.workdays} jornadas, ${result.visits} visitas.`)
+  if (result.merged_days) console.log(`${result.merged_days} ${result.merged_days === 1 ? 'día ya tenía jornada: se sumó' : 'días ya tenían jornada: se sumaron'} a la existente.`)
+  if (result.stores_reused) console.log(`${result.stores_reused} ${result.stores_reused === 1 ? 'comercio ya estaba' : 'comercios ya estaban'} en el directorio: no se duplicaron.`)
+  const skipped = result.skipped ?? []
+  if (skipped.length) {
+    console.log(`Omitidas ${skipped.length} ${skipped.length === 1 ? 'dirección que ya estaba' : 'direcciones que ya estaban'} en su jornada:`)
+    for (const v of skipped) console.log(`  ${v.date.split('-').reverse().slice(0, 2).join('/')} · ${v.address}`)
+  }
+  const omitted = new Set(skipped.map((v) => v.id))
+  const toUpload = photos.filter((p) => !omitted.has(p.visitId))
+  console.log(`Subiendo ${toUpload.length} fotos…`)
 
   let done = 0, failed = 0
-  const queue = [...photos]
+  const queue = [...toUpload]
   const worker = async () => {
     for (let p = queue.shift(); p; p = queue.shift()) {
       const { bytes, width, height } = stripJpeg(p.data)
@@ -169,7 +181,7 @@ async function main() {
         failed++
         console.log(`\nNo se pudo subir ${p.kind} de la visita ${p.visitId}: ${error.message}`)
       } else done++
-      process.stdout.write(`\rSubidas ${done} de ${photos.length}${failed ? ` · ${failed} con error` : ''}`)
+      process.stdout.write(`\rSubidas ${done} de ${toUpload.length}${failed ? ` · ${failed} con error` : ''}`)
     }
   }
   await Promise.all([worker(), worker(), worker(), worker()])

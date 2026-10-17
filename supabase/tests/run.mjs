@@ -522,6 +522,37 @@ check('Importing twice does not duplicate', (await sys(`select count(*)::int n f
 await as('agus', `update visit set work_status = 'in_progress' where id = '01926f00-0000-4000-8000-0000000000e2'`)
 await expectError('After the import the storefront rule applies again', () => as('agus', `update visit set work_status = 'closed', consent = 'closed' where id = '01926f00-0000-4000-8000-0000000000e2'`), /storefront/)
 
+// A backup of a day already in Visitario: the stops merge into that workday, known addresses are skipped
+const wMerge2 = (await as('agus', `select open_workday($1, '2026-09-30') id`, [panda]))[0].id
+await as('agus', `select add_visit($1, p_address => 'Gorriti 4410')`, [wMerge2])
+const mvp2 = {
+  stores: [
+    { id: '01926f00-0000-5000-8000-0000000000b2', cn: null, name: null, address: 'GORRITI 4410', area: null, lat: null, lng: null },
+    { id: '01926f00-0000-5000-8000-0000000000b3', cn: '9874', name: null, address: 'Arce 730 (otro texto)', area: null, lat: null, lng: null },
+    { id: '01926f00-0000-5000-8000-0000000000b4', cn: null, name: null, address: 'Thames 1902', area: null, lat: null, lng: null },
+  ],
+  workdays: [{ id: '01926f00-0000-4000-8000-0000000000d2', date: '2026-09-30' }],
+  visits: [
+    { id: '01926f00-0000-4000-8000-0000000000e3', wd: '01926f00-0000-4000-8000-0000000000d2', date: '2026-09-30', store: '01926f00-0000-5000-8000-0000000000b2', sort: 0, task: null, status: 'done', consent: 'yes', objection: null, arrived: '2026-09-30T11:00:00-03:00', finished: '2026-09-30T11:20:00-03:00', notes: null, approved: false, resumed: null },
+    { id: '01926f00-0000-4000-8000-0000000000e4', wd: '01926f00-0000-4000-8000-0000000000d2', date: '2026-09-30', store: '01926f00-0000-5000-8000-0000000000b3', sort: 1, task: null, status: 'pending', consent: null, objection: null, arrived: null, finished: null, notes: null, approved: false, resumed: null },
+    { id: '01926f00-0000-4000-8000-0000000000e5', wd: '01926f00-0000-4000-8000-0000000000d2', date: '2026-09-30', store: '01926f00-0000-5000-8000-0000000000b4', sort: 2, task: null, status: 'pending', consent: null, objection: null, arrived: null, finished: null, notes: null, approved: false, resumed: null },
+  ],
+  displays: [], metrics: [], brands: [],
+  photos: [{ id: '01926f00-0000-5000-8000-0000000000a2', visit: '01926f00-0000-4000-8000-0000000000e3', display: null, kind: 'storefront', taken: '2026-09-30T11:00:00-03:00', bytes: 1000, w: 10, h: 10 }],
+}
+const mergedBackup = (await as('agus', `select import_mvp_backup($1, $2) r`, [panda, mvp2]))[0].r
+check(`A backup day merges into the existing workday (${JSON.stringify(mergedBackup)})`, mergedBackup.merged_days === 1 && mergedBackup.workdays === 1)
+check('The address the day already had is skipped, and said so', mergedBackup.skipped.length === 1 && mergedBackup.skipped[0].address === 'Gorriti 4410'
+  && (await sys(`select count(*)::int n from visit where workday_id = $1 and deleted_at is null`, [wMerge2]))[0].n === 3)
+check('…with its photo (not saved, not to upload)', mergedBackup.photos === 0)
+check('Known stores are reused, by customer number or address (no duplicates)', mergedBackup.stores_reused === 2
+  && (await sys(`select count(*)::int n from store where customer_number = '9874'`))[0].n === 1
+  && (await sys(`select count(*)::int n from store where private.normalize(address) = 'gorriti 4410'`))[0].n === 1)
+check('The new stop goes after what the day had', (await sys(`select sort_order from visit where id = '01926f00-0000-4000-8000-0000000000e5'`))[0].sort_order === 2)
+const again = (await as('agus', `select import_mvp_backup($1, $2) r`, [panda, mvp2]))[0].r
+check(`Running it again adds and skips nothing new (${JSON.stringify(again.skipped)})`, again.skipped.length === 1
+  && (await sys(`select count(*)::int n from visit where workday_id = $1 and deleted_at is null`, [wMerge2]))[0].n === 3)
+
 // Password detection (Google users who later set a password)
 await sys(`update auth.users set encrypted_password = '$2a$10$hash' where id = $1`, [U.agus]);
 check('has_password is true for a user with a password', (await as('agus', `select has_password() v`))[0].v === true);
