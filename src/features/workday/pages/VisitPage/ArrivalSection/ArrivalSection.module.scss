@@ -10,16 +10,44 @@
   height: 90px;
 }
 
+.actions {
+  @include flex(column, $gap: space(2));
+  flex: 1;
+  min-width: 200px;
+}
+
 .arrive {
   @include flex(row, $gap: space(2), $align: center, $justify: center);
   @include text(base);
-  flex: 1;
-  min-width: 200px;
   height: 52px;
   border-radius: $radius-md;
   background: $color-action;
   font-weight: $weight-extrabold;
   color: $color-action-ink;
+
+  &:disabled {
+    opacity: 0.55;
+  }
+}
+
+.gallery {
+  @include flex(row, $gap: space(2), $align: center, $justify: center);
+  @include text(label);
+  @include transition-colors;
+  height: $touch-target;
+  border: 1.5px solid $color-control;
+  border-radius: $radius-md;
+  background: $color-card;
+  font-weight: $weight-bold;
+  color: $color-ink;
+
+  @include hover {
+    background: $color-muted;
+
+    @include dark {
+      background: $color-lime-soft;
+    }
+  }
 
   &:disabled {
     opacity: 0.55;
