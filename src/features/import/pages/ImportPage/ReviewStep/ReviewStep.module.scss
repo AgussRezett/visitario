@@ -61,7 +61,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
     'read side'
-    'result result';
+    'result skip';
   gap: space(1.5) space(2);
   padding: space(3) space(2) space(3) space(3.5);
 
@@ -71,8 +71,8 @@
   }
 
   @include up(lg) {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) 170px;
-    grid-template-areas: 'read result side';
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) 110px auto;
+    grid-template-areas: 'read result side skip';
     align-items: center;
     gap: space(4);
     padding: space(3) space(3) space(3) space(4);
@@ -135,7 +135,7 @@
 
 // The state and the remove button, together at the row's top right
 .side {
-  @include flex(row, $gap: space(1), $align: center, $justify: space-between);
+  @include flex(row, $gap: space(1), $align: center, $justify: flex-end);
   grid-area: side;
   align-self: start;
   margin-top: calc(-1 * #{space(1)});
@@ -169,16 +169,12 @@
 }
 
 .skip {
-  @include center;
-  @include square(36px);
-  @include transition-colors;
-  flex-shrink: 0;
-  border-radius: $radius-md;
+  grid-area: skip;
+  align-self: end;
   color: $color-ink-subtle;
 
-  @include hover {
-    background: $color-muted;
-    color: $color-ink;
+  @include up(lg) {
+    align-self: center;
   }
 }
 

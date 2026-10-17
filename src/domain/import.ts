@@ -43,6 +43,8 @@ export interface Person {
   id: string
   firstName: string
   lastName: string
+  /** The person importing, when they are also a merchandiser. */
+  me?: boolean
 }
 
 /** Same as private.normalize in the database: lower case, no accents or punctuation. */

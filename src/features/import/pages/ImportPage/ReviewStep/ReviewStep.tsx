@@ -95,7 +95,7 @@ export function ReviewStep({ companyId, draft, rows, people, names, date, onDate
     <div className={styles.settings}>
       <Select
         label="Para"
-        options={[{ value: '', label: 'Elegir activador…' }, ...people.map((p) => ({ value: p.id, label: `${p.firstName} ${p.lastName}` }))]}
+        options={[{ value: '', label: 'Elegir activador…' }, ...people.map((p) => ({ value: p.id, label: `${p.firstName} ${p.lastName}${p.me ? ' (vos)' : ''}` }))]}
         value={draft.fallback ?? ''}
         onChange={(e) => update({ fallback: e.target.value || null })}
       />
@@ -116,7 +116,7 @@ export function ReviewStep({ companyId, draft, rows, people, names, date, onDate
           <Button variant="secondary" size="md" onClick={discard} className={styles.discard}>Descartar</Button>
           <Button size="md" disabled={!ready.length || matches.isPending} loading={run.isPending} onClick={save} aria-label={matches.isPending ? undefined : `Agregar ${ready.length} ${target}`}>
             <Check size={18} aria-hidden />
-            {matches.isPending ? 'Buscando…' : desktop ? `Agregar ${ready.length} ${target}` : targets.length === 1 ? `Agregar ${ready.length} a ${targets[0]?.firstName}` : `Agregar ${ready.length}`}
+            {matches.isPending ? 'Buscando…' : !ready.length ? 'Agregar' : desktop ? `Agregar ${ready.length} ${target}` : targets.length === 1 ? `Agregar ${ready.length} a ${targets[0]?.firstName}` : `Agregar ${ready.length}`}
           </Button>
         </>
       }
@@ -183,8 +183,10 @@ export function ReviewStep({ companyId, draft, rows, people, names, date, onDate
             </span>
             <span className={styles.side}>
               <span className={styles.chip} data-status={r.status}>{STATUS_LABEL[r.status]}</span>
-              <button type="button" className={styles.skip} onClick={() => skip(r.line)} aria-label={`Quitar la fila ${r.line}`}><X size={18} aria-hidden /></button>
             </span>
+            <Button variant="ghost" size="md" className={styles.skip} onClick={() => skip(r.line)} aria-label={`Quitar la fila ${r.line}`}>
+              <X size={16} aria-hidden />Quitar
+            </Button>
           </li>
         ))}
         {!shown.length ? <li className={styles.empty}>Nada en esta pestaña.</li> : null}

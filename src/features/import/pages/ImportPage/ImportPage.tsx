@@ -27,7 +27,8 @@ export function ImportPage({ date: requested, person }: ImportSearch) {
   const { draft, setDraft, update, setColumn, setAlias } = useDraft(person ?? null)
 
   const people: Person[] = useMemo(
-    () => (team.data ?? []).filter((m) => m.personId !== ctx?.personId).map((m) => ({ id: m.personId, firstName: m.firstName, lastName: m.lastName })),
+    // Whoever imports can assign to themselves too, if they are also a merchandiser.
+    () => (team.data ?? []).map((m) => ({ id: m.personId, firstName: m.firstName, lastName: m.lastName, me: m.personId === ctx?.personId })),
     [team.data, ctx?.personId],
   )
   const rows = useMemo(() => draftRows(draft), [draft])

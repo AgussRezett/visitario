@@ -13,11 +13,17 @@ export function RowResult({ row, place }: { row: ReviewRow; place: Located | und
   )
 }
 
+const storeLabel = (m: NonNullable<ReviewRow['match']>) => [m.name ?? m.address, m.customerNumber && `cliente ${m.customerNumber}`].filter(Boolean).join(' · ')
+
 function describe(r: ReviewRow, place: Located | undefined): [string, string?] {
-  if (r.status === 'review') return [r.reason ?? 'Para revisar']
+  // Still to fix, but already telling whether the address is in the directory.
+  if (r.status === 'review') {
+    const kind = r.match ? `Ya cargada en el directorio: ${storeLabel(r.match)}` : r.address.length >= 3 ? 'Dirección nueva: se suma al directorio' : undefined
+    return [r.reason ?? 'Para revisar', kind]
+  }
   const m = r.match
   if (m) {
-    const label = [m.name ?? m.address, m.customerNumber && `cliente ${m.customerNumber}`].filter(Boolean).join(' · ')
+    const label = storeLabel(m)
     if (m.matchedBy === 'customer') {
       const differs = r.address && r.address.toLowerCase() !== m.address.toLowerCase()
       return [label, differs ? `Mismo número de cliente; en el directorio figura ${m.address}` : 'Reconocido por número de cliente']

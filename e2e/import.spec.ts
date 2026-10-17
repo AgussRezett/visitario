@@ -103,6 +103,30 @@ test('pasted addresses go to the chosen merchandiser, located when found', async
   expect(state.stores?.find((s) => s.address === 'Ciudad de la Paz 1700')).toMatchObject({ lat: null, area: 'Villa Urquiza' })
 })
 
+test('a supervisor who is also a merchandiser imports for themselves; every row says if the address is new or already loaded', async ({ page }, info) => {
+  const state = team({ people: [{ id: 'p1', first_name: 'Agustin', last_name: 'Rezett' }] })
+  await installFakeSupabase(page, state, 'supervisor')
+  await page.goto(`/s/import?date=${FRIDAY}`)
+  await page.getByLabel('O pegá el texto').fill('9755; MANUELA PEDRAZA 3526; COGHLAN\nDirección vieja 3')
+  await page.getByRole('button', { name: 'Continuar con el texto' }).click()
+
+  await expect(page.getByRole('heading', { name: 'Revisá antes de guardar' })).toBeVisible()
+  const para = page.getByLabel('Para')
+  await expect(para.locator('option', { hasText: 'Agustin Rezett (vos)' })).toHaveCount(1)
+  await para.selectOption({ label: 'Elegir activador…' })
+  await expect(page.getByText('Falta elegir el activador')).toHaveCount(2)
+  await expect(page.getByText('Manuela Pedraza 3526', { exact: true })).toBeVisible()
+  await expect(page.getByText('Dirección nueva: se suma al directorio')).toBeVisible()
+  await expect(page.getByText('Ya cargada en el directorio: Autoservicio 4 · cliente 20003')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Quitar la fila 1' })).toContainText('Quitar')
+  await page.screenshot({ path: `test-results/import-self-${info.project.name}.png`, fullPage: true })
+
+  await para.selectOption({ label: 'Agustin Rezett (vos)' })
+  await page.getByRole('button', { name: 'Agregar 2 a la jornada de Agustin' }).click()
+  await expect(page.getByText(/Se agregaron 2 locales/)).toBeVisible()
+  expect(state.visits.map((v) => v.merchandiser_id)).toEqual(['p1', 'p1'])
+})
+
 // A 1×1 PNG: the fake reads nothing from it, but the phone still compresses it.
 const PIXEL = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64')
 
