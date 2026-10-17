@@ -61,6 +61,14 @@
   border-radius: $radius-md;
   font-weight: $weight-bold;
   color: $color-ink-muted;
+  @include transition-colors;
+
+  @include hover {
+    &:not(.active) {
+      background: $color-muted;
+      color: $color-ink;
+    }
+  }
 }
 
 .nav-text {

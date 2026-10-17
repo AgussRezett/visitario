@@ -10,8 +10,11 @@
   @include flex(row, $gap: space(1.5), $align: center, $justify: center);
   @include transition-colors;
   width: 100%;
-  height: $touch-target;
-  padding-inline: space(2.5);
+  min-height: $touch-target;
+  padding: space(1.5) space(2.5);
+  line-height: 1.25;
+  text-align: center;
+  text-wrap: balance;
   border: 1.5px solid $color-control;
   border-radius: $radius-md;
   background: $color-card;
@@ -19,8 +22,20 @@
   font-weight: $weight-bold;
   color: $color-ink;
 
+  @include hover {
+    &:not(:disabled) {
+      border-color: $color-forest;
+
+      @include dark {
+        border-color: $color-lime;
+      }
+    }
+  }
+
+  // Locked (an approved visit): still readable, clearly not for tapping.
   &:disabled {
-    opacity: 0.55;
+    border-color: $color-line;
+    color: $color-ink-muted;
   }
 }
 
@@ -54,8 +69,9 @@
   display: grid;
   gap: space(2);
 
+  // Side by side only while each label fits on one line; otherwise they wrap to rows.
   @include up(lg) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   }
 }
 
