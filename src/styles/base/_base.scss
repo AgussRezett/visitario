@@ -54,3 +54,19 @@ input[type='checkbox'],
 input[type='radio'] {
   accent-color: $color-forest;
 }
+
+// Everything that does something shows the hand; what can't be used right now says so.
+// :where() keeps it at zero specificity, so a component can still set its own cursor.
+:where(button, select, summary, a[href], [role='button'], [role='tab'], [role='radio'], [role='checkbox'], [role='option'],
+  input[type='checkbox'], input[type='radio'], input[type='file'], label:has(> input[type='checkbox'], > input[type='radio'])) {
+  cursor: pointer;
+}
+
+:where(button, select, input):disabled,
+:where([aria-disabled='true']) {
+  cursor: not-allowed;
+}
+
+::file-selector-button {
+  cursor: pointer;
+}

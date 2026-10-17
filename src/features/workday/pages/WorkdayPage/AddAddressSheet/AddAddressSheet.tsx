@@ -37,6 +37,8 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
   const online = useOnline()
   const [mode, setMode] = useState<'one' | 'many'>('one')
   const [query, setQuery] = useState('')
+  /** The store being added: marked while it saves, so the tap shows. */
+  const [picked, setPicked] = useState<string | null>(null)
   const [form, setForm] = useState(EMPTY)
   const [pasted, setPasted] = useState('')
   const [progress, setProgress] = useState<string | null>(null)
@@ -176,10 +178,17 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
                     key={s.id}
                     type="button"
                     className={styles.result}
+                    data-picked={picked === s.id || undefined}
+                    aria-busy={picked === s.id}
                     disabled={add.isPending}
                     onClick={async () => {
-                      await add.mutateAsync({ storeId: s.id })
-                      onClose()
+                      setPicked(s.id)
+                      try {
+                        await add.mutateAsync({ storeId: s.id })
+                        onClose()
+                      } finally {
+                        setPicked(null)
+                      }
                     }}
                   >
                     <span className={styles.resultIcon}><Store size={16} aria-hidden /></span>
@@ -189,7 +198,11 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
                         {[s.name ? s.address : s.area, s.customer_number && `Cliente ${s.customer_number}`].filter(Boolean).join(' · ')}
                       </span>
                     </span>
-                    <Plus size={20} className={styles.resultAdd} aria-label="Agregar" />
+                    {picked === s.id ? (
+                      <span className={styles.resultAdding}><span className={styles.ring} aria-hidden />Agregando…</span>
+                    ) : (
+                      <span className={styles.resultAdd}><Plus size={18} aria-hidden />Agregar</span>
+                    )}
                   </button>
                 ))}
               </>

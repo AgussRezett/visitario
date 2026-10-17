@@ -122,6 +122,32 @@ test('assigning: copy a task to other stops, and add only the pending stops chos
   await expect.poll(() => state.resumed).toEqual(['old2'])
 })
 
+test('adding from the directory: every action shows the hand, a result reacts to hover and to the tap', async ({ page }, info) => {
+  const state = team()
+  state.people = [lucia]
+  state.stores = [{ id: 's9', name: 'Autoservicio Lili', address: 'Moldes 1365', area: 'Belgrano', customer_number: '20577' }]
+  await installFakeSupabase(page, state, 'supervisor')
+  await page.goto('/s/assign?date=2026-10-16')
+  const cursor = (l: ReturnType<typeof page.getByRole>) => l.evaluate((el) => getComputedStyle(el).cursor)
+  expect(await cursor(page.getByRole('button', { name: 'Agregar locales' }))).toBe('pointer')
+
+  await page.getByRole('button', { name: 'Agregar locales' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Agregar a la jornada de Lucía' })
+  await sheet.getByLabel('Buscar en el directorio').fill('lili')
+  const result = sheet.getByRole('button', { name: /Autoservicio Lili/ })
+  await expect(result).toContainText('Agregar')
+  expect(await cursor(result)).toBe('pointer')
+  expect(await cursor(sheet.getByRole('radio', { name: 'Pegar varias' }))).toBe('pointer')
+  if (info.project.name === 'desktop') {
+    const before = await result.evaluate((el) => getComputedStyle(el).backgroundColor)
+    await result.hover()
+    await expect.poll(() => result.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe(before)
+  }
+  const visits = state.visits.length
+  await result.click()
+  await expect.poll(() => state.visits.length).toBe(visits + 1)
+})
+
 test('the merchandiser sees the fix, answers and sends it back', async ({ page }, info) => {
   const state: FakeState = {
     workday: { id: 'w1', company_id: 'c1', work_date: TODAY, status: 'published', created_by: 'p1' },
