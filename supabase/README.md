@@ -15,6 +15,7 @@ URL: `https://mjpzawlyjjlmluozjwap.supabase.co`
 | `20261011190100_team_policies.sql` | applied (by hand) | Splits the team admin policy (advisor: multiple permissive policies) |
 | … | applied | Stages 3–5 (see each file's header) |
 | `20261014160000_r2_trash.sql` | applied | `r2_trash` queue, `run_purge()`, `purge_authorized()` |
+| `20261017140000_reputation.sql` | applied | `visit.rapport`, `store_reputation()` (numbers only), `rapport_facts()` (under RLS), guard: only the merchandiser rates |
 
 Files with `delete`/`drop` statements are refused by the agent connector; apply those with the CLI (`supabase link --project-ref mjpzawlyjjlmluozjwap && supabase db push`) or the SQL Editor.
 

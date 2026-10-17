@@ -98,4 +98,14 @@ Cómo quedó: sección Informes del supervisor (también en la barra del celular
 - [x] En Importar, "Desde una captura": la foto o captura del Excel o del mensaje se lee con Claude y va directo a la revisión, repartida por activador (dominio + e2e).
 - [x] Solo supervisores y administradores, de planes piloto o pagos, con un tope de capturas por mes; cada una suma al uso de la empresa (base).
 - [ ] La IA acierta al menos 9 de cada 10 direcciones en 10 capturas reales (pendiente: las capturas).
- migración del MVP, exportar informes, reportes con diseño, push, cobro automático, acceso para marcas.
+
+**Reputación con clientes**
+- [x] El activador marca cómo lo recibieron (opcional: buena onda, con restricciones, con indiferencia); "No autorizó" cuenta como "No quiso que activemos" (dominio + base + e2e).
+- [x] El activador ve el trato habitual del comercio en la ficha y en la jornada, sin saber quién calificó (base + e2e).
+- [x] El supervisor no puede cambiar la calificación de una visita (base).
+- [x] Supervisor y admin ven la reputación en el directorio y en cada comercio, y el tablero por semana, zona y activador (dominio + e2e).
+- [ ] Probado en el celular real.
+
+Cómo quedó: Directorio → Reputación (últimos 30 o 90 días): índice de trato sobre 100 con la diferencia contra el período anterior, % con buena onda, comercios que empeoraron (las últimas 3 visitas calificadas contra las 3 anteriores), semana a semana, por zona y por activador. El nivel de un comercio es el promedio de sus últimas 5 visitas calificadas de 180 días (3, 2, 1 y 0 puntos). Escala ordinal: una sola rampa verde, siempre con leyenda y texto.
+
+Fuera de esta versión: migración del MVP, exportar informes, reportes con diseño, push, cobro automático, acceso para marcas.
