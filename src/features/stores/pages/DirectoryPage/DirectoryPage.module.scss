@@ -225,8 +225,6 @@
   white-space: nowrap;
 }
 
-.icon-only {
-  @include square(36px);
-  padding: 0;
-  color: $color-ink-subtle;
+.row-buttons {
+  @include flex(row, $gap: space(2), $justify: flex-end);
 }

@@ -246,3 +246,17 @@
 .archive {
   align-self: flex-start;
 }
+
+// Restore and remove: side by side, the main one first.
+.archived-actions {
+  @include flex(row, $gap: space(2));
+  flex-wrap: wrap;
+
+  > * {
+    flex: 1;
+
+    @include up(lg) {
+      flex: none;
+    }
+  }
+}
