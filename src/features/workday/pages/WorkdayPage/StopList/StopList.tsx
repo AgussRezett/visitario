@@ -6,7 +6,9 @@ import { isVisited, type WorkStatus } from '@/domain/visit'
 import { Segmented } from '@/ui/Segmented'
 import { StatusChip } from '@/ui/StatusChip'
 import { Table } from '@/ui/Table'
+import type { StoreReputation } from '@/domain/reputation'
 import type { Visit } from '@/features/workday/api/queries'
+import { RapportLevel } from '@/features/reputation/components/RapportLevel'
 import styles from './StopList.module.scss'
 
 export type StopFilter = 'all' | 'todo' | 'done'
@@ -37,10 +39,12 @@ interface StopListProps {
   all: Visit[]
   filter: StopFilter
   onFilter: (f: StopFilter) => void
+  /** How each store usually receives merchandisers, by store id. */
+  reputation?: Map<string, StoreReputation>
 }
 
 /** The day's stores: cards on phones, a table on desktop, same filter. */
-export function StopList({ visits, all, filter, onFilter }: StopListProps) {
+export function StopList({ visits, all, filter, onFilter, reputation }: StopListProps) {
   const todo = all.filter((v) => !isVisited(v.workStatus)).length
   const stop = (v: Visit) => all.indexOf(v) + 1
 
@@ -83,6 +87,7 @@ export function StopList({ visits, all, filter, onFilter }: StopListProps) {
                         {[v.store.name ? v.store.address : null, v.store.area].filter(Boolean).join(' · ') || (v.source === 'added' ? 'Agregada por vos' : '')}
                       </span>
                       {v.task ? <span className={styles.task}>{v.task}</span> : null}
+                      {reputation?.get(v.store.id) ? <RapportLevel level={(reputation.get(v.store.id) as StoreReputation).level} className={styles.rapport} /> : null}
                       {count || v.photos.length || when ? (
                         <span className={styles.meta}>
                           {count ? <span><LayoutGrid size={14} aria-hidden />{count} exhib.</span> : null}
@@ -99,7 +104,7 @@ export function StopList({ visits, all, filter, onFilter }: StopListProps) {
 
           <Table className={styles.table} label="Locales de la jornada">
             <thead>
-              <tr><th>#</th><th>Comercio</th><th>Tarea</th><th>Exhibiciones</th><th>Fotos</th><th>Horario</th><th>Estado</th><th /></tr>
+              <tr><th>#</th><th>Comercio</th><th>Tarea</th><th>Trato habitual</th><th>Exhibiciones</th><th>Fotos</th><th>Horario</th><th>Estado</th><th /></tr>
             </thead>
             <tbody>
               {visits.map((v) => (
@@ -114,6 +119,7 @@ export function StopList({ visits, all, filter, onFilter }: StopListProps) {
                     </Link>
                   </td>
                   <td className={styles.small}>{v.task ?? <span className={styles.none}>Sin tarea</span>}</td>
+                  <td className={styles.small}>{reputation?.get(v.store.id) ? <RapportLevel level={(reputation.get(v.store.id) as StoreReputation).level} /> : <span className={styles.none}>—</span>}</td>
                   <td className={styles.small}>{displayCount(v) ?? <span className={styles.none}>—</span>}</td>
                   <td className={styles.small}>{v.photos.length || <span className={styles.none}>—</span>}</td>
                   <td className={styles.small}>{timing(v) ?? <span className={styles.none}>—</span>}</td>

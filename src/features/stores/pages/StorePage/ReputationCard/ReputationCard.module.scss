@@ -1,0 +1,33 @@
+@use '@/styles/abstracts' as *;
+
+.card {
+  @include surface;
+  @include flex(column, $gap: space(3));
+  padding: space(3.5) space(4);
+}
+
+.head {
+  @include flex(row, $align: baseline, $justify: space-between);
+}
+
+.label {
+  @include text(small);
+  font-weight: $weight-bold;
+}
+
+.index {
+  @include text(heading);
+  font-weight: $weight-extrabold;
+  font-variant-numeric: tabular-nums;
+
+  small {
+    @include text(label);
+    font-weight: $weight-semibold;
+    color: $color-ink-subtle;
+  }
+}
+
+.help {
+  @include text(label);
+  color: $color-ink-subtle;
+}

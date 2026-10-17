@@ -48,3 +48,24 @@
   @include text(label);
   font-weight: $weight-bold;
 }
+
+// How they were received: three full-width options on the phone, side by side on desktop.
+.rapport {
+  display: grid;
+  gap: space(2);
+
+  @include up(lg) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.optional {
+  @include text(tiny);
+  font-weight: $weight-semibold;
+  color: $color-ink-subtle;
+}
+
+.help {
+  @include text(tiny);
+  color: $color-ink-subtle;
+}

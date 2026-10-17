@@ -40,6 +40,13 @@
   --fix-soft: #eee9fc;
   --fix-ink: #4b2fb0;
 
+  // Reputation: an ordinal ramp of the brand green, darker = better received
+  // (validated: monotone, visible steps, light end >= 2:1 on card and ground).
+  --rapport-welcoming: #173b30;
+  --rapport-restricted: #2f6b57;
+  --rapport-indifferent: #548f78;
+  --rapport-unwilling: #8db8a6;
+
   --shadow-sheet: 0 -8px 24px rgb(21 36 30 / 0.12);
   color-scheme: light;
 }
@@ -72,5 +79,11 @@
   --refused-ink: #f3a096;
   --fix-soft: #2a2050;
   --fix-ink: #c3b3ff;
+
+  // In the dark the ramp flips: lighter = better received.
+  --rapport-welcoming: #c9e6d8;
+  --rapport-restricted: #8cc2ab;
+  --rapport-indifferent: #55947b;
+  --rapport-unwilling: #2f6650;
   color-scheme: dark;
 }

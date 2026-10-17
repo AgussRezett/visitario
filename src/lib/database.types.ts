@@ -968,6 +968,7 @@ export type Database = {
           merchandiser_id: string
           notes: string | null
           objection: string | null
+          rapport: Database["public"]["Enums"]["rapport_kind"] | null
           resume_dismissed_at: string | null
           resumed_from: string | null
           retry_after: string | null
@@ -997,6 +998,7 @@ export type Database = {
           merchandiser_id: string
           notes?: string | null
           objection?: string | null
+          rapport?: Database["public"]["Enums"]["rapport_kind"] | null
           resume_dismissed_at?: string | null
           resumed_from?: string | null
           retry_after?: string | null
@@ -1026,6 +1028,7 @@ export type Database = {
           merchandiser_id?: string
           notes?: string | null
           objection?: string | null
+          rapport?: Database["public"]["Enums"]["rapport_kind"] | null
           resume_dismissed_at?: string | null
           resumed_from?: string | null
           retry_after?: string | null
@@ -1584,6 +1587,21 @@ export type Database = {
         Returns: string
       }
       purge_authorized: { Args: { p_secret: string }; Returns: boolean }
+      rapport_facts: {
+        Args: { p_company: string; p_from: string; p_to: string }
+        Returns: {
+          address: string
+          area: string
+          first_name: string
+          last_name: string
+          merchandiser_id: string
+          rapport: Database["public"]["Enums"]["rapport_kind"]
+          store_id: string
+          store_name: string
+          visits: number
+          week: string
+        }[]
+      }
       record_ai_usage: {
         Args: { p_company: string; p_cost_thousandths: number }
         Returns: number
@@ -1669,6 +1687,17 @@ export type Database = {
           unverified: number
         }[]
       }
+      store_reputation: {
+        Args: { p_company: string; p_stores: string[] }
+        Returns: {
+          last_rated: string
+          previous: number
+          rated: number
+          recent: number
+          score: number
+          store_id: string
+        }[]
+      }
       team_day: {
         Args: { p_company: string; p_date: string }
         Returns: {
@@ -1704,6 +1733,7 @@ export type Database = {
       membership_status: "invited" | "active" | "declined" | "disabled"
       photo_kind: "storefront" | "before" | "after"
       plan_kind: "free" | "pilot" | "team" | "internal"
+      rapport_kind: "welcoming" | "restricted" | "indifferent" | "unwilling"
       review_status: "unreviewed" | "approved" | "needs_fix"
       role: "merchandiser" | "supervisor" | "admin"
       store_source: "imported" | "manual" | "merchandiser"
@@ -1855,6 +1885,7 @@ export const Constants = {
       membership_status: ["invited", "active", "declined", "disabled"],
       photo_kind: ["storefront", "before", "after"],
       plan_kind: ["free", "pilot", "team", "internal"],
+      rapport_kind: ["welcoming", "restricted", "indifferent", "unwilling"],
       review_status: ["unreviewed", "approved", "needs_fix"],
       role: ["merchandiser", "supervisor", "admin"],
       store_source: ["imported", "manual", "merchandiser"],

@@ -3,6 +3,7 @@ import { Check, Clock, DoorClosed, ShieldQuestion } from 'lucide-react'
 import clsx from 'clsx'
 import { formatTime } from '@/domain/dates'
 import { CONSENT_LABEL, type Consent } from '@/domain/visit'
+import { RAPPORT_LABEL, RAPPORTS } from '@/domain/reputation'
 import { Banner } from '@/ui/Banner'
 import { Field } from '@/ui/Field'
 import { Segmented } from '@/ui/Segmented'
@@ -43,6 +44,29 @@ export function ConsentSection({ visit: v, actions }: { visit: Visit; actions: V
           </button>
         ))}
       </div>
+
+      {v.consent === 'yes' || v.consent === 'with_objection' ? (
+        <div className={styles.field}>
+          <span className={styles.label} id={`rapport-${v.id}`}>¿Cómo te recibieron? <span className={styles.optional}>Opcional</span></span>
+          <div className={styles.rapport} role="radiogroup" aria-labelledby={`rapport-${v.id}`}>
+            {RAPPORTS.filter((r) => r !== 'unwilling').map((r) => (
+              <button
+                key={r}
+                type="button"
+                role="radio"
+                aria-checked={v.rapport === r}
+                className={clsx(styles.choice, v.rapport === r && styles.on)}
+                disabled={locked || actions.saving}
+                onClick={() => actions.setRapport(v.rapport === r ? null : r)}
+              >
+                {v.rapport === r ? <Check size={16} strokeWidth={3} aria-hidden /> : null}
+                {RAPPORT_LABEL[r]}
+              </button>
+            ))}
+          </div>
+          <span className={styles.help}>Suma a la reputación del comercio. Tocá de nuevo para quitarlo.</span>
+        </div>
+      ) : null}
 
       {v.consent === 'with_objection' ? (
         <Field

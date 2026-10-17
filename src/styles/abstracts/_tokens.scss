@@ -49,6 +49,12 @@ $color-fix: var(--fix);
 $color-fix-soft: var(--fix-soft);
 $color-fix-ink: var(--fix-ink);
 
+// Reputation (ordinal ramp, see base/_themes.scss)
+$color-rapport-welcoming: var(--rapport-welcoming);
+$color-rapport-restricted: var(--rapport-restricted);
+$color-rapport-indifferent: var(--rapport-indifferent);
+$color-rapport-unwilling: var(--rapport-unwilling);
+
 // ---- Radius
 $radius-sm: 8px;
 $radius-md: 12px;

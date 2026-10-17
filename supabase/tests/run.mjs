@@ -401,6 +401,20 @@ const [{ record_ai_usage: nCaptures }] = await sys(`select record_ai_usage($1, 2
 const aiRow = (await as('carla', `select captures, cost_usd_thousandths c from ai_usage where company_id = $1`, [panda]))[0]
 check(`AI captures add up in the month (${nCaptures} captures, ${aiRow?.c} thousandths)`, nCaptures === 2 && aiRow?.captures === 2 && aiRow?.c === 5)
 await expectError('The app cannot record AI usage', () => as('carla', `select record_ai_usage($1, 1)`, [panda]))
+// Reputation: the merchandiser rates how they were received; everyone in the company sees
+// the store's numbers (never who rated); the dashboard follows RLS.
+const vbStore = (await sys(`select store_id from visit where id = $1`, [vb]))[0].store_id
+await as('agus', `update visit set rapport = 'restricted' where id = $1`, [vb])
+check('The merchandiser marks how the buyer received them', (await sys(`select rapport::text r from visit where id = $1`, [vb]))[0].r === 'restricted')
+await expectError('The supervisor cannot change that rating', () => as('martin', `update visit set rapport = 'welcoming' where id = $1`, [vb]), /merchandiser records/)
+check('A refused visit without a rating counts as unwilling; other visits without one do not count', (await sys(`select private.rapport_points(null, 'refused') a, private.rapport_points(null, 'yes') b, private.rapport_points('welcoming', 'refused') c`))[0].a === 0
+  && (await sys(`select private.rapport_points(null, 'yes') b`))[0].b === null && (await sys(`select private.rapport_points('welcoming', 'refused') c`))[0].c === 3)
+const repLucia = (await as('lucia', `select * from store_reputation($1, $2)`, [panda, [vbStore]]))[0]
+check(`Anyone in the company sees the store's reputation, only numbers (${JSON.stringify(repLucia)})`, Number(repLucia?.score) === 2 && repLucia?.rated === 1 && !('merchandiser_id' in (repLucia ?? {})))
+check('Another company sees no reputation', (await as('beto', `select * from store_reputation($1, $2)`, [panda, [vbStore]])).length === 0)
+const facts = await as('martin', `select * from rapport_facts($1, '2026-01-01', '2026-12-31')`, [panda])
+check(`The supervisor's dashboard has the team's ratings (${facts.length} rows)`, facts.some(f => f.store_id === vbStore && f.rapport === 'restricted' && f.first_name === 'Agustín'))
+check('Lucía (other team) does not get Agus’s ratings in the dashboard', !(await as('lucia', `select * from rapport_facts($1, '2026-01-01', '2026-12-31')`, [panda])).some(f => f.store_id === vbStore))
 check('Another company sees nothing in Panda’s directory', (await as('beto', `select * from store_directory($1)`, [panda])).length === 0)
 check('The directory filters unverified and added stores', (await as('martin', `select * from store_directory($1, null, 'unverified')`, [panda])).every(r => r.location_status !== 'verified') && (await as('martin', `select * from store_directory($1, null, 'added')`, [panda])).every(r => r.source === 'merchandiser'))
 

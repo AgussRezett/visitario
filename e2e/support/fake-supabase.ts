@@ -46,6 +46,9 @@ export interface FakeState {
   routeAsked?: Row[]
   /** What reading a capture with AI answers: rows, or an error status. */
   capture?: { rows?: Row[]; unreadable?: number; status?: number }
+  /** Reputation: store_reputation rows and rapport_facts rows (by week). */
+  reputation?: Row[]
+  rapportFacts?: Row[]
   /** Pending visits of earlier days offered to resume, and the ones discarded. */
   resumable?: Row[]
   dismissed?: string[]
@@ -222,6 +225,16 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
       const planned = (state.workdays ?? []).find((w) => w.id === b.p_workday)
       state.visits.push(visitRow(id, state.visits.length, String(b.p_address), planned ? { workday_id: planned.id, work_date: planned.work_date, merchandiser_id: planned.merchandiser_id, source: 'assigned', task: b.p_task ?? null } : {}))
       return json(id)
+    }
+    if (path.endsWith('/rpc/store_reputation')) {
+      const ids = (body().p_stores as string[]) ?? []
+      return json((state.reputation ?? []).filter((r) => ids.includes(String(r.store_id))))
+    }
+    if (path.endsWith('/rpc/rapport_facts')) {
+      const b = body()
+      const from = new Date(`${String(b.p_from)}T12:00:00Z`)
+      from.setUTCDate(from.getUTCDate() - 6) // a fact's week can start before the period
+      return json((state.rapportFacts ?? []).filter((f) => String(f.week) >= from.toISOString().slice(0, 10) && String(f.week) <= String(b.p_to)))
     }
     if (path.endsWith('/rpc/resumable_visits')) return json(state.resumable ?? [])
     if (path.endsWith('/rpc/dismiss_resumable')) {
