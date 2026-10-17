@@ -41,8 +41,7 @@ begin
   perform set_config('request.jwt.claim.sub', '', true);
   perform set_config('visitario.importing', 'on', true);
 
-  drop table if exists mvp_store, mvp_day, mvp_visit, mvp_skip;
-
+  -- Working tables live until the end of this call's transaction (on commit drop).
   -- ---- Stores: reuse what the directory has, create the rest
   create temp table mvp_store on commit drop as
   select s.id as src, s.cn, s.name, s.address, s.area, s.lat, s.lng, null::uuid as dst
