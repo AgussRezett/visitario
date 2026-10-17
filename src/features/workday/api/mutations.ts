@@ -57,3 +57,18 @@ export function useAddVisit(workdayId: string) {
     onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: workdayKeys.all }), qc.invalidateQueries({ queryKey: ['team'] })]),
   })
 }
+
+/**
+ * Not resuming some pending visits: they are not offered again and stay in their day
+ * as not visited (the supervisor still sees them there).
+ */
+export function useDismissResumable() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (visitIds: string[]) => {
+      const { error } = await supabase.rpc('dismiss_resumable', { p_visits: visitIds })
+      if (error) throw new Error(workdayErrorMessage(error))
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['workday', 'resumable'] }),
+  })
+}

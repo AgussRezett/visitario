@@ -46,6 +46,9 @@ export interface FakeState {
   routeAsked?: Row[]
   /** What reading a capture with AI answers: rows, or an error status. */
   capture?: { rows?: Row[]; unreadable?: number; status?: number }
+  /** Pending visits of earlier days offered to resume, and the ones discarded. */
+  resumable?: Row[]
+  dismissed?: string[]
   /** Work totals per day and merchandiser (the daily_metrics view). */
   dailyMetrics?: Row[]
   /** Simulates a slow connection when loading a day. */
@@ -220,7 +223,14 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
       state.visits.push(visitRow(id, state.visits.length, String(b.p_address), planned ? { workday_id: planned.id, work_date: planned.work_date, merchandiser_id: planned.merchandiser_id, source: 'assigned', task: b.p_task ?? null } : {}))
       return json(id)
     }
-    if (path.endsWith('/rpc/resumable_visits') || path.endsWith('/rpc/search_stores')) return json([])
+    if (path.endsWith('/rpc/resumable_visits')) return json(state.resumable ?? [])
+    if (path.endsWith('/rpc/dismiss_resumable')) {
+      const ids = (body().p_visits as string[]) ?? []
+      ;(state.dismissed ??= []).push(...ids)
+      state.resumable = (state.resumable ?? []).filter((r) => !ids.includes(String(r.visit_id)))
+      return json(ids.length)
+    }
+    if (path.endsWith('/rpc/search_stores')) return json([])
     if (path.endsWith('/workday') && req.method() === 'PATCH') {
       const changed = (state.workdays ?? []).filter((w) => matches(w, url.searchParams))
       changed.forEach((w) => Object.assign(w, body()))

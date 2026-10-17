@@ -15,6 +15,7 @@ import { DayHero } from '../DayHero'
 import { DayStats } from '../DayStats'
 import { StopList, type StopFilter } from '../StopList'
 import { ReportPanel, ResumePanel } from '../SidePanels'
+import { useDismissPending } from '../useDismissPending'
 import { DaySkeleton } from '@/features/workday/components/Skeletons'
 import { MainOverlay } from '@/features/shell/components/AppShell'
 import styles from './DayView.module.scss'
@@ -40,6 +41,7 @@ export function DayView({ ctx, workday, sheet, onSheet }: DayViewProps) {
   const adding = sheet === 'add'
   const resuming = sheet === 'resume'
   const catalogs = useCatalogs(ctx.companyId)
+  const { dismissAll, dialog } = useDismissPending()
 
   const list = useVisitList(visits.data) ?? []
   const progress = workdayProgress(list)
@@ -107,12 +109,12 @@ export function DayView({ ctx, workday, sheet, onSheet }: DayViewProps) {
           <DayStats visits={list} />
           <StopList visits={shown} all={list} filter={filter} onFilter={setFilter} />
           <div className={styles.phoneOnly}>
-            <ResumePanel items={pending} onResume={() => setResuming(true)} />
+            <ResumePanel items={pending} onResume={() => setResuming(true)} onDismissAll={() => void dismissAll(pending.map((v) => v.visit_id))} />
           </div>
         </div>
         <aside className={styles.aside}>
           <ReportPanel date={workday.workDate} visited={progress.visited} catalogs={catalogs.data} totals={totals.data ?? {}} />
-          <ResumePanel items={pending} onResume={() => setResuming(true)} />
+          <ResumePanel items={pending} onResume={() => setResuming(true)} onDismissAll={() => void dismissAll(pending.map((v) => v.visit_id))} />
         </aside>
       </div>
 
@@ -122,6 +124,7 @@ export function DayView({ ctx, workday, sheet, onSheet }: DayViewProps) {
         </Button>
       </MainOverlay>
       {sheets}
+      {dialog}
     </Refreshing>
   )
 }
