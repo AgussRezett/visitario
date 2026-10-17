@@ -10,6 +10,7 @@ import type { WorkContext } from '@/features/workday/context'
 import { historyQuery, resumableQuery } from '@/features/workday/api/queries'
 import { useOpenWorkday } from '@/features/workday/api/mutations'
 import { ResumeSheet } from '../ResumeSheet'
+import { useDismissPending } from '../useDismissPending'
 import styles from './NoWorkday.module.scss'
 import { useOnline } from '@/lib/online'
 
@@ -39,6 +40,7 @@ export function NoWorkday({ ctx, date, onOpen }: NoWorkdayProps) {
   const resumable = useQuery(resumableQuery(ctx.companyId, date))
   const open = useOpenWorkday()
   const pending = resumable.data ?? []
+  const { dismissAll, dialog } = useDismissPending()
   const text = copy(date, ctx.personal)
 
   const openOn = async (d: string) => {
@@ -100,9 +102,12 @@ export function NoWorkday({ ctx, date, onOpen }: NoWorkdayProps) {
                   </li>
                 ))}
               </ul>
-              <Button variant="secondary" size="md" onClick={() => setResuming(true)}>
-                Elegir cuáles retomar
-              </Button>
+              <div className={styles.pendingActions}>
+                <Button variant="secondary" size="md" onClick={() => setResuming(true)}>
+                  Elegir cuáles retomar
+                </Button>
+                <Button variant="danger" size="sm" onClick={() => void dismissAll(pending.map((v) => v.visit_id))}>Descartar todas</Button>
+              </div>
             </section>
           ) : null}
         </div>
@@ -154,6 +159,7 @@ export function NoWorkday({ ctx, date, onOpen }: NoWorkdayProps) {
           onOpen(date)
         }}
       />
+      {dialog}
     </>
   )
 }

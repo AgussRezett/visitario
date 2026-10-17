@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ImageIcon } from 'lucide-react'
+import { ImageIcon, X } from 'lucide-react'
 import { formatLongDate, formatShortWeekday, formatTime } from '@/domain/dates'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
@@ -9,8 +9,9 @@ import { supabase } from '@/lib/supabase'
 import type { WorkContext } from '@/features/workday/context'
 import { workdayKeys } from '@/features/workday/api/queries'
 import { workdayErrorMessage } from '@/features/workday/api/mutations'
-import styles from './ResumeSheet.module.scss'
 import { useOnline } from '@/lib/online'
+import { useDismissPending } from '../useDismissPending'
+import styles from './ResumeSheet.module.scss'
 
 interface Resumable {
   visit_id: string
@@ -46,9 +47,18 @@ export function ResumeSheet({ open, onClose, ctx, date, visits, workdayId, onDon
   const online = useOnline()
   const qc = useQueryClient()
   const [chosen, setChosen] = useState<string[]>([])
+  const { dismissOne, dismissAll, dismissing, error: dismissError, dialog } = useDismissPending()
   useEffect(() => {
     if (open) setChosen(visits.map((v) => v.visit_id))
-  }, [open, visits])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- all chosen when it opens
+  }, [open])
+  // A discarded one leaves the list (and the choice); the rest stay as they were.
+  useEffect(() => {
+    setChosen((c) => c.filter((id) => visits.some((v) => v.visit_id === id)))
+  }, [visits])
+  useEffect(() => {
+    if (open && !visits.length) onClose()
+  }, [open, visits.length, onClose])
 
   const resume = useMutation({
     mutationFn: async () => {
@@ -88,28 +98,41 @@ export function ResumeSheet({ open, onClose, ctx, date, visits, workdayId, onDon
       {online ? null : <Banner tone="info">Sin señal: para retomar pendientes necesitás conexión.</Banner>}
       <div className={styles.counter}>
         <span>{chosen.length} de {visits.length} elegidas</span>
-        <Button variant="ghost" size="sm" onClick={() => setChosen(all ? [] : visits.map((v) => v.visit_id))}>
-          {all ? 'Quitar todas' : 'Elegir todas'}
-        </Button>
+        <span className={styles.counterActions}>
+          <Button variant="ghost" size="sm" onClick={() => setChosen(all ? [] : visits.map((v) => v.visit_id))}>
+            {all ? 'Quitar todas' : 'Elegir todas'}
+          </Button>
+          <Button variant="danger" size="sm" disabled={dismissing} onClick={() => void dismissAll(visits.map((v) => v.visit_id))}>
+            Descartar todas
+          </Button>
+        </span>
       </div>
       <div className={styles.list}>
         {visits.map((v) => {
           const on = chosen.includes(v.visit_id)
           return (
-            <label key={v.visit_id} className={on ? styles.optionOn : styles.option}>
-              <input type="checkbox" checked={on} onChange={() => toggle(v.visit_id)} className={styles.check} />
-              <span className={styles.text}>
-                <span className={styles.name}>{v.store_name ?? v.address}</span>
-                <span className={styles.meta}>{v.store_name ? `${v.address} · ` : ''}{describe(v)}</span>
-              </span>
-            </label>
+            <div key={v.visit_id} className={on ? styles.optionOn : styles.option}>
+              <label className={styles.pick}>
+                <input type="checkbox" checked={on} onChange={() => toggle(v.visit_id)} className={styles.check} />
+                <span className={styles.text}>
+                  <span className={styles.name}>{v.store_name ?? v.address}</span>
+                  <span className={styles.meta}>{v.store_name ? `${v.address} · ` : ''}{describe(v)}</span>
+                </span>
+              </label>
+              <button type="button" className={styles.dismiss} onClick={() => dismissOne(v.visit_id)} disabled={dismissing} aria-label={`No retomar ${v.store_name ?? v.address}`} title="No retomar">
+                <X size={18} aria-hidden />
+              </button>
+            </div>
           )
         })}
       </div>
       <Banner tone="info" icon={<ImageIcon size={18} aria-hidden />}>
         Se mantienen comercio, tarea y exhibiciones sin acomodar. Las fotos y registros anteriores quedan en el día original.
       </Banner>
+      <p className={styles.hint}>Con la cruz descartás una: no se vuelve a ofrecer y queda en su día como no visitada. Solo se ofrecen las de los últimos 7 días.</p>
       {resume.error ? <Banner tone="error">{resume.error.message}</Banner> : null}
+      {dismissError ? <Banner tone="error">{dismissError.message}</Banner> : null}
+      {dialog}
     </Sheet>
   )
 }

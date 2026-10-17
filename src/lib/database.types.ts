@@ -968,6 +968,7 @@ export type Database = {
           merchandiser_id: string
           notes: string | null
           objection: string | null
+          resume_dismissed_at: string | null
           resumed_from: string | null
           retry_after: string | null
           review_status: Database["public"]["Enums"]["review_status"]
@@ -996,6 +997,7 @@ export type Database = {
           merchandiser_id: string
           notes?: string | null
           objection?: string | null
+          resume_dismissed_at?: string | null
           resumed_from?: string | null
           retry_after?: string | null
           review_status?: Database["public"]["Enums"]["review_status"]
@@ -1024,6 +1026,7 @@ export type Database = {
           merchandiser_id?: string
           notes?: string | null
           objection?: string | null
+          resume_dismissed_at?: string | null
           resumed_from?: string | null
           retry_after?: string | null
           review_status?: Database["public"]["Enums"]["review_status"]
@@ -1505,6 +1508,7 @@ export type Database = {
       }
       copy_workday: { Args: { p_from: string; p_to: string }; Returns: number }
       create_personal_company: { Args: never; Returns: string }
+      dismiss_resumable: { Args: { p_visits: string[] }; Returns: number }
       find_person_by_dni: {
         Args: { p_company: string; p_dni: string }
         Returns: {
@@ -1580,6 +1584,10 @@ export type Database = {
         Returns: string
       }
       purge_authorized: { Args: { p_secret: string }; Returns: boolean }
+      record_ai_usage: {
+        Args: { p_company: string; p_cost_thousandths: number }
+        Returns: number
+      }
       report_sync: {
         Args: {
           p_company: string

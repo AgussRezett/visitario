@@ -196,6 +196,17 @@ const vr = (await as('agus', `select resume_visit($1, $2) id`, [va, wNext]))[0].
 check('Resumed visit goes to the end of the day', (await sys(`select sort_order from visit where id = $1`, [vr]))[0].sort_order === 1);
 check('A resumed visit is not offered again', !(await as('agus', `select visit_id from resumable_visits($1, '2026-10-14')`, [panda])).some(r => r.visit_id === va));
 check('Lucía cannot list Agus’s resumable visits', (await as('lucia', `select * from resumable_visits($1, '2026-10-14')`, [panda])).length === 0);
+check('Lucía cannot dismiss Agus’s pending visits', (await as('lucia', `select dismiss_resumable($1) n`, [[vb]]))[0].n === 0);
+check('Agus dismisses a pending visit: it is not offered again', (await as('agus', `select dismiss_resumable($1) n`, [[vb]]))[0].n === 1
+  && !(await as('agus', `select visit_id from resumable_visits($1, '2026-10-14')`, [panda])).some(r => r.visit_id === vb));
+check('…and stays in its day as it was', (await sys(`select work_status::text s from visit where id = $1`, [vb]))[0].s === 'pending');
+const vStale = (await as('agus', `select add_visit($1, p_address => 'Cabildo 2280') id`, [wOwn]))[0].id
+check('A pending visit is offered…', (await as('agus', `select visit_id from resumable_visits($1, '2026-10-14')`, [panda])).some(r => r.visit_id === vStale))
+const staleStore = (await sys(`select store_id from visit where id = $1`, [vStale]))[0].store_id
+const vFresh = (await as('agus', `select add_visit($1, p_store => $2) id`, [wNext, staleStore]))[0].id
+const sameStore = (await sys(`select (select store_id from visit where id = $1) = (select store_id from visit where id = $2) same`, [vStale, vFresh]))[0].same
+check('…until the same store has a newer visit of mine', sameStore && !(await as('agus', `select visit_id from resumable_visits($1, '2026-10-14')`, [panda])).some(r => r.visit_id === vStale))
+check('Only the last 7 days are offered', (await as('agus', `select visit_id from resumable_visits($1, '2026-12-01')`, [panda])).length === 0);
 
 // ---- The storefront photo decides whether the visit started
 const vs = (await as('agus', `select add_visit($1, p_address => 'Gorostiaga 1801') id`, [wNext]))[0].id;
