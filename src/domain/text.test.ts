@@ -11,6 +11,7 @@ describe('stores are written tidy (same as the database)', () => {
     ['PASAJE JUAN XXIII', 'Pasaje Juan XXIII'],
     ['CABEZÓN   2381', 'Cabezón 2381'],
     ['Gral. José Gervasio Artigas 4965', 'Gral. José Gervasio Artigas 4965'],
+    ['VALDENEGR0 2815', 'Valdenegr0 2815'],
     ['', ''],
   ])('%s → %s', (raw, tidy) => expect(tidyText(raw)).toBe(tidy))
 })

@@ -92,13 +92,18 @@ $soft: #c9dbd1;
 .primary {
   @include flex(row, $gap: space(2), $align: center, $justify: center);
   @include text(base);
+  @include transition-colors;
   flex: 1;
-  height: 52px;
+  min-height: 52px;
   padding-inline: space(4);
   border-radius: $radius-md;
   background: $color-lime;
   font-weight: $weight-extrabold;
   color: $color-forest;
+
+  @include hover {
+    background: $color-action-hover;
+  }
 }
 
 .icon {
@@ -112,6 +117,11 @@ $soft: #c9dbd1;
 
 .done {
   @include flex(column, $gap: space(3));
+
+  // In a column, flex: 1 would squeeze the button to its text; it keeps its 52 px.
+  .primary {
+    flex: none;
+  }
 
   .stop {
     padding-top: 0;
