@@ -81,3 +81,34 @@ test('from my location, by streets when the service answers', async ({ page, con
   expect(state.routeAsked?.[0]).toMatchObject({ mode: 'driving', origin: { lat: -34.5455, lng: -58.45 }, lastId: 'v6' })
   expect(state.routeAsked?.[0]?.firstId).toBeUndefined()
 })
+
+// A plain map style: the map loads without reaching OpenFreeMap.
+const PLAIN_STYLE = { version: 8, sources: {}, layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#e8ebe4' } }] }
+
+test('the route on a street map: numbered stops to tap, the path by streets, the sketch when the map cannot load', async ({ page, context }, info) => {
+  let mapUp = true
+  await page.route('https://tiles.openfreemap.org/**', (route) => (mapUp ? route.fulfill({ json: PLAIN_STYLE }) : route.abort()))
+  await context.grantPermissions(['geolocation'])
+  await context.setGeolocation({ latitude: -34.5455, longitude: -58.45 })
+  const line = [[-58.45, -34.5455], [-58.451, -34.548], [-58.45, -34.5475], [-58.45, -34.5565], [-58.45, -34.5565], [-58.449, -34.565], [-58.45, -34.5655]]
+  const state = { ...day(), route: { ids: ['v4', 'v1', 'v7', 'v2', 'v6'], km: 12.5, minutes: 41, line } }
+  await installFakeSupabase(page, state)
+  await page.goto('/s/route')
+  await page.getByRole('button', { name: /Empezar desde mi ubicación/ }).click()
+  await page.getByRole('button', { name: 'Calcular mejor orden' }).click()
+  await expect(page.getByText('por calles')).toBeVisible()
+
+  const map = page.getByRole('region', { name: 'Mapa del recorrido' })
+  await expect(map).toBeVisible()
+  await expect(map.getByRole('button', { name: /^\d+\. / })).toHaveCount(5)
+  await expect(map.getByRole('button', { name: 'Acercar' })).toBeVisible()
+  await map.getByRole('button', { name: '1. Autoservicio Lili' }).click()
+  await expect(page.getByRole('link', { name: 'Ir con Google Maps' })).toBeVisible()
+  await page.screenshot({ path: `test-results/route-map-${info.project.name}.png`, fullPage: true })
+
+  // Without the map service: the sketch, never a blank box.
+  mapUp = false
+  await page.getByRole('button', { name: 'Recalcular' }).click()
+  await expect(page.getByRole('region', { name: 'Mapa del recorrido' })).toHaveCount(0)
+  await expect(page.getByRole('img', { name: /Croquis del recorrido/ })).toBeVisible()
+})

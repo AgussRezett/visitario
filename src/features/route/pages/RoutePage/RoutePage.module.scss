@@ -320,19 +320,14 @@
   background: rgb(255 255 255 / 0.2);
 }
 
-// ---- Map sketch (desktop)
+// ---- Map sketch: what shows when the street map can't load
 .map {
   position: relative;
-  display: none;
   width: 100%;
   max-height: 420px;
   border-radius: $radius-lg;
   background: $color-muted;
   overflow: hidden;
-
-  @include up(lg) {
-    display: block;
-  }
 }
 
 .map-svg {

@@ -1,0 +1,114 @@
+@use '@/styles/abstracts' as *;
+
+.wrap {
+  @include flex(column, $gap: space(1.5));
+}
+
+.map {
+  width: 100%;
+  height: 320px;
+  border: 1px solid $color-line;
+  border-radius: $radius-lg;
+  background: $color-muted;
+  overflow: hidden;
+
+  @include up(lg) {
+    height: 460px;
+  }
+
+  // MapLibre's own controls and popup, in the app's type and colors.
+  :global(.maplibregl-ctrl-group) {
+    border-radius: $radius-md;
+  }
+
+  :global(.maplibregl-ctrl-group button) {
+    @include square(36px);
+  }
+
+  :global(.maplibregl-popup-content) {
+    padding: space(3);
+    border-radius: $radius-md;
+    background: $color-card;
+    color: $color-ink;
+    font-family: $font-sans;
+    box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
+  }
+
+  :global(.maplibregl-popup-tip) {
+    border-top-color: $color-card;
+    border-bottom-color: $color-card;
+  }
+}
+
+.note {
+  @include text(tiny);
+  color: $color-ink-subtle;
+}
+
+// A stop: its number, tappable (44 px area around a 30 px pin).
+.pin {
+  @include center;
+  @include square(30px);
+  @include text(label);
+  @include transition-colors;
+  border: 2px solid $color-card;
+  border-radius: $radius-sm;
+  background: $color-forest;
+  font-weight: $weight-extrabold;
+  color: $color-on-forest;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.25);
+  cursor: pointer;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -7px;
+  }
+
+  @include hover {
+    background: $color-lime;
+    color: $color-forest;
+  }
+
+  @include dark {
+    border-color: $color-ground;
+  }
+}
+
+.first {
+  background: $color-lime;
+  color: $color-forest;
+}
+
+.origin {
+  @include square(18px);
+  border: 3px solid $color-white;
+  border-radius: $radius-full;
+  background: $color-active;
+  box-shadow: 0 0 0 6px rgb(59 110 230 / 0.25);
+}
+
+.card {
+  @include flex(column, $gap: space(1));
+  @include text(label);
+
+  strong {
+    font-weight: $weight-extrabold;
+  }
+
+  span {
+    color: $color-ink-subtle;
+  }
+}
+
+.go {
+  @include flex(row, $align: center, $justify: center);
+  min-height: $touch-target;
+  margin-top: space(1);
+  padding-inline: space(4);
+  border-radius: $radius-md;
+  background: $color-action;
+  font-weight: $weight-bold;
+  color: $color-action-ink;
+  text-decoration: none;
+}

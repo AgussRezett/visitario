@@ -6,10 +6,10 @@ const W = 100
 const PAD = 8
 
 /**
- * A sketch of the route: the stops in order on a plain background, no map tiles
- * (nothing leaves the app). Only on desktop (wireframe AD08).
+ * A sketch of the route: the stops in order on a plain background. What shows when the
+ * street map can't load (no signal, no WebGL).
  */
-export function RouteMap({ stops, origin }: { stops: Visit[]; origin: Point | null }) {
+export function RouteSketch({ stops, origin }: { stops: Visit[]; origin: Point | null }) {
   const points = stops.map((v) => ({ lat: v.store.lat ?? 0, lng: v.store.lng ?? 0 }))
   const all = origin ? [origin, ...points] : points
   if (all.length < 2) return null
@@ -28,7 +28,7 @@ export function RouteMap({ stops, origin }: { stops: Visit[]; origin: Point | nu
   const xy = all.map(at)
 
   return (
-    <div className={styles.map} style={{ aspectRatio: `${W} / ${h}` }} aria-hidden>
+    <div className={styles.map} style={{ aspectRatio: `${W} / ${h}` }} role="img" aria-label={`Croquis del recorrido: ${stops.length} locales en orden`}>
       <svg viewBox={`0 0 ${W} ${h}`} className={styles.mapSvg}>
         <polyline points={xy.map((p) => `${p.x},${p.y}`).join(' ')} className={styles.mapLine} />
         {origin ? <circle cx={xy[0]?.x} cy={xy[0]?.y} r={1.6} className={styles.mapOrigin} /> : null}

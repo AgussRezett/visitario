@@ -1,10 +1,12 @@
+import { Suspense } from 'react'
 import { ArrowLeft, Check, Map as MapIcon, Navigation, RefreshCw } from 'lucide-react'
 import clsx from 'clsx'
 import { directionsUrl, mapsLegs, placeQuery, type Point, type TravelMode } from '@/domain/route'
 import { Button, buttonClass } from '@/ui/Button'
 import type { Visit } from '@/features/workday/api/queries'
 import { placeName, stopNote } from './stop'
-import { RouteMap } from './RouteMap'
+import { RouteSketch } from './RouteSketch'
+import { StreetMap } from './StreetMap'
 import styles from './RoutePage.module.scss'
 
 export interface RoutePlan {
@@ -13,6 +15,8 @@ export interface RoutePlan {
   /** Only by streets. */
   minutes: number | null
   byStreet: boolean
+  /** The path by streets as [lng, lat], when the service sent it. */
+  line: [number, number][] | null
 }
 
 interface RouteResultProps {
@@ -72,7 +76,9 @@ export function RouteResult({ plan, visits, mode, origin, lastId, perLeg, refini
         ) : null}
       </div>
 
-      <RouteMap stops={stops} origin={origin} />
+      <Suspense fallback={<RouteSketch stops={stops} origin={origin} />}>
+        <StreetMap key={`${plan.ids.join(',')}:${plan.line?.length ?? 0}:${origin ? 'o' : ''}`} stops={stops} origin={origin} line={plan.line} mode={mode} />
+      </Suspense>
 
       <div className={styles.orderCard}>
         <ol className={styles.order}>
