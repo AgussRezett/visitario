@@ -9,6 +9,7 @@ import { Refreshing } from '@/ui/Refreshing'
 import type { WorkContext } from '@/features/workday/context'
 import { dayMetricsQuery, resumableQuery, useCatalogs, visitsQuery, type Workday } from '@/features/workday/api/queries'
 import { useVisitList } from '@/features/sync/hooks'
+import { useStoreReputation } from '@/features/reputation/api'
 import { AddAddressSheet } from '../AddAddressSheet'
 import { ResumeSheet } from '../ResumeSheet'
 import { DayHero } from '../DayHero'
@@ -42,6 +43,7 @@ export function DayView({ ctx, workday, sheet, onSheet }: DayViewProps) {
   const catalogs = useCatalogs(ctx.companyId)
 
   const list = useVisitList(visits.data) ?? []
+  const reputation = useStoreReputation(ctx.companyId, list.map((v) => v.store.id))
   const progress = workdayProgress(list)
   const fixes = list.filter((v) => v.reviewStatus === 'needs_fix')
   const next = list.find((v) => v.workStatus === 'in_progress') ?? list.find((v) => v.workStatus === 'pending')
@@ -105,7 +107,7 @@ export function DayView({ ctx, workday, sheet, onSheet }: DayViewProps) {
           ) : null}
           <DayHero progress={progress} next={next} stop={next ? list.indexOf(next) + 1 : 0} date={workday.workDate} />
           <DayStats visits={list} />
-          <StopList visits={shown} all={list} filter={filter} onFilter={setFilter} />
+          <StopList visits={shown} all={list} filter={filter} onFilter={setFilter} reputation={reputation.data} />
           <div className={styles.phoneOnly}>
             <ResumePanel items={pending} onResume={() => setResuming(true)} />
           </div>

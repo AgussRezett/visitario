@@ -9,6 +9,8 @@ export type VisitFields = Partial<{
   objection: string | null
   retry_after: string | null
   notes: string | null
+  /** How the buyer received the merchandiser (optional). */
+  rapport: Enums<'rapport_kind'> | null
   task: string | null
   /** The visit's place in the day (applying a route). */
   sort_order: number

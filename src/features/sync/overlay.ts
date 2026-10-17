@@ -19,6 +19,7 @@ function patchVisit(v: Visit, p: VisitFields, at: string): Visit {
     ...(p.objection !== undefined ? { objection: p.objection } : {}),
     ...(p.retry_after !== undefined ? { retryAfter: p.retry_after } : {}),
     ...(p.notes !== undefined ? { notes: p.notes } : {}),
+    ...(p.rapport !== undefined ? { rapport: p.rapport } : {}),
     ...(p.task !== undefined ? { task: p.task } : {}),
     ...(p.sort_order !== undefined ? { sortOrder: p.sort_order } : {}),
     ...(p.review_status !== undefined ? { reviewStatus: p.review_status } : {}),

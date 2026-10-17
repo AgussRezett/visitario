@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { argentinaTime } from '@/domain/dates'
 import { finishStatus, type Consent } from '@/domain/visit'
+import type { Rapport } from '@/domain/reputation'
 import type { Visit } from '@/features/workday/api/queries'
 import { PhotoError, usePreparePhoto } from '@/features/workday/api/photos'
 import { visitChanges } from '@/features/sync/changes'
@@ -41,10 +42,13 @@ export function useVisitActions(visit: Visit) {
       consent,
       objection: consent === 'with_objection' ? visit.objection : null,
       retry_after: consent === 'closed' ? visit.retryAfter ?? argentinaTime(visit.workDate, 17) : null,
+      // How they were received only applies when the buyer let them in.
+      rapport: consent === 'yes' || consent === 'with_objection' ? visit.rapport : null,
     })
 
   const setObjection = (objection: string) => changes.patch({ objection: objection.trim() || null })
   const setRetry = (later: boolean) => changes.patch({ retry_after: later ? argentinaTime(visit.workDate, 17) : null })
+  const setRapport = (rapport: Rapport | null) => changes.patch({ rapport })
   const setNotes = (notes: string) => changes.patch({ notes: notes.trim() || null })
 
   const finish = async () => {
@@ -69,6 +73,7 @@ export function useVisitActions(visit: Visit) {
     setConsent,
     setObjection,
     setRetry,
+    setRapport,
     setNotes,
     finish,
     retry: retryStore,

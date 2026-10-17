@@ -4,6 +4,7 @@ import { Link } from '@tanstack/react-router'
 import { Archive, ArchiveRestore, ChevronLeft, ChevronRight, MapPinOff, Search, UserRound } from 'lucide-react'
 import { formatDayMonth, todayInArgentina } from '@/domain/dates'
 import { LOCATION_LABEL } from '@/domain/stores'
+import type { StoreReputation } from '@/domain/reputation'
 import { useDebounced } from '@/lib/useDebounced'
 import { useIsDesktop } from '@/lib/useMedia'
 import { Banner } from '@/ui/Banner'
@@ -15,6 +16,9 @@ import { Skeleton } from '@/ui/Skeleton'
 import { StatusChip } from '@/ui/StatusChip'
 import { Table } from '@/ui/Table'
 import { useWorkContext } from '@/features/workday/context'
+import { useStoreReputation } from '@/features/reputation/api'
+import { DirectoryTabs } from '@/features/stores/components/DirectoryTabs'
+import { RapportLevel } from '@/features/reputation/components/RapportLevel'
 import { PAGE_SIZE, directoryCountsQuery, directoryQuery, useArchiveStore, type DirectoryFilter, type DirectoryRow } from '@/features/stores/api/stores'
 import styles from './DirectoryPage.module.scss'
 
@@ -32,6 +36,7 @@ export function DirectoryPage() {
   const companyId = ctx?.companyId ?? ''
   const list = useQuery({ ...directoryQuery(companyId, { query: q, filter, area, page }), enabled: Boolean(ctx), placeholderData: keepPreviousData })
   const counts = useQuery({ ...directoryCountsQuery(companyId), enabled: Boolean(ctx) })
+  const reputation = useStoreReputation(companyId, (list.data?.rows ?? []).map((r) => r.id)).data
   const archive = useArchiveStore()
   const { confirm, dialog } = useConfirm()
   if (!ctx) return null
@@ -58,6 +63,7 @@ export function DirectoryPage() {
         <span className={styles.eyebrow}>Clientes de {ctx.companyName}</span>
         <h1 className={styles.title}>Directorio{counts.data ? ` · ${counts.data.total.toLocaleString('es-AR')} comercios` : ''}</h1>
       </header>
+      <DirectoryTabs view="stores" />
 
       <div className={styles.filters}>
         <label className={styles.search}>
@@ -94,7 +100,7 @@ export function DirectoryPage() {
         <Refreshing active={list.isPlaceholderData}>
           {desktop ? (
             <Table label="Comercios">
-              <thead><tr><th>Comercio</th><th>Cliente</th><th>Zona</th><th>Ubicación</th><th>Última visita</th><th>Visitas 30 días</th><th><span className={styles.srOnly}>Acciones</span></th></tr></thead>
+              <thead><tr><th>Comercio</th><th>Cliente</th><th>Zona</th><th>Ubicación</th><th>Trato</th><th>Última visita</th><th>Visitas 30 días</th><th><span className={styles.srOnly}>Acciones</span></th></tr></thead>
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.id}>
@@ -107,6 +113,7 @@ export function DirectoryPage() {
                     <td className={styles.num}>{r.customerNumber ?? '—'}</td>
                     <td>{r.area ?? '—'}</td>
                     <td><span className={styles.location} data-status={r.locationStatus}>{LOCATION_LABEL[r.locationStatus]}</span></td>
+                    <td>{reputation?.get(r.id) ? <RapportLevel level={(reputation.get(r.id) as StoreReputation).level} trend={(reputation.get(r.id) as StoreReputation).trend} /> : <span className={styles.meta}>Sin datos</span>}</td>
                     <td>
                       <span className={styles.last}>
                         <span className={styles.meta}>{last(r)}</span>
@@ -135,6 +142,7 @@ export function DirectoryPage() {
                       <span className={styles.meta}>
                         {[r.name ? r.address : null, r.customerNumber, r.source === 'merchandiser' && r.createdByName ? `agregado por ${r.createdByName}` : r.area, r.locationStatus === 'verified' ? null : 'sin verificar'].filter(Boolean).join(' · ')}
                       </span>
+                      {reputation?.get(r.id) ? <RapportLevel level={(reputation.get(r.id) as StoreReputation).level} trend={(reputation.get(r.id) as StoreReputation).trend} /> : null}
                     </span>
                     <span className={styles.rowLast}>{r.lastVisit ? when(r.lastVisit.date) : 'Nunca'}</span>
                   </Link>

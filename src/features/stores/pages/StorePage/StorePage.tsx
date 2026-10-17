@@ -17,7 +17,11 @@ import { useCatalogs } from '@/features/workday/api/queries'
 import { useWorkContext } from '@/features/workday/context'
 import { companyQuery } from '@/features/admin/api/company'
 import { storeQuery, storeVisitsQuery, useArchiveStore, useStoreAdmin, type StoreHistoryVisit } from '@/features/stores/api/stores'
+import { effectiveRapport, RAPPORT_SHORT } from '@/domain/reputation'
+import { useStoreReputation } from '@/features/reputation/api'
+import { RapportLevel } from '@/features/reputation/components/RapportLevel'
 import { EditSheet } from './EditSheet'
+import { ReputationCard } from './ReputationCard'
 import { MergeSheet } from './MergeSheet'
 import styles from './StorePage.module.scss'
 
@@ -41,6 +45,7 @@ export function StorePage({ storeId }: { storeId: string }) {
   const company = useQuery({ ...companyQuery(ctx?.companyId ?? ''), enabled: Boolean(ctx), retry: false })
   const catalogs = useCatalogs(ctx?.companyId ?? '')
   const { verify } = useStoreAdmin(storeId)
+  const reputation = useStoreReputation(ctx?.companyId ?? '', [storeId]).data?.get(storeId)
   const archive = useArchiveStore()
   const { confirm, dialog } = useConfirm()
   const [sheet, setSheet] = useState<'edit' | 'merge' | null>(null)
@@ -112,6 +117,7 @@ export function StorePage({ storeId }: { storeId: string }) {
           {verify.data ? <Banner tone={VERIFY_MESSAGE[verify.data].tone}>{VERIFY_MESSAGE[verify.data].text}</Banner> : null}
           {verify.error ? <Banner tone="error">{verify.error.message}</Banner> : null}
           {s.lat !== null && s.lng !== null ? <p className={styles.help}>{s.lat.toFixed(5)}, {s.lng.toFixed(5)}</p> : null}
+          <ReputationCard reputation={reputation} visits={list} />
           {usual.length ? (
             <div className={styles.card}>
               <span className={styles.label}>Exhibiciones habituales</span>
@@ -138,13 +144,14 @@ export function StorePage({ storeId }: { storeId: string }) {
             <p className={styles.help}>Todavía no tiene visitas.</p>
           ) : desktop ? (
             <Table label="Visitas del comercio">
-              <thead><tr><th>Fecha</th><th>Activador</th><th>Resultado</th><th>Exhibiciones</th><th>Fotos</th></tr></thead>
+              <thead><tr><th>Fecha</th><th>Activador</th><th>Resultado</th><th>Trato</th><th>Exhibiciones</th><th>Fotos</th></tr></thead>
               <tbody>
                 {list.map((v) => (
                   <tr key={v.id}>
                     <td><Link to="/review/$visitId" params={{ visitId: v.id }} className={styles.visitLink}>{when(v)}</Link></td>
                     <td>{v.merchandiserName.split(' ')[0]}</td>
                     <td><span className={styles.result}><StatusChip work={v.workStatus} review={v.reviewStatus} />{v.resumedOn ? <span className={styles.help}>retomada del {formatDayMonth(v.resumedOn)}</span> : null}</span></td>
+                    <td>{effectiveRapport(v) ? <RapportLevel level={effectiveRapport(v) ?? 'welcoming'} /> : <span className={styles.help}>—</span>}</td>
                     <td>{v.displays.length ? `${arranged(v)} de ${v.displays.length}` : '—'}</td>
                     <td>{v.photos.length || '—'}</td>
                   </tr>
@@ -158,7 +165,7 @@ export function StorePage({ storeId }: { storeId: string }) {
                   <Link to="/review/$visitId" params={{ visitId: v.id }} className={styles.visit}>
                     <span className={styles.visitText}>
                       <span className={styles.visitWhen}>{when(v)}</span>
-                      <span className={styles.help}>{v.merchandiserName.split(' ')[0]}{v.displays.length ? ` · ${arranged(v)} de ${v.displays.length} exhib.` : ''}{v.resumedOn ? ` · retomada del ${formatDayMonth(v.resumedOn)}` : ''}</span>
+                      <span className={styles.help}>{v.merchandiserName.split(' ')[0]}{v.displays.length ? ` · ${arranged(v)} de ${v.displays.length} exhib.` : ''}{v.resumedOn ? ` · retomada del ${formatDayMonth(v.resumedOn)}` : ''}{effectiveRapport(v) ? ` · ${RAPPORT_SHORT[effectiveRapport(v) ?? 'welcoming']}` : ''}</span>
                     </span>
                     <StatusChip work={v.workStatus} review={v.reviewStatus} />
                   </Link>

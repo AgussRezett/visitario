@@ -51,6 +51,7 @@ export interface Visit {
   retryAfter: string | null
   finishedAt: string | null
   notes: string | null
+  rapport: Enums<'rapport_kind'> | null
   store: Store
   displays: Display[]
   photos: Photo[]
@@ -91,6 +92,7 @@ export type VisitRow = {
   retry_after: string | null
   finished_at: string | null
   notes: string | null
+  rapport?: Enums<'rapport_kind'> | null
   adder: { first_name: string } | null
   store: { id: string; name: string | null; address: string; area: string | null; customer_number: string | null; lat: number | null; lng: number | null; location_status: Enums<'location_status'> } | null
   display: { id: string; display_type_id: number; reference: string | null; source: Enums<'display_source'>; sort_order: number; deleted_at: string | null }[]
@@ -118,6 +120,7 @@ export function toVisit(r: VisitRow, personId: string): Visit {
     retryAfter: r.retry_after,
     finishedAt: r.finished_at,
     notes: r.notes,
+    rapport: r.rapport ?? null,
     store: {
       id: s?.id ?? '',
       name: s?.name ?? null,
