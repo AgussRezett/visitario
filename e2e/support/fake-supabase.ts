@@ -249,7 +249,7 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
       state.resumable = (state.resumable ?? []).filter((r) => !ids.includes(String(r.visit_id)))
       return json(ids.length)
     }
-    if (path.endsWith('/rpc/search_stores')) return json([])
+    if (path.endsWith('/rpc/search_stores')) return json((state.stores ?? []).filter((x) => `${x.name ?? ''} ${x.address}`.toLowerCase().includes(String(body().p_query).toLowerCase())))
     if (path.endsWith('/workday') && req.method() === 'PATCH') {
       const changed = (state.workdays ?? []).filter((w) => matches(w, url.searchParams))
       changed.forEach((w) => Object.assign(w, body()))
