@@ -1,4 +1,4 @@
-import { Camera, Check } from 'lucide-react'
+import { Camera, Check, Image as ImageIcon } from 'lucide-react'
 import { formatTime } from '@/domain/dates'
 import type { Visit } from '@/features/workday/api/queries'
 import { PhotoPicker } from '@/features/workday/components/PhotoPicker'
@@ -31,12 +31,19 @@ export function ArrivalSection({ visit: v, busy, urlFor, onArrive, onView }: Arr
           <PhotoThumb key={p.id} photoId={p.id} url={urlFor(p.id)} caption="Fachada" done label="Ver la foto de la fachada" onOpen={() => onView(p.id)} className={styles.thumb} />
         ))}
         {!arrived ? (
-          <PhotoPicker className={styles.arrive} onPick={onArrive} disabled={busy} label="Marcar llegada con la foto de la fachada">
-            <Camera size={20} aria-hidden />
-            {busy ? 'Preparando la foto…' : 'Marcar llegada'}
-          </PhotoPicker>
+          <div className={styles.actions}>
+            <PhotoPicker className={styles.arrive} onPick={onArrive} disabled={busy} label="Marcar llegada con la foto de la fachada">
+              <Camera size={20} aria-hidden />
+              {busy ? 'Preparando la foto…' : 'Marcar llegada'}
+            </PhotoPicker>
+            {/* A photo already taken (or sent by someone else) also marks the arrival; it leaves without its location too. */}
+            <PhotoPicker className={styles.gallery} source="gallery" onPick={onArrive} disabled={busy} label="Marcar llegada con una foto de la galería">
+              <ImageIcon size={18} aria-hidden />
+              Elegir de la galería
+            </PhotoPicker>
+          </div>
         ) : null}
-        <span className={styles.hint}>Desde la computadora podés elegir la foto de tus archivos o arrastrarla.</span>
+        {!arrived ? <span className={styles.hint}>Desde la computadora podés elegir la foto de tus archivos o arrastrarla.</span> : null}
       </div>
     </VisitSection>
   )

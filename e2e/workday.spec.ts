@@ -168,3 +168,38 @@ test('changing the date keeps the header; days of the week are instant, others k
   await expect(page.getByText('Todavía no hay jornada para este día')).toBeVisible({ timeout: 5_000 })
   expect(await greeting?.evaluate((el) => el.isConnected)).toBe(true)
 })
+
+test('the storefront photo can come from the gallery: it marks the arrival and leaves without location', async ({ page }, info) => {
+  const state: FakeState = {
+    workday: { id: 'w1', company_id: 'c1', work_date: DATE, status: 'published', created_by: 'p1' },
+    visits: [visitRow('v1', 0, 'Tres Arroyos 762')],
+    uploads: [],
+  }
+  await installFakeSupabase(page, state)
+  await page.goto('/visit/v1')
+  const photo = await page.evaluate(async () => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 800
+    canvas.height = 600
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('no canvas')
+    ctx.fillStyle = '#8a6f5b'
+    ctx.fillRect(0, 0, 800, 600)
+    const url = canvas.toDataURL('image/jpeg', 0.9)
+    return url.slice(url.indexOf(',') + 1)
+  })
+  const gallery = page.getByRole('button', { name: 'Marcar llegada con una foto de la galería' })
+  await expect(gallery).toContainText('Elegir de la galería')
+  await page.screenshot({ path: `test-results/arrival-gallery-${info.project.name}.png` })
+  const chooser = page.waitForEvent('filechooser')
+  await gallery.click()
+  const picker = await chooser
+  expect(await picker.element().getAttribute('capture')).toBeNull() // the gallery, not the camera
+  await picker.setFiles({ name: 'IMG_0420.jpg', mimeType: 'image/jpeg', buffer: Buffer.from(photo, 'base64') })
+
+  await expect(page.getByText(/con la foto de fachada/)).toBeVisible()
+  await expect.poll(() => state.uploads.length).toBe(1)
+  expect(state.uploads[0]?.meta.kind).toBe('storefront')
+  expect(state.uploads[0]?.bytes.includes(Buffer.from('Exif'))).toBe(false)
+  await expect(gallery).toHaveCount(0)
+})
