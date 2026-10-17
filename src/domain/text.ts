@@ -15,7 +15,7 @@ export function tidyText(text: string): string {
     .map((w, i) => {
       const lower = w.toLowerCase()
       const prev = (words[i - 1] ?? '').toLowerCase()
-      if (/[0-9]/.test(w)) return w // 3526, 4B, 2do
+      if (/^[0-9]/.test(w)) return w // 3526, 4B, 2do
       if (/^([a-z]\.){2,}$/i.test(w) || /^[ivx]{1,6}$/i.test(w)) return w.toUpperCase() // S.A., XXIII
       if (i > 0 && (LOWER.has(lower) || (ARTICLES.has(lower) && (prev === 'de' || prev === 'a')))) return lower
       return initcap(w)
