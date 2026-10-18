@@ -38,8 +38,11 @@ export default defineConfig(({ mode }) => ({
         short_name: 'Visitario',
         description: 'Jornadas, visitas y activaciones de góndola.',
         lang: 'es-AR',
-        theme_color: '#173B30',
-        background_color: '#173B30',
+        // Android: theme_color paints the status bar until the page sets its own (the
+        // ground of the active theme, see profile/theme.ts); background_color paints the
+        // splash and the navigation bar, so it is the dark card, like the bottom navigation.
+        theme_color: '#0F1A16',
+        background_color: '#172520',
         display: 'standalone',
         start_url: '/',
         icons: [
