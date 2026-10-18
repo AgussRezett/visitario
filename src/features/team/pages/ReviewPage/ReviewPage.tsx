@@ -5,6 +5,7 @@ import { Inbox } from 'lucide-react'
 import { formatDayMonth, formatTime, todayInArgentina } from '@/domain/dates'
 import { useIsDesktop } from '@/lib/useMedia'
 import { Banner } from '@/ui/Banner'
+import { Field } from '@/ui/Field'
 import { Refreshing } from '@/ui/Refreshing'
 import { Segmented } from '@/ui/Segmented'
 import { Skeleton } from '@/ui/Skeleton'
@@ -14,11 +15,12 @@ import { reviewCountsQuery, reviewQuery, teamVisitQuery, type ReviewTab, type Te
 import { ReviewButtons, ReviewDetail, useReviewDraft } from '@/features/team/components/ReviewDetail'
 import styles from './ReviewPage.module.scss'
 
-const REVIEW_TABS: { value: ReviewTab; label: string }[] = [
-  { value: 'to_review', label: 'Por revisar' },
-  { value: 'needs_fix', label: 'Con corrección' },
-  { value: 'approved', label: 'Aprobadas' },
-  { value: 'all', label: 'Todas' },
+// Short labels on the phone, so each tab fits on one line with its count.
+const REVIEW_TABS: { value: ReviewTab; label: string; short: string }[] = [
+  { value: 'to_review', label: 'Por revisar', short: 'Revisar' },
+  { value: 'needs_fix', label: 'Con corrección', short: 'Corregir' },
+  { value: 'approved', label: 'Aprobadas', short: 'Aprobadas' },
+  { value: 'all', label: 'Todas', short: 'Todas' },
 ]
 
 export interface ReviewSearch {
@@ -41,7 +43,10 @@ export function ReviewPage({ tab = 'to_review', visit: selected, date: requested
   const visits = list.data ?? []
   const current = selected ?? (desktop ? visits[0]?.id : undefined)
 
-  const go = (search: ReviewSearch) => navigate({ to: '/s/review', search: { tab: search.tab ?? tab, visit: search.visit, date: requested }, replace: true })
+  const go = (search: ReviewSearch) => navigate({ to: '/s/review', search: { tab: search.tab ?? tab, visit: search.visit, date: 'date' in search ? search.date : requested }, replace: true })
+  // "Por revisar" and "Con corrección" span every day; the other two are for one day.
+  const byDay = tab === 'approved' || tab === 'all'
+  const today = todayInArgentina()
   if (!ctx) return null
 
   return (
@@ -51,13 +56,24 @@ export function ReviewPage({ tab = 'to_review', visit: selected, date: requested
           <span className={styles.eyebrow}>Revisión</span>
           <h1 className={styles.title}>{tab === 'to_review' ? 'Por revisar' : tab === 'needs_fix' ? 'Con corrección' : `Visitas del ${formatDayMonth(date)}`}</h1>
         </div>
+        {byDay ? (
+          <div className={styles.date}>
+            <Field label="Día" type="date" value={date} max={today}
+              onChange={(e) => e.target.value && go({ date: e.target.value === today ? undefined : e.target.value, visit: undefined })} />
+          </div>
+        ) : (
+          <p className={styles.scope}>De todos los días, las más viejas primero.</p>
+        )}
       </header>
 
       <Segmented
         label="Qué ver"
         value={tab}
         onChange={(t) => go({ tab: t })}
-        options={REVIEW_TABS.map((t) => ({ value: t.value, label: counts.data ? `${t.label} · ${counts.data[t.value]}` : t.label }))}
+        options={REVIEW_TABS.map((t) => {
+          const name = desktop ? t.label : t.short
+          return { value: t.value, label: counts.data ? `${name}${desktop ? ' · ' : ' '}${counts.data[t.value]}` : name }
+        })}
       />
 
       {list.isError ? <Banner tone="error">No pudimos cargar las visitas. Revisá la conexión.</Banner> : null}
@@ -70,7 +86,7 @@ export function ReviewPage({ tab = 'to_review', visit: selected, date: requested
             <ul className={styles.list}>
               {visits.map((v) => (
                 <li key={v.id}>
-                  <VisitRow v={v} active={desktop && v.id === current} desktop={desktop} tab={tab} />
+                  <VisitRow v={v} active={desktop && v.id === current} desktop={desktop} tab={tab} date={requested} />
                 </li>
               ))}
             </ul>
@@ -106,7 +122,7 @@ export function ReviewPage({ tab = 'to_review', visit: selected, date: requested
   )
 }
 
-function VisitRow({ v, active, desktop, tab }: { v: TeamVisit; active: boolean; desktop: boolean; tab: ReviewTab }) {
+function VisitRow({ v, active, desktop, tab, date }: { v: TeamVisit; active: boolean; desktop: boolean; tab: ReviewTab; date: string | undefined }) {
   const body = (
     <>
       <span className={styles.rowBody}>
@@ -121,7 +137,7 @@ function VisitRow({ v, active, desktop, tab }: { v: TeamVisit; active: boolean; 
     </>
   )
   return desktop ? (
-    <Link to="/s/review" search={{ tab, visit: v.id }} replace className={styles.row} data-active={active || undefined} aria-current={active ? 'true' : undefined}>{body}</Link>
+    <Link to="/s/review" search={{ tab, visit: v.id, date }} replace className={styles.row} data-active={active || undefined} aria-current={active ? 'true' : undefined}>{body}</Link>
   ) : (
     <Link to="/review/$visitId" params={{ visitId: v.id }} className={styles.row}>{body}</Link>
   )
