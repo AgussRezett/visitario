@@ -21,6 +21,7 @@ URL: `https://mjpzawlyjjlmluozjwap.supabase.co`
 | `20261017200000_mvp_backup_merge.sql` | applied (in two parts) | `import_mvp_backup` merges into existing days, reuses known stores, skips addresses the day already has |
 | `20261017220000_tidy_leading_digits.sql` | applied | `tidy_text`: only words that start with a digit stay as written |
 | `20261017230000_auto_approve.sql` | applied (in two parts) | `membership.auto_approve`, `visit.auto_approved`, `review_auto` trigger; auto-approved visits stay editable for the merchandiser |
+| `20261018200000_self_review.sql` | applied | `visit_guard`: a merchandiser who is also supervisor or admin of the company reviews their own visits (a fix still needs the comment) |
 
 Files with `delete`/`drop` statements are refused by the agent connector; apply those with the CLI (`supabase link --project-ref mjpzawlyjjlmluozjwap && supabase db push`) or the SQL Editor.
 

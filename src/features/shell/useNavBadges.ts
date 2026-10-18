@@ -17,7 +17,7 @@ export function useNavBadges(personId: string, active: { companyId: string; role
       const base = supabase.from('visit').select('id', { count: 'exact', head: true }).eq('company_id', companyId).is('deleted_at', null)
       const { count, error } =
         role === 'supervisor'
-          ? await base.neq('merchandiser_id', personId).eq('review_status', 'unreviewed').in('work_status', ['done', 'refused', 'closed'])
+          ? await base.eq('review_status', 'unreviewed').in('work_status', ['done', 'refused', 'closed'])
           : await base.eq('merchandiser_id', personId).eq('review_status', 'needs_fix')
       if (error) throw error
       return role === 'supervisor' ? { review: count ?? 0 } : { workday: count ?? 0 }
