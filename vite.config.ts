@@ -3,7 +3,26 @@ import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
-import { VitePWA } from 'vite-plugin-pwa'
+import { VitePWA, type VitePWAOptions } from 'vite-plugin-pwa'
+import type { Plugin } from 'vite'
+
+type PwaApi = { extendManifestEntries: (fn: (entries: NonNullable<NonNullable<VitePWAOptions['workbox']>['additionalManifestEntries']>) => typeof entries) => void }
+
+/**
+ * The web manifest always comes from the network, never from the service worker's cache:
+ * Android reads its colors and icons when installing, and a cached copy would keep the
+ * old ones until the person taps "Actualizar".
+ */
+function manifestFromNetwork(): Plugin {
+  return {
+    name: 'manifest-from-network',
+    buildStart() {
+      const pwa = this.environment.config.plugins.find((p) => p.name === 'vite-plugin-pwa')
+      const api = pwa?.api as PwaApi | undefined
+      api?.extendManifestEntries((entries) => entries.filter((e) => (typeof e === 'string' ? e : e.url) !== 'manifest.webmanifest'))
+    },
+  }
+}
 
 export default defineConfig(({ mode }) => ({
   plugins: [
@@ -48,6 +67,7 @@ export default defineConfig(({ mode }) => ({
         ],
       },
     }),
+    manifestFromNetwork(),
   ],
   build: {
     // The street map library (maplibre-gl, ~1 MB) is its own chunk, loaded only on the route.
