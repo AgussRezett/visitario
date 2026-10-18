@@ -180,6 +180,9 @@ function kick() {
 
 async function drain() {
   if (running || !client) return
+  // Without a session the server would take the changes as nobody's: wait for sign-in.
+  const { data } = await supabase.auth.getSession()
+  if (!data.session || running) return
   running = true
   set({ sending: true })
   let sentAny = false

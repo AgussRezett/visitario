@@ -102,7 +102,8 @@ function matches(row: Row, params: URLSearchParams) {
 export async function installFakeSupabase(page: Page, state: FakeState, role: 'merchandiser' | 'supervisor' | 'admin' = 'merchandiser') {
   await page.addInitScript(([token, r]) => {
     localStorage.setItem('visitario.activeRole', JSON.stringify({ companyId: 'c1', role: r }))
-    localStorage.setItem('sb-mjpzawlyjjlmluozjwap-auth-token', JSON.stringify({ access_token: token, refresh_token: 'r', token_type: 'bearer', expires_in: 3600, expires_at: 9999999999, user: { id: 'u1' } }))
+    // A test can end the session for good (as if the phone's site data were cleared).
+    if (!localStorage.getItem('e2e.noSession')) localStorage.setItem('sb-mjpzawlyjjlmluozjwap-auth-token', JSON.stringify({ access_token: token, refresh_token: 'r', token_type: 'bearer', expires_in: 3600, expires_at: 9999999999, user: { id: 'u1' } }))
   }, [fakeToken, role] as const)
 
   await page.route('**/*.supabase.co/**', async (route) => {
