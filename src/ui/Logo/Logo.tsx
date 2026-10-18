@@ -1,17 +1,17 @@
 import clsx from 'clsx'
+import { LOGO_VIEWBOX, MARK_TRANSFORM, SQUARE, V_LEFT, V_RIGHT, WORD } from './paths'
 import styles from './Logo.module.scss'
 
-/** Visitario wordmark: the V with a lime square reads as a ticked box. */
+/** Visitario logo: the V with the lime square (a ticked box) and "isitario", drawn as shapes. */
 export function Logo({ size = 'md', onDark = false, className }: { size?: 'md' | 'lg'; onDark?: boolean; className?: string }) {
-  const mark = size === 'lg' ? 40 : 28
   return (
-    <span className={clsx(styles.logo, styles[size], className)}>
-      <svg width={mark} height={mark} viewBox="0 0 32 32" aria-hidden>
-        <path d="M3 5h6.5L16 22.5 22.5 5H29L19.2 28h-6.4z" fill={onDark ? '#F6F7F2' : 'currentColor'} className={onDark ? undefined : styles.mark} />
-        <rect x="22.5" y="1" width="8" height="8" rx="2" fill="#B8D941" />
-      </svg>
-      <span className={onDark ? styles.onDark : styles.word}>isitario</span>
-      <span className={styles.srOnly}>Visitario</span>
-    </span>
+    <svg viewBox={LOGO_VIEWBOX} className={clsx(styles.logo, styles[size], onDark && styles.onDark, className)} role="img" aria-label="Visitario">
+      <g transform={MARK_TRANSFORM}>
+        <path className={styles.square} d={SQUARE} />
+        <path className={styles.ink} d={V_LEFT} />
+        <path className={styles.ink} d={V_RIGHT} />
+      </g>
+      <path className={styles.ink} d={WORD} />
+    </svg>
   )
 }
