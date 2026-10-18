@@ -1,0 +1,45 @@
+@use '@/styles/abstracts' as *;
+
+.empty {
+  @include surface;
+  @include flex(column, $gap: space(3), $align: center);
+  padding: space(8) space(5);
+  text-align: center;
+
+  @include up(lg) {
+    padding: space(12) space(8);
+  }
+}
+
+.icon {
+  @include icon-tile(space(14), $radius-lg);
+  background: $color-lime-soft;
+  color: $color-lime-soft-ink;
+}
+
+.title {
+  @include heading(title);
+}
+
+.lead {
+  max-width: 48ch;
+  color: $color-ink-muted;
+}
+
+.actions {
+  @include flex(column, $gap: space(2));
+  align-self: stretch;
+  padding-top: space(2);
+
+  @include up(sm) {
+    flex-direction: row;
+    align-items: center;
+    align-self: center;
+  }
+}
+
+.primary {
+  @include up(sm) {
+    padding-inline: space(8);
+  }
+}
