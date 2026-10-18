@@ -28,7 +28,7 @@ test('the supervisor reviews: a fix needs a comment, approving moves to the next
   state.visits.push(visitRow('vd', 0, 'Olazábal 1550', { merchandiser_id: 'p3', workday_id: 'w-p3', work_date: TODAY }))
   await installFakeSupabase(page, state, 'supervisor')
   await page.goto('/s/review')
-  await expect(page.getByRole('radio', { name: 'Por revisar · 2' })).toBeVisible()
+  await expect(page.getByRole('radio', { name: info.project.name === 'desktop' ? 'Por revisar · 2' : 'Revisar 2' })).toBeVisible()
 
   const desktop = info.project.name === 'desktop'
   if (!desktop) await page.getByRole('link', { name: /Tres Arroyos 762/ }).click()
@@ -46,6 +46,29 @@ test('the supervisor reviews: a fix needs a comment, approving moves to the next
   else await expect(page.getByText('Juramento 2101').first()).toBeVisible()
   await page.getByRole('button', { name: 'Aprobar y seguir' }).click()
   await expect.poll(() => state.visits.find((v) => v.id === 'v2')?.review_status).toBe('approved')
+})
+
+test('review by day: Aprobadas and Todas take a date, the inbox spans every day', async ({ page }, info) => {
+  const state = team()
+  const before = new Date(Date.now() - 3 * 86_400_000).toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
+  state.visits.push(finished('vold', 0, 'Moldes 1365', { work_date: before, review_status: 'approved' }))
+  await installFakeSupabase(page, state, 'supervisor')
+  await page.goto('/s/review')
+  await expect(page.getByText('De todos los días, las más viejas primero.')).toBeVisible()
+  await expect(page.getByLabel('Día')).toHaveCount(0)
+
+  await page.getByRole('radio', { name: /^Aprobadas/ }).click()
+  await expect(page.getByRole('link', { name: /Cuba 1940/ })).toBeVisible()
+  await expect(page.getByRole('link', { name: /Moldes 1365/ })).toHaveCount(0)
+  await page.getByLabel('Día').fill(before)
+  await expect(page.getByRole('link', { name: /Moldes 1365/ })).toBeVisible()
+  await expect(page.getByRole('link', { name: /Cuba 1940/ })).toHaveCount(0)
+  await expect(page).toHaveURL(new RegExp(`date=${before}`))
+  if (info.project.name === 'desktop') {
+    await page.getByRole('link', { name: /Moldes 1365/ }).click()
+    await expect(page).toHaveURL(new RegExp(`date=${before}`)) // choosing a visit keeps the day
+  }
+  await page.screenshot({ path: `test-results/review-day-${info.project.name}.png` })
 })
 
 test('the team day: progress, what waits for review and who needs attention', async ({ page }, info) => {
