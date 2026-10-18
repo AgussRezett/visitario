@@ -207,3 +207,12 @@ test('working hours: no inactivity after the day ends, and it counts from the st
   await expect(page.getByText('a las 13:40 · Olazábal 1550').filter({ visible: true })).toBeVisible()
   await expect(page.getByText(/sin actividad/i)).toHaveCount(0)
 })
+
+test('a supervisor who also visits stores reviews their own finished visits', async ({ page }, info) => {
+  const state = team()
+  state.visits = [finished('vm', 0, 'Manuela Pedraza 3526', { merchandiser_id: 'p1', merchandiser: { first_name: 'Agustín', last_name: 'Rezett' } })]
+  await installFakeSupabase(page, state, 'supervisor')
+  await page.goto('/s/review')
+  await expect(page.getByRole('radio', { name: info.project.name === 'desktop' ? 'Por revisar · 1' : 'Revisar 1' })).toBeVisible()
+  await expect(page.getByRole('link', { name: /Manuela Pedraza 3526/ })).toBeVisible()
+})

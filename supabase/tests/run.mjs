@@ -575,6 +575,18 @@ await as('agus', `update visit set work_status = 'done', consent = 'yes' where i
 check('Finishing it again approves it again', (await sys(`select review_status::text r, auto_approved a from visit where id = $1`, [withPhoto]))[0].a === true)
 await as('carla', `update membership set auto_approve = false where id = $1`, [agusMembership])
 
+// Reviewing one's own visits: only who also supervises or runs the company
+await as('agus', `update visit set work_status = 'in_progress' where id = $1`, [withPhoto])
+await as('agus', `update visit set work_status = 'done', consent = 'yes' where id = $1`, [withPhoto])
+check('Without auto-approval a finished visit waits for review', (await sys(`select review_status::text r from visit where id = $1`, [withPhoto]))[0].r === 'unreviewed')
+await expectError('A merchandiser cannot approve their own visit', () => as('agus', `update visit set review_status = 'approved' where id = $1`, [withPhoto]), /resubmit/)
+await as('carla', `update membership set roles = '{merchandiser,supervisor}' where id = $1`, [agusMembership])
+await expectError('Asking oneself a fix still needs the comment', () => as('agus', `update visit set review_status = 'needs_fix' where id = $1`, [withPhoto]), /comment/)
+await as('agus', `update visit set review_status = 'approved' where id = $1`, [withPhoto])
+const selfApproved = (await sys(`select review_status::text r, reviewed_by, auto_approved a from visit where id = $1`, [withPhoto]))[0]
+check('A merchandiser who also supervises approves their own visit', selfApproved.r === 'approved' && selfApproved.reviewed_by === agus && !selfApproved.a)
+await as('carla', `update membership set roles = '{merchandiser}' where id = $1`, [agusMembership])
+
 // Password detection (Google users who later set a password)
 await sys(`update auth.users set encrypted_password = '$2a$10$hash' where id = $1`, [U.agus]);
 check('has_password is true for a user with a password', (await as('agus', `select has_password() v`))[0].v === true);

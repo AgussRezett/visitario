@@ -78,8 +78,9 @@ const FINISHED = ['done', 'refused', 'closed'] as const
  * "Aprobadas" and "Todas" are for the chosen day. Visits of the supervisor themself
  * never appear: nobody reviews their own work.
  */
-function reviewFilter(companyId: string, personId: string, tab: ReviewTab, date: string) {
-  let q = supabase.from('visit').select(TEAM_VISIT_SELECT).eq('company_id', companyId).neq('merchandiser_id', personId).is('deleted_at', null)
+// A supervisor who also visits stores reviews their own visits too (no one else would).
+function reviewFilter(companyId: string, tab: ReviewTab, date: string) {
+  let q = supabase.from('visit').select(TEAM_VISIT_SELECT).eq('company_id', companyId).is('deleted_at', null)
   if (tab === 'to_review') q = q.eq('review_status', 'unreviewed').in('work_status', [...FINISHED]).order('finished_at', { ascending: true })
   if (tab === 'needs_fix') q = q.eq('review_status', 'needs_fix').order('updated_at', { ascending: true })
   if (tab === 'approved') q = q.eq('review_status', 'approved').eq('work_date', date).order('reviewed_at', { ascending: false })
@@ -92,20 +93,20 @@ export const reviewQuery = (companyId: string, personId: string, tab: ReviewTab,
     queryKey: teamKeys.review(companyId, tab, date),
     ...LIVE,
     queryFn: async () => {
-      const { data, error } = await reviewFilter(companyId, personId, tab, date)
+      const { data, error } = await reviewFilter(companyId, tab, date)
       if (error) throw error
       return (data as unknown as TeamVisitRow[]).map((r) => toTeamVisit(r, personId))
     },
   })
 
 /** How many in each tab, for the tabs and the navigation badge. */
-export const reviewCountsQuery = (companyId: string, personId: string, date: string) =>
+export const reviewCountsQuery = (companyId: string, date: string) =>
   queryOptions({
     queryKey: teamKeys.counts(companyId, date),
     ...LIVE,
     queryFn: async (): Promise<Record<ReviewTab, number>> => {
       const count = async (tab: ReviewTab) => {
-        let q = supabase.from('visit').select('id', { count: 'exact', head: true }).eq('company_id', companyId).neq('merchandiser_id', personId).is('deleted_at', null)
+        let q = supabase.from('visit').select('id', { count: 'exact', head: true }).eq('company_id', companyId).is('deleted_at', null)
         if (tab === 'to_review') q = q.eq('review_status', 'unreviewed').in('work_status', [...FINISHED])
         if (tab === 'needs_fix') q = q.eq('review_status', 'needs_fix')
         if (tab === 'approved') q = q.eq('review_status', 'approved').eq('work_date', date)

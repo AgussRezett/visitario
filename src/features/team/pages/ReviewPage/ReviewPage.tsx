@@ -39,7 +39,7 @@ export function ReviewPage({ tab = 'to_review', visit: selected, date: requested
   const companyId = ctx?.companyId ?? ''
   const personId = ctx?.personId ?? ''
   const list = useQuery({ ...reviewQuery(companyId, personId, tab, date), enabled: on, placeholderData: keepPreviousData })
-  const counts = useQuery({ ...reviewCountsQuery(companyId, personId, date), enabled: on })
+  const counts = useQuery({ ...reviewCountsQuery(companyId, date), enabled: on })
   const visits = list.data ?? []
   const current = selected ?? (desktop ? visits[0]?.id : undefined)
 
