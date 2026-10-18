@@ -4,7 +4,6 @@ import { useNavigate } from '@tanstack/react-router'
 import { formatLongDate, todayInArgentina } from '@/domain/dates'
 import { applyRouteOrder, approximateRoute, inRoute, type Point, type Stop } from '@/domain/route'
 import { Banner } from '@/ui/Banner'
-import { useIsDesktop } from '@/lib/useMedia'
 import { useWorkContext } from '@/features/workday/context'
 import { visitsQuery, workdayQuery, type Visit } from '@/features/workday/api/queries'
 import { useVisitList } from '@/features/sync/hooks'
@@ -22,7 +21,6 @@ const toStop = (v: Visit): Stop => ({ id: v.id, location: { lat: v.store.lat as 
 export function RoutePage({ date: requested }: { date?: string }) {
   const ctx = useWorkContext()
   const navigate = useNavigate()
-  const desktop = useIsDesktop()
   const date = requested ?? todayInArgentina()
   const companyId = ctx?.companyId ?? ''
   const personId = ctx?.personId ?? ''
@@ -103,7 +101,6 @@ export function RoutePage({ date: requested }: { date?: string }) {
         mode={options.mode}
         origin={options.origin}
         lastId={lastId}
-        perLeg={desktop ? 10 : 4}
         refining={busy}
         onBack={() => setStep('setup')}
         onRecalculate={() => void calculate()}
