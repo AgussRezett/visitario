@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { ArrowLeft, Check, Map as MapIcon, Navigation, RefreshCw } from 'lucide-react'
 import clsx from 'clsx'
-import { directionsUrl, mapsLegs, placeQuery, type Point, type TravelMode } from '@/domain/route'
+import { MAPS_STOPS, directionsUrl, mapsLegs, placeQuery, type Point, type TravelMode } from '@/domain/route'
 import { Button, buttonClass } from '@/ui/Button'
 import type { Visit } from '@/features/workday/api/queries'
 import { placeName, stopNote } from './stop'
@@ -26,7 +26,6 @@ interface RouteResultProps {
   origin: Point | null
   lastId: string
   /** Stores per Google Maps leg: 4 on a phone (3 in between), 10 on a computer. */
-  perLeg: number
   refining: boolean
   onBack: () => void
   onRecalculate: () => void
@@ -36,7 +35,7 @@ interface RouteResultProps {
 const km = (n: number) => n.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 
 /** The suggested order, the Maps legs and applying it to the day (wireframes A08, AD08). */
-export function RouteResult({ plan, visits, mode, origin, lastId, perLeg, refining, onBack, onRecalculate, onApply }: RouteResultProps) {
+export function RouteResult({ plan, visits, mode, origin, lastId, refining, onBack, onRecalculate, onApply }: RouteResultProps) {
   if (!plan) {
     return (
       <section className={clsx(styles.card, styles.waiting)} aria-label="Orden sugerido">
@@ -49,7 +48,7 @@ export function RouteResult({ plan, visits, mode, origin, lastId, perLeg, refini
 
   const byId = new Map(visits.map((v) => [v.id, v]))
   const stops = plan.ids.flatMap((id) => byId.get(id) ?? [])
-  const legs = mapsLegs(stops.map((v) => placeQuery(v.store)), mode, origin ?? undefined, perLeg)
+  const legs = mapsLegs(stops.map((v) => placeQuery(v.store)), mode, origin ?? undefined, MAPS_STOPS)
   const how = `${stops.length} ${stops.length === 1 ? 'local' : 'locales'} · ${mode === 'driving' ? 'en auto' : 'a pie'} · ${origin ? 'desde tu ubicación' : 'desde el primer local'}`
 
   return (
@@ -97,6 +96,10 @@ export function RouteResult({ plan, visits, mode, origin, lastId, perLeg, refini
         </ol>
       </div>
 
+      <div className={styles.footer}>
+        <Button onClick={onApply}><Check size={20} aria-hidden />Aplicar este orden a mi jornada</Button>
+      </div>
+
       <span className={styles.eyebrow}>Abrir en Google Maps</span>
       <div className={styles.legs}>
         {legs.map((leg, i) => (
@@ -106,12 +109,9 @@ export function RouteResult({ plan, visits, mode, origin, lastId, perLeg, refini
         ))}
       </div>
       <p className={styles.help}>
-        {legs.length > 1 ? 'Google Maps admite pocas paradas por vez: abrí los tramos en orden.' : 'En el celular el recorrido se divide en tramos de 3 paradas.'}
+        {legs.length > 1 ? `Google Maps admite hasta ${MAPS_STOPS} paradas por vez: abrí los tramos en orden.` : 'Se abre en la app de Google Maps con todas las paradas.'}
       </p>
 
-      <div className={styles.footer}>
-        <Button onClick={onApply}><Check size={20} aria-hidden />Aplicar este orden a mi jornada</Button>
-      </div>
     </section>
   )
 }

@@ -1,3 +1,5 @@
+import { shortestPath } from './tsp'
+
 // The day's route: the best order to visit the stores that are left, by straight-line
 // distance (the MVP's algorithm). Street distances come from LocationIQ when available
 // (supabase/functions/route); this order is the fallback and works without signal.
@@ -43,83 +45,43 @@ export function routeKm(order: readonly Stop[], origin?: Point): number {
 }
 
 /**
- * The shortest order that respects the first and last store. Exact up to 11 stores
- * (dynamic programming), nearest neighbour plus 2-opt above that: 14 stores take a few ms.
+ * The shortest order that respects the first and last store, by straight-line distance:
+ * exact up to 15 stores, local search above (see domain/tsp). Used without signal or
+ * without the street router; the router uses the same solver with street distances.
  */
 export function approximateRoute({ stops, origin, firstId, lastId }: RouteRequest): { ids: string[]; km: number } {
-  const n = stops.length
-  if (!n) return { ids: [], km: 0 }
-  const at = (i: number) => (stops[i] as Stop).location
-  const start = stops.findIndex((s) => s.id === firstId)
-  const end = n > 1 ? stops.findIndex((s) => s.id === lastId && s.id !== firstId) : -1
-  const dist = (a: number, b: number) => distanceKm(at(a), at(b))
-  const initial = (i: number) => (origin ? distanceKm(origin, at(i)) : 0)
-  const cost = (order: readonly number[]) =>
-    order.reduce((sum, i, pos) => sum + (pos === 0 ? initial(i) : dist(order[pos - 1] as number, i)), 0)
+  if (!stops.length) return { ids: [], km: 0 }
+  const plan = planNodes(stops, origin, firstId, lastId)
+  const at = plan.points
+  const { order } = shortestPath({
+    n: at.length,
+    start: plan.start,
+    end: plan.end,
+    cost: (i, j) => (plan.virtualStart && i === plan.start ? 0 : distanceKm(at[i] as Point, at[j] as Point)),
+  })
+  const ids = order.flatMap((i) => (i < plan.offset ? [] : [(stops[i - plan.offset] as Stop).id]))
+  const byId = new Map(stops.map((s) => [s.id, s]))
+  return { ids, km: routeKm(ids.map((id) => byId.get(id) as Stop), origin) }
+}
 
-  let best: number[]
-  if (n <= 11) {
-    const full = (1 << n) - 1
-    const memo = new Map<number, { cost: number; order: number[] }>()
-    const solve = (mask: number, prev: number): { cost: number; order: number[] } => {
-      if (mask === full) return { cost: 0, order: [] }
-      const key = mask * 16 + (prev + 1)
-      const seen = memo.get(key)
-      if (seen) return seen
-      let result = { cost: Infinity, order: [] as number[] }
-      for (let i = 0; i < n; i++) {
-        if (mask & (1 << i)) continue
-        if (mask === 0 && start !== -1 && i !== start) continue
-        const lastFree = mask === (full ^ (1 << i))
-        if (i === end && !lastFree) continue
-        if (lastFree && end !== -1 && i !== end) continue
-        const tail = solve(mask | (1 << i), i)
-        const total = (prev === -1 ? initial(i) : dist(prev, i)) + tail.cost
-        if (total < result.cost) result = { cost: total, order: [i, ...tail.order] }
-      }
-      memo.set(key, result)
-      return result
-    }
-    best = solve(0, -1).order
-  } else {
-    best = []
-    const remaining = new Set(stops.map((_, i) => i))
-    if (start !== -1) {
-      best.push(start)
-      remaining.delete(start)
-    }
-    if (end !== -1) remaining.delete(end)
-    while (remaining.size) {
-      let next = -1
-      let nearest = Infinity
-      for (const i of remaining) {
-        const last = best[best.length - 1]
-        const d = last === undefined ? initial(i) : dist(last, i)
-        if (d < nearest) {
-          nearest = d
-          next = i
-        }
-      }
-      best.push(next)
-      remaining.delete(next)
-    }
-    if (end !== -1) best.push(end)
-    // Reverse inner stretches while that shortens the trip.
-    let improved = true
-    while (improved) {
-      improved = false
-      for (let i = start === -1 ? 0 : 1; i < best.length - 1; i++) {
-        for (let j = i + 1; j < best.length - (end === -1 ? 0 : 1); j++) {
-          const candidate = [...best.slice(0, i), ...best.slice(i, j + 1).reverse(), ...best.slice(j + 1)]
-          if (cost(candidate) + 1e-9 < cost(best)) {
-            best = candidate
-            improved = true
-          }
-        }
-      }
-    }
+/**
+ * The points the solver sees: the origin first when the trip starts there (or a free start,
+ * a point at zero cost from everything), then the stores. Where it starts and must end.
+ */
+export function planNodes(stops: readonly Stop[], origin: Point | undefined, firstId?: string, lastId?: string) {
+  const first = stops.findIndex((s) => s.id === firstId)
+  const lastIndex = stops.findIndex((s) => s.id === lastId && s.id !== firstId)
+  const lead = first === -1 // the trip starts before the stores: at the origin, or anywhere
+  const offset = lead ? 1 : 0
+  const points: Point[] = [...(lead ? [origin ?? (stops[0] as Stop).location] : []), ...stops.map((s) => s.location)]
+  return {
+    points,
+    offset,
+    start: lead ? 0 : first,
+    end: lastIndex === -1 ? undefined : lastIndex + offset,
+    /** No origin and no first store: the start costs nothing to leave. */
+    virtualStart: lead && !origin,
   }
-  return { ids: best.map((i) => (stops[i] as Stop).id), km: cost(best) }
 }
 
 /**
@@ -145,9 +107,13 @@ export interface MapsLeg {
 }
 
 /**
- * Google Maps links for the route, in legs: Maps on a phone takes 3 stops in between,
- * on a computer up to 9. Each leg starts where the previous one ended.
+ * Stores per Google Maps link: 9 stops in between plus the destination, the most Maps takes
+ * (the app on the phone and the web on a computer; only a phone browser without the app
+ * takes fewer). 14 stores are 2 legs.
  */
+export const MAPS_STOPS = 10
+
+/** Google Maps links for the route, in legs. Each leg starts where the previous one ended. */
 export function mapsLegs(places: readonly string[], mode: TravelMode, origin: Point | undefined, perLeg: number): MapsLeg[] {
   const legs: MapsLeg[] = []
   const step = Math.max(1, perLeg)

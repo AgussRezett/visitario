@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import clsx from 'clsx'
 import { Car, Check, Footprints, LocateFixed, Route as RouteIcon, TriangleAlert } from 'lucide-react'
 import { formatTime } from '@/domain/dates'
 import type { Point, TravelMode } from '@/domain/route'
@@ -89,6 +88,11 @@ export function RouteSetup({ options, onChange, candidates, selected, missing, b
 
       {!options.origin && options.firstId === 'auto' ? <p className={styles.help}>Sin tu ubicación, arranca por el primer local de la jornada.</p> : null}
 
+      {/* Before the list: every store starts chosen, so most days this is the next tap. */}
+      <div className={styles.footer}>
+        <Button onClick={onCalculate} disabled={!selected.length} loading={busy}><RouteIcon size={20} aria-hidden />Calcular mejor orden</Button>
+      </div>
+
       {missing.length ? (
         <Banner tone="warn" icon={<TriangleAlert size={18} aria-hidden />} title={missing.length === 1 ? '1 local sin ubicación' : `${missing.length} locales sin ubicación`}>
           {missing.map((v, i) => (
@@ -121,9 +125,6 @@ export function RouteSetup({ options, onChange, candidates, selected, missing, b
       </ul>
       <p className={styles.help}>Las visitas aprobadas, terminadas o no autorizadas no entran en el recorrido.</p>
 
-      <div className={clsx(styles.footer, styles.footerCard)}>
-        <Button onClick={onCalculate} disabled={!selected.length} loading={busy}><RouteIcon size={20} aria-hidden />Calcular mejor orden</Button>
-      </div>
     </section>
   )
 }

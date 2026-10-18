@@ -46,12 +46,8 @@ test('without my location: starts at the first store, the closed one last, and t
   await expect(order.nth(4)).toContainText('Vidal 2044 · último')
   await expect(page.getByText('en línea recta', { exact: true })).toBeVisible()
 
-  if (info.project.name === 'desktop') {
-    await expect(page.getByRole('link', { name: 'Todo el recorrido' })).toBeVisible()
-  } else {
-    await expect(page.getByRole('link', { name: 'Tramo 1 · 1 a 4' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Tramo 2 · 4 a 5' })).toBeVisible()
-  }
+  // Up to 10 stores in one Google Maps link, on the phone too.
+  await expect(page.getByRole('link', { name: 'Todo el recorrido' })).toBeVisible()
   await page.screenshot({ path: `test-results/route-result-${info.project.name}.png`, fullPage: true })
 
   await page.getByRole('button', { name: 'Aplicar este orden a mi jornada' }).click()
