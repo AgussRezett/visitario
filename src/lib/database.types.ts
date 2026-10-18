@@ -1595,6 +1595,61 @@ export type Database = {
         Args: { p_company: string; p_date: string; p_merchandiser: string }
         Returns: string
       }
+      platform_companies: {
+        Args: never
+        Returns: {
+          admins: string
+          ai_captures: number
+          ai_cost_usd_thousandths: number
+          created_at: string
+          ends_on: string
+          id: string
+          invited: number
+          kind: Database["public"]["Enums"]["company_kind"]
+          last_activity_at: string
+          members: number
+          name: string
+          photo_bytes: number
+          photos: number
+          plan: Database["public"]["Enums"]["plan_kind"]
+          status: Database["public"]["Enums"]["subscription_status"]
+          support_until: string
+          visits_30d: number
+        }[]
+      }
+      platform_create_company: {
+        Args: {
+          p_admin_dni: string
+          p_ends_on: string | null
+          p_first_name?: string
+          p_kind: Database["public"]["Enums"]["company_kind"]
+          p_last_name?: string
+          p_name: string
+          p_phone?: string
+          p_plan: Database["public"]["Enums"]["plan_kind"]
+        }
+        Returns: string
+      }
+      platform_set_plan: {
+        Args: {
+          p_company: string
+          p_ends_on: string | null
+          p_plan: Database["public"]["Enums"]["plan_kind"]
+          p_status: Database["public"]["Enums"]["subscription_status"]
+        }
+        Returns: undefined
+      }
+      platform_totals: {
+        Args: never
+        Returns: {
+          active_people: number
+          ai_captures: number
+          ai_cost_usd_thousandths: number
+          db_bytes: number
+          photo_bytes: number
+          photos: number
+        }[]
+      }
       purge_authorized: { Args: { p_secret: string }; Returns: boolean }
       rapport_facts: {
         Args: { p_company: string; p_from: string; p_to: string }
@@ -1697,7 +1752,12 @@ export type Database = {
           unverified: number
         }[]
       }
+      start_support: {
+        Args: { p_company: string; p_reason: string }
+        Returns: string
+      }
       store_open_stops_count: { Args: { p_store: string }; Returns: number }
+      support_company: { Args: { p_company: string }; Returns: Json }
       store_reputation: {
         Args: { p_company: string; p_stores: string[] }
         Returns: {

@@ -184,10 +184,15 @@ test('company and plan: billing shows, settings save, data exports', async ({ pa
     subscription: { company_id: 'c1', plan: 'pilot', status: 'active', ends_on: '2026-11-30', next_billing_on: '2026-12-01', auto_debit: false, payment_method_summary: null, estimated_amount_cents: null, currency: 'ARS' },
     usage: { active_people: 7, photo_bytes: 2_100_000_000, photos: 9800, visits_this_month: 412, stores: 230, ai_captures_this_month: 0 },
     visits: [visitRow('v1', 0, 'Tres Arroyos 762', { notes: 'Faltó "SKYY"; volver' })],
+    supportLog: [{ id: 's1', reason: 'Martín no ve las visitas de Lucía', starts_at: '2026-10-12T15:00:00-03:00', ends_at: '2026-10-12T17:00:00-03:00' }],
   })
   await installFakeSupabase(page, state, 'admin')
   await page.goto('/s/company')
   await expect(page.getByRole('heading', { name: 'Plan piloto' })).toBeVisible()
+  // Visitario looking at the company's data is on record, with its reason
+  const log = page.getByRole('region', { name: 'Accesos de soporte' })
+  await expect(log.getByText('Martín no ve las visitas de Lucía')).toBeVisible()
+  await expect(log.getByText('Equipo de Visitario · 12/10/2026, 15:00 a 17:00')).toBeVisible()
   await expect(page.getByText('El piloto termina el 30/11/2026')).toBeVisible()
   await expect(page.getByText('2,1 GB')).toBeVisible()
   await expect(page.getByText('A definir')).toBeVisible()

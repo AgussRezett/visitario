@@ -1,12 +1,12 @@
 import { useState, type ReactNode } from 'react'
-import { useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { Building2, LogOut, Pencil } from 'lucide-react'
+import { Building2, LogOut, Pencil, ShieldCheck } from 'lucide-react'
 import { formatDni } from '@/domain/identity'
 import { ROLE_LABEL } from '@/domain/roles'
 import { Avatar } from '@/ui/Avatar'
 import { initials } from '@/lib/format'
-import { Button } from '@/ui/Button'
+import { Button, buttonClass } from '@/ui/Button'
 import { Card } from '@/ui/Card'
 import { useConfirm } from '@/ui/ConfirmDialog'
 import { Segmented } from '@/ui/Segmented'
@@ -86,6 +86,11 @@ export function ProfilePage({ me }: { me: Me & { person: NonNullable<Me['person'
               <p className={styles.empty}>Todavía no pertenecés a ninguna empresa.</p>
             )}
             <Invitations invitations={me.invitations} />
+            {me.isPlatformAdmin ? (
+              <Link to="/platform" className={buttonClass('secondary', 'md', styles.platform)}>
+                <ShieldCheck size={18} aria-hidden />Panel de Visitario · super admin
+              </Link>
+            ) : null}
           </Section>
         </div>
         <div className={styles.column}>

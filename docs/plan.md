@@ -80,12 +80,12 @@ Cómo quedó: Usuarios y equipos (alta por DNI; la invitación se manda por What
 Cada punto sale en su propio PR.
 
 **Recorrido**
-- [x] El recorrido de 14 locales se calcula en menos de 3 segundos en el celular (dominio: exacto hasta 11 locales, vecino más cercano + 2-opt arriba; e2e < 3 s).
+- [x] El recorrido de 14 locales se calcula en menos de 3 segundos en el celular (dominio: exacto hasta 15 locales, vecino más cercano + 2-opt + Or-opt arriba; e2e < 3 s).
 - [x] Sin permiso de ubicación, el recorrido arranca desde el primer local (dominio + e2e).
 - [x] Aplicar el orden reordena la jornada, también sin señal; las visitas terminadas o aprobadas no se mueven (dominio + e2e).
 - [ ] Probado en el celular real.
 
-Cómo quedó: Recorrido (auto o a pie, ubicación opcional que no se guarda, primer y último local —un local cerrado va último por defecto—, locales a incluir). El orden se calcula en el celular en línea recta y, si hay señal y `LOCATIONIQ_KEY`, se reemplaza por el orden por calles con km y minutos (función `route`). Google Maps en tramos de 3 paradas intermedias en el celular y completo en la computadora. El recorrido se ve sobre un mapa real de calles (MapLibre + OpenFreeMap, sin clave), con las paradas numeradas para tocar y el camino por calles; sin señal, un croquis.
+Cómo quedó: Recorrido (auto o a pie, ubicación opcional que no se guarda, primer y último local —un local cerrado va último por defecto—, locales a incluir). El orden se calcula en el celular en línea recta y, si hay señal y `LOCATIONIQ_KEY`, la función `route` pide a LocationIQ la distancia y el tiempo por calles entre todos los puntos (Matrix), resuelve el orden con el mismo solver (`src/domain/tsp.ts`: a pie la caminata más corta, en auto el viaje más rápido, respetando las manos) y dibuja ese orden por calles (Directions). Google Maps en tramos de hasta 10 locales (9 paradas intermedias), en el celular y en la computadora. El recorrido se ve sobre un mapa real de calles (MapLibre + OpenFreeMap, sin clave), con las paradas numeradas para tocar y el camino por calles; sin señal, un croquis. "Calcular mejor orden" y "Aplicar este orden" van en el flujo, sin flotar sobre la lista.
 
 **Informes del equipo**
 - [x] Tabla por activador (visitados, no visitados, extras, no autorizadas, cada número de trabajo y revisión) con los totales del equipo (dominio + e2e).
@@ -93,6 +93,16 @@ Cómo quedó: Recorrido (auto o a pie, ubicación opcional que no se guarda, pri
 - [x] "Copiar informe del equipo" junta todos, cada uno bajo su nombre (dominio + e2e).
 
 Cómo quedó: sección Informes del supervisor (también en la barra del celular), con fecha elegible. Solo aparecen quienes tienen visitas ese día. Excel/PDF y reportes con diseño quedan como "próximamente".
+
+**Super admin**
+- [x] Solo el equipo de Visitario (`platform_admin`) entra al panel; la base lo vuelve a verificar en cada función (base + e2e).
+- [x] Empresas con tipo, plan, estado, usuarios, visitas de 30 días, fotos y capturas con IA; totales de la plataforma contra los planes gratuitos (base + e2e).
+- [x] Crear una empresa con su plan y su primer admin, invitado por DNI como el resto (base + e2e).
+- [x] Cambiar plan, estado y vencimiento (base + e2e).
+- [x] Soporte de solo lectura: se abre con un motivo, dura 2 horas, queda registrado y el admin de la empresa lo ve en Empresa y plan (base + e2e).
+- [ ] Probado en el celular real.
+
+Cómo quedó: "Plataforma → Empresas" en la barra lateral y "Panel de Visitario" en el perfil (celular). El soporte muestra un resumen (personas, roles, equipos, última visita y estado de sincronización de cada uno, los últimos 14 días, configuración y accesos), no la app completa como la empresa: entrar "como" la empresa exigiría cambiar todas las políticas de seguridad.
 
 **Captura con IA**
 - [x] En Importar, "Desde una captura": la foto o captura del Excel o del mensaje se lee con Claude y va directo a la revisión, repartida por activador (dominio + e2e).
