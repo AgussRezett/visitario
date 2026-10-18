@@ -105,14 +105,6 @@
   color: $color-ink-subtle;
 }
 
-.empty {
-  @include flex(column, $gap: space(2), $align: center);
-  @include text(label);
-  padding: space(10) space(4);
-  text-align: center;
-  color: $color-ink-subtle;
-}
-
 .pick {
   @include text(label);
   padding: space(10) 0;

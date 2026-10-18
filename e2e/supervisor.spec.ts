@@ -216,3 +216,17 @@ test('a supervisor who also visits stores reviews their own finished visits', as
   await expect(page.getByRole('radio', { name: info.project.name === 'desktop' ? 'Por revisar · 1' : 'Revisar 1' })).toBeVisible()
   await expect(page.getByRole('link', { name: /Manuela Pedraza 3526/ })).toBeVisible()
 })
+
+test('an empty review tab says why and points to where the work is', async ({ page }, info) => {
+  await installFakeSupabase(page, team(), 'supervisor')
+  await page.goto('/s/review?tab=needs_fix')
+  await expect(page.getByRole('heading', { name: 'Ninguna corrección pendiente' })).toBeVisible()
+  await expect(page.getByText('Elegí una visita de la lista.')).toBeHidden() // no empty detail pane beside it
+  await page.screenshot({ path: `test-results/review-empty-${info.project.name}.png` })
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.waitForTimeout(400) // the theme's color transitions
+  await page.screenshot({ path: `test-results/review-empty-dark-${info.project.name}.png` })
+  await page.getByRole('button', { name: 'Ver por revisar · 2' }).click()
+  await expect(page).toHaveURL(/tab=to_review/)
+  await expect(page.getByText('Juramento 2101').first()).toBeVisible()
+})
