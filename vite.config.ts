@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => ({
         description: 'Jornadas, visitas y activaciones de góndola.',
         lang: 'es-AR',
         theme_color: '#173B30',
-        background_color: '#F6F7F2',
+        background_color: '#173B30',
         display: 'standalone',
         start_url: '/',
         icons: [
