@@ -1,7 +1,10 @@
 @use '@/styles/abstracts' as *;
 
 .cancel {
-  flex: 1;
+  // Side by side on desktop; on phones the footer is a column and flex: 1 would squash it.
+  @include up(lg) {
+    flex: 1;
+  }
 }
 
 .remove {
