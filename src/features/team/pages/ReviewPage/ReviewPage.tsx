@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { Inbox } from 'lucide-react'
 import { formatDayMonth, formatTime, todayInArgentina } from '@/domain/dates'
 import { useIsDesktop } from '@/lib/useMedia'
 import { Banner } from '@/ui/Banner'
@@ -13,6 +12,7 @@ import { StatusChip } from '@/ui/StatusChip'
 import { useWorkContext } from '@/features/workday/context'
 import { reviewCountsQuery, reviewQuery, teamVisitQuery, type ReviewTab, type TeamVisit } from '@/features/team/api/queries'
 import { ReviewButtons, ReviewDetail, useReviewDraft } from '@/features/team/components/ReviewDetail'
+import { ReviewEmpty } from './ReviewEmpty'
 import styles from './ReviewPage.module.scss'
 
 // Short labels on the phone, so each tab fits on one line with its count.
@@ -78,46 +78,47 @@ export function ReviewPage({ tab = 'to_review', visit: selected, date: requested
 
       {list.isError ? <Banner tone="error">No pudimos cargar las visitas. Revisá la conexión.</Banner> : null}
 
-      <div className={styles.split}>
-        <Refreshing active={list.isPlaceholderData} className={styles.listColumn}>
-          {list.isPending ? (
-            <div className={styles.skeletons}>{[0, 1, 2, 3].map((i) => <Skeleton key={i} height={64} />)}</div>
-          ) : visits.length ? (
-            <ul className={styles.list}>
-              {visits.map((v) => (
-                <li key={v.id}>
-                  <VisitRow v={v} active={desktop && v.id === current} desktop={desktop} tab={tab} date={requested} />
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className={styles.empty}>
-              <Inbox size={28} aria-hidden />
-              <p>{tab === 'to_review' ? 'No hay visitas esperando revisión.' : tab === 'needs_fix' ? 'No hay correcciones pendientes.' : 'No hay visitas para mostrar.'}</p>
-            </div>
-          )}
+      {!list.isPending && !list.isError && !visits.length ? (
+        <Refreshing active={list.isPlaceholderData}>
+          <ReviewEmpty tab={tab} date={date} counts={counts.data} onTab={(t) => go({ tab: t, visit: undefined })} />
         </Refreshing>
-
-        {desktop ? (
-          <div className={styles.detailColumn}>
-            {current ? (
-              <SelectedVisit
-                key={current}
-                visitId={current}
-                meId={personId}
-                fallback={visits.find((v) => v.id === current)}
-                onDone={() => {
-                  const i = visits.findIndex((v) => v.id === current)
-                  const next = visits[i + 1] ?? visits[i - 1]
-                  go({ visit: next && next.id !== current ? next.id : undefined })
-                }}
-              />
+      ) : (
+        <div className={styles.split}>
+          <Refreshing active={list.isPlaceholderData} className={styles.listColumn}>
+            {list.isPending ? (
+              <div className={styles.skeletons}>{[0, 1, 2, 3].map((i) => <Skeleton key={i} height={64} />)}</div>
             ) : (
-              <p className={styles.pick}>Elegí una visita de la lista.</p>
+              <ul className={styles.list}>
+                {visits.map((v) => (
+                  <li key={v.id}>
+                    <VisitRow v={v} active={desktop && v.id === current} desktop={desktop} tab={tab} date={requested} />
+                  </li>
+                ))}
+              </ul>
             )}
-          </div>
-        ) : null}
-      </div>
+          </Refreshing>
+
+          {desktop ? (
+            <div className={styles.detailColumn}>
+              {current ? (
+                <SelectedVisit
+                  key={current}
+                  visitId={current}
+                  meId={personId}
+                  fallback={visits.find((v) => v.id === current)}
+                  onDone={() => {
+                    const i = visits.findIndex((v) => v.id === current)
+                    const next = visits[i + 1] ?? visits[i - 1]
+                    go({ visit: next && next.id !== current ? next.id : undefined })
+                  }}
+                />
+              ) : (
+                <p className={styles.pick}>Elegí una visita de la lista.</p>
+              )}
+            </div>
+          ) : null}
+        </div>
+      )}
     </div>
   )
 }
