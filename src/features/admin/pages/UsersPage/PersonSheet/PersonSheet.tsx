@@ -32,6 +32,7 @@ export function PersonSheet({ person, teams, companyId, companyName, companyShif
   const [teamId, setTeamId] = useState<string | null>(null)
   const [startsOn, setStartsOn] = useState('')
   const [ownHours, setOwnHours] = useState<{ start: string; end: string } | null>(null)
+  const [autoApprove, setAutoApprove] = useState(false)
 
   useEffect(() => {
     if (!person) return
@@ -39,6 +40,7 @@ export function PersonSheet({ person, teams, companyId, companyName, companyShif
     setTeamId(person.teamId)
     setStartsOn(person.startsOn)
     setOwnHours(person.shift)
+    setAutoApprove(person.autoApprove)
     update.reset()
     // eslint-disable-next-line react-hooks/exhaustive-deps -- a new person starts a new form
   }, [person?.membershipId])
@@ -47,9 +49,17 @@ export function PersonSheet({ person, teams, companyId, companyName, companyShif
   const name = `${person.firstName} ${person.lastName}`
   const hoursChanged = JSON.stringify(ownHours) !== JSON.stringify(person.shift)
   const hoursValid = !ownHours || ownHours.start < ownHours.end
-  const changed = roles.join() !== person.roles.join() || teamId !== person.teamId || startsOn !== person.startsOn || hoursChanged
+  const changed = roles.join() !== person.roles.join() || teamId !== person.teamId || startsOn !== person.startsOn || hoursChanged || autoApprove !== person.autoApprove
   const save = async () => {
-    await update.mutateAsync({ membershipId: person.membershipId, roles, teamId, startsOn, ...(hoursChanged ? { shift: ownHours } : {}) })
+    if (autoApprove && !person.autoApprove) {
+      const ok = await confirm({
+        title: `¿Aprobar solas las visitas de ${person.firstName}?`,
+        description: 'Desde ahora sus visitas se aprueban al terminarlas y no pasan por Revisión. Las que ya terminó y esperan revisión se aprueban ahora. Las puede seguir corrigiendo.',
+        confirmLabel: 'Aprobar solas',
+      })
+      if (!ok) return
+    }
+    await update.mutateAsync({ membershipId: person.membershipId, roles, teamId, startsOn, autoApprove, ...(hoursChanged ? { shift: ownHours } : {}) })
     onClose()
   }
   const setStatus = async (status: CompanyPerson['status'], question: { title: string; description: string; confirmLabel: string; tone?: 'danger' }) => {
@@ -105,20 +115,29 @@ export function PersonSheet({ person, teams, companyId, companyName, companyShif
         ) : null}
       </div>
 
+      {roles.includes('merchandiser') ? (
+        <div className={styles.block}>
+          <Switch checked={autoApprove} onChange={setAutoApprove}>
+            Aprobar sus visitas solas
+            <span className={styles.help}>{autoApprove ? 'Al terminar una visita queda aprobada; no pasa por Revisión.' : 'Sus visitas terminadas esperan en Revisión a que un supervisor las apruebe.'}</span>
+          </Switch>
+        </div>
+      ) : null}
+
       {update.error ? <Banner tone="error">{update.error.message}</Banner> : null}
 
       <div className={styles.actions}>
         {nextActions(person).map((a) =>
           a === 'deactivate' ? (
-            <Button key={a} variant="ghost" size="sm" onClick={() => setStatus('disabled', { title: `¿Desactivar a ${person.firstName}?`, description: 'Deja de ver las jornadas de la empresa. Su historial queda; podés reactivarlo cuando quieras.', confirmLabel: 'Desactivar', tone: 'danger' })}>
+            <Button key={a} variant="ghost" size="md" onClick={() => setStatus('disabled', { title: `¿Desactivar a ${person.firstName}?`, description: 'Deja de ver las jornadas de la empresa. Su historial queda; podés reactivarlo cuando quieras.', confirmLabel: 'Desactivar', tone: 'danger' })}>
               <Power size={16} aria-hidden />Desactivar
             </Button>
           ) : a === 'reactivate' ? (
-            <Button key={a} variant="ghost" size="sm" onClick={() => setStatus('active', { title: `¿Reactivar a ${person.firstName}?`, description: 'Vuelve a ver sus jornadas con el rol y equipo de arriba.', confirmLabel: 'Reactivar' })}>
+            <Button key={a} variant="ghost" size="md" onClick={() => setStatus('active', { title: `¿Reactivar a ${person.firstName}?`, description: 'Vuelve a ver sus jornadas con el rol y equipo de arriba.', confirmLabel: 'Reactivar' })}>
               <RotateCcw size={16} aria-hidden />Reactivar
             </Button>
           ) : a === 'cancel' ? (
-            <Button key={a} variant="ghost" size="sm" onClick={() => setStatus('declined', { title: '¿Cancelar la invitación?', description: `${person.firstName} ya no la va a ver en su perfil. Podés invitarlo de nuevo con su DNI.`, confirmLabel: 'Cancelar invitación', tone: 'danger' })}>
+            <Button key={a} variant="ghost" size="md" onClick={() => setStatus('declined', { title: '¿Cancelar la invitación?', description: `${person.firstName} ya no la va a ver en su perfil. Podés invitarlo de nuevo con su DNI.`, confirmLabel: 'Cancelar invitación', tone: 'danger' })}>
               <X size={16} aria-hidden />Cancelar invitación
             </Button>
           ) : a === 'share' ? (

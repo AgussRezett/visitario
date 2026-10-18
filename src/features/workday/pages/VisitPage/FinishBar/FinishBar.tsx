@@ -1,7 +1,7 @@
 import { useNavigate } from '@tanstack/react-router'
 import { AlertTriangle, Check, RefreshCw } from 'lucide-react'
 import { formatTime } from '@/domain/dates'
-import { finishCheck, isVisited, WORK_STATUS_LABEL } from '@/domain/visit'
+import { finishCheck, isLocked, isVisited, WORK_STATUS_LABEL } from '@/domain/visit'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
 import type { Visit } from '@/features/workday/api/queries'
@@ -39,7 +39,7 @@ export function FinishBar({ visit: v, actions, back }: { visit: Visit; actions: 
             <Check size={16} strokeWidth={3} aria-hidden />
             {WORK_STATUS_LABEL[v.workStatus]}{v.finishedAt ? ` a las ${formatTime(v.finishedAt)}` : ''}
           </p>
-          {v.workStatus === 'closed' && v.reviewStatus !== 'approved' ? (
+          {v.workStatus === 'closed' && !isLocked(v) ? (
             <Button variant="secondary" size="md" onClick={actions.retry} loading={actions.saving}>
               <RefreshCw size={18} aria-hidden />Volví: probar de nuevo
             </Button>

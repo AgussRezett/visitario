@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ChevronLeft } from 'lucide-react'
-import { canWork } from '@/domain/visit'
+import { canWork, isLocked } from '@/domain/visit'
 import { todayInArgentina } from '@/domain/dates'
 import { Banner } from '@/ui/Banner'
 import { StatusChip } from '@/ui/StatusChip'
@@ -192,12 +192,12 @@ function VisitBody(props: {
         subtitle={title}
         urlFor={urlFor}
         onClose={() => onView(null)}
-        onReplace={v.reviewStatus === 'approved' ? undefined : async (p, file) => {
+        onReplace={isLocked(v) ? undefined : async (p, file) => {
           onView(null)
           await actions.replacePhoto(p.id, file)
         }}
         onRetry={(p) => actions.retryPhoto(p.id)}
-        onDelete={v.reviewStatus === 'approved' ? undefined : async (p) => {
+        onDelete={isLocked(v) ? undefined : async (p) => {
           onView(null)
           await actions.deletePhoto(p.id)
         }}

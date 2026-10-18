@@ -398,6 +398,7 @@ export type Database = {
       }
       membership: {
         Row: {
+          auto_approve: boolean
           company_id: string
           created_at: string
           id: string
@@ -413,6 +414,7 @@ export type Database = {
           version: number
         }
         Insert: {
+          auto_approve?: boolean
           company_id: string
           created_at?: string
           id?: string
@@ -428,6 +430,7 @@ export type Database = {
           version?: number
         }
         Update: {
+          auto_approve?: boolean
           company_id?: string
           created_at?: string
           id?: string
@@ -962,6 +965,7 @@ export type Database = {
         Row: {
           added_by: string
           arrived_at: string | null
+          auto_approved: boolean
           company_id: string
           consent: Database["public"]["Enums"]["consent_kind"] | null
           created_at: string
@@ -992,6 +996,7 @@ export type Database = {
         Insert: {
           added_by: string
           arrived_at?: string | null
+          auto_approved?: boolean
           company_id: string
           consent?: Database["public"]["Enums"]["consent_kind"] | null
           created_at?: string
@@ -1022,6 +1027,7 @@ export type Database = {
         Update: {
           added_by?: string
           arrived_at?: string | null
+          auto_approved?: boolean
           company_id?: string
           consent?: Database["public"]["Enums"]["consent_kind"] | null
           created_at?: string

@@ -18,6 +18,8 @@ export interface CompanyPerson {
   invitedAt: string
   /** Own working hours; null = the company's. */
   shift: { start: string; end: string } | null
+  /** Their finished visits are approved without review. */
+  autoApprove: boolean
 }
 
 export interface Team {
