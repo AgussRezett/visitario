@@ -45,6 +45,8 @@ export interface Visit {
   resumedFrom: string | null
   workStatus: Enums<'work_status'>
   reviewStatus: Enums<'review_status'>
+  /** Approved on finishing (nobody reviews this merchandiser): still theirs to fix. */
+  autoApproved: boolean
   arrivedAt: string | null
   consent: Enums<'consent_kind'> | null
   objection: string | null
@@ -86,6 +88,8 @@ export type VisitRow = {
   resumed_from: string | null
   work_status: Enums<'work_status'>
   review_status: Enums<'review_status'>
+  /** Not in every select (team views): missing means not auto-approved. */
+  auto_approved?: boolean
   arrived_at: string | null
   consent: Enums<'consent_kind'> | null
   objection: string | null
@@ -114,6 +118,7 @@ export function toVisit(r: VisitRow, personId: string): Visit {
     resumedFrom: r.resumed_from,
     workStatus: r.work_status,
     reviewStatus: r.review_status,
+    autoApproved: r.auto_approved ?? false,
     arrivedAt: r.arrived_at,
     consent: r.consent,
     objection: r.objection,

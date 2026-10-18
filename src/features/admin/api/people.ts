@@ -14,10 +14,12 @@ export const peopleQuery = (companyId: string) =>
     queryFn: async (): Promise<CompanyPerson[]> => {
       const [{ data, error }, hours] = await Promise.all([
         supabase.rpc('company_people', { p_company: companyId }),
-        supabase.from('membership').select('id, shift_start, shift_end').eq('company_id', companyId).not('shift_start', 'is', null),
+        supabase.from('membership').select('id, shift_start, shift_end, auto_approve').eq('company_id', companyId),
       ])
       if (error) throw error
-      const own = new Map((hours.data ?? []).map((h) => [h.id, { start: (h.shift_start ?? '').slice(0, 5), end: (h.shift_end ?? '').slice(0, 5) }]))
+      if (hours.error) throw hours.error
+      const own = new Map(hours.data.filter((h) => h.shift_start).map((h) => [h.id, { start: (h.shift_start ?? '').slice(0, 5), end: (h.shift_end ?? '').slice(0, 5) }]))
+      const auto = new Set(hours.data.filter((h) => h.auto_approve).map((h) => h.id))
       return (data ?? []).map((r) => ({
         membershipId: r.membership_id,
         personId: r.person_id,
@@ -31,6 +33,7 @@ export const peopleQuery = (companyId: string) =>
         lastActivityAt: r.last_activity_at,
         invitedAt: r.invited_at,
         shift: own.get(r.membership_id) ?? null,
+        autoApprove: auto.has(r.membership_id),
       }))
     },
   })
@@ -69,17 +72,18 @@ export interface MembershipChange {
   startsOn?: string
   /** Own hours, or null to use the company's. */
   shift?: { start: string; end: string } | null
+  autoApprove?: boolean
 }
 
 export function useAdminPeople(companyId: string) {
   const qc = useQueryClient()
   const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ['admin'] }), qc.invalidateQueries({ queryKey: ['team'] })])
   const update = useMutation({
-    mutationFn: ({ membershipId, roles, teamId, status, startsOn, shift }: MembershipChange) =>
+    mutationFn: ({ membershipId, roles, teamId, status, startsOn, shift, autoApprove }: MembershipChange) =>
       run(
         supabase
           .from('membership')
-          .update({ roles, team_id: teamId, status, starts_on: startsOn, ...(shift === undefined ? {} : { shift_start: shift?.start ?? null, shift_end: shift?.end ?? null }) })
+          .update({ roles, team_id: teamId, status, starts_on: startsOn, auto_approve: autoApprove, ...(shift === undefined ? {} : { shift_start: shift?.start ?? null, shift_end: shift?.end ?? null }) })
           .eq('id', membershipId)
           .select('id')
           .single(),

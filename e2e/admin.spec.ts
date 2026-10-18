@@ -53,6 +53,26 @@ test('the admin sees people and teams, changes a role, brings someone back and a
   await expect.poll(() => state.teams?.some((t) => t.name === 'Equipo Sur')).toBe(true)
 })
 
+test('a merchandiser nobody reviews: their visits approve themselves', async ({ page }, info) => {
+  const state = company()
+  await installFakeSupabase(page, state, 'admin')
+  await page.goto('/s/users')
+  await page.getByRole('button', { name: /Martín Sosa/ }).click()
+  await expect(page.getByRole('dialog', { name: 'Martín Sosa' }).getByText('Aprobar sus visitas solas')).toHaveCount(0) // a supervisor only
+  await page.keyboard.press('Escape')
+
+  await page.getByRole('button', { name: /Lucía Gómez/ }).click()
+  const sheet = page.getByRole('dialog', { name: 'Lucía Gómez' })
+  await expect(sheet.getByText('Sus visitas terminadas esperan en Revisión a que un supervisor las apruebe.')).toBeVisible()
+  await sheet.getByRole('switch', { name: /Aprobar sus visitas solas/ }).click()
+  await expect(sheet.getByText('Al terminar una visita queda aprobada; no pasa por Revisión.')).toBeVisible()
+  await page.screenshot({ path: `test-results/person-auto-approve-${info.project.name}.png`, fullPage: true })
+  await sheet.getByRole('button', { name: 'Guardar cambios' }).click()
+  await expect(page.getByRole('alertdialog')).toContainText('Las que ya terminó y esperan revisión se aprueban ahora.')
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Aprobar solas' }).click()
+  await expect.poll(() => state.members?.find((m) => m.person_id === 'p3')?.auto_approve).toBe(true)
+})
+
 test('inviting someone Visitario already knows: nothing personal is asked again', async ({ page }, info) => {
   const state = company({ dnis: { '38112904': { person_id: 'p9', first_name: 'Lucas', last_name: 'Méndez', phone_last4: '7782', is_member: false } } })
   await installFakeSupabase(page, state, 'admin')

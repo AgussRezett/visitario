@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Check, Clock, DoorClosed, ShieldQuestion } from 'lucide-react'
 import clsx from 'clsx'
 import { formatTime } from '@/domain/dates'
-import { CONSENT_LABEL, type Consent } from '@/domain/visit'
+import { CONSENT_LABEL, isLocked, type Consent } from '@/domain/visit'
 import { RAPPORT_LABEL, RAPPORTS } from '@/domain/reputation'
 import { Banner } from '@/ui/Banner'
 import { Field } from '@/ui/Field'
@@ -19,7 +19,7 @@ export function ConsentSection({ visit: v, actions }: { visit: Visit; actions: V
   const [objection, setObjection] = useState(v.objection ?? '')
   useEffect(() => setObjection(v.objection ?? ''), [v.objection])
   const closed = v.consent === 'closed'
-  const locked = v.reviewStatus === 'approved'
+  const locked = isLocked(v)
 
   return (
     <VisitSection

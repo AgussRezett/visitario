@@ -553,6 +553,28 @@ const again = (await as('agus', `select import_mvp_backup($1, $2) r`, [panda, mv
 check(`Running it again adds and skips nothing new (${JSON.stringify(again.skipped)})`, again.skipped.length === 1
   && (await sys(`select count(*)::int n from visit where workday_id = $1 and deleted_at is null`, [wMerge2]))[0].n === 3)
 
+// Visits that approve themselves, for merchandisers nobody reviews
+const agusMembership = (await sys(`select id from membership where person_id = $1 and company_id = $2`, [agus, panda]))[0].id
+const waiting = (await sys(`select id from visit where merchandiser_id = $1 and review_status = 'unreviewed' and work_status in ('done','refused','closed') and deleted_at is null`, [agus])).map(r => r.id)
+check(`Agus has finished visits waiting for review (${waiting.length})`, waiting.length > 0)
+await expectError('A supervisor cannot turn auto-approval on', async () => {
+  const r = await as('martin', `update membership set auto_approve = true where id = $1 returning id`, [agusMembership])
+  if (!r.length) throw new Error('no rows: denied')
+})
+await as('carla', `update membership set auto_approve = true where id = $1`, [agusMembership])
+const autoAfter = await sys(`select review_status::text r, auto_approved a, reviewed_by from visit where id = any($1)`, [waiting])
+check('Turning it on approves what was waiting, on its own', autoAfter.every(v => v.r === 'approved' && v.a && v.reviewed_by === null))
+await as('agus', `update visit set notes = 'Corregí la nota' where id = $1`, [waiting[0]])
+check('An auto-approved visit is still the merchandiser\'s to fix', (await sys(`select notes, review_status::text r from visit where id = $1`, [waiting[0]]))[0].notes === 'Corregí la nota')
+check('It never waits in the review inbox', (await as('martin', `select count(*)::int n from visit where merchandiser_id = $1 and review_status = 'unreviewed' and work_status in ('done','refused','closed')`, [agus]))[0].n === 0)
+const withPhoto = (await sys(`select v.id from visit v where v.id = any($1) and exists (select 1 from photo f where f.visit_id = v.id and f.kind = 'storefront' and f.deleted_at is null)`, [waiting]))[0]?.id
+check('There is an auto-approved visit with its storefront to reopen', Boolean(withPhoto))
+await as('agus', `update visit set work_status = 'in_progress' where id = $1`, [withPhoto])
+check('Back to work: unreviewed again', (await sys(`select review_status::text r from visit where id = $1`, [withPhoto]))[0].r === 'unreviewed')
+await as('agus', `update visit set work_status = 'done', consent = 'yes' where id = $1`, [withPhoto])
+check('Finishing it again approves it again', (await sys(`select review_status::text r, auto_approved a from visit where id = $1`, [withPhoto]))[0].a === true)
+await as('carla', `update membership set auto_approve = false where id = $1`, [agusMembership])
+
 // Password detection (Google users who later set a password)
 await sys(`update auth.users set encrypted_password = '$2a$10$hash' where id = $1`, [U.agus]);
 check('has_password is true for a user with a password', (await as('agus', `select has_password() v`))[0].v === true);

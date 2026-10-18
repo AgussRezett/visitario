@@ -33,11 +33,17 @@ export function canTransition(from: WorkStatus, to: WorkStatus) {
 }
 
 /**
- * Whether the merchandiser can take a stop off the day: the ones they added or resumed,
- * never one the supervisor assigned or an approved visit (same rule as the database).
+ * Locked for the merchandiser: approved by a supervisor. A visit approved on its own
+ * (the merchandiser is not reviewed) stays theirs to fix. Same rule as the database.
  */
-export function canRemoveVisit(v: { addedByMe: boolean; resumedFrom: string | null; reviewStatus: ReviewStatus }) {
-  return v.reviewStatus !== 'approved' && (v.addedByMe || v.resumedFrom !== null)
+export const isLocked = (v: { reviewStatus: ReviewStatus; autoApproved?: boolean }) => v.reviewStatus === 'approved' && !v.autoApproved
+
+/**
+ * Whether the merchandiser can take a stop off the day: the ones they added or resumed,
+ * never one the supervisor assigned or a locked visit (same rule as the database).
+ */
+export function canRemoveVisit(v: { addedByMe: boolean; resumedFrom: string | null; reviewStatus: ReviewStatus; autoApproved?: boolean }) {
+  return !isLocked(v) && (v.addedByMe || v.resumedFrom !== null)
 }
 
 /** Every visit with a result counts as visited: done, not authorized or closed. */
