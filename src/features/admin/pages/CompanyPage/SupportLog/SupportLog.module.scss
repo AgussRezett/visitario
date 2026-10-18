@@ -1,0 +1,24 @@
+@use '@/styles/abstracts' as *;
+
+.list {
+  list-style: none;
+
+  li + li {
+    border-top: 1px solid $color-line;
+  }
+}
+
+.row {
+  @include flex(column, $gap: space(0.5));
+  padding-block: space(2.5);
+}
+
+.reason {
+  font-weight: $weight-bold;
+  overflow-wrap: anywhere;
+}
+
+.when {
+  @include text(label);
+  color: $color-ink-subtle;
+}

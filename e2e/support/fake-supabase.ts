@@ -65,6 +65,10 @@ export interface FakeState {
   photoStatus?: number
   /** Simulates a slow connection for photo uploads. */
   uploadDelayMs?: number
+  /** Super admin: platform_companies rows, what was created, support sessions opened. */
+  platform?: { companies: Row[]; created?: Row[]; sessions?: Row[]; snapshot?: Row }
+  /** What a company admin sees in "Accesos de soporte". */
+  supportLog?: Row[]
 }
 
 export function visitRow(id: string, order: number, address: string, extra: Row = {}): Row {
@@ -119,7 +123,40 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
     if (path.endsWith('/rpc/has_password')) return json(true)
     if (path.endsWith('/person')) return json([{ id: ME, first_name: 'Agustín', last_name: 'Rezett' }])
     if (path.endsWith('/person_private')) return json({ dni: '35111222', phone: null, birth_date: null })
-    if (path.endsWith('/platform_admin')) return json(null)
+    if (path.endsWith('/platform_admin')) return json(state.platform ? { person_id: ME } : null)
+    if (path.endsWith('/support_access')) return json(state.supportLog ?? [])
+    if (state.platform) {
+      const pl = state.platform
+      if (path.endsWith('/rpc/platform_companies')) return json(pl.companies)
+      if (path.endsWith('/rpc/platform_totals')) return json([{ active_people: 11, photos: 900, photo_bytes: 2_600_000_000, db_bytes: 38_000_000, ai_captures: 104, ai_cost_usd_thousandths: 210 }])
+      if (path.endsWith('/rpc/platform_create_company')) {
+        const b = body()
+        if (pl.companies.some((c) => String(c.name).toLowerCase() === String(b.p_name).toLowerCase())) return json({ message: 'A company with that name already exists', code: '23505' }, 409)
+        ;(pl.created ??= []).push(b)
+        const id = `new-${pl.companies.length}`
+        pl.companies.push({ id, name: b.p_name, kind: b.p_kind, created_at: new Date().toISOString(), plan: b.p_plan, status: 'active', ends_on: b.p_ends_on, members: 0, invited: 1, admins: `${b.p_first_name ?? ''} ${b.p_last_name ?? ''}`.trim(), visits_30d: 0, last_activity_at: null, photos: 0, photo_bytes: 0, ai_captures: 0, ai_cost_usd_thousandths: 0, support_until: null })
+        return json(id)
+      }
+      if (path.endsWith('/rpc/platform_set_plan')) {
+        const b = body()
+        const c = pl.companies.find((x) => x.id === b.p_company)
+        if (c) Object.assign(c, { plan: b.p_plan, status: b.p_status, ends_on: b.p_ends_on })
+        return json(null)
+      }
+      if (path.endsWith('/rpc/start_support')) {
+        const b = body()
+        const until = new Date(Date.now() + 2 * 3600_000).toISOString()
+        ;(pl.sessions ??= []).push(b)
+        const c = pl.companies.find((x) => x.id === b.p_company)
+        if (c) c.support_until = until
+        return json(until)
+      }
+      if (path.endsWith('/rpc/support_company')) {
+        const c = pl.companies.find((x) => x.id === body().p_company)
+        if (!c?.support_until) return json({ message: 'Open a support session first', code: '42501' }, 403)
+        return json(pl.snapshot ?? { company: { name: c.name }, members: [], teams: [], days: [], catalogs: {}, sessions: [] })
+      }
+    }
     const handled = await handleAdmin({ path, url, req, route, state, json, body })
     if (handled) return handled
     if (path.endsWith('/membership')) {

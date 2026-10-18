@@ -587,6 +587,31 @@ const selfApproved = (await sys(`select review_status::text r, reviewed_by, auto
 check('A merchandiser who also supervises approves their own visit', selfApproved.r === 'approved' && selfApproved.reviewed_by === agus && !selfApproved.a)
 await as('carla', `update membership set roles = '{merchandiser}' where id = $1`, [agusMembership])
 
+// Super admin: companies, plans and read-only support with a reason
+await expectError('A company admin cannot list the platform', () => as('carla', `select * from platform_companies()`), /Visitario admins/)
+const platformRows = await as('agus', `select * from platform_companies()`)
+const pandaRow = platformRows.find(r => r.id === panda)
+check(`The super admin sees every company with its usage (${platformRows.length})`, platformRows.length >= 2 && pandaRow && pandaRow.members >= 3 && pandaRow.plan === 'pilot')
+const totals = (await as('agus', `select * from platform_totals()`))[0]
+check('…and the platform totals', totals.active_people >= 3 && Number(totals.db_bytes) > 0)
+const sur = (await as('agus', `select platform_create_company('Agencia Delta', 'distributor', 'pilot', '2026-12-31', '33444555', 'Rita', 'Paz', '+5491166667777') id`))[0].id
+const surMember = (await sys(`select roles::text r, status::text s from membership where company_id = $1`, [sur]))
+check('Creating a company invites its first admin by DNI', surMember.length === 1 && surMember[0].r === '{admin}' && surMember[0].s === 'invited')
+check('…on the chosen plan, with the base display types', (await sys(`select plan::text p from subscription where company_id = $1`, [sur]))[0].p === 'pilot'
+  && (await sys(`select count(*)::int n from display_type where company_id = $1`, [sur]))[0].n === 4)
+await expectError('Two companies cannot share a name', () => as('agus', `select platform_create_company('agencia delta', 'agency', 'free', null, '33444556', 'Ana', 'Ruiz', '+5491166667778')`), /already exists/)
+await expectError('A company admin cannot create companies', () => as('carla', `select platform_create_company('Otra', 'agency', 'free', null, '33444557', 'Ana', 'Ruiz', '+5491166667779')`), /Visitario admins/)
+await as('agus', `select platform_set_plan($1, 'team', 'active', null)`, [sur])
+check('The super admin changes the plan', (await sys(`select plan::text p, ends_on from subscription where company_id = $1`, [sur]))[0].p === 'team')
+await expectError('A company admin cannot change plans', () => as('carla', `select platform_set_plan($1, 'internal', 'active', null)`, [panda]), /Visitario admins/)
+await expectError('Support needs an open session', () => as('agus', `select support_company($1)`, [panda]), /support session/)
+await expectError('…opened with a reason', () => as('agus', `select start_support($1, 'mirar')`, [panda]), /10 characters/)
+await as('agus', `select start_support($1, 'Martín no ve las visitas de Lucía')`, [panda])
+const look = (await as('agus', `select support_company($1) j`, [panda]))[0].j
+check('With a session the super admin sees the company, read only', look.company.name === 'Panda' && look.members.length >= 3 && look.sessions.length === 1)
+check('The company admin sees who entered and why', (await as('carla', `select reason from support_access where company_id = $1`, [panda]))[0]?.reason === 'Martín no ve las visitas de Lucía')
+check('…a supervisor does not', (await as('martin', `select count(*)::int n from support_access`))[0].n === 0)
+
 // Password detection (Google users who later set a password)
 await sys(`update auth.users set encrypted_password = '$2a$10$hash' where id = $1`, [U.agus]);
 check('has_password is true for a user with a password', (await as('agus', `select has_password() v`))[0].v === true);

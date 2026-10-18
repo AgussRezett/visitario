@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link, useMatches } from '@tanstack/react-router'
-import { UserRound } from 'lucide-react'
+import { Building2, UserRound } from 'lucide-react'
 import clsx from 'clsx'
 import { Logo } from '@/ui/Logo'
 import { Avatar } from '@/ui/Avatar'
@@ -53,6 +53,15 @@ export function AppShell({ me, active, children }: Props) {
             </Link>
           ))}
         </nav>
+        {me.isPlatformAdmin ? (
+          <>
+            <p className={styles.accountTitle}>Plataforma</p>
+            <Link to="/platform" className={styles.navLink} activeProps={activeProps}>
+              <Building2 size={20} aria-hidden />
+              <span className={styles.navText}>Empresas</span>
+            </Link>
+          </>
+        ) : null}
         <p className={styles.accountTitle}>Cuenta</p>
         <Link to="/profile" className={styles.navLink} activeProps={activeProps}>
           <Avatar name={short} size={24} />

@@ -173,3 +173,19 @@ export function saveFile(name: string, text: string) {
   a.remove()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
+
+/** Support sessions on the company: Visitario looking at its data, read only. */
+export const supportLogQuery = (companyId: string) =>
+  queryOptions({
+    queryKey: ['admin', 'support-log', companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('support_access')
+        .select('id, reason, starts_at, ends_at')
+        .eq('company_id', companyId)
+        .order('starts_at', { ascending: false })
+        .limit(10)
+      if (error) throw error
+      return data.map((a) => ({ id: a.id, reason: a.reason, startsAt: a.starts_at, endsAt: a.ends_at }))
+    },
+  })

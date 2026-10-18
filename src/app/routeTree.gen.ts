@@ -15,7 +15,10 @@ import { Route as LoginRouteImport } from './../routes/login'
 import { Route as OnboardingRouteImport } from './../routes/onboarding'
 import { Route as SignupRouteImport } from './../routes/signup'
 import { Route as WelcomeRouteImport } from './../routes/welcome'
+import { Route as AppPlatformRouteImport } from './../routes/_app/platform'
 import { Route as AppProfileRouteImport } from './../routes/_app/profile'
+import { Route as AppPlatformIndexRouteImport } from './../routes/_app/platform.index'
+import { Route as AppPlatformCompanyIdRouteImport } from './../routes/_app/platform.$companyId'
 import { Route as AppReviewVisitIdRouteImport } from './../routes/_app/review.$visitId'
 import { Route as AppSSectionRouteImport } from './../routes/_app/s.$section'
 import { Route as AppSAssignRouteImport } from './../routes/_app/s.assign'
@@ -64,10 +67,25 @@ const WelcomeRoute = WelcomeRouteImport.update({
   path: '/welcome',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppPlatformRoute = AppPlatformRouteImport.update({
+  id: '/platform',
+  path: '/platform',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppProfileRoute = AppProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
   getParentRoute: () => AppRoute,
+} as any)
+const AppPlatformIndexRoute = AppPlatformIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppPlatformRoute,
+} as any)
+const AppPlatformCompanyIdRoute = AppPlatformCompanyIdRouteImport.update({
+  id: '/$companyId',
+  path: '/$companyId',
+  getParentRoute: () => AppPlatformRoute,
 } as any)
 const AppReviewVisitIdRoute = AppReviewVisitIdRouteImport.update({
   id: '/review/$visitId',
@@ -166,7 +184,9 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/welcome': typeof WelcomeRoute
+  '/platform': typeof AppPlatformRouteWithChildren
   '/profile': typeof AppProfileRoute
+  '/platform/$companyId': typeof AppPlatformCompanyIdRoute
   '/review/$visitId': typeof AppReviewVisitIdRoute
   '/s/$section': typeof AppSSectionRoute
   '/s/assign': typeof AppSAssignRoute
@@ -184,6 +204,7 @@ export interface FileRoutesByFullPath {
   '/s/workday': typeof AppSWorkdayRoute
   '/stores/$storeId': typeof AppStoresStoreIdRoute
   '/visit/$visitId': typeof AppVisitVisitIdRoute
+  '/platform/': typeof AppPlatformIndexRoute
   '/s/users/new': typeof AppSUsersNewRoute
 }
 export interface FileRoutesByTo {
@@ -193,6 +214,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/welcome': typeof WelcomeRoute
   '/profile': typeof AppProfileRoute
+  '/platform/$companyId': typeof AppPlatformCompanyIdRoute
   '/review/$visitId': typeof AppReviewVisitIdRoute
   '/s/$section': typeof AppSSectionRoute
   '/s/assign': typeof AppSAssignRoute
@@ -210,6 +232,7 @@ export interface FileRoutesByTo {
   '/s/workday': typeof AppSWorkdayRoute
   '/stores/$storeId': typeof AppStoresStoreIdRoute
   '/visit/$visitId': typeof AppVisitVisitIdRoute
+  '/platform': typeof AppPlatformIndexRoute
   '/s/users/new': typeof AppSUsersNewRoute
 }
 export interface FileRoutesById {
@@ -220,7 +243,9 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/welcome': typeof WelcomeRoute
+  '/_app/platform': typeof AppPlatformRouteWithChildren
   '/_app/profile': typeof AppProfileRoute
+  '/_app/platform/$companyId': typeof AppPlatformCompanyIdRoute
   '/_app/review/$visitId': typeof AppReviewVisitIdRoute
   '/_app/s/$section': typeof AppSSectionRoute
   '/_app/s/assign': typeof AppSAssignRoute
@@ -238,6 +263,7 @@ export interface FileRoutesById {
   '/_app/s/workday': typeof AppSWorkdayRoute
   '/_app/stores/$storeId': typeof AppStoresStoreIdRoute
   '/_app/visit/$visitId': typeof AppVisitVisitIdRoute
+  '/_app/platform/': typeof AppPlatformIndexRoute
   '/_app/s/users_/new': typeof AppSUsersNewRoute
 }
 export interface FileRouteTypes {
@@ -248,7 +274,9 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/signup'
     | '/welcome'
+    | '/platform'
     | '/profile'
+    | '/platform/$companyId'
     | '/review/$visitId'
     | '/s/$section'
     | '/s/assign'
@@ -266,6 +294,7 @@ export interface FileRouteTypes {
     | '/s/workday'
     | '/stores/$storeId'
     | '/visit/$visitId'
+    | '/platform/'
     | '/s/users/new'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -275,6 +304,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/welcome'
     | '/profile'
+    | '/platform/$companyId'
     | '/review/$visitId'
     | '/s/$section'
     | '/s/assign'
@@ -292,6 +322,7 @@ export interface FileRouteTypes {
     | '/s/workday'
     | '/stores/$storeId'
     | '/visit/$visitId'
+    | '/platform'
     | '/s/users/new'
   id:
     | '__root__'
@@ -301,7 +332,9 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/signup'
     | '/welcome'
+    | '/_app/platform'
     | '/_app/profile'
+    | '/_app/platform/$companyId'
     | '/_app/review/$visitId'
     | '/_app/s/$section'
     | '/_app/s/assign'
@@ -319,6 +352,7 @@ export interface FileRouteTypes {
     | '/_app/s/workday'
     | '/_app/stores/$storeId'
     | '/_app/visit/$visitId'
+    | '/_app/platform/'
     | '/_app/s/users_/new'
   fileRoutesById: FileRoutesById
 }
@@ -375,12 +409,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WelcomeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app/platform': {
+      id: '/_app/platform'
+      path: '/platform'
+      fullPath: '/platform'
+      preLoaderRoute: typeof AppPlatformRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/profile': {
       id: '/_app/profile'
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof AppProfileRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/_app/platform/': {
+      id: '/_app/platform/'
+      path: '/'
+      fullPath: '/platform/'
+      preLoaderRoute: typeof AppPlatformIndexRouteImport
+      parentRoute: typeof AppPlatformRoute
+    }
+    '/_app/platform/$companyId': {
+      id: '/_app/platform/$companyId'
+      path: '/$companyId'
+      fullPath: '/platform/$companyId'
+      preLoaderRoute: typeof AppPlatformCompanyIdRouteImport
+      parentRoute: typeof AppPlatformRoute
     }
     '/_app/review/$visitId': {
       id: '/_app/review/$visitId'
@@ -511,7 +566,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppPlatformRouteChildren {
+  AppPlatformCompanyIdRoute: typeof AppPlatformCompanyIdRoute
+  AppPlatformIndexRoute: typeof AppPlatformIndexRoute
+}
+
+const AppPlatformRouteChildren: AppPlatformRouteChildren = {
+  AppPlatformCompanyIdRoute: AppPlatformCompanyIdRoute,
+  AppPlatformIndexRoute: AppPlatformIndexRoute,
+}
+
+const AppPlatformRouteWithChildren = AppPlatformRoute._addFileChildren(
+  AppPlatformRouteChildren,
+)
+
 interface AppRouteChildren {
+  AppPlatformRoute: typeof AppPlatformRouteWithChildren
   AppProfileRoute: typeof AppProfileRoute
   AppReviewVisitIdRoute: typeof AppReviewVisitIdRoute
   AppSSectionRoute: typeof AppSSectionRoute
@@ -534,6 +604,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppPlatformRoute: AppPlatformRouteWithChildren,
   AppProfileRoute: AppProfileRoute,
   AppReviewVisitIdRoute: AppReviewVisitIdRoute,
   AppSSectionRoute: AppSSectionRoute,

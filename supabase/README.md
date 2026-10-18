@@ -22,6 +22,7 @@ URL: `https://mjpzawlyjjlmluozjwap.supabase.co`
 | `20261017220000_tidy_leading_digits.sql` | applied | `tidy_text`: only words that start with a digit stay as written |
 | `20261017230000_auto_approve.sql` | applied (in two parts) | `membership.auto_approve`, `visit.auto_approved`, `review_auto` trigger; auto-approved visits stay editable for the merchandiser |
 | `20261018200000_self_review.sql` | applied | `visit_guard`: a merchandiser who is also supervisor or admin of the company reviews their own visits (a fix still needs the comment) |
+| `20261018220000_platform.sql` | applied (in two parts) | Super admin: `platform_companies`, `platform_totals`, `platform_create_company`, `platform_set_plan`, `start_support`, `support_company` (read only, needs an open session) |
 
 Files with `delete`/`drop` statements are refused by the agent connector; apply those with the CLI (`supabase link --project-ref mjpzawlyjjlmluozjwap && supabase db push`) or the SQL Editor.
 
