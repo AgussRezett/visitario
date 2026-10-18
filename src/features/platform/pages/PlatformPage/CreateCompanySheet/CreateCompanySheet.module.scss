@@ -1,0 +1,23 @@
+@use '@/styles/abstracts' as *;
+
+.form {
+  @include flex(column, $gap: space(3));
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(3);
+}
+
+.heading {
+  @include heading(heading);
+  padding-top: space(3);
+  border-top: 1px solid $color-line;
+}
+
+.help {
+  @include text(label);
+  margin-top: calc(-1 * #{space(1)});
+  color: $color-ink-subtle;
+}

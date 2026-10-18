@@ -1,0 +1,182 @@
+@use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(4));
+  padding: space(4) space(5) space(6);
+
+  @include up(lg) {
+    gap: space(5);
+    padding: space(6) space(8);
+  }
+}
+
+.top {
+  @include flex(row, $gap: space(3), $align: flex-end, $justify: space-between);
+  flex-wrap: wrap;
+}
+
+.titles {
+  @include flex(column, $gap: space(0.5));
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+.title {
+  @include heading(title);
+
+  @include up(lg) {
+    @include heading(display);
+  }
+}
+
+.create {
+  width: 100%;
+
+  @include up(sm) {
+    width: auto;
+  }
+}
+
+// ---- The platform in four numbers
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(2);
+
+  @include up(lg) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: space(3);
+  }
+}
+
+.kpi {
+  @include surface;
+  @include flex(column, $gap: space(0.5));
+  min-width: 0;
+  padding: space(3) space(3.5);
+
+  b {
+    @include heading(title);
+  }
+}
+
+.kpi-label {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.kpi-note {
+  @include text(tiny);
+  color: $color-ink-subtle;
+}
+
+// ---- Companies
+.who {
+  @include flex(column);
+  min-width: 0;
+  text-align: left;
+
+  @include hover {
+    .name {
+      text-decoration: underline;
+    }
+  }
+}
+
+.who-text {
+  @include flex(column);
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  @include truncate;
+  font-weight: $weight-extrabold;
+}
+
+.meta {
+  @include truncate;
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.plan {
+  @include text(tiny);
+  display: inline-block;
+  padding: space(1) space(2.5);
+  border-radius: $radius-full;
+  background: $color-muted;
+  color: $color-ink-muted;
+  font-weight: $weight-extrabold;
+
+  &[data-plan='pilot'],
+  &[data-plan='team'] {
+    background: $color-lime-soft;
+    color: $color-lime-soft-ink;
+  }
+}
+
+.chip {
+  @include text(tiny);
+  display: inline-block;
+  flex-shrink: 0;
+  padding: space(1) space(2.5);
+  border-radius: $radius-full;
+  font-weight: $weight-extrabold;
+  white-space: nowrap;
+
+  &[data-tone='done'] {
+    background: $color-done-soft;
+    color: $color-done-ink;
+  }
+
+  &[data-tone='closed'] {
+    background: $color-closed-soft;
+    color: $color-closed-ink;
+  }
+
+  &[data-tone='pending'] {
+    background: $color-muted;
+    color: $color-ink-muted;
+  }
+}
+
+// Phone: rows in one card
+.list {
+  @include surface;
+  list-style: none;
+  overflow: hidden;
+
+  li + li {
+    border-top: 1px solid $color-line;
+  }
+}
+
+.row {
+  @include flex(row, $gap: space(3), $align: center);
+  @include transition-colors;
+  width: 100%;
+  min-height: 64px;
+  padding: space(2.5) space(3.5);
+  text-align: left;
+
+  @include hover {
+    background: $color-muted;
+  }
+
+  &:active {
+    background: $color-lime-soft;
+  }
+
+  // On the phone the line wraps: kind, plan, people and photos all matter.
+  .meta {
+    white-space: normal;
+  }
+}

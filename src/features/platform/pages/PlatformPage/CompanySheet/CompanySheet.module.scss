@@ -1,0 +1,50 @@
+@use '@/styles/abstracts' as *;
+
+.facts {
+  display: grid;
+  gap: space(2);
+  margin: 0;
+
+  @include up(sm) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.fact {
+  @include flex(column, $gap: space(0.5));
+  padding: space(2.5) space(3);
+  border-radius: $radius-md;
+  background: $color-muted;
+
+  dt {
+    @include text(label);
+    color: $color-ink-subtle;
+  }
+
+  dd {
+    margin: 0;
+    font-weight: $weight-bold;
+    overflow-wrap: anywhere;
+  }
+}
+
+.block {
+  @include flex(column, $gap: space(3));
+  padding-top: space(4);
+  border-top: 1px solid $color-line;
+}
+
+.heading {
+  @include heading(heading);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(3);
+}
+
+.help {
+  @include text(label);
+  color: $color-ink-subtle;
+}

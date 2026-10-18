@@ -1,0 +1,149 @@
+@use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(4));
+  padding: space(4) space(5) space(6);
+
+  @include up(lg) {
+    gap: space(5);
+    padding: space(6) space(8);
+  }
+}
+
+.back {
+  @include flex(row, $gap: space(1.5), $align: center);
+  @include text(small);
+  align-self: flex-start;
+  min-height: $touch-target;
+  font-weight: $weight-bold;
+  color: $color-ink-muted;
+
+  @include hover {
+    color: $color-ink;
+    text-decoration: underline;
+  }
+}
+
+.titles {
+  @include flex(column, $gap: space(0.5));
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+.title {
+  @include heading(title);
+
+  @include up(lg) {
+    @include heading(display);
+  }
+}
+
+.again {
+  align-self: flex-start;
+}
+
+// Desktop: people | the rest
+.grid {
+  display: grid;
+  gap: space(4);
+  align-items: start;
+
+  @include up(lg) {
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: space(5);
+  }
+}
+
+.side {
+  @include flex(column, $gap: space(4));
+  min-width: 0;
+}
+
+.card {
+  @include surface;
+  @include flex(column, $gap: space(3));
+  min-width: 0;
+  padding: space(4);
+}
+
+.heading {
+  @include heading(heading);
+}
+
+.rows {
+  list-style: none;
+
+  li + li {
+    border-top: 1px solid $color-line;
+  }
+}
+
+.row {
+  @include flex(row, $gap: space(3), $align: center);
+  padding-block: space(2.5);
+}
+
+.day {
+  @include flex(column, $gap: space(0.5));
+  padding-block: space(2);
+}
+
+.main {
+  @include flex(column, $gap: space(0.5));
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  font-weight: $weight-bold;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.chip {
+  @include text(tiny);
+  flex-shrink: 0;
+  padding: space(1) space(2.5);
+  border-radius: $radius-full;
+  font-weight: $weight-extrabold;
+  white-space: nowrap;
+
+  &[data-tone='done'] {
+    background: $color-done-soft;
+    color: $color-done-ink;
+  }
+
+  &[data-tone='warn'] {
+    background: $color-closed-soft;
+    color: $color-closed-ink;
+  }
+
+  &[data-tone='muted'] {
+    background: $color-muted;
+    color: $color-ink-muted;
+  }
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(3);
+  margin: 0;
+
+  dt {
+    @include text(label);
+    color: $color-ink-subtle;
+  }
+
+  dd {
+    margin: 0;
+    font-weight: $weight-bold;
+    overflow-wrap: anywhere;
+  }
+}
