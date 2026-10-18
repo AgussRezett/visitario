@@ -1,43 +1,34 @@
 @use '@/styles/abstracts' as *;
 
 @layer ui {
+  // The drawing is 1729 × 336: only the height is set, the width follows.
   .logo {
-    @include flex(row, $gap: space(0.5), $align: center);
-    display: inline-flex;
-    font-weight: $weight-extrabold;
-    letter-spacing: $tracking-tight;
+    display: block;
+    width: auto;
+    flex-shrink: 0;
   }
 
-  // Only the size changes; line height follows the surrounding text.
   .md {
-    font-size: 22px;
+    height: 28px;
   }
 
   .lg {
-    font-size: 34px;
+    height: 42px;
   }
 
-  .mark {
-    color: $color-forest;
+  .ink {
+    fill: $color-forest;
 
     @include dark {
-      color: $color-lime;
+      fill: $color-ink;
     }
   }
 
-  .word {
-    color: $color-forest;
-
-    @include dark {
-      color: $color-ink;
-    }
+  .on-dark .ink {
+    fill: $color-on-forest;
   }
 
-  .on-dark {
-    color: $color-on-forest;
-  }
-
-  .sr-only {
-    @include visually-hidden;
+  .square {
+    fill: $color-lime;
   }
 }
