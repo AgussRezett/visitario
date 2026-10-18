@@ -11,7 +11,24 @@
 }
 
 .top {
-  @include flex(row, $align: flex-end, $justify: space-between);
+  @include flex(column, $gap: space(3));
+
+  @include up(lg) {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+}
+
+.date {
+  @include up(lg) {
+    width: 220px;
+  }
+}
+
+.scope {
+  @include text(label);
+  color: $color-ink-subtle;
 }
 
 .titles {
