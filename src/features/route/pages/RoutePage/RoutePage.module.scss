@@ -212,30 +212,10 @@
   color: $color-ink-subtle;
 }
 
-// The main action stays in reach on the phone, above the bottom bar.
+// The main action, in the flow: never floating over the list.
 .footer {
-  position: sticky;
-  bottom: 0;
   display: grid;
-  margin-inline: calc(-1 * #{space(1)});
-  padding: space(3) space(1) space(1);
-  background: linear-gradient(to bottom, transparent, $color-ground 30%);
-
-  @include up(lg) {
-    position: static;
-    margin: 0;
-    padding: 0;
-    background: none;
-  }
-}
-
-// Inside the options card the fade goes to the card's color.
-.footer-card {
-  background: linear-gradient(to bottom, transparent, $color-card 30%);
-
-  @include up(lg) {
-    background: none;
-  }
+  padding-top: space(1);
 }
 
 // ---- Result
