@@ -1,4 +1,5 @@
 import { queryOptions, useQuery, type QueryClient } from '@tanstack/react-query'
+import { isAuthRetryableFetchError } from '@supabase/supabase-js'
 import { supabase, type Enums } from '@/lib/supabase'
 import type { ActiveMembership } from '@/domain/roles'
 
@@ -21,7 +22,9 @@ export interface Me {
 }
 
 async function fetchMe(): Promise<Me | null> {
-  const { data: auth } = await supabase.auth.getUser()
+  const { data: auth, error: authError } = await supabase.auth.getUser()
+  // No signal is not "signed out": keep the copy on the phone instead of losing the day.
+  if (authError && isAuthRetryableFetchError(authError)) throw authError
   const user = auth.user
   if (!user) return null
   const providers = (user.identities ?? []).map((i) => i.provider)

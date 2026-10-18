@@ -1,10 +1,10 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
-import { meQuery } from '@/features/auth/me'
+import { ensureMe } from '@/features/auth/session'
 
 export const Route = createFileRoute('/login')({
   beforeLoad: async ({ context }) => {
-    const me = await context.queryClient.ensureQueryData(meQuery)
+    const me = await ensureMe(context.queryClient)
     if (me) throw redirect({ to: '/' })
   },
   component: LoginPage,

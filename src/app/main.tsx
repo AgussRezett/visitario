@@ -6,11 +6,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { persistQueryClient } from '@tanstack/react-query-persist-client'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { supabase } from '@/lib/supabase'
-import { refreshMe } from '@/features/auth/me'
+import { meQuery, refreshMe } from '@/features/auth/me'
+import { dropSession, sessionUser } from '@/features/auth/session'
 import { applyTheme } from '@/features/profile/theme'
 import { FullScreenSpinner } from '@/ui/Spinner'
 import { PERSIST_OPTIONS } from '@/features/sync/persist'
-import { startSync } from '@/features/sync/outbox'
+import { startSync, syncNow } from '@/features/sync/outbox'
 import { startPwa } from './pwa'
 import { routeTree } from './routeTree.gen'
 
@@ -46,14 +47,23 @@ declare module '@tanstack/react-router' {
 // Deferred with setTimeout: Supabase holds its auth lock while running this callback, so
 // calling Supabase from inside it (fetching "me") would wait forever and freeze sign-in.
 supabase.auth.onAuthStateChange((event) => {
-  if (event === 'SIGNED_OUT') queryClient.clear()
   if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
     setTimeout(() => {
-      void refreshMe(queryClient)
+      void (event === 'SIGNED_OUT' ? dropSession(queryClient) : refreshMe(queryClient))
         .catch(() => null)
         .then(() => router.invalidate())
+      if (event === 'SIGNED_IN') syncNow() // changes left waiting for a session
     }, 0)
   }
+})
+
+// Back to the app after a while: if the session went away meanwhile (cleared, signed out
+// elsewhere), the guards send to sign-in instead of leaving screens loading forever.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return
+  void sessionUser().then((user) => {
+    if (user === null && queryClient.getQueryData(meQuery.queryKey)) void router.invalidate()
+  })
 })
 
 const rootElement = document.getElementById('root')
