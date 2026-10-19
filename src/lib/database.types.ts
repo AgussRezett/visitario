@@ -396,6 +396,32 @@ export type Database = {
           },
         ]
       }
+      invitation: {
+        Row: {
+          accepted_by: string | null
+          answered_at: string | null
+          company_id: string
+          created_at: string
+          dni: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          roles: Database["public"]["Enums"]["role"][]
+          send_error: string | null
+          sends: number
+          sent_at: string | null
+          starts_on: string
+          status: Database["public"]["Enums"]["invitation_status"]
+          team_id: string | null
+          token_hash: string
+          updated_at: string
+          version: number
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
       membership: {
         Row: {
           auto_approve: boolean
@@ -1545,6 +1571,46 @@ export type Database = {
         }
         Returns: Json
       }
+      accept_invitation: {
+        Args: { p_accept?: boolean; p_invitation?: string; p_token?: string }
+        Returns: Json
+      }
+      cancel_invitation: { Args: { p_invitation: string }; Returns: undefined }
+      create_invitation: {
+        Args: {
+          p_company: string
+          p_dni: string
+          p_email: string
+          p_roles: Database["public"]["Enums"]["role"][]
+          p_starts_on: string | null
+          p_team: string | null
+          p_token: string
+        }
+        Returns: Json
+      }
+      invitation_preview: { Args: { p_token: string }; Returns: Json }
+      mark_invitation_sent: { Args: { p_error?: string; p_invitation: string }; Returns: undefined }
+      my_invitations: {
+        Args: never
+        Returns: {
+          company: string
+          expires_at: string
+          id: string
+          inviter: string
+          roles: Database["public"]["Enums"]["role"][]
+          starts_on: string
+        }[]
+      }
+      platform_new_company: {
+        Args: {
+          p_ends_on: string | null
+          p_kind: Database["public"]["Enums"]["company_kind"]
+          p_name: string
+          p_plan: Database["public"]["Enums"]["plan_kind"]
+        }
+        Returns: string
+      }
+      resend_invitation: { Args: { p_invitation: string; p_token: string }; Returns: Json }
       invite_person: {
         Args: {
           p_company: string
@@ -1801,6 +1867,7 @@ export type Database = {
       display_source: "assigned" | "found"
       geocoding_scope: "caba" | "argentina"
       location_status: "verified" | "approximate" | "unverified"
+      invitation_status: "pending" | "accepted" | "declined" | "canceled"
       membership_status: "invited" | "active" | "declined" | "disabled"
       photo_kind: "storefront" | "before" | "after"
       plan_kind: "free" | "pilot" | "team" | "internal"
@@ -1953,6 +2020,7 @@ export const Constants = {
       display_source: ["assigned", "found"],
       geocoding_scope: ["caba", "argentina"],
       location_status: ["verified", "approximate", "unverified"],
+      invitation_status: ["pending", "accepted", "declined", "canceled"],
       membership_status: ["invited", "active", "declined", "disabled"],
       photo_kind: ["storefront", "before", "after"],
       plan_kind: ["free", "pilot", "team", "internal"],

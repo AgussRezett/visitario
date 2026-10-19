@@ -17,12 +17,14 @@ const U = {
   carla: '00000000-0000-7000-8000-000000000001', martin: '00000000-0000-7000-8000-000000000002',
   agus: '00000000-0000-7000-8000-000000000003', lucia: '00000000-0000-7000-8000-000000000004',
   beto: '00000000-0000-7000-8000-000000000005', intruder: '00000000-0000-7000-8000-000000000006',
+  nora: '00000000-0000-7000-8000-000000000007', omar: '00000000-0000-7000-8000-000000000008',
 };
+const email = { nora: 'nora@example.com', omar: 'omar@example.com' };
 const phone = { agus: '+5491155554521', martin: '+5491144441020', lucia: '+5491133330000', beto: '+5491122220000' };
 for (const [k, id] of Object.entries(U)) await db.query('insert into auth.users (id, phone) values ($1, $2)', [id, phone[k] ?? null]);
 
 async function as(who, sql, params = []) {
-  const claims = JSON.stringify({ sub: U[who], phone: phone[who] ?? null, role: 'authenticated' });
+  const claims = JSON.stringify({ sub: U[who], phone: phone[who] ?? null, email: email[who] ?? null, role: 'authenticated' });
   await db.exec(`set role authenticated; select set_config('request.jwt.claim.sub', '${U[who]}', false), set_config('request.jwt.claims', '${claims}', false);`);
   try { return (await db.query(sql, params)).rows; }
   finally { await db.exec(`reset role; select set_config('request.jwt.claim.sub', '', false), set_config('request.jwt.claims', '', false);`); }
@@ -611,6 +613,60 @@ const look = (await as('agus', `select support_company($1) j`, [panda]))[0].j
 check('With a session the super admin sees the company, read only', look.company.name === 'Panda' && look.members.length >= 3 && look.sessions.length === 1)
 check('The company admin sees who entered and why', (await as('carla', `select reason from support_access where company_id = $1`, [panda]))[0]?.reason === 'Martín no ve las visitas de Lucía')
 check('…a supervisor does not', (await as('martin', `select count(*)::int n from support_access`))[0].n === 0)
+
+// Invitations by email: a one-time link that lasts an hour, accepted by the invited DNI
+const tok = (s) => `${s}-0123456789abcdef0123456789abcdef`
+await expectError('A supervisor cannot invite', () => as('martin', `select create_invitation($1, '41222333', 'nora@example.com', '{merchandiser}', null, null, $2)`, [panda, tok('m')]), /admin/)
+const nora1 = (await as('carla', `select create_invitation($1, '41222333', ' Nora@Example.com ', '{merchandiser}', $2, null, $3) j`, [panda, north, tok('nora1')]))[0].j
+check('An admin invites by DNI and email; the email data comes back', nora1.company === 'Panda' && nora1.email === 'nora@example.com' && nora1.inviter.startsWith('Carla'))
+check('Only the token’s fingerprint is stored', (await sys(`select count(*)::int n from invitation where token_hash = $1`, [tok('nora1')]))[0].n === 0)
+const preview1 = (await asAnon(`select invitation_preview('${tok('nora1')}') j`))[0].j
+check(`Anyone with the link sees the invitation (${preview1.state})`, preview1.state === 'pending' && preview1.dni_end === '333' && preview1.has_account === false && preview1.company === 'Panda')
+check('A wrong link is just invalid', (await asAnon(`select invitation_preview('${tok('nope')}') j`))[0].j.state === 'invalid')
+await as('carla', `select resend_invitation($1, $2)`, [nora1.id, tok('nora2')])
+check('Resending replaces the link', (await asAnon(`select invitation_preview('${tok('nora1')}') j`))[0].j.state === 'invalid'
+  && (await sys(`select sends from invitation where id = $1`, [nora1.id]))[0].sends === 2)
+await as('carla', `select mark_invitation_sent($1, 'domain not verified')`, [nora1.id])
+check('A failed email is on record', (await sys(`select send_error from invitation where id = $1`, [nora1.id]))[0].send_error === 'domain not verified')
+check('Another company sees none of Panda’s invitations', (await as('beto', `select count(*)::int n from invitation`))[0].n === 0)
+await expectError('Without a profile one cannot accept', () => as('nora', `select accept_invitation($1)`, [tok('nora2')]), /identity/)
+await as('nora', `select complete_identity('41222333', 'Nora', 'Díaz', '1995-03-03', '+5491177778888')`)
+await as('nora', `select accept_invitation($1)`, [tok('nora2')])
+const noraM = (await sys(`select m.status::text s, m.roles::text r, m.team_id from membership m join person p on p.id = m.person_id where p.auth_user_id = $1`, [U.nora]))[0]
+check('Accepting with the invited DNI makes them part of the company, with role and team', noraM.s === 'active' && noraM.r === '{merchandiser}' && noraM.team_id === north)
+check('…and the link is used', (await asAnon(`select invitation_preview('${tok('nora2')}') j`))[0].j.state === 'accepted')
+await expectError('A used link does not work again', () => as('nora', `select accept_invitation($1)`, [tok('nora2')]), /already answered/)
+await expectError('A member is not invited again', () => as('carla', `select create_invitation($1, '41222333', 'nora@example.com', '{merchandiser}', null, null, $2)`, [panda, tok('again')]), /Already a member/)
+
+await as('carla', `select create_invitation($1, '42000111', 'otro@example.com', '{merchandiser}', null, null, $2)`, [panda, tok('other')])
+await expectError('Someone with another DNI cannot take the invitation', () => as('agus', `select accept_invitation($1)`, [tok('other')]), /another DNI/)
+await sys(`update invitation set expires_at = now() - interval '1 minute' where dni = '42000111' and status = 'pending'`)
+check('After an hour the link has expired', (await asAnon(`select invitation_preview('${tok('other')}') j`))[0].j.state === 'expired')
+const otherInv = (await sys(`select id from invitation where dni = '42000111' and status = 'pending'`))[0].id
+await as('carla', `select resend_invitation($1, $2)`, [otherInv, tok('other2')])
+check('Resending gives it another hour', (await asAnon(`select invitation_preview('${tok('other2')}') j`))[0].j.state === 'pending')
+await as('carla', `select cancel_invitation($1)`, [otherInv])
+check('A canceled invitation says so', (await asAnon(`select invitation_preview('${tok('other2')}') j`))[0].j.state === 'canceled')
+
+// A DNI an admin loaded before (old invitations) is claimed with the email invitation, without SMS
+await as('carla', `select invite_person($1, '43000999', '{merchandiser}', null, current_date, 'Omar', 'Paz', '+5491100009999')`, [panda])
+await as('carla', `select create_invitation($1, '43000999', 'omar@example.com', '{merchandiser}', null, null, $2)`, [panda, tok('omar')])
+await as('omar', `select complete_identity('43000999', 'Omar', 'Paz', '1990-09-09', '+5491100009999')`)
+await as('omar', `select accept_invitation($1)`, [tok('omar')])
+check('The invited email lets them claim the DNI and join', (await sys(`select m.status::text s from membership m join person p on p.id = m.person_id where p.auth_user_id = $1 and m.company_id = $2`, [U.omar, panda]))[0].s === 'active')
+
+// From the profile: open invitations for my DNI, accepted or declined without the email
+await as('beto', `select create_invitation($1, '34567890', 'agus@example.com', '{supervisor}', null, null, $2)`, [other, tok('agus-other')])
+const mine = await as('agus', `select * from my_invitations()`)
+check('My open invitations show in my profile', mine.length === 1 && mine[0].company === 'Distribuidora Sur')
+await as('agus', `select accept_invitation(p_invitation => $1, p_accept => false)`, [mine[0].id])
+check('Declining leaves me out', (await as('agus', `select count(*)::int n from my_invitations()`))[0].n === 0
+  && (await sys(`select count(*)::int n from membership where person_id = $1 and company_id = $2`, [agus, other]))[0].n === 0)
+
+// Super admin: a new company, and its first admin invited by email
+const fresh = (await as('agus', `select platform_new_company('Marca Norte', 'brand', 'pilot', null) id`))[0].id
+const freshInv = (await as('agus', `select create_invitation($1, '44555666', 'admin@marca.com', '{admin}', null, null, $2) j`, [fresh, tok('fresh')]))[0].j
+check('Visitario creates a company and invites its first admin', freshInv.company === 'Marca Norte' && (await sys(`select count(*)::int n from membership where company_id = $1`, [fresh]))[0].n === 0)
 
 // Password detection (Google users who later set a password)
 await sys(`update auth.users set encrypted_password = '$2a$10$hash' where id = $1`, [U.agus]);

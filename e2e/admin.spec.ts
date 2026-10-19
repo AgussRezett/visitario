@@ -73,38 +73,69 @@ test('a merchandiser nobody reviews: their visits approve themselves', async ({ 
   await expect.poll(() => state.members?.find((m) => m.person_id === 'p3')?.auto_approve).toBe(true)
 })
 
-test('inviting someone Visitario already knows: nothing personal is asked again', async ({ page }, info) => {
+test('inviting someone Visitario already knows: DNI and email, and the email goes out with an hour to accept', async ({ page }, info) => {
   const state = company({ dnis: { '38112904': { person_id: 'p9', first_name: 'Lucas', last_name: 'Méndez', phone_last4: '7782', is_member: false } } })
   await installFakeSupabase(page, state, 'admin')
   await page.goto('/s/users')
   await page.getByRole('button', { name: 'Dar de alta' }).click()
   await page.getByLabel('DNI', { exact: true }).fill('38.112.904')
-  await page.getByRole('button', { name: 'Buscar' }).click()
+  await page.getByRole('button', { name: 'Ver si ya usa Visitario' }).click()
   await expect(page.getByText('Ya tiene perfil en Visitario')).toBeVisible()
-  await expect(page.getByLabel('Nombre', { exact: true })).toHaveCount(0)
+  await expect(page.getByLabel('Nombre', { exact: true })).toHaveCount(0) // nothing personal is asked
+  const send = page.getByRole('button', { name: 'Invitar a Lucas' })
+  await expect(send).toBeDisabled() // the email is needed
+  await page.getByLabel('Email').fill('Lucas@Mendez.com ')
   await page.getByRole('radio', { name: /Supervisor/ }).click()
   await page.getByLabel('Equipo que supervisa').selectOption({ label: 'Equipo Norte' })
   await page.screenshot({ path: `test-results/invite-${info.project.name}.png`, fullPage: true })
-  await page.getByRole('button', { name: 'Invitar a Lucas' }).click()
+  await send.click()
 
-  await expect(page.getByText('Listo: Lucas tiene la invitación')).toBeVisible()
-  await expect(page.getByRole('link', { name: 'Mandar por WhatsApp' })).toHaveAttribute('href', /^https:\/\/wa\.me\/\?text=Hola%20Lucas/)
-  expect(state.members?.find((m) => m.person_id === 'p9')).toMatchObject({ roles: ['supervisor'], team_id: 'north', status: 'invited' })
+  await expect(page.getByText('Le mandamos la invitación a lucas@mendez.com')).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Mandar por WhatsApp' })).toHaveAttribute('href', /invitacion%2Ftok-1/)
+  expect(state.invite?.created?.[0]).toMatchObject({ action: 'create', dni: '38112904', email: 'lucas@mendez.com', roles: ['supervisor'], teamId: 'north' })
 })
 
-test('inviting a new DNI asks for name and phone, and the WhatsApp goes to that phone', async ({ page }) => {
-  const state = company()
+test('when the email cannot go out, the link is there to send it by WhatsApp', async ({ page }, info) => {
+  const state = company({ invite: { sent: false } })
   await installFakeSupabase(page, state, 'admin')
   await page.goto('/s/users/new')
   await page.getByLabel('DNI', { exact: true }).fill('40555666')
-  await page.getByRole('button', { name: 'Buscar' }).click()
-  await expect(page.getByText('El DNI 40.555.666 no está en Visitario')).toBeVisible()
-  await page.getByLabel('Nombre', { exact: true }).fill('Nora')
-  await page.getByLabel('Apellido').fill('Ibarra')
-  await page.getByLabel('Celular').fill('11 15 5555-0000')
-  await page.getByRole('button', { name: 'Invitar a Nora' }).click()
-  await expect(page.getByRole('link', { name: 'Mandar por WhatsApp' })).toHaveAttribute('href', /wa\.me\/5491155550000\?/)
-  expect(state.members?.at(-1)).toMatchObject({ first_name: 'Nora', roles: ['merchandiser'], status: 'invited' })
+  await page.getByLabel('Email').fill('nora@ibarra')
+  await expect(page.getByText('Revisá el email.')).toBeVisible()
+  await page.getByLabel('Email').fill('nora@ibarra.com')
+  await page.getByRole('button', { name: 'Mandar invitación' }).click()
+  await expect(page.getByText('No pudimos mandar el mail')).toBeVisible()
+  await expect(page.getByText(/\/invitacion\/tok-1/)).toBeVisible()
+  await page.screenshot({ path: `test-results/invite-failed-${info.project.name}.png`, fullPage: true })
+})
+
+test('open invitations: sent, failed and expired; resend gives a new link, cancel asks first', async ({ page }, info) => {
+  const at = (min: number) => new Date(Date.now() + min * 60_000).toISOString()
+  const row = (id: string, email: string, extra = {}) => ({ id, dni: '40555666', email, roles: ['merchandiser'], team_id: null, starts_on: '2026-10-19', expires_at: at(40), sent_at: at(-20), send_error: null, sends: 1, created_at: at(-20), ...extra })
+  const state = company({ invite: { list: [
+    row('i1', 'nora@ibarra.com'),
+    row('i2', 'pablo@gomez.com', { sent_at: null, send_error: 'not_configured' }),
+    row('i3', 'ana@ruiz.com', { expires_at: at(-90), sends: 2 }),
+  ] } })
+  await installFakeSupabase(page, state, 'admin')
+  await page.goto('/s/users')
+  if (info.project.name !== 'desktop') await page.getByRole('radio', { name: 'Invitaciones 3' }).click()
+  const list = page.getByRole('list', { name: 'Invitaciones abiertas' })
+  const item = (email: string) => list.getByRole('listitem').filter({ hasText: email })
+  await expect(item('nora@ibarra.com')).toContainText('Enviada')
+  await expect(item('nora@ibarra.com')).toContainText(/vence en (39|40) min/)
+  await expect(item('pablo@gomez.com')).toContainText('No se pudo enviar')
+  await expect(item('ana@ruiz.com')).toContainText('Vencida')
+  await expect(item('ana@ruiz.com')).toContainText('venció hace 2 h · enviada 2 veces')
+  await page.screenshot({ path: `test-results/invitations-${info.project.name}.png`, fullPage: true })
+
+  await item('ana@ruiz.com').getByRole('button', { name: 'Reenviar con enlace nuevo' }).click()
+  await expect(item('ana@ruiz.com')).toContainText('Le mandamos la invitación a ana@ruiz.com')
+  expect(state.invite?.resent).toEqual(['i3'])
+
+  await item('pablo@gomez.com').getByRole('button', { name: 'Cancelar' }).click()
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Cancelar invitación' }).click()
+  await expect.poll(() => state.invite?.canceled).toEqual(['i2'])
 })
 
 test('catalogs: add a brand, deactivate a work metric, rename and forget a format', async ({ page }, info) => {

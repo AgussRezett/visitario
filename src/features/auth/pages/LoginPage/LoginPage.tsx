@@ -13,6 +13,7 @@ import { AuthLayout } from '@/features/auth/components/AuthLayout'
 import { GoogleButton } from '@/features/auth/components/GoogleButton'
 import { OrDivider } from '@/features/auth/components/OrDivider'
 import { AuthError, sendPasswordReset, signIn } from '@/features/auth/api'
+import { pendingInvite } from '@/features/invitations/pending'
 import styles from './LoginPage.module.scss'
 
 const schema = z.object({
@@ -42,6 +43,7 @@ export function LoginPage() {
   return (
     <AuthLayout>
       <h1 className={styles.title}>Entrar</h1>
+      {pendingInvite() ? <Banner tone="info">Entrá con tu cuenta: después volvés a la invitación para aceptarla.</Banner> : null}
       <GoogleButton />
       <OrDivider label="o con tu DNI" />
       <form className={styles.form} onSubmit={onSubmit} noValidate>

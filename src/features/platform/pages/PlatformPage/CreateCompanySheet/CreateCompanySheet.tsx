@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Building2 } from 'lucide-react'
+import { ArrowRight, Building2 } from 'lucide-react'
 import { KIND_LABEL, type CompanyKind, type PlanKind } from '@/domain/company'
+import { isValidDni } from '@/domain/identity'
 import { CREATABLE_KINDS, PLAN_SHORT } from '@/domain/platform'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
@@ -8,11 +9,13 @@ import { Field } from '@/ui/Field'
 import { Select } from '@/ui/Select'
 import { Sheet } from '@/ui/Sheet'
 import { usePlatform, type NewCompany } from '@/features/platform/api'
+import { InviteLink } from '@/features/invitations/components/InviteLink'
 import styles from './CreateCompanySheet.module.scss'
 
-const EMPTY: NewCompany = { name: '', kind: 'distributor', plan: 'pilot', endsOn: '', adminDni: '', firstName: '', lastName: '', phone: '' }
+const EMPTY: NewCompany = { name: '', kind: 'distributor', plan: 'pilot', endsOn: '', adminDni: '', adminEmail: '' }
+const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
-/** A new company and its first admin, invited by DNI like everyone else in Visitario. */
+/** A new company and its first admin, invited by email like everyone else in Visitario. */
 export function CreateCompanySheet({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: (id: string) => void }) {
   const { create } = usePlatform()
   const [form, setForm] = useState<NewCompany>(EMPTY)
@@ -26,17 +29,31 @@ export function CreateCompanySheet({ open, onClose, onCreated }: { open: boolean
   }, [open])
 
   if (!open) return null
-  const dni = form.adminDni.replace(/\D/g, '')
-  const ready = form.name.trim().length > 0 && /^[0-9]{7,8}$/.test(dni)
+  const emailOk = EMAIL.test(form.adminEmail.trim())
+  const ready = form.name.trim().length > 0 && isValidDni(form.adminDni) && emailOk
+  const done = create.data
+
+  if (done) {
+    return (
+      <Sheet open onClose={() => onCreated(done.companyId)} title={`${form.name.trim()} está creada`} subtitle="Falta que su admin acepte la invitación."
+        footer={<Button onClick={() => onCreated(done.companyId)}>Ver la empresa<ArrowRight size={20} aria-hidden /></Button>}>
+        {done.invite ? (
+          <InviteLink result={done.invite} email={form.adminEmail.trim().toLowerCase()} company={form.name.trim()} />
+        ) : (
+          <Banner tone="warn" title="No pudimos invitar al admin">{done.inviteError} Invitalo desde la empresa, en Usuarios.</Banner>
+        )}
+      </Sheet>
+    )
+  }
 
   return (
     <Sheet
       open
       onClose={onClose}
       title="Crear empresa"
-      subtitle="Su admin recibe la invitación al entrar a Visitario con su DNI."
+      subtitle="Su admin recibe un mail con un enlace que vence en 1 hora."
       footer={
-        <Button disabled={!ready} loading={create.isPending} onClick={() => create.mutate(form, { onSuccess: onCreated })}>
+        <Button disabled={!ready} loading={create.isPending} onClick={() => create.mutate(form)}>
           <Building2 size={20} aria-hidden />Crear e invitar al admin
         </Button>
       }
@@ -55,12 +72,9 @@ export function CreateCompanySheet({ open, onClose, onCreated }: { open: boolean
 
         <h3 className={styles.heading}>Admin de la empresa</h3>
         <Field label="DNI" inputMode="numeric" value={form.adminDni} onChange={(e) => set({ adminDni: e.target.value })} placeholder="Sin puntos" maxLength={10} />
-        <p className={styles.help}>Si ya usa Visitario, con el DNI alcanza. Si no, completá sus datos para crearle la cuenta.</p>
-        <div className={styles.pair}>
-          <Field label="Nombre del admin" value={form.firstName} onChange={(e) => set({ firstName: e.target.value })} autoComplete="off" />
-          <Field label="Apellido" value={form.lastName} onChange={(e) => set({ lastName: e.target.value })} autoComplete="off" />
-        </div>
-        <Field label="Celular" type="tel" value={form.phone} onChange={(e) => set({ phone: e.target.value })} placeholder="+5491155554521" autoComplete="off" />
+        <Field label="Email del admin" type="email" inputMode="email" value={form.adminEmail} onChange={(e) => set({ adminEmail: e.target.value })}
+          placeholder="admin@empresa.com" autoComplete="off" error={form.adminEmail.trim() && !emailOk ? 'Revisá el email.' : undefined}
+          help="Con el enlace crea su cuenta o entra con la suya, y acepta con ese DNI." />
         {create.error ? <Banner tone="error">{create.error.message}</Banner> : null}
       </div>
     </Sheet>

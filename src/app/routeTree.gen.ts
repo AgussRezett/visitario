@@ -17,6 +17,7 @@ import { Route as SignupRouteImport } from './../routes/signup'
 import { Route as WelcomeRouteImport } from './../routes/welcome'
 import { Route as AppPlatformRouteImport } from './../routes/_app/platform'
 import { Route as AppProfileRouteImport } from './../routes/_app/profile'
+import { Route as InvitacionTokenRouteImport } from './../routes/invitacion.$token'
 import { Route as AppPlatformIndexRouteImport } from './../routes/_app/platform.index'
 import { Route as AppPlatformCompanyIdRouteImport } from './../routes/_app/platform.$companyId'
 import { Route as AppReviewVisitIdRouteImport } from './../routes/_app/review.$visitId'
@@ -76,6 +77,11 @@ const AppProfileRoute = AppProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
   getParentRoute: () => AppRoute,
+} as any)
+const InvitacionTokenRoute = InvitacionTokenRouteImport.update({
+  id: '/invitacion/$token',
+  path: '/invitacion/$token',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AppPlatformIndexRoute = AppPlatformIndexRouteImport.update({
   id: '/',
@@ -186,6 +192,7 @@ export interface FileRoutesByFullPath {
   '/welcome': typeof WelcomeRoute
   '/platform': typeof AppPlatformRouteWithChildren
   '/profile': typeof AppProfileRoute
+  '/invitacion/$token': typeof InvitacionTokenRoute
   '/platform/$companyId': typeof AppPlatformCompanyIdRoute
   '/review/$visitId': typeof AppReviewVisitIdRoute
   '/s/$section': typeof AppSSectionRoute
@@ -214,6 +221,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/welcome': typeof WelcomeRoute
   '/profile': typeof AppProfileRoute
+  '/invitacion/$token': typeof InvitacionTokenRoute
   '/platform/$companyId': typeof AppPlatformCompanyIdRoute
   '/review/$visitId': typeof AppReviewVisitIdRoute
   '/s/$section': typeof AppSSectionRoute
@@ -245,6 +253,7 @@ export interface FileRoutesById {
   '/welcome': typeof WelcomeRoute
   '/_app/platform': typeof AppPlatformRouteWithChildren
   '/_app/profile': typeof AppProfileRoute
+  '/invitacion/$token': typeof InvitacionTokenRoute
   '/_app/platform/$companyId': typeof AppPlatformCompanyIdRoute
   '/_app/review/$visitId': typeof AppReviewVisitIdRoute
   '/_app/s/$section': typeof AppSSectionRoute
@@ -276,6 +285,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/platform'
     | '/profile'
+    | '/invitacion/$token'
     | '/platform/$companyId'
     | '/review/$visitId'
     | '/s/$section'
@@ -304,6 +314,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/welcome'
     | '/profile'
+    | '/invitacion/$token'
     | '/platform/$companyId'
     | '/review/$visitId'
     | '/s/$section'
@@ -334,6 +345,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/_app/platform'
     | '/_app/profile'
+    | '/invitacion/$token'
     | '/_app/platform/$companyId'
     | '/_app/review/$visitId'
     | '/_app/s/$section'
@@ -363,6 +375,7 @@ export interface RootRouteChildren {
   OnboardingRoute: typeof OnboardingRoute
   SignupRoute: typeof SignupRoute
   WelcomeRoute: typeof WelcomeRoute
+  InvitacionTokenRoute: typeof InvitacionTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -422,6 +435,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/profile'
       preLoaderRoute: typeof AppProfileRouteImport
       parentRoute: typeof AppRoute
+    }
+    '/invitacion/$token': {
+      id: '/invitacion/$token'
+      path: '/invitacion/$token'
+      fullPath: '/invitacion/$token'
+      preLoaderRoute: typeof InvitacionTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_app/platform/': {
       id: '/_app/platform/'
@@ -635,6 +655,7 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRoute,
   SignupRoute: SignupRoute,
   WelcomeRoute: WelcomeRoute,
+  InvitacionTokenRoute: InvitacionTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

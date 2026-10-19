@@ -4,10 +4,15 @@ import { supabase, type Enums } from '@/lib/supabase'
 import type { ActiveMembership } from '@/domain/roles'
 
 export interface Invitation {
-  membershipId: string
+  /** An email invitation for my DNI, or a membership an admin left invited (before emails). */
+  kind: 'email' | 'membership'
+  id: string
   companyName: string
   roles: Enums<'role'>[]
   startsOn: string
+  /** Email invitations last an hour. */
+  expiresAt: string | null
+  inviter: string | null
 }
 
 export interface Me {
@@ -40,10 +45,11 @@ async function fetchMe(): Promise<Me | null> {
   if (error) throw error
   if (!person) return { ...base, person: null, memberships: [], invitations: [], isPlatformAdmin: false }
 
-  const [priv, memberships, admin] = await Promise.all([
+  const [priv, memberships, admin, emailInvites] = await Promise.all([
     supabase.from('person_private').select('dni, phone, birth_date').eq('person_id', person.id).single(),
     supabase.from('membership').select('id, company_id, roles, status, starts_on, company:company_id (name, kind)').eq('person_id', person.id),
     supabase.from('platform_admin').select('person_id').eq('person_id', person.id).maybeSingle(),
+    supabase.rpc('my_invitations'),
   ])
   if (priv.error) throw priv.error
   if (memberships.error) throw memberships.error
@@ -53,9 +59,12 @@ async function fetchMe(): Promise<Me | null> {
     ...base,
     person: { id: person.id, firstName: person.first_name, lastName: person.last_name, dni: priv.data.dni, phone: priv.data.phone, birthDate: priv.data.birth_date },
     memberships: rows.filter((m) => m.status === 'active').map((m) => ({ companyId: m.company_id, companyName: m.company?.name ?? '', personal: m.company?.kind === 'personal', roles: m.roles })),
-    invitations: rows
-      .filter((m) => m.status === 'invited')
-      .map((m) => ({ membershipId: m.id, companyName: m.company?.name ?? 'Una empresa', roles: m.roles, startsOn: m.starts_on })),
+    invitations: [
+      ...(emailInvites.data ?? []).map((i): Invitation => ({ kind: 'email', id: i.id, companyName: i.company, roles: i.roles, startsOn: i.starts_on, expiresAt: i.expires_at, inviter: i.inviter })),
+      ...rows
+        .filter((m) => m.status === 'invited')
+        .map((m): Invitation => ({ kind: 'membership', id: m.id, companyName: m.company?.name ?? 'Una empresa', roles: m.roles, startsOn: m.starts_on, expiresAt: null, inviter: null })),
+    ],
     isPlatformAdmin: Boolean(admin.data),
   }
 }
