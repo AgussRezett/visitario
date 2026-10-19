@@ -23,6 +23,7 @@ URL: `https://mjpzawlyjjlmluozjwap.supabase.co`
 | `20261017230000_auto_approve.sql` | applied (in two parts) | `membership.auto_approve`, `visit.auto_approved`, `review_auto` trigger; auto-approved visits stay editable for the merchandiser |
 | `20261018200000_self_review.sql` | applied | `visit_guard`: a merchandiser who is also supervisor or admin of the company reviews their own visits (a fix still needs the comment) |
 | `20261018220000_platform.sql` | applied (in two parts) | Super admin: `platform_companies`, `platform_totals`, `platform_create_company`, `platform_set_plan`, `start_support`, `support_company` (read only, needs an open session) |
+| `20261019000000_email_invitations.sql` | applied (in two parts) | `invitation` (DNI + email, token SHA-256, 1 hour), `create/resend/cancel_invitation`, `mark_invitation_sent`, `invitation_preview` (anon), `accept_invitation`, `my_invitations`, `platform_new_company`; `complete_identity` lets an email invitation claim an old placeholder DNI |
 
 Files with `delete`/`drop` statements are refused by the agent connector; apply those with the CLI (`supabase link --project-ref mjpzawlyjjlmluozjwap && supabase db push`) or the SQL Editor.
 
@@ -42,13 +43,14 @@ Check the runs: `select * from cron.job_run_details order by start_time desc lim
 | `sign-in-with-dni` | deployed (v1, `verify_jwt = false`) | Resolves DNI → account email server-side and returns a session. Same 401 for every failure. |
 | `photos` | deployed (v1, `verify_jwt = false`, checks the session itself) | `POST /photos` multipart JPEG + meta: inserts the row with the caller's token (RLS + guards), puts the file in R2 at `c/<company>/v/<visit>/<photo>.jpg`, then marks it uploaded. `POST /photos/urls`: 1 h signed links for photos the caller can see. |
 | `geocode` | deployed (v1, `verify_jwt = false`, checks the session itself) | LocationIQ search bounded to CABA; says if the street number was found. |
-| `route` | deployed (v1, `verify_jwt = false`, checks the session itself) | LocationIQ Optimize: the day's order by streets with km and minutes. Without `LOCATIONIQ_KEY` (or on failure) the app keeps its straight-line order. |
+| `route` | deployed (v3, `verify_jwt = false`, checks the session itself) | LocationIQ Matrix + the exact solver (`tsp.ts`, a copy of `src/domain/tsp.ts`) + Directions: the day's order by streets with km and minutes. Without `LOCATIONIQ_KEY` (or on failure) the app keeps its straight-line order. |
+| `invitation` | deployed (v1, `verify_jwt = false`, checks the session itself) | Invitations by email: `create` and `resend` (an admin; makes the token, emails the link through Resend, returns the link), `signup` (the link's holder creates the invited email's account, already confirmed). Without `RESEND_API_KEY`/`INVITE_FROM` the invitation is created and the admin shares the link by WhatsApp. |
 | `read-capture` | deployed (v1, `verify_jwt = false`, checks the session itself) | Reads a capture of the routing list with Claude (`AI_MODEL`, default `claude-haiku-5-5`) into rows for the import review. Supervisors and admins of pilot/team/internal plans; `AI_MONTHLY_CAPTURES` per company (default 300); usage in `ai_usage`. |
 | `purge` | deployed (v1, `verify_jwt = false`, checks the Vault secret) | Daily purge, called by pg_cron (see above). `{ queued, deleted, failed, left }`. |
 
 Deploy: `supabase functions deploy <name> --no-verify-jwt` (the functions call `auth.getUser()`, which works with the new JWT signing keys).
 
-Secrets (Dashboard → Edge Functions → Secrets; never in the repo): `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, optional `R2_BUCKET` (default `visitario-photos`), `LOCATIONIQ_KEY`, `ANTHROPIC_API_KEY` (optional `AI_MODEL`, `AI_MONTHLY_CAPTURES`). Without them `photos`, `purge`, `geocode` and `route` answer 503; the app saves addresses unverified.
+Secrets (Dashboard → Edge Functions → Secrets; never in the repo): `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, optional `R2_BUCKET` (default `visitario-photos`), `LOCATIONIQ_KEY`, `ANTHROPIC_API_KEY` (optional `AI_MODEL`, `AI_MONTHLY_CAPTURES`), `RESEND_API_KEY` and `INVITE_FROM` (e.g. `Visitario <invitaciones@tu-dominio.com.ar>`, a domain verified in Resend), optional `APP_URL` (the app's address for the links, default `https://visitario.vercel.app`). Without them `photos`, `purge`, `geocode` and `route` answer 503; the app saves addresses unverified.
 Known limit: all DNI sign-ins reach Supabase Auth from the function's IP, so Auth's per-IP rate limit applies to the whole user base. Fine for the pilot; add a per-DNI attempt counter before opening to more companies.
 
 ## Seed

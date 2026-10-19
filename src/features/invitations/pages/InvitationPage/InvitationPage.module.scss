@@ -1,0 +1,84 @@
+@use '@/styles/abstracts' as *;
+
+.intro {
+  @include flex(column, $gap: space(2));
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+.title {
+  @include heading(title);
+
+  @include up(lg) {
+    @include heading(display);
+  }
+}
+
+.lead {
+  color: $color-ink-muted;
+}
+
+.clock {
+  @include flex(row, $gap: space(1.5), $align: center);
+  @include text(label);
+  align-self: flex-start;
+  padding: space(1.5) space(3);
+  border-radius: $radius-full;
+  background: $color-lime-soft;
+  color: $color-lime-soft-ink;
+  font-weight: $weight-bold;
+}
+
+.step,
+.form {
+  @include flex(column, $gap: space(3));
+}
+
+.step {
+  padding-top: space(2);
+}
+
+.step-text {
+  color: $color-ink-muted;
+}
+
+.answers {
+  display: grid;
+  gap: space(2);
+}
+
+.text-link {
+  @include text(small);
+  align-self: center;
+  min-height: $touch-target;
+  display: inline-flex;
+  align-items: center;
+  font-weight: $weight-bold;
+  color: $color-forest;
+
+  @include hover {
+    text-decoration: underline;
+  }
+
+  @include dark {
+    color: $color-lime;
+  }
+}
+
+.fine {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+// ---- A final screen
+.result {
+  @include flex(column, $gap: space(3), $align: flex-start);
+}
+
+.result-icon {
+  @include icon-tile(space(14), $radius-lg);
+  background: $color-lime-soft;
+  color: $color-lime-soft-ink;
+}

@@ -1,0 +1,73 @@
+@use '@/styles/abstracts' as *;
+
+.list {
+  @include surface;
+  list-style: none;
+  overflow: hidden;
+}
+
+.item {
+  @include flex(column, $gap: space(2));
+  padding: space(3) space(3.5);
+
+  & + & {
+    border-top: 1px solid $color-line;
+  }
+}
+
+.top {
+  @include flex(row, $gap: space(3), $align: flex-start, $justify: space-between);
+}
+
+.who {
+  @include flex(column, $gap: space(0.5));
+  min-width: 0;
+}
+
+.email {
+  font-weight: $weight-extrabold;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.chip {
+  @include text(tiny);
+  flex-shrink: 0;
+  padding: space(1) space(2.5);
+  border-radius: $radius-full;
+  font-weight: $weight-extrabold;
+  white-space: nowrap;
+
+  &[data-tone='done'] {
+    background: $color-done-soft;
+    color: $color-done-ink;
+  }
+
+  &[data-tone='warn'] {
+    background: $color-closed-soft;
+    color: $color-closed-ink;
+  }
+
+  &[data-tone='muted'] {
+    background: $color-muted;
+    color: $color-ink-muted;
+  }
+}
+
+.actions {
+  display: grid;
+  gap: space(2);
+
+  @include up(sm) {
+    @include flex(row, $gap: space(2), $align: center);
+  }
+}
+
+.empty {
+  @include text(label);
+  color: $color-ink-subtle;
+}

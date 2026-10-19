@@ -118,4 +118,13 @@ Cómo quedó: "Plataforma → Empresas" en la barra lateral y "Panel de Visitari
 
 Cómo quedó: Directorio → Reputación (últimos 30 o 90 días): índice de trato sobre 100 con la diferencia contra el período anterior, % con buena onda, comercios que empeoraron (las últimas 3 visitas calificadas contra las 3 anteriores), semana a semana, por zona y por activador. El nivel de un comercio es el promedio de sus últimas 5 visitas calificadas de 180 días (3, 2, 1 y 0 puntos). Escala ordinal: una sola rampa verde, siempre con leyenda y texto.
 
+**Invitaciones por email** (después de la etapa 6)
+- [x] El admin invita con DNI y email (rol, equipo, desde cuándo); le llega un mail con un enlace único que vence en 1 hora (base + e2e).
+- [x] Desde el enlace: crear la cuenta con ese email (sin mail de confirmación), entrar con la suya o con Google, completar los datos si es nuevo, aceptar o rechazar. El DNI de la cuenta tiene que coincidir con el invitado (base + e2e).
+- [x] Cada caso tiene su pantalla: enlace inválido, vencido, cancelado o ya usado, otro DNI, aceptada, rechazada (e2e).
+- [x] El admin ve las invitaciones abiertas (enviada con cuánto falta, no se pudo enviar, vencida) y las reenvía con un enlace nuevo, copia el enlace o las cancela (e2e).
+- [x] Si el mail no sale, la invitación igual se crea y el admin manda el enlace por WhatsApp (e2e).
+- [x] En el perfil aparecen las invitaciones abiertas para mi DNI, también sin el mail (base + e2e).
+- [ ] Activar Resend (dominio verificado + `RESEND_API_KEY` e `INVITE_FROM`) y probar con un mail real.
+
 Fuera de esta versión: migración del MVP, exportar informes, reportes con diseño, push, cobro automático, acceso para marcas.

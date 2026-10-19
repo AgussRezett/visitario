@@ -1,5 +1,7 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { todayInArgentina } from '@/domain/dates'
+import { inviteToCompany, type SentInvitation } from '@/features/invitations/api'
 import type { CompanyKind, PlanKind } from '@/domain/company'
 import { platformError, toSupportSnapshot, type PlatformCompany, type PlatformTotals, type SubscriptionStatus } from '@/domain/platform'
 
@@ -76,31 +78,29 @@ export interface NewCompany {
   plan: PlanKind
   endsOn: string
   adminDni: string
-  firstName: string
-  lastName: string
-  phone: string
+  adminEmail: string
 }
 
 export function usePlatform() {
   const qc = useQueryClient()
   const refresh = () => qc.invalidateQueries({ queryKey: keys.all })
-  const optional = (v: string) => v.trim() || undefined
-
   const create = useMutation({
-    mutationFn: async (c: NewCompany) => {
-      const { data, error } = await supabase.rpc('platform_create_company', {
+    mutationFn: async (c: NewCompany): Promise<{ companyId: string; invite: SentInvitation | null; inviteError: string | null }> => {
+      const { data, error } = await supabase.rpc('platform_new_company', {
         p_name: c.name.trim(),
         p_kind: c.kind,
         p_plan: c.plan,
         // An end date only means something for a pilot or a paid plan with a deadline.
         p_ends_on: c.endsOn || null,
-        p_admin_dni: c.adminDni.replace(/\D/g, ''),
-        p_first_name: optional(c.firstName),
-        p_last_name: optional(c.lastName),
-        p_phone: optional(c.phone.replace(/[\s-]/g, '')),
       })
       if (error) throw fail(error)
-      return data
+      // Its first admin, invited by email like everyone else. The company stays even if this fails.
+      try {
+        const invite = await inviteToCompany(data, { dni: c.adminDni.replace(/\D/g, ''), email: c.adminEmail.trim().toLowerCase(), roles: ['admin'], teamId: null, startsOn: todayInArgentina() })
+        return { companyId: data, invite, inviteError: null }
+      } catch (e) {
+        return { companyId: data, invite: null, inviteError: e instanceof Error ? e.message : 'No se pudo invitar al admin.' }
+      }
     },
     onSuccess: refresh,
   })

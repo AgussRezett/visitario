@@ -29,3 +29,7 @@
 .buttons {
   @include flex(row, $gap: space(2));
 }
+
+.expires {
+  color: $color-ink-subtle;
+}

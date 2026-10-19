@@ -16,6 +16,8 @@ import { Table } from '@/ui/Table'
 import { useWorkContext } from '@/features/workday/context'
 import { peopleQuery, teamsQuery } from '@/features/admin/api/people'
 import { companyQuery } from '@/features/admin/api/company'
+import { invitationsQuery } from '@/features/invitations/api'
+import { InvitationsList } from '@/features/invitations/components/InvitationsList'
 import { PersonSheet } from './PersonSheet'
 import { TeamSheet } from './TeamSheet'
 import { TeamsList } from './TeamsList'
@@ -32,7 +34,8 @@ export function UsersPage() {
   const teams = useQuery({ ...teamsQuery(ctx?.companyId ?? ''), enabled: Boolean(ctx) })
   const company = useQuery({ ...companyQuery(ctx?.companyId ?? ''), enabled: Boolean(ctx) })
   const [filter, setFilter] = useState<PeopleFilter>({ query: '', role: 'all', team: 'all' })
-  const [tab, setTab] = useState<'people' | 'teams'>('people')
+  const [tab, setTab] = useState<'people' | 'invites' | 'teams'>('people')
+  const invites = useQuery({ ...invitationsQuery(ctx?.companyId ?? ''), enabled: Boolean(ctx) })
   const [editing, setEditing] = useState<string | null>(null)
   const [team, setTeam] = useState<Team | 'new' | null>(null)
   if (!ctx) return null
@@ -104,6 +107,14 @@ export function UsersPage() {
     </section>
   )
 
+  const openInvites = invites.data?.length ?? 0
+  const invitesSection = (
+    <section className={styles.people} aria-label="Invitaciones">
+      {desktop ? <h2 className={styles.heading}>Invitaciones abiertas · {openInvites}</h2> : null}
+      <InvitationsList companyId={ctx.companyId} companyName={ctx.companyName} teamName={teamName} />
+    </section>
+  )
+
   const teamsColumn = (
     <section className={styles.teams} aria-label="Equipos">
       {desktop ? <h2 className={styles.heading}>Equipos</h2> : null}
@@ -126,11 +137,18 @@ export function UsersPage() {
       </header>
 
       {desktop ? (
-        <div className={styles.columns}>{peopleList}{teamsColumn}</div>
+        <div className={styles.columns}>
+          <div className={styles.stack}>{openInvites ? invitesSection : null}{peopleList}</div>
+          {teamsColumn}
+        </div>
       ) : (
         <>
-          <Segmented label="Ver" value={tab} onChange={setTab} options={[{ value: 'people', label: `Personas · ${all.length}` }, { value: 'teams', label: `Equipos · ${teams.data?.length ?? 0}` }]} />
-          {tab === 'people' ? peopleList : teamsColumn}
+          <Segmented label="Ver" value={tab} onChange={setTab} options={[
+            { value: 'people', label: `Personas ${all.length}` },
+            { value: 'invites', label: `Invitaciones ${openInvites}` },
+            { value: 'teams', label: `Equipos ${teams.data?.length ?? 0}` },
+          ]} />
+          {tab === 'people' ? peopleList : tab === 'invites' ? invitesSection : teamsColumn}
         </>
       )}
 
