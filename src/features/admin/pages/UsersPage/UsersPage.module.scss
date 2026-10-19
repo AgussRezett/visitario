@@ -43,7 +43,12 @@
   }
 }
 
-// Desktop: people | teams
+// Desktop: (open invitations, people) | teams
+.stack {
+  @include flex(column, $gap: space(5));
+  min-width: 0;
+}
+
 .columns {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
