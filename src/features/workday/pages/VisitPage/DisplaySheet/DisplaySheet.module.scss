@@ -57,6 +57,32 @@
   }
 }
 
+.after-actions {
+  display: grid;
+  gap: space(2);
+}
+
+// The after photo can also come from the gallery (taken earlier, or sent by someone).
+.gallery-button {
+  @include flex(row, $gap: space(2.5), $align: center, $justify: center);
+  @include text(base);
+  @include transition-colors;
+  height: 52px;
+  border: 1.5px solid $color-control;
+  border-radius: 14px;
+  background: $color-card;
+  font-weight: $weight-bold;
+  color: $color-ink;
+
+  @include hover {
+    background: $color-muted;
+  }
+
+  &:disabled {
+    opacity: 0.55;
+  }
+}
+
 .help {
   @include text(tiny);
   color: $color-ink-subtle;

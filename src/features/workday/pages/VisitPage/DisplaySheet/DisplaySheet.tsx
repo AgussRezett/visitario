@@ -97,12 +97,21 @@ export function DisplaySheet({ visit: v, display: d, index, catalogs, urlFor, ac
             <PhotoPicker className={styles.slot} onPick={(f) => actions.photo(d.id, 'after', f)} disabled={actions.uploading} label="Sacar otra foto del después">
               <Camera size={20} aria-hidden />
             </PhotoPicker>
+            <PhotoPicker className={styles.slot} source="gallery" onPick={(f) => actions.photo(d.id, 'after', f)} disabled={actions.uploading} label="Elegir foto del después de la galería">
+              <ImageIcon size={20} aria-hidden />
+            </PhotoPicker>
           </div>
         ) : (
-          <PhotoPicker className={styles.afterButton} onPick={(f) => actions.photo(d.id, 'after', f)} disabled={actions.uploading}>
-            <Camera size={22} aria-hidden />
-            {actions.uploading ? 'Subiendo…' : 'Sacar foto del después'}
-          </PhotoPicker>
+          <div className={styles.afterActions}>
+            <PhotoPicker className={styles.afterButton} onPick={(f) => actions.photo(d.id, 'after', f)} disabled={actions.uploading}>
+              <Camera size={22} aria-hidden />
+              {actions.uploading ? 'Subiendo…' : 'Sacar foto del después'}
+            </PhotoPicker>
+            <PhotoPicker className={styles.galleryButton} source="gallery" onPick={(f) => actions.photo(d.id, 'after', f)} disabled={actions.uploading}>
+              <ImageIcon size={22} aria-hidden />
+              Elegir de la galería
+            </PhotoPicker>
+          </div>
         )}
         <p className={styles.help}>Al cargar el después, la exhibición queda acomodada.</p>
       </div>
