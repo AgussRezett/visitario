@@ -203,3 +203,36 @@ test('the storefront photo can come from the gallery: it marks the arrival and l
   expect(state.uploads[0]?.bytes.includes(Buffer.from('Exif'))).toBe(false)
   await expect(gallery).toHaveCount(0)
 })
+
+test('the after photo of a display can come from the gallery: the display is arranged', async ({ page }, info) => {
+  const state: FakeState = {
+    workday: { id: 'w1', company_id: 'c1', work_date: DATE, status: 'published', created_by: 'p1' },
+    visits: [visitRow('v1', 0, 'Moldes 1365', { consent: 'yes', work_status: 'in_progress', display: [{ id: 'd1', display_type_id: 1, reference: 'Fernet', source: 'found', sort_order: 0, deleted_at: null }] })],
+    uploads: [],
+  }
+  await installFakeSupabase(page, state)
+  await page.goto('/visit/v1')
+  await page.getByText('Puntera').first().click()
+  const gallery = page.getByRole('button', { name: 'Elegir de la galería' })
+  await expect(page.getByRole('button', { name: 'Sacar foto del después' })).toBeVisible()
+  await page.screenshot({ path: `test-results/after-gallery-${info.project.name}.png` })
+  const photo = await page.evaluate(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 800
+    canvas.height = 600
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('no canvas')
+    ctx.fillStyle = '#5b7f6a'
+    ctx.fillRect(0, 0, 800, 600)
+    const url = canvas.toDataURL('image/jpeg', 0.9)
+    return url.slice(url.indexOf(',') + 1)
+  })
+  const chooser = page.waitForEvent('filechooser')
+  await gallery.click()
+  const picker = await chooser
+  expect(await picker.element().getAttribute('capture')).toBeNull() // the gallery, not the camera
+  await picker.setFiles({ name: 'despues.jpg', mimeType: 'image/jpeg', buffer: Buffer.from(photo, 'base64') })
+  await expect(page.getByText('Acomodada').first()).toBeVisible()
+  await expect.poll(() => state.uploads.map((u) => u.meta.kind)).toEqual(['after'])
+  await expect(page.getByRole('button', { name: 'Elegir foto del después de la galería' })).toBeVisible() // more after photos, from either
+})
