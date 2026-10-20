@@ -34,3 +34,5 @@ Requiere Node 22. La app usa el proyecto de Supabase `visitario`; las claves pú
 - `CLAUDE.md`: reglas del repo (código en inglés, interfaz en español).
 - `docs/`: brief, arquitectura, plan por etapas y esquema de base.
 - `supabase/README.md`: migraciones, datos iniciales y Edge Functions.
+
+:)
