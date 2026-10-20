@@ -4,8 +4,9 @@
  * needs a look. Pure rules; the screens and the database call live in features/import.
  */
 import { tidyText } from './text'
+import { extractMentions, type Mentionable } from './mentions'
 
-export type ImportField = 'customer_number' | 'name' | 'address' | 'area' | 'merchandiser' | 'task' | 'ignore'
+export type ImportField = 'customer_number' | 'name' | 'address' | 'area' | 'merchandiser' | 'seller' | 'channel' | 'task' | 'ignore'
 
 export const FIELD_LABELS: Record<ImportField, string> = {
   customer_number: 'Nro. de cliente',
@@ -13,6 +14,8 @@ export const FIELD_LABELS: Record<ImportField, string> = {
   address: 'Dirección',
   area: 'Zona',
   merchandiser: 'Activador',
+  seller: 'Vendedor',
+  channel: 'Canal',
   task: 'Tarea',
   ignore: 'Ignorar',
 }
@@ -36,6 +39,9 @@ export interface ImportRow {
   address: string
   area: string
   merchandiser: string
+  /** The store's seller and channel as written (a name, or the channel's number). */
+  seller: string
+  channel: string
   task: string
 }
 
@@ -134,7 +140,10 @@ export function parseLine(line: string): Pick<ImportRow, 'customerNumber' | 'add
 }
 
 const KEYWORDS: [ImportField, RegExp][] = [
-  ['merchandiser', /\b(repositor|activador|promotor|merchandiser|repo|responsable)\b/],
+  ['merchandiser', /\b(repositor|activador|promotor|merchandiser|repo)\b/],
+  // In the activation messages the seller is "Responsable".
+  ['seller', /\b(vendedor|vendedora|responsable|preventista)\b/],
+  ['channel', /\b(canal|tipo de cliente)\b/],
   ['customer_number', /\b(nro|numero|cod|codigo|id)\b|n°|^(cliente|cuenta|nro cliente)$/],
   ['address', /\b(direccion|domicilio|calle|dir|ubicacion)\b/],
   ['area', /\b(localidad|barrio|zona|partido|ciudad)\b/],
@@ -196,17 +205,25 @@ export function toRows(table: Table, columns: ImportField[], hasHeader: boolean)
       address: tidyText(pick(r, 'address')),
       area: tidyText(pick(r, 'area')),
       merchandiser: pick(r, 'merchandiser'),
+      seller: pick(r, 'seller'),
+      channel: pick(r, 'channel'),
       task: pick(r, 'task'),
     }))
     .slice(hasHeader ? 1 : 0)
     .filter((r) => r.address || r.customerNumber)
 }
 
-export const linesToRows = (lines: string[]): ImportRow[] =>
+/** Pasted lines; "@Florencia" and "#Autoservicio" name the store's seller and channel. */
+export const linesToRows = (lines: string[], mentions?: { sellers: readonly Mentionable[]; channels: readonly Mentionable[] }): ImportRow[] =>
   lines
     .map((l, i) => {
-      const r = parseLine(l)
-      return { line: i + 1, name: '', merchandiser: '', task: '', ...r, address: tidyText(r.address), area: tidyText(r.area) }
+      const m = extractMentions(l, mentions?.sellers ?? [], mentions?.channels ?? [])
+      const r = parseLine(m.rest)
+      const nameOf = (list: readonly Mentionable[] | undefined, id: number | null) => list?.find((x) => x.id === id)?.name ?? ''
+      return {
+        line: i + 1, name: '', merchandiser: '', task: '', ...r, address: tidyText(r.address), area: tidyText(r.area),
+        seller: nameOf(mentions?.sellers, m.sellerId), channel: nameOf(mentions?.channels, m.channelId),
+      }
     })
     .filter((r) => r.address || r.customerNumber)
 

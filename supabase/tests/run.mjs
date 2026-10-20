@@ -668,6 +668,46 @@ const fresh = (await as('agus', `select platform_new_company('Marca Norte', 'bra
 const freshInv = (await as('agus', `select create_invitation($1, '44555666', 'admin@marca.com', '{admin}', null, null, $2) j`, [fresh, tok('fresh')]))[0].j
 check('Visitario creates a company and invites its first admin', freshInv.company === 'Marca Norte' && (await sys(`select count(*)::int n from membership where company_id = $1`, [fresh]))[0].n === 0)
 
+// Channels and sellers: catalogs the admin keeps; every store can have one of each
+const [{ id: autoservicio }] = await as('carla', `insert into channel (company_id, name, sort_order) values ($1, 'Autoservicio', 1) returning id`, [panda])
+const [{ id: kiosco }] = await as('carla', `insert into channel (company_id, name, sort_order) values ($1, 'Kiosco', 3) returning id`, [panda])
+const [{ id: flor }] = await as('carla', `insert into seller (company_id, name) values ($1, 'Florencia') returning id`, [panda])
+const [{ id: noraSeller }] = await as('carla', `insert into seller (company_id, name) values ($1, 'Nora') returning id`, [panda])
+await expectError('A supervisor cannot add channels', () => as('martin', `insert into channel (company_id, name) values ($1, 'Otro')`, [panda]))
+await expectError('…nor sellers', () => as('martin', `insert into seller (company_id, name) values ($1, 'Pedro')`, [panda]))
+await expectError('An admin cannot point a seller at a person', () => as('carla', `update seller set person_id = $2 where id = $1`, [flor, agus]))
+check('Another company sees none of Panda’s channels or sellers', (await as('beto', `select (select count(*) from channel)::int + (select count(*) from seller)::int n`))[0].n === 0)
+check('Members read them', (await as('agus', `select count(*)::int n from seller`))[0].n === 2)
+
+const noraMembership = (await sys(`select m.id from membership m join person p on p.id = m.person_id where p.auth_user_id = $1 and m.company_id = $2`, [U.nora, panda]))[0].id
+await as('carla', `update membership set roles = '{merchandiser,seller}' where id = $1`, [noraMembership])
+check('Joining as seller links the name the admin loaded', (await sys(`select person_id from seller where id = $1`, [noraSeller]))[0].person_id === (await sys(`select person_id from membership where id = $1`, [noraMembership]))[0].person_id)
+check('…without creating another', (await sys(`select count(*)::int n from seller where company_id = $1`, [panda]))[0].n === 2)
+await as('carla', `update membership set roles = '{merchandiser,seller,supervisor,admin}' where id = $1`, [noraMembership])
+check('A membership can hold the four roles', (await sys(`select cardinality(roles) n from membership where id = $1`, [noraMembership]))[0].n === 4)
+await as('carla', `update membership set roles = '{merchandiser,seller}' where id = $1`, [noraMembership])
+
+const [{ id: tagged }] = await as('agus', `insert into store (company_id, address, created_by, source) values ($1, 'Altolaguirre 1952', $2, 'merchandiser') returning id`, [panda, agus])
+await as('agus', `select tag_store($1, $2, $3)`, [tagged, autoservicio, flor])
+check('Whoever adds a store fills its channel and seller', (await sys(`select channel_id, seller_id from store where id = $1`, [tagged]))[0].seller_id === flor)
+await as('agus', `select tag_store($1, $2, $3)`, [tagged, kiosco, noraSeller])
+check('…but an activador does not change them once set', (await sys(`select channel_id from store where id = $1`, [tagged]))[0].channel_id === autoservicio)
+await as('martin', `select tag_store($1, $2, $3)`, [tagged, kiosco, noraSeller])
+check('A supervisor changes them', (await sys(`select channel_id, seller_id from store where id = $1`, [tagged]))[0].seller_id === noraSeller)
+await expectError('Another company cannot tag Panda’s stores', () => as('beto', `select tag_store($1, null, null)`, [tagged]), /not found/)
+const otherChannel = (await as('beto', `insert into channel (company_id, name) values ($1, 'Mayorista') returning id`, [other]))[0].id
+await expectError('…nor use another company’s channel', () => as('martin', `select tag_store($1, $2, null)`, [tagged, otherChannel]), /not found/)
+
+check('The directory filters by seller', (await as('martin', `select * from store_directory_v2($1, p_seller => $2)`, [panda, noraSeller])).map((r) => r.id).join() === tagged)
+check('…and by "without channel"', (await as('martin', `select * from store_directory_v2($1, p_channel => 0)`, [panda])).every((r) => r.channel_id === null))
+const clients = await as('nora', `select * from seller_stores($1)`, [panda])
+check('A seller sees their clients', clients.length === 1 && clients[0].id === tagged && clients[0].channel_id === kiosco)
+check('…someone who is not a seller sees none', (await as('agus', `select count(*)::int n from seller_stores($1)`, [panda]))[0].n === 0)
+
+const tagDay = '2026-10-23'
+await as('martin', `select import_workdays($1, $2, $3)`, [panda, tagDay, JSON.stringify([{ merchandiser: agus, address: 'Cuba 2200', seller: flor, channel: autoservicio }])])
+check('An import row sets its store’s seller and channel', (await sys(`select seller_id, channel_id from store where address = 'Cuba 2200'`))[0].seller_id === flor)
+
 // Password detection (Google users who later set a password)
 await sys(`update auth.users set encrypted_password = '$2a$10$hash' where id = $1`, [U.agus]);
 check('has_password is true for a user with a password', (await as('agus', `select has_password() v`))[0].v === true);

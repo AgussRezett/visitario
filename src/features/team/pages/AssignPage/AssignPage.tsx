@@ -19,6 +19,7 @@ import { memberPendingQuery, teamDayQuery } from '@/features/team/api/queries'
 import { useAssign } from '@/features/team/api/mutations'
 import { PendingSheet } from './PendingSheet'
 import { StopRow } from './StopRow'
+import { storeTags } from '@/features/workday/store-tags'
 import styles from './AssignPage.module.scss'
 
 export interface AssignSearch {
@@ -172,7 +173,7 @@ function MemberPlan({ ctx, member: m, date }: { ctx: WorkContext; member: TeamMe
           ) : null}
           <ol className={styles.stops}>
             {stops.map((v, i) => (
-              <StopRow key={v.id} v={v} n={i + 1} typeName={typeName} assign={assign} copied={copied} onCopy={setCopied} />
+              <StopRow key={v.id} v={v} n={i + 1} typeName={typeName} tags={storeTags(catalogs.data, v.store)} assign={assign} copied={copied} onCopy={setCopied} />
             ))}
           </ol>
         </>

@@ -16,7 +16,7 @@ import { useInvitations, type SentInvitation } from '@/features/invitations/api'
 import { InviteLink } from '@/features/invitations/components/InviteLink'
 import styles from './InvitePage.module.scss'
 
-const ROLE_NAME: Record<Role, string> = { merchandiser: 'Activador', supervisor: 'Supervisor', admin: 'Admin de empresa' }
+const ROLE_NAME: Record<Role, string> = { merchandiser: 'Activador', seller: 'Vendedor', supervisor: 'Supervisor', admin: 'Admin de empresa' }
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
 /** Add someone by DNI and email: the email brings a link that lasts an hour (D06 / DM04). */
@@ -55,7 +55,7 @@ export function InvitePage() {
   const firstName = found?.firstName ?? ''
 
   const send = async () => {
-    const result = await create.mutateAsync({ dni: normalizeDni(dni), email: cleanEmail, roles: [role], teamId: teamId || null, startsOn })
+    const result = await create.mutateAsync({ dni: normalizeDni(dni), email: cleanEmail, roles: [role], teamId: role === 'seller' ? null : teamId || null, startsOn })
     setSent({ result, email: cleanEmail })
   }
   const restart = () => {
@@ -136,8 +136,10 @@ export function InvitePage() {
               ))}
             </div>
             <div className={styles.pair}>
-              <Select label={role === 'supervisor' ? 'Equipo que supervisa' : 'Equipo'} value={teamId} onChange={(e) => setTeamId(e.target.value)}
-                options={[{ value: '', label: 'Sin equipo' }, ...(teams.data ?? []).map((t) => ({ value: t.id, label: t.name }))]} />
+              {role === 'seller' ? null : (
+                <Select label={role === 'supervisor' ? 'Equipo que supervisa' : 'Equipo'} value={teamId} onChange={(e) => setTeamId(e.target.value)}
+                  options={[{ value: '', label: 'Sin equipo' }, ...(teams.data ?? []).map((t) => ({ value: t.id, label: t.name }))]} />
+              )}
               <Field label="Desde" type="date" value={startsOn} onChange={(e) => setStartsOn(e.target.value)} />
             </div>
           </section>

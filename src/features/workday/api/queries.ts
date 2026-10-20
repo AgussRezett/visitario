@@ -1,7 +1,7 @@
-import { type QueryClient, queryOptions, useQuery } from '@tanstack/react-query'
+import { type QueryClient, queryOptions } from '@tanstack/react-query'
 import { supabase, type Enums } from '@/lib/supabase'
-import { DEFAULT_TEMPLATES, type TemplateKind } from '@/domain/templates'
 import { VISIT_SELECT } from './selects'
+import { workdayKeys } from './keys'
 
 // ---- Shapes the screens use (camelCase, already joined)
 
@@ -14,6 +14,9 @@ export interface Store {
   lat: number | null
   lng: number | null
   locationStatus: Enums<'location_status'>
+  /** The kind of shop and who sells to it (names in the catalogs). */
+  channelId: number | null
+  sellerId: number | null
 }
 
 export interface Photo {
@@ -67,14 +70,6 @@ export interface Workday {
   createdByMe: boolean
 }
 
-export interface Catalogs {
-  brands: { id: number; name: string }[]
-  displayTypes: { id: number; name: string }[]
-  metrics: { id: number; name: string; reportLabel: string | null }[]
-  templates: Record<TemplateKind, string>
-  /** The company still uses WhatsApp as the bridge: show the copy buttons on the visit. */
-  showWhatsapp: boolean
-}
 
 export type VisitRow = {
   id: string
@@ -98,7 +93,7 @@ export type VisitRow = {
   notes: string | null
   rapport?: Enums<'rapport_kind'> | null
   adder: { first_name: string } | null
-  store: { id: string; name: string | null; address: string; area: string | null; customer_number: string | null; lat: number | null; lng: number | null; location_status: Enums<'location_status'> } | null
+  store: { id: string; name: string | null; address: string; area: string | null; customer_number: string | null; lat: number | null; lng: number | null; location_status: Enums<'location_status'>; channel_id?: number | null; seller_id?: number | null } | null
   display: { id: string; display_type_id: number; reference: string | null; source: Enums<'display_source'>; sort_order: number; deleted_at: string | null }[]
   photo: { id: string; kind: Enums<'photo_kind'>; display_id: string | null; taken_at: string; uploaded_at: string | null; deleted_at: string | null }[]
 }
@@ -135,6 +130,8 @@ export function toVisit(r: VisitRow, personId: string): Visit {
       lat: s?.lat ?? null,
       lng: s?.lng ?? null,
       locationStatus: s?.location_status ?? 'unverified',
+      channelId: s?.channel_id ?? null,
+      sellerId: s?.seller_id ?? null,
     },
     displays: r.display
       .filter((d) => !d.deleted_at)
@@ -149,15 +146,7 @@ export function toVisit(r: VisitRow, personId: string): Visit {
 
 // ---- Keys
 
-export const workdayKeys = {
-  all: ['workday'] as const,
-  day: (companyId: string, date: string) => ['workday', 'day', companyId, date] as const,
-  visits: (workdayId: string) => ['workday', 'visits', workdayId] as const,
-  visit: (visitId: string) => ['workday', 'visit', visitId] as const,
-  history: (companyId: string) => ['workday', 'history', companyId] as const,
-  resumable: (companyId: string, date: string) => ['workday', 'resumable', companyId, date] as const,
-  catalogs: (companyId: string) => ['catalogs', companyId] as const,
-}
+export { workdayKeys }
 
 // ---- Queries
 
@@ -245,29 +234,6 @@ export const resumableQuery = (companyId: string, before: string) =>
     },
   })
 
-export const catalogsQuery = (companyId: string) =>
-  queryOptions({
-    queryKey: workdayKeys.catalogs(companyId),
-    staleTime: 10 * 60_000,
-    queryFn: async (): Promise<Catalogs> => {
-      const [brands, types, metrics, templates, company] = await Promise.all([
-        supabase.from('brand').select('id, name').eq('company_id', companyId).eq('active', true).order('sort_order').order('name'),
-        supabase.from('display_type').select('id, name').eq('company_id', companyId).eq('active', true).order('sort_order').order('name'),
-        supabase.from('work_metric').select('id, name, report_label').eq('company_id', companyId).eq('active', true).order('sort_order'),
-        supabase.from('message_template').select('kind, body').eq('company_id', companyId),
-        supabase.from('company').select('show_whatsapp').eq('id', companyId).maybeSingle(),
-      ])
-      for (const r of [brands, types, metrics, templates, company]) if (r.error) throw r.error
-      const own = Object.fromEntries((templates.data ?? []).map((t) => [t.kind, t.body])) as Partial<Record<TemplateKind, string>>
-      return {
-        brands: brands.data ?? [],
-        displayTypes: types.data ?? [],
-        metrics: (metrics.data ?? []).map((m) => ({ id: m.id, name: m.name, reportLabel: m.report_label })),
-        templates: { ...DEFAULT_TEMPLATES, ...own },
-        showWhatsapp: company.data?.show_whatsapp ?? true,
-      }
-    },
-  })
 
 /** Work quantities and brands of one visit. */
 export const visitWorkQuery = (visitId: string) =>
@@ -298,6 +264,4 @@ export const dayMetricsQuery = (companyId: string, personId: string, date: strin
     },
   })
 
-export function useCatalogs(companyId: string) {
-  return useQuery(catalogsQuery(companyId))
-}
+export { catalogsQuery, useCatalogs, type Catalogs } from './catalogs'

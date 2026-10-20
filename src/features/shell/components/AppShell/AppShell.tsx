@@ -90,7 +90,7 @@ export function AppShell({ me, active, children }: Props) {
       {/* Same grid cell as <main>, on top: floating actions without fixed positioning */}
       <div ref={setOverlay} className={clsx(styles.overlay, immersive && styles.phoneHidden)} />
 
-      {mobileItems.length ? (
+      {mobileItems.length > 1 ? (
         <nav aria-label="Secciones" className={clsx(styles.bottomNav, immersive && styles.phoneHidden)} style={{ gridTemplateColumns: `repeat(${mobileItems.length}, minmax(0, 1fr))` }}>
           {mobileItems.map((s) =>
             s ? (

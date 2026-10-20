@@ -52,14 +52,17 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
       return done(json(one ? state.company : [state.company]))
     }
     // ---- Directory
-    if (path.endsWith('/rpc/store_directory')) {
+    if (path.endsWith('/rpc/store_directory') || path.endsWith('/rpc/store_directory_v2')) {
       const b = body()
+      const tag = (value: unknown, wanted: unknown) => wanted === undefined || wanted === null || (wanted === 0 ? !value : value === wanted)
       const q = String(b.p_query ?? '').toLowerCase()
       const rows = (state.stores ?? []).filter((x) => (b.p_filter === 'archived' ? Boolean(x.deleted_at) && !x.merged_into && !x.removed_at : !x.deleted_at))
         .filter((x) => !q || `${x.name ?? ''} ${x.address} ${x.customer_number ?? ''}`.toLowerCase().includes(q))
         .filter((x) => b.p_filter !== 'unverified' || x.location_status !== 'verified')
         .filter((x) => b.p_filter !== 'added' || x.source === 'merchandiser')
+        .filter((x) => tag(x.channel_id, b.p_channel) && tag(x.seller_id, b.p_seller))
       return done(json(rows.map((x) => ({
+        channel_id: x.channel_id ?? null, seller_id: x.seller_id ?? null,
         id: x.id, name: x.name ?? null, address: x.address, area: x.area ?? null, customer_number: x.customer_number ?? null,
         location_status: x.location_status ?? 'unverified', source: x.source ?? 'manual', created_by_name: x.created_by_name ?? null,
         last_visit_date: x.last_visit_date ?? null, last_visit_status: x.last_visit_date ? 'done' : null, last_visit_review: x.last_visit_date ? 'approved' : null,
@@ -70,6 +73,7 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
       const live = (state.stores ?? []).filter((x) => !x.deleted_at)
       return done(json([{ total: live.length, unverified: live.filter((x) => x.location_status !== 'verified').length, added: live.filter((x) => x.source === 'merchandiser').length, areas: [...new Set(live.map((x) => x.area).filter(Boolean))] }]))
     }
+    if (path.endsWith('/rpc/seller_stores')) return done(json(state.clients ?? []))
     if (path.endsWith('/rpc/store_open_stops_count')) return done(json(state.openStops?.[String(body().p_store)] ?? 0))
     if (path.endsWith('/rpc/remove_store')) {
       const found = (state.stores ?? []).find((x) => x.id === body().p_store)
@@ -117,14 +121,14 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
       }
       return done(json(state.templates ?? []))
     }
-    const table = (['brand', 'display_type', 'work_metric'] as const).find((t) => path.endsWith(`/${t}`))
+    const table = (['brand', 'display_type', 'work_metric', 'channel', 'seller'] as const).find((t) => path.endsWith(`/${t}`))
     if (table && state.catalogs) {
-      const list = state.catalogs[table]
+      const list = (state.catalogs[table] ??= [])
       const id = Number(url.searchParams.get('id')?.replace('eq.', ''))
       if (req.method() === 'POST') {
         const b = body()
         if (list.some((x) => x.name === b.name)) return done(json({ code: '23505', message: `duplicate key value violates unique constraint "${table}_company_id_name_key"` }, 409))
-        list.push({ id: list.length + 100, active: true, group_name: null, report_label: null, ...b })
+        list.push({ id: list.length + 100, active: true, group_name: null, report_label: null, sort_order: 0, person_id: null, ...b })
         return done(route.fulfill({ status: 201 }))
       }
       if (req.method() === 'PATCH') {

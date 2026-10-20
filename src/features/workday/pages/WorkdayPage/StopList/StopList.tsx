@@ -7,7 +7,9 @@ import { Segmented } from '@/ui/Segmented'
 import { StatusChip } from '@/ui/StatusChip'
 import { Table } from '@/ui/Table'
 import type { StoreReputation } from '@/domain/reputation'
-import type { Visit } from '@/features/workday/api/queries'
+import { useCatalogs, type Visit } from '@/features/workday/api/queries'
+import { StoreTagsLine } from '@/features/workday/components/StoreTagsLine'
+import { storeTags } from '@/features/workday/store-tags'
 import { RapportLevel } from '@/features/reputation/components/RapportLevel'
 import styles from './StopList.module.scss'
 
@@ -47,6 +49,8 @@ interface StopListProps {
 export function StopList({ visits, all, filter, onFilter, reputation }: StopListProps) {
   const todo = all.filter((v) => !isVisited(v.workStatus)).length
   const stop = (v: Visit) => all.indexOf(v) + 1
+  const catalogs = useCatalogs(all[0]?.companyId ?? '').data
+  const tagsOf = (v: Visit) => storeTags(catalogs, v.store)
 
   return (
     <section className={styles.section} aria-label="Locales">
@@ -86,6 +90,7 @@ export function StopList({ visits, all, filter, onFilter, reputation }: StopList
                       <span className={styles.address}>
                         {[v.store.name ? v.store.address : null, v.store.area].filter(Boolean).join(' · ') || (v.source === 'added' ? 'Agregada por vos' : '')}
                       </span>
+                      <StoreTagsLine tags={tagsOf(v)} />
                       {v.task ? <span className={styles.task}>{v.task}</span> : null}
                       {reputation?.get(v.store.id) ? <RapportLevel level={(reputation.get(v.store.id) as StoreReputation).level} className={styles.rapport} /> : null}
                       {count || v.photos.length || when ? (
@@ -114,7 +119,7 @@ export function StopList({ visits, all, filter, onFilter, reputation }: StopList
                     <Link to="/visit/$visitId" params={{ visitId: v.id }} className={styles.cellLink}>
                       <span className={styles.cellName}>{v.store.name ?? v.store.address}</span>
                       <span className={styles.cellSub}>
-                        {[v.store.name ? v.store.address : null, v.store.area, v.source === 'added' ? 'agregada por vos' : null].filter(Boolean).join(' · ')}
+                        {[v.store.name ? v.store.address : null, v.store.area, tagsOf(v).channel, tagsOf(v).seller && `vend. ${tagsOf(v).seller}`, v.source === 'added' ? 'agregada por vos' : null].filter(Boolean).join(' · ')}
                       </span>
                     </Link>
                   </td>

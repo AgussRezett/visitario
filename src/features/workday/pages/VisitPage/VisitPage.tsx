@@ -22,6 +22,7 @@ import { ConsentSection } from './ConsentSection'
 import { DisplaysSection } from './DisplaysSection'
 import { WorkSection } from './WorkSection'
 import { MessagesSection } from './MessagesSection'
+import { storeTags } from '@/features/workday/store-tags'
 import { FinishBar } from './FinishBar'
 import { RemoveStop } from './RemoveStop'
 import { CorrectionPanel } from './CorrectionPanel'
@@ -87,6 +88,7 @@ function VisitBody(props: {
   const actions = useVisitActions(v)
   const storefront = v.photos.filter((p) => p.kind === 'storefront')
   const closed = v.consent === 'closed'
+  const tags = storeTags(catalogs, v.store)
 
   return (
     <div className={styles.page}>
@@ -114,7 +116,7 @@ function VisitBody(props: {
         </div>
 
         <div className={styles.content}>
-          <StoreInfo visit={v} />
+          <StoreInfo visit={v} tags={tags} />
           <CorrectionPanel
             visit={v}
             actions={actions}
@@ -169,7 +171,7 @@ function VisitBody(props: {
               ) : null}
               {catalogs && catalogs.showWhatsapp !== false ? (
                 <div className={styles.messages}>
-                  <MessagesSection visit={v} templates={catalogs.templates} firstName={firstName} typeName={(id) => catalogs.displayTypes.find((t) => t.id === id)?.name ?? 'Exhibición'} />
+                  <MessagesSection visit={v} templates={catalogs.templates} firstName={firstName} typeName={(id) => catalogs.displayTypes.find((t) => t.id === id)?.name ?? 'Exhibición'} tags={tags} />
                 </div>
               ) : null}
               <div className={styles.finish}>

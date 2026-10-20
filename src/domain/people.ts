@@ -37,6 +37,7 @@ export const STATUS_LABEL: Record<MembershipStatus, string> = {
 
 export const ROLE_HELP: Record<Role, string> = {
   merchandiser: 'Su jornada',
+  seller: 'Sus clientes',
   supervisor: 'Su equipo',
   admin: 'Toda la empresa',
 }

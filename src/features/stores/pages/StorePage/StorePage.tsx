@@ -21,6 +21,8 @@ import { effectiveRapport, RAPPORT_SHORT } from '@/domain/reputation'
 import { useStoreReputation } from '@/features/reputation/api'
 import { RapportLevel } from '@/features/reputation/components/RapportLevel'
 import { EditSheet } from './EditSheet'
+import { StoreTagsLine } from '@/features/workday/components/StoreTagsLine'
+import { storeTags } from '@/features/workday/store-tags'
 import { ReputationCard } from './ReputationCard'
 import { MergeSheet } from './MergeSheet'
 import styles from './StorePage.module.scss'
@@ -71,6 +73,7 @@ export function StorePage({ storeId }: { storeId: string }) {
         <div className={styles.titles}>
           <span className={styles.eyebrow}>{s.customerNumber ? `Cliente ${s.customerNumber}` : 'Sin número de cliente'}</span>
           <h1 className={styles.title}>{s.name ?? s.address}</h1>
+          <StoreTagsLine tags={storeTags(catalogs.data, s)} showMissing />
         </div>
         {active ? (
           <div className={styles.actions}>

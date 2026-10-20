@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Check, RotateCw, Sparkles, X } from 'lucide-react'
 import { signatureOf, type ImportRow, type Person, type RowStatus } from '@/domain/import'
 import { formatLongDate } from '@/domain/dates'
+import { findByName, type Mentionable } from '@/domain/mentions'
 import { useIsDesktop } from '@/lib/useMedia'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
@@ -24,6 +25,8 @@ interface ReviewStepProps {
   rows: ImportRow[]
   people: Person[]
   names: NameCheck[]
+  /** The company's sellers and channels, to read those columns. */
+  tags: { sellers: readonly Mentionable[]; channels: readonly (Mentionable & { number?: number })[] }
   date: string
   onDate: (date: string) => void
   update: (change: Partial<Draft> | ((d: Draft) => Partial<Draft>)) => void
@@ -38,7 +41,7 @@ type Tab = 'all' | RowStatus
 const STATUS_LABEL: Record<RowStatus, string> = { recognized: 'Reconocida', new: 'Nueva', review: 'Revisar' }
 
 /** Step 3: what is already in the directory, what is new, what needs a look (S05 / SM05). */
-export function ReviewStep({ companyId, draft, rows, people, names, date, onDate, update, setAlias, onBack, onDiscard, onImported }: ReviewStepProps) {
+export function ReviewStep({ companyId, draft, rows, people, names, tags, date, onDate, update, setAlias, onBack, onDiscard, onImported }: ReviewStepProps) {
   const desktop = useIsDesktop()
   const [tab, setTab] = useState<Tab>('all')
   const { confirm, dialog } = useConfirm()
@@ -53,12 +56,20 @@ export function ReviewStep({ companyId, draft, rows, people, names, date, onDate
   const unsure = names.some((n) => n.match.kind !== 'sure')
   const targets = [...new Map(ready.map((r) => [r.person?.id, r.person])).values()].filter((p): p is Person => Boolean(p))
   const skipped = draft.skipped.length
+  const sellerOf = (r: ImportRow) => (r.seller ? findByName(r.seller, tags.sellers) : null)
+  const channelOf = (r: ImportRow) => (r.channel ? findByName(r.channel, tags.channels) : null)
+  // Names in the seller or channel columns that are no one: imported without it.
+  const unknownSellers = [...new Set(ready.filter((r) => r.seller && !sellerOf(r)).map((r) => r.seller))]
+  const unknownChannels = [...new Set(ready.filter((r) => r.channel && !channelOf(r)).map((r) => r.channel))]
 
   const skip = (line: number) => update((d) => ({ skipped: [...d.skipped, line] }))
   const edit = (line: number, address: string) => update((d) => ({ edits: { ...d.edits, [line]: address } }))
 
   const payload = (r: ReviewRow): ImportPayloadRow => {
-    const base = { merchandiser: r.person?.id ?? '', task: r.task || undefined, customer_number: r.customerNumber || undefined, name: r.name || undefined }
+    const base = {
+      merchandiser: r.person?.id ?? '', task: r.task || undefined, customer_number: r.customerNumber || undefined, name: r.name || undefined,
+      seller: sellerOf(r)?.id, channel: channelOf(r)?.id,
+    }
     if (r.match) return { ...base, store: r.match.storeId }
     const place = located.get(r.address)
     return {
@@ -136,6 +147,11 @@ export function ReviewStep({ companyId, draft, rows, people, names, date, onDate
       <p className={styles.help}>Nada se crea ni se asigna hasta que confirmes. Va al borrador del {formatLongDate(date).toLowerCase()}: lo publicás desde Asignar.</p>
       {run.error ? <Banner tone="error">{run.error.message}</Banner> : null}
       {matches.error ? <Banner tone="error">No pudimos buscar en el directorio. Revisá la conexión y volvé a intentar.</Banner> : null}
+      {unknownSellers.length || unknownChannels.length ? (
+        <Banner tone="warn" title="Algunos datos no están en Catálogos">
+          {[unknownSellers.length ? `Vendedores: ${unknownSellers.join(', ')}.` : '', unknownChannels.length ? `Canales: ${unknownChannels.join(', ')}.` : ''].filter(Boolean).join(' ')} Esos locales se agregan sin ese dato; cargalos en Catálogos y volvé a importar, o completalos desde el directorio.
+        </Banner>
+      ) : null}
       {unsure ? <PeopleBox names={names} people={people} onConfirm={setAlias} /> : null}
 
       <div className={styles.summary}>
@@ -171,7 +187,9 @@ export function ReviewStep({ companyId, draft, rows, people, names, date, onDate
               ) : (
                 <>
                   <span className={styles.address}>{r.address || `Cliente ${r.customerNumber}`}</span>
-                  <span className={styles.line}>Fila {r.line}{r.person ? ` · ${r.person.firstName}` : ''}</span>
+                  <span className={styles.line}>
+                    {[`Fila ${r.line}`, r.person?.firstName, channelOf(r)?.name, sellerOf(r) && `vend. ${sellerOf(r)?.name}`].filter(Boolean).join(' · ')}
+                  </span>
                 </>
               )}
             </span>

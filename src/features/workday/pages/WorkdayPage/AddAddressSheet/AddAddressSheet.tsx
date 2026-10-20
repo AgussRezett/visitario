@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Check, MapPinOff, Plus, Search, Store } from 'lucide-react'
 import { formatLongDate } from '@/domain/dates'
-import { parseLine } from '@/domain/import'
 import { supabase } from '@/lib/supabase'
 import { useDebounced } from '@/lib/useDebounced'
 import { Banner } from '@/ui/Banner'
@@ -11,7 +10,7 @@ import { Field } from '@/ui/Field'
 import { Segmented } from '@/ui/Segmented'
 import { Sheet } from '@/ui/Sheet'
 import { Chip } from '@/ui/StatusChip'
-import { TextArea } from '@/ui/TextArea'
+import { Select } from '@/ui/Select'
 import { ToggleTags } from '@/ui/ToggleTag'
 import type { WorkContext } from '@/features/workday/context'
 import { useCatalogs } from '@/features/workday/api/queries'
@@ -19,6 +18,9 @@ import { useAddVisit } from '@/features/workday/api/mutations'
 import { geocode, type GeocodeResult } from '@/features/workday/api/geocode'
 import styles from './AddAddressSheet.module.scss'
 import { useOnline } from '@/lib/online'
+import { MentionTextArea } from '@/features/workday/components/MentionTextArea'
+import { pickable } from '@/features/workday/store-tags'
+import { pastedHelp, readLines } from './paste-lines'
 
 interface AddAddressSheetProps {
   open: boolean
@@ -30,7 +32,7 @@ interface AddAddressSheetProps {
   forName?: string
 }
 
-const EMPTY = { address: '', name: '', customerNumber: '', task: '', displayTypes: [] as number[] }
+const EMPTY = { address: '', name: '', customerNumber: '', task: '', displayTypes: [] as number[], channel: '', seller: '' }
 
 /** Add a store from the directory, a new one, or several pasted addresses (wireframes A05 / AD06). */
 export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }: AddAddressSheetProps) {
@@ -79,9 +81,12 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
   })
   const place: GeocodeResult | undefined = located.data?.[0]
 
-  const set = (key: keyof typeof EMPTY) => (e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [key]: e.target.value }))
-  // A store per line: "12345; Tres Arroyos 762; Paternal", parts in any order (; , or tab)
-  const lines = pasted.split('\n').map((l) => l.trim()).filter(Boolean).map((text) => ({ text, ...parseLine(text) })).filter((l) => l.address || l.customerNumber)
+  const set = (key: keyof typeof EMPTY) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm((f) => ({ ...f, [key]: e.target.value }))
+  const sellers = pickable(catalogs.data?.sellers, null)
+  const channels = pickable(catalogs.data?.channels, null)
+  const lines = readLines(pasted, sellers, channels)
+  // The mention still being typed at the end is not flagged yet.
+  const unknown = [...new Set(lines.flatMap((l) => l.unknown))].filter((u) => !pasted.endsWith(u))
 
   const addNew = async () => {
     await add.mutateAsync({
@@ -90,6 +95,8 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
       customerNumber: form.customerNumber.trim() || undefined,
       task: form.task.trim() || undefined,
       displayTypes: form.displayTypes,
+      channelId: form.channel ? Number(form.channel) : null,
+      sellerId: form.seller ? Number(form.seller) : null,
       area: place?.area ?? null,
       lat: place?.lat ?? null,
       lng: place?.lng ?? null,
@@ -120,8 +127,9 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
     for (const [i, l] of lines.entries()) {
       setProgress(`Agregando ${i + 1} de ${lines.length}…`)
       const storeId = known.get(i)
-      if (storeId) await add.mutateAsync({ storeId })
-      else if (l.address.length >= 3) await add.mutateAsync({ address: l.address, customerNumber: l.customerNumber || undefined, area: l.area || null })
+      const tags = { channelId: l.channelId, sellerId: l.sellerId }
+      if (storeId) await add.mutateAsync({ storeId, ...tags })
+      else if (l.address.length >= 3) await add.mutateAsync({ address: l.address, customerNumber: l.customerNumber || undefined, area: l.area || null, ...tags })
       else missing.push(l.text)
     }
     if (!missing.length) return onClose()
@@ -232,6 +240,18 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
               <Field label="Nombre" value={form.name} onChange={set('name')} placeholder="Opcional" />
               <Field label="Nro. de cliente" value={form.customerNumber} onChange={set('customerNumber')} placeholder="Opcional" inputMode="numeric" />
             </div>
+            {channels.length || sellers.length ? (
+              <div className={styles.pair}>
+                {channels.length ? (
+                  <Select label="Canal" value={form.channel} onChange={set('channel')}
+                    options={[{ value: '', label: 'Sin canal' }, ...channels.map((c) => ({ value: String(c.id), label: c.name }))]} />
+                ) : null}
+                {sellers.length ? (
+                  <Select label="Vendedor" value={form.seller} onChange={set('seller')}
+                    options={[{ value: '', label: 'Sin vendedor' }, ...sellers.map((x) => ({ value: String(x.id), label: x.name }))]} />
+                ) : null}
+              </div>
+            ) : null}
             <Field label="Tarea" value={form.task} onChange={set('task')} placeholder="Opcional" />
             {catalogs.data?.displayTypes.length ? (
               <div className={styles.block}>
@@ -250,14 +270,17 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
         </>
       ) : (
         <>
-          <TextArea
+          <MentionTextArea
             label="Direcciones"
             value={pasted}
-            onChange={(e) => setPasted(e.target.value)}
+            onChange={setPasted}
+            sellers={sellers}
+            channels={channels}
             rows={8}
-            placeholder={'Una por línea. Nro. de cliente y zona, si los tenés:\n20114; Amenábar 1260; Belgrano\nMoldes 1365'}
-            help={pastedHelp(lines)}
+            placeholder={`Una por línea. Nro. de cliente y zona, si los tenés:\n20114; Amenábar 1260; Belgrano${sellers.length ? ' @vendedor' : ''}\nMoldes 1365`}
+            help={pastedHelp(lines, Boolean(sellers.length || channels.length))}
           />
+          {unknown.length ? <Banner tone="warn">No encontramos {unknown.join(', ')}. Elegilos de la lista que aparece al escribir @ o #; si no están, se cargan en Catálogos.</Banner> : null}
           {leftOut ? <Banner tone="warn">{leftOut}</Banner> : null}
         </>
       )}
@@ -269,15 +292,4 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
       </p>
     </Sheet>
   )
-}
-
-/** "3 locales · 2 con nro. de cliente · 1 con zona", as the merchandiser types. */
-function pastedHelp(lines: { customerNumber: string; area: string }[]) {
-  if (!lines.length) return 'Separá con ; o coma, en cualquier orden. Los nuevos se agregan sin ubicación; los verificás después.'
-  const withNumber = lines.filter((l) => l.customerNumber).length
-  const withArea = lines.filter((l) => l.area).length
-  const parts = [`${lines.length} ${lines.length === 1 ? 'local' : 'locales'}`]
-  if (withNumber) parts.push(`${withNumber} con nro. de cliente`)
-  if (withArea) parts.push(`${withArea} con zona`)
-  return `${parts.join(' · ')}. Los que ya están en el directorio se reconocen.`
 }

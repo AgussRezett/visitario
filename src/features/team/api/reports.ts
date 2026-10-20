@@ -10,7 +10,7 @@ type Row = {
   source: Enums<'visit_source'>
   work_status: Enums<'work_status'>
   review_status: Enums<'review_status'>
-  store: { address: string } | null
+  store: { address: string; channel_id?: number | null } | null
 }
 
 export interface TeamReportData {
@@ -38,7 +38,7 @@ export const teamReportQuery = (companyId: string, date: string) =>
       return {
         visits: (visits.data as unknown as Row[])
           .sort((a, b) => a.sort_order - b.sort_order)
-          .map((v) => ({ merchandiserId: v.merchandiser_id, address: v.store?.address ?? '', added: v.source === 'added', workStatus: v.work_status, reviewStatus: v.review_status })),
+          .map((v) => ({ merchandiserId: v.merchandiser_id, address: v.store?.address ?? '', added: v.source === 'added', workStatus: v.work_status, reviewStatus: v.review_status, channelId: v.store?.channel_id ?? null })),
         metrics: totals,
       }
     },

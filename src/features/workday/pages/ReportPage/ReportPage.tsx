@@ -16,6 +16,7 @@ import { dayMetricsQuery, historyQuery, useCatalogs, visitsQuery, workdayQuery }
 import { WeekStrip } from '@/features/workday/components/WeekStrip'
 import { useVisitList } from '@/features/sync/hooks'
 import { ReportSkeleton } from '@/features/workday/components/Skeletons'
+import { storeTags } from '@/features/workday/store-tags'
 import styles from './ReportPage.module.scss'
 
 /** The day's report, generated from the visits, editable and ready to copy (wireframes A16 / AD13). */
@@ -38,8 +39,8 @@ export function ReportPage({ date: requested }: { date?: string }) {
 
   const dayVisits = useVisitList(visits.data) // includes changes not sent yet
   const reportVisits = useMemo(
-    () => (dayVisits ?? []).map((v) => ({ address: v.store.address, added: v.source === 'added', workStatus: v.workStatus })),
-    [dayVisits],
+    () => (dayVisits ?? []).map((v) => ({ address: v.store.address, added: v.source === 'added', workStatus: v.workStatus, channel: storeTags(catalogs.data, v.store).channel })),
+    [dayVisits, catalogs.data],
   )
   const reportMetrics = useMemo(
     () => (catalogs.data?.metrics ?? []).map((m) => ({ name: m.name, reportLabel: m.reportLabel, total: metrics.data?.[m.id] ?? 0 })),

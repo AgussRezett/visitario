@@ -16,7 +16,11 @@ export interface FakeState {
   members?: Row[]
   teams?: Row[]
   dnis?: Record<string, Row>
-  catalogs?: Record<'brand' | 'display_type' | 'work_metric', Row[]>
+  /** tag_store calls: the store's channel and seller. */
+  tagged?: Row[]
+  /** A seller's clients (seller_stores). */
+  clients?: Row[]
+  catalogs?: Partial<Record<'brand' | 'display_type' | 'work_metric' | 'channel' | 'seller', Row[]>>
   /** The company's own row and templates. */
   company?: Row
   templates?: Row[]

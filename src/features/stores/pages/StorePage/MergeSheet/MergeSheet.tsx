@@ -21,7 +21,7 @@ export function MergeSheet({ store, open, onClose }: { store: StoreDetail; open:
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset when it opens
   }, [open])
   const q = useDebounced(query.trim(), 300)
-  const found = useQuery({ ...directoryQuery(store.companyId, { query: q, filter: 'all', area: null, page: 0 }), enabled: open && q.length >= 2 })
+  const found = useQuery({ ...directoryQuery(store.companyId, { query: q, filter: 'all', area: null, channel: null, seller: null, page: 0 }), enabled: open && q.length >= 2 })
   const candidates = (found.data?.rows ?? []).filter((r) => r.id !== store.id)
   const here = store.name ?? store.address
 

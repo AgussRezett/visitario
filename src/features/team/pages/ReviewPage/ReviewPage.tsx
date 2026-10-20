@@ -10,6 +10,9 @@ import { Segmented } from '@/ui/Segmented'
 import { Skeleton } from '@/ui/Skeleton'
 import { StatusChip } from '@/ui/StatusChip'
 import { useWorkContext } from '@/features/workday/context'
+import { useCatalogs } from '@/features/workday/api/queries'
+import { StoreTagsLine } from '@/features/workday/components/StoreTagsLine'
+import { storeTags, type StoreTags } from '@/features/workday/store-tags'
 import { reviewCountsQuery, reviewQuery, teamVisitQuery, type ReviewTab, type TeamVisit } from '@/features/team/api/queries'
 import { ReviewButtons, ReviewDetail, useReviewDraft } from '@/features/team/components/ReviewDetail'
 import { ReviewEmpty } from './ReviewEmpty'
@@ -40,6 +43,7 @@ export function ReviewPage({ tab = 'to_review', visit: selected, date: requested
   const personId = ctx?.personId ?? ''
   const list = useQuery({ ...reviewQuery(companyId, personId, tab, date), enabled: on, placeholderData: keepPreviousData })
   const counts = useQuery({ ...reviewCountsQuery(companyId, date), enabled: on })
+  const catalogs = useCatalogs(companyId)
   const visits = list.data ?? []
   const current = selected ?? (desktop ? visits[0]?.id : undefined)
 
@@ -91,7 +95,7 @@ export function ReviewPage({ tab = 'to_review', visit: selected, date: requested
               <ul className={styles.list}>
                 {visits.map((v) => (
                   <li key={v.id}>
-                    <VisitRow v={v} active={desktop && v.id === current} desktop={desktop} tab={tab} date={requested} />
+                    <VisitRow v={v} tags={storeTags(catalogs.data, v.store)} active={desktop && v.id === current} desktop={desktop} tab={tab} date={requested} />
                   </li>
                 ))}
               </ul>
@@ -123,7 +127,7 @@ export function ReviewPage({ tab = 'to_review', visit: selected, date: requested
   )
 }
 
-function VisitRow({ v, active, desktop, tab, date }: { v: TeamVisit; active: boolean; desktop: boolean; tab: ReviewTab; date: string | undefined }) {
+function VisitRow({ v, tags, active, desktop, tab, date }: { v: TeamVisit; tags: StoreTags; active: boolean; desktop: boolean; tab: ReviewTab; date: string | undefined }) {
   const body = (
     <>
       <span className={styles.rowBody}>
@@ -133,6 +137,7 @@ function VisitRow({ v, active, desktop, tab, date }: { v: TeamVisit; active: boo
           {v.finishedAt ? formatTime(v.finishedAt) : 'sin terminar'}
           {v.source === 'added' ? ' · extra' : ''}
         </span>
+        <StoreTagsLine tags={tags} />
       </span>
       <StatusChip work={v.workStatus} review={v.reviewStatus} />
     </>

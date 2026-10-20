@@ -157,10 +157,10 @@ test('catalogs: add a brand, deactivate a work metric, rename and forget a forma
   await sheet.getByLabel('Nombre').fill('Aperol')
   await sheet.getByLabel('Grupo').fill('Grupo Campari')
   await sheet.getByRole('button', { name: 'Agregar' }).click()
-  await expect.poll(() => state.catalogs?.brand.some((b) => b.name === 'Aperol' && b.group_name === 'Grupo Campari')).toBe(true)
+  await expect.poll(() => state.catalogs?.brand?.some((b) => b.name === 'Aperol' && b.group_name === 'Grupo Campari')).toBe(true)
 
   await page.getByRole('switch', { name: 'Kits de bolsas activo' }).click()
-  await expect.poll(() => state.catalogs?.work_metric.find((m) => m.id === 2)?.active).toBe(false)
+  await expect.poll(() => state.catalogs?.work_metric?.find((m) => m.id === 2)?.active).toBe(false)
   await expect(page.getByRole('switch', { name: 'Kits de bolsas activo' })).toHaveAttribute('aria-checked', 'false')
   await page.waitForTimeout(300) // let the switch finish moving
   await page.screenshot({ path: `test-results/catalogs-${info.project.name}.png`, fullPage: true })

@@ -25,7 +25,7 @@ const resendKey = Deno.env.get('RESEND_API_KEY') ?? ''
 const from = Deno.env.get('INVITE_FROM') ?? ''
 const appUrl = (Deno.env.get('APP_URL') ?? 'https://visitario.vercel.app').replace(/\/$/, '')
 
-const ROLE: Record<string, string> = { merchandiser: 'activador', supervisor: 'supervisor', admin: 'admin de la empresa' }
+const ROLE: Record<string, string> = { merchandiser: 'activador', seller: 'vendedor', supervisor: 'supervisor', admin: 'admin de la empresa' }
 
 interface Mail { id: string; email: string; roles: string[]; expires_at: string; company: string; inviter: string }
 

@@ -3,10 +3,11 @@ import type { Enums } from '@/lib/supabase'
 export type Role = Enums<'role'>
 
 /** Default view when a person holds several roles: field work first. */
-export const ROLE_PRIORITY: readonly Role[] = ['merchandiser', 'supervisor', 'admin']
+export const ROLE_PRIORITY: readonly Role[] = ['merchandiser', 'seller', 'supervisor', 'admin']
 
 export const ROLE_LABEL: Record<Role, string> = {
   merchandiser: 'Activador',
+  seller: 'Vendedor',
   supervisor: 'Supervisor',
   admin: 'Admin',
 }
