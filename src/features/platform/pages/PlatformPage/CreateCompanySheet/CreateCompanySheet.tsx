@@ -74,7 +74,7 @@ export function CreateCompanySheet({ open, onClose, onCreated }: { open: boolean
         <Field label="DNI" inputMode="numeric" value={form.adminDni} onChange={(e) => set({ adminDni: e.target.value })} placeholder="Sin puntos" maxLength={10} />
         <Field label="Email del admin" type="email" inputMode="email" value={form.adminEmail} onChange={(e) => set({ adminEmail: e.target.value })}
           placeholder="admin@empresa.com" autoComplete="off" error={form.adminEmail.trim() && !emailOk ? 'Revisá el email.' : undefined}
-          help="Con el enlace crea su cuenta o entra con la suya, y acepta con ese DNI." />
+          help="Con el enlace crea su cuenta o entra con la de este email, y acepta." />
         {create.error ? <Banner tone="error">{create.error.message}</Banner> : null}
       </div>
     </Sheet>

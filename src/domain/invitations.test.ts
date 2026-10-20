@@ -40,7 +40,7 @@ describe('invitations', () => {
   })
 
   it('errors in Spanish', () => {
-    expect(inviteError('This invitation is for another DNI')).toBe('Esta invitación es para otro DNI.')
+    expect(inviteError('This invitation is for another email')).toBe('Esta invitación es para otro email.')
     expect(inviteError('Already a member of this company')).toMatch(/ya es parte/)
     expect(inviteError('email_taken')).toMatch(/ya tiene cuenta/)
     expect(inviteError('boom')).toBe('No se pudo completar. Probá de nuevo.')
