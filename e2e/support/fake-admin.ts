@@ -128,8 +128,10 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
       if (req.method() === 'POST') {
         const b = body()
         if (list.some((x) => x.name === b.name)) return done(json({ code: '23505', message: `duplicate key value violates unique constraint "${table}_company_id_name_key"` }, 409))
-        list.push({ id: list.length + 100, active: true, group_name: null, report_label: null, sort_order: 0, person_id: null, ...b })
-        return done(route.fulfill({ status: 201 }))
+        const row = { id: list.length + 100, active: true, group_name: null, report_label: null, sort_order: 0, person_id: null, ...b }
+        list.push(row)
+        // insert(...).select().single() wants the row back
+        return done(url.searchParams.has('select') ? json(row, 201) : route.fulfill({ status: 201 }))
       }
       if (req.method() === 'PATCH') {
         Object.assign(list.find((x) => x.id === id) ?? {}, body())

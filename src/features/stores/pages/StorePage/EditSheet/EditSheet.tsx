@@ -7,6 +7,8 @@ import { Select } from '@/ui/Select'
 import { Sheet } from '@/ui/Sheet'
 import { useCatalogs } from '@/features/workday/api/queries'
 import { pickable } from '@/features/workday/store-tags'
+import { SellerPicker } from '@/features/workday/components/SellerPicker'
+import { useAddSeller, useCanAddSellers } from '@/features/workday/api/sellers'
 import { useStoreAdmin, type StoreDetail } from '@/features/stores/api/stores'
 import styles from './EditSheet.module.scss'
 
@@ -17,6 +19,8 @@ import styles from './EditSheet.module.scss'
 export function EditSheet({ store, open, onClose }: { store: StoreDetail; open: boolean; onClose: () => void }) {
   const { update } = useStoreAdmin(store.id)
   const catalogs = useCatalogs(store.companyId).data
+  const canAdd = useCanAddSellers(store.companyId)
+  const newSeller = useAddSeller(store.companyId)
   const [form, setForm] = useState({ name: '', address: '', customerNumber: '', area: '', location: '', channel: '', seller: '' })
   useEffect(() => {
     if (!open) return
@@ -57,8 +61,8 @@ export function EditSheet({ store, open, onClose }: { store: StoreDetail; open: 
       <div className={styles.pair}>
         <Select label="Canal" value={form.channel} onChange={set('channel')}
           options={[{ value: '', label: 'Sin canal' }, ...pickable(catalogs?.channels, store.channelId).map((c) => ({ value: String(c.id), label: c.name }))]} />
-        <Select label="Vendedor" value={form.seller} onChange={set('seller')}
-          options={[{ value: '', label: 'Sin vendedor' }, ...pickable(catalogs?.sellers, store.sellerId).map((s) => ({ value: String(s.id), label: s.name }))]} />
+        <SellerPicker sellers={pickable(catalogs?.sellers, store.sellerId)} value={form.seller ? Number(form.seller) : null}
+          onChange={(id) => setForm((f) => ({ ...f, seller: id ? String(id) : '' }))} onAddSeller={canAdd ? (name) => newSeller.mutateAsync(name) : undefined} />
       </div>
       <Field
         label="Ubicación exacta"

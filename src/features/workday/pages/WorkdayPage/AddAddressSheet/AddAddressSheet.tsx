@@ -19,6 +19,8 @@ import { geocode, type GeocodeResult } from '@/features/workday/api/geocode'
 import styles from './AddAddressSheet.module.scss'
 import { useOnline } from '@/lib/online'
 import { MentionTextArea } from '@/features/workday/components/MentionTextArea'
+import { SellerPicker } from '@/features/workday/components/SellerPicker'
+import { useAddSeller, useCanAddSellers } from '@/features/workday/api/sellers'
 import { pickable } from '@/features/workday/store-tags'
 import { pastedHelp, readLines } from './paste-lines'
 
@@ -32,7 +34,7 @@ interface AddAddressSheetProps {
   forName?: string
 }
 
-const EMPTY = { address: '', name: '', customerNumber: '', task: '', displayTypes: [] as number[], channel: '', seller: '' }
+const EMPTY = { address: '', name: '', customerNumber: '', task: '', displayTypes: [] as number[], channel: '', seller: null as number | null }
 
 /** Add a store from the directory, a new one, or several pasted addresses (wireframes A05 / AD06). */
 export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }: AddAddressSheetProps) {
@@ -86,6 +88,9 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
   const channels = pickable(catalogs.data?.channels, null)
   const lines = readLines(pasted, sellers, channels)
   // The mention still being typed at the end is not flagged yet.
+  const canAdd = useCanAddSellers(ctx.companyId)
+  const newSeller = useAddSeller(ctx.companyId)
+  const addSeller = canAdd ? (name: string) => newSeller.mutateAsync(name) : undefined
   const unknown = [...new Set(lines.flatMap((l) => l.unknown))].filter((u) => !pasted.endsWith(u))
 
   const addNew = async () => {
@@ -96,7 +101,7 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
       task: form.task.trim() || undefined,
       displayTypes: form.displayTypes,
       channelId: form.channel ? Number(form.channel) : null,
-      sellerId: form.seller ? Number(form.seller) : null,
+      sellerId: form.seller,
       area: place?.area ?? null,
       lat: place?.lat ?? null,
       lng: place?.lng ?? null,
@@ -240,18 +245,13 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
               <Field label="Nombre" value={form.name} onChange={set('name')} placeholder="Opcional" />
               <Field label="Nro. de cliente" value={form.customerNumber} onChange={set('customerNumber')} placeholder="Opcional" inputMode="numeric" />
             </div>
-            {channels.length || sellers.length ? (
-              <div className={styles.pair}>
-                {channels.length ? (
-                  <Select label="Canal" value={form.channel} onChange={set('channel')}
-                    options={[{ value: '', label: 'Sin canal' }, ...channels.map((c) => ({ value: String(c.id), label: c.name }))]} />
-                ) : null}
-                {sellers.length ? (
-                  <Select label="Vendedor" value={form.seller} onChange={set('seller')}
-                    options={[{ value: '', label: 'Sin vendedor' }, ...sellers.map((x) => ({ value: String(x.id), label: x.name }))]} />
-                ) : null}
-              </div>
-            ) : null}
+            <div className={styles.pair}>
+              {channels.length ? (
+                <Select label="Canal" value={form.channel} onChange={set('channel')}
+                  options={[{ value: '', label: 'Sin canal' }, ...channels.map((c) => ({ value: String(c.id), label: c.name }))]} />
+              ) : null}
+              <SellerPicker sellers={sellers} value={form.seller} onChange={(seller) => setForm((f) => ({ ...f, seller }))} onAddSeller={addSeller} />
+            </div>
             <Field label="Tarea" value={form.task} onChange={set('task')} placeholder="Opcional" />
             {catalogs.data?.displayTypes.length ? (
               <div className={styles.block}>
@@ -276,9 +276,10 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
             onChange={setPasted}
             sellers={sellers}
             channels={channels}
+            onAddSeller={addSeller}
             rows={8}
-            placeholder={`Una por línea. Nro. de cliente y zona, si los tenés:\n20114; Amenábar 1260; Belgrano${sellers.length ? ' @vendedor' : ''}\nMoldes 1365`}
-            help={pastedHelp(lines, Boolean(sellers.length || channels.length))}
+            placeholder={'Una por línea. Nro. de cliente y zona, si los tenés:\n20114; Amenábar 1260; Belgrano @vendedor\nMoldes 1365'}
+            help={pastedHelp(lines, true)}
           />
           {unknown.length ? <Banner tone="warn">No encontramos {unknown.join(', ')}. Elegilos de la lista que aparece al escribir @ o #; si no están, se cargan en Catálogos.</Banner> : null}
           {leftOut ? <Banner tone="warn">{leftOut}</Banner> : null}

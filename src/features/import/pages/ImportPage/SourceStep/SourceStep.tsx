@@ -17,6 +17,8 @@ interface SourceStepProps {
   companyId: string
   /** Offered with @ and # in the pasted text. */
   tags: { sellers: readonly Mentionable[]; channels: readonly Mentionable[] }
+  /** Admins add a seller from the @ list. */
+  onAddSeller?: (name: string) => Promise<Mentionable>
   draft: Draft
   formats: SavedFormat[]
   onCancel: () => void
@@ -25,7 +27,7 @@ interface SourceStepProps {
 }
 
 /** Step 1: a spreadsheet file or pasted text. */
-export function SourceStep({ companyId, tags, draft, formats, onCancel, onRead }: SourceStepProps) {
+export function SourceStep({ companyId, tags, onAddSeller, draft, formats, onCancel, onRead }: SourceStepProps) {
   const [pasted, setPasted] = useState('')
   const [reading, setReading] = useState(false)
   const [capturing, setCapturing] = useState(false)
@@ -111,8 +113,9 @@ export function SourceStep({ companyId, tags, draft, formats, onCancel, onRead }
             onChange={setPasted}
             sellers={tags.sellers}
             channels={tags.channels}
+            onAddSeller={onAddSeller}
             rows={7}
-            placeholder={`Un local por línea. Nro. de cliente y zona, si los tenés:\n12345; Tres Arroyos 762; Paternal${tags.sellers.length ? ' @vendedor' : ''}\nAmenábar 1260`}
+            placeholder={`Un local por línea. Nro. de cliente y zona, si los tenés:\n12345; Tres Arroyos 762; Paternal${tags.sellers.length || onAddSeller ? ' @vendedor' : ''}\nAmenábar 1260`}
             help={
               pastedLines
                 ? `${pastedLines} ${pastedLines === 1 ? 'línea' : 'líneas'}`

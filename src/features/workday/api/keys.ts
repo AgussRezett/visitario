@@ -6,5 +6,6 @@ export const workdayKeys = {
   visit: (visitId: string) => ['workday', 'visit', visitId] as const,
   history: (companyId: string) => ['workday', 'history', companyId] as const,
   resumable: (companyId: string, date: string) => ['workday', 'resumable', companyId, date] as const,
-  catalogs: (companyId: string) => ['catalogs', companyId] as const,
+  // 'tags': catalogs cached before channels and sellers existed are not reused
+  catalogs: (companyId: string) => ['catalogs', companyId, 'tags'] as const,
 }
