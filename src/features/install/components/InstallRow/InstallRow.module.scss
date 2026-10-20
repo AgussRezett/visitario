@@ -1,0 +1,48 @@
+@use '@/styles/abstracts' as *;
+
+.row {
+  @include surface;
+  @include flex(row, $gap: space(3), $align: center);
+  @include transition-colors;
+  width: 100%;
+  min-height: 64px;
+  padding: space(3) space(4);
+  text-align: left;
+  cursor: pointer;
+
+  @include hover {
+    background: $color-muted;
+  }
+}
+
+.icon {
+  @include icon-tile(space(10), $radius-sm);
+  background: $color-lime-soft;
+  color: $color-lime-soft-ink;
+
+  @include dark {
+    background: $color-muted;
+    color: $color-lime;
+  }
+}
+
+.text {
+  @include flex(column, $gap: space(0.5));
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-weight: $weight-bold;
+  color: $color-ink;
+}
+
+.help {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.chevron {
+  flex: none;
+  color: $color-ink-subtle;
+}
