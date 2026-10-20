@@ -126,13 +126,13 @@ export function InvitationPage({ token }: { token: string }) {
         </section>
       ) : (
         <section className={styles.step} aria-label="Aceptar">
-          <p className={styles.stepText}>Entraste como <b>{person.firstName} {person.lastName}</b>. La invitación es para el DNI terminado en {p.dniEnd}.</p>
+          <p className={styles.stepText}>Entraste como <b>{person.firstName} {person.lastName}</b>. La invitación es para <b>{p.email}</b>: aceptala con la cuenta de ese email.</p>
           {error ? (
             <Banner tone="error" title={error}>
-              {/otro DNI/.test(error) ? `Entraste con otra cuenta. Salí y entrá con la de DNI terminado en ${p.dniEnd}.` : null}
+              {/otro email/.test(error) ? `Entraste con otra cuenta. Salí y entrá con la de ${p.email}.` : null}
             </Banner>
           ) : null}
-          {error && /otro DNI/.test(error) ? (
+          {error && /otro email/.test(error) ? (
             <Button variant="secondary" onClick={async () => { await signOut(); await refreshMe(queryClient) }}><LogIn size={20} aria-hidden />Salir y entrar con otra cuenta</Button>
           ) : (
             <div className={styles.answers}>

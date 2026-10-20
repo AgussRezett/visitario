@@ -57,12 +57,13 @@ test('signed in without a profile: complete it first', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'Completar mis datos' })).toHaveAttribute('href', '/onboarding')
 })
 
-test('another DNI: it says so and offers to switch account', async ({ page }) => {
-  await installFakeSupabase(page, day({ preview: preview(), acceptError: 'This invitation is for another DNI' }))
+test('another email: it says which one and offers to switch account', async ({ page }) => {
+  await installFakeSupabase(page, day({ preview: preview(), acceptError: 'This invitation is for another email' }))
   await page.goto(`/invitacion/${TOKEN}`)
+  await expect(page.getByText('La invitación es para nora@example.com', { exact: false })).toBeVisible()
   await page.getByRole('button', { name: 'Aceptar y sumarme' }).click()
-  await expect(page.getByText('Esta invitación es para otro DNI.')).toBeVisible()
-  await expect(page.getByText('Salí y entrá con la de DNI terminado en 333.')).toBeVisible()
+  await expect(page.getByText('Esta invitación es para otro email.')).toBeVisible()
+  await expect(page.getByText('Salí y entrá con la de nora@example.com.')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Salir y entrar con otra cuenta' })).toBeVisible()
 })
 

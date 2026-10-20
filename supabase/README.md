@@ -26,6 +26,7 @@ URL: `https://mjpzawlyjjlmluozjwap.supabase.co`
 | `20261019000000_email_invitations.sql` | applied (in two parts) | `invitation` (DNI + email, token SHA-256, 1 hour), `create/resend/cancel_invitation`, `mark_invitation_sent`, `invitation_preview` (anon), `accept_invitation`, `my_invitations`, `platform_new_company`; `complete_identity` lets an email invitation claim an old placeholder DNI |
 | `20261020000000_seller_role.sql` | applied | `role` gets `seller` (own file: a new enum value is usable only after commit) |
 | `20261020000100_channels_sellers.sql` | applied (in two parts) | `channel` and `seller` catalogs (RLS: members read, admins edit; `seller.person_id` only by the `link_seller` membership trigger), `store.channel_id` / `seller_id`, up to 4 roles per membership, `tag_store` (supervisors set, others fill blanks), `store_directory_v2` (channel and seller filters, 0 = without), `seller_stores` (a seller's clients, security definer), `import_workdays` rows take `seller` and `channel` |
+| `20261020120000_invite_by_email.sql` | applied | Invitations are accepted by the invited email's account (`private.session_email()` from `auth.users`), no longer by DNI; `my_invitations` lists by email; `invitation_preview.has_account` by email only |
 
 Files with `delete`/`drop` statements are refused by the agent connector; apply those with the CLI (`supabase link --project-ref mjpzawlyjjlmluozjwap && supabase db push`) or the SQL Editor.
 

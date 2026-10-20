@@ -15,7 +15,7 @@ function formatDate(iso: string) {
   return `${d}/${m}/${y}`
 }
 
-/** Invitations for my DNI: from the email (they last an hour) or older ones left by an admin. */
+/** Invitations for my account's email: from the email (they last an hour) or older ones left by an admin. */
 export function Invitations({ invitations }: { invitations: Invitation[] }) {
   const queryClient = useQueryClient()
   const [busy, setBusy] = useState<string | null>(null)

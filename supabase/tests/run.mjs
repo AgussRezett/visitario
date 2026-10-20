@@ -19,9 +19,9 @@ const U = {
   beto: '00000000-0000-7000-8000-000000000005', intruder: '00000000-0000-7000-8000-000000000006',
   nora: '00000000-0000-7000-8000-000000000007', omar: '00000000-0000-7000-8000-000000000008',
 };
-const email = { nora: 'nora@example.com', omar: 'omar@example.com' };
+const email = { nora: 'nora@example.com', omar: 'omar@example.com', agus: 'agus@example.com' };
 const phone = { agus: '+5491155554521', martin: '+5491144441020', lucia: '+5491133330000', beto: '+5491122220000' };
-for (const [k, id] of Object.entries(U)) await db.query('insert into auth.users (id, phone) values ($1, $2)', [id, phone[k] ?? null]);
+for (const [k, id] of Object.entries(U)) await db.query('insert into auth.users (id, phone, email) values ($1, $2, $3)', [id, phone[k] ?? null, email[k] ?? null]);
 
 async function as(who, sql, params = []) {
   const claims = JSON.stringify({ sub: U[who], phone: phone[who] ?? null, email: email[who] ?? null, role: 'authenticated' });
@@ -621,7 +621,7 @@ const nora1 = (await as('carla', `select create_invitation($1, '41222333', ' Nor
 check('An admin invites by DNI and email; the email data comes back', nora1.company === 'Panda' && nora1.email === 'nora@example.com' && nora1.inviter.startsWith('Carla'))
 check('Only the token’s fingerprint is stored', (await sys(`select count(*)::int n from invitation where token_hash = $1`, [tok('nora1')]))[0].n === 0)
 const preview1 = (await asAnon(`select invitation_preview('${tok('nora1')}') j`))[0].j
-check(`Anyone with the link sees the invitation (${preview1.state})`, preview1.state === 'pending' && preview1.dni_end === '333' && preview1.has_account === false && preview1.company === 'Panda')
+check(`Anyone with the link sees the invitation, and that the email already has an account (${preview1.state})`, preview1.state === 'pending' && preview1.dni_end === '333' && preview1.has_account === true && preview1.company === 'Panda')
 check('A wrong link is just invalid', (await asAnon(`select invitation_preview('${tok('nope')}') j`))[0].j.state === 'invalid')
 await as('carla', `select resend_invitation($1, $2)`, [nora1.id, tok('nora2')])
 check('Resending replaces the link', (await asAnon(`select invitation_preview('${tok('nora1')}') j`))[0].j.state === 'invalid'
@@ -639,7 +639,7 @@ await expectError('A used link does not work again', () => as('nora', `select ac
 await expectError('A member is not invited again', () => as('carla', `select create_invitation($1, '41222333', 'nora@example.com', '{merchandiser}', null, null, $2)`, [panda, tok('again')]), /Already a member/)
 
 await as('carla', `select create_invitation($1, '42000111', 'otro@example.com', '{merchandiser}', null, null, $2)`, [panda, tok('other')])
-await expectError('Someone with another DNI cannot take the invitation', () => as('agus', `select accept_invitation($1)`, [tok('other')]), /another DNI/)
+await expectError('Someone with another email cannot take the invitation', () => as('agus', `select accept_invitation($1)`, [tok('other')]), /another email/)
 await sys(`update invitation set expires_at = now() - interval '1 minute' where dni = '42000111' and status = 'pending'`)
 check('After an hour the link has expired', (await asAnon(`select invitation_preview('${tok('other')}') j`))[0].j.state === 'expired')
 const otherInv = (await sys(`select id from invitation where dni = '42000111' and status = 'pending'`))[0].id
@@ -655,13 +655,17 @@ await as('omar', `select complete_identity('43000999', 'Omar', 'Paz', '1990-09-0
 await as('omar', `select accept_invitation($1)`, [tok('omar')])
 check('The invited email lets them claim the DNI and join', (await sys(`select m.status::text s from membership m join person p on p.id = m.person_id where p.auth_user_id = $1 and m.company_id = $2`, [U.omar, panda]))[0].s === 'active')
 
-// From the profile: open invitations for my DNI, accepted or declined without the email
+// From the profile: open invitations for my email, accepted or declined without the email
 await as('beto', `select create_invitation($1, '34567890', 'agus@example.com', '{supervisor}', null, null, $2)`, [other, tok('agus-other')])
 const mine = await as('agus', `select * from my_invitations()`)
 check('My open invitations show in my profile', mine.length === 1 && mine[0].company === 'Distribuidora Sur')
 await as('agus', `select accept_invitation(p_invitation => $1, p_accept => false)`, [mine[0].id])
 check('Declining leaves me out', (await as('agus', `select count(*)::int n from my_invitations()`))[0].n === 0
   && (await sys(`select count(*)::int n from membership where person_id = $1 and company_id = $2`, [agus, other]))[0].n === 0)
+await as('beto', `select create_invitation($1, '45000111', 'Agus@Example.com', '{supervisor}', null, null, $2)`, [other, tok('agus-dni')])
+check('My invitations are those sent to my email, whatever DNI the admin typed', (await as('agus', `select count(*)::int n from my_invitations()`))[0].n === 1)
+await as('agus', `select accept_invitation($1)`, [tok('agus-dni')])
+check('…and the invited email accepts them', (await sys(`select status::text s from membership where person_id = $1 and company_id = $2`, [agus, other]))[0]?.s === 'active')
 
 // Super admin: a new company, and its first admin invited by email
 const fresh = (await as('agus', `select platform_new_company('Marca Norte', 'brand', 'pilot', null) id`))[0].id

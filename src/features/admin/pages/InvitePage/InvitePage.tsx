@@ -120,7 +120,7 @@ export function InvitePage() {
             ) : null}
             <Field label="Email" type="email" inputMode="email" autoComplete="off" value={email} onChange={(e) => setEmail(e.target.value)}
               placeholder="nombre@ejemplo.com" error={email.trim() && !emailOk ? 'Revisá el email.' : undefined}
-              help="Le llega un enlace que vence en 1 hora. Para aceptar, entra con el DNI de arriba." />
+              help="Le llega un enlace que vence en 1 hora. Acepta entrando con la cuenta de este email." />
             <p className={styles.help}>{ctx.companyName} no ve en qué otras empresas trabajó ni sus visitas anteriores.</p>
           </section>
 
