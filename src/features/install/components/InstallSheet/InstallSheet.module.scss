@@ -1,0 +1,123 @@
+@use '@/styles/abstracts' as *;
+
+// Why install, in three lines
+.benefits {
+  @include flex(column, $gap: space(2.5));
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.benefit {
+  @include flex(row, $gap: space(3), $align: center);
+  @include text(small);
+  color: $color-ink-muted;
+}
+
+.benefit-icon {
+  @include icon-tile(space(9), $radius-sm);
+  background: $color-lime-soft;
+  color: $color-lime-soft-ink;
+
+  @include dark {
+    background: $color-muted;
+    color: $color-lime;
+  }
+}
+
+.lead {
+  @include text(small);
+  margin: 0;
+  color: $color-ink;
+}
+
+// Numbered steps with the button to look for, drawn as it looks on the screen
+.steps {
+  @include surface;
+  @include flex(column);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.step {
+  @include flex(row, $gap: space(3), $align: flex-start);
+  padding: space(3.5) space(4);
+
+  & + & {
+    border-top: 1px solid $color-line;
+  }
+}
+
+.number {
+  @include center;
+  @include text(label);
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: $radius-full;
+  background: $color-forest;
+  font-weight: $weight-extrabold;
+  color: $color-white;
+
+  @include dark {
+    background: $color-lime;
+    color: $color-forest;
+  }
+}
+
+.step-body {
+  @include flex(column, $gap: space(2), $align: flex-start);
+  @include text(small);
+  min-width: 0;
+  padding-top: space(0.5);
+}
+
+.key {
+  @include flex(row, $gap: space(1.5), $align: center);
+  @include text(label);
+  max-width: 100%;
+  padding: space(1.5) space(3);
+  border: 1.5px solid $color-control;
+  border-radius: $radius-sm;
+  background: $color-card;
+  font-weight: $weight-bold;
+  color: $color-ink;
+
+  svg {
+    flex: none;
+  }
+}
+
+.links {
+  @include flex(column, $gap: space(2));
+
+  @include up(sm) {
+    flex-direction: row;
+  }
+}
+
+// Same weight as the primary button: in a web view it is the way out
+.open {
+  @include flex(row, $gap: space(2), $align: center, $justify: center);
+  @include transition-colors;
+  min-height: 52px;
+  padding-inline: space(5);
+  border-radius: $radius-md;
+  background: $color-action;
+  font-weight: $weight-extrabold;
+  color: $color-action-ink;
+  text-decoration: none;
+  cursor: pointer;
+
+  @include hover {
+    background: $color-action-hover;
+  }
+}
+
+.later {
+  // Side by side on desktop; on phones the footer is a column and flex: 1 would squash it.
+  @include up(lg) {
+    flex: 1;
+  }
+}

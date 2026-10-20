@@ -17,6 +17,7 @@ import { Invitations } from '@/features/profile/components/Invitations'
 import { getThemeChoice, setThemeChoice, type ThemeChoice } from '@/features/profile/theme'
 import { EditNameForm } from './EditNameForm'
 import { SecurityCard } from './SecurityCard'
+import { InstallRow } from '@/features/install/components/InstallRow'
 import styles from './ProfilePage.module.scss'
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -96,6 +97,9 @@ export function ProfilePage({ me }: { me: Me & { person: NonNullable<Me['person'
         <div className={styles.column}>
           <Section title="Seguridad">
             <SecurityCard me={me} />
+          </Section>
+          <Section title="App en este dispositivo">
+            <InstallRow />
           </Section>
           <Section title="Apariencia en este dispositivo">
             <Segmented

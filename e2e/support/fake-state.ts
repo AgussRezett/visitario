@@ -18,6 +18,8 @@ export interface FakeState {
   dnis?: Record<string, Row>
   /** tag_store calls: the store's channel and seller. */
   tagged?: Row[]
+  /** Let the install guide open by itself (other tests keep it away). */
+  installOffer?: boolean
   /** A seller's clients (seller_stores). */
   clients?: Row[]
   catalogs?: Partial<Record<'brand' | 'display_type' | 'work_metric' | 'channel' | 'seller', Row[]>>

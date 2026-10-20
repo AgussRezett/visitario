@@ -11,6 +11,7 @@ import { SECTIONS } from '@/features/shell/sections'
 import { RoleSwitcher } from '@/features/shell/components/RoleSwitcher'
 import { ViewSwitcher } from '@/features/shell/components/ViewSwitcher'
 import { UpdateBanner } from '@/features/shell/components/UpdateBanner'
+import { InstallOffer } from '@/features/install/components/InstallOffer'
 import { SyncStatus } from '@/features/sync/components/SyncStatus'
 import { useNavBadges } from '@/features/shell/useNavBadges'
 import { MainOverlayContext } from './main-overlay-context'
@@ -83,6 +84,7 @@ export function AppShell({ me, active, children }: Props) {
       </header>
 
       <UpdateBanner />
+      <InstallOffer />
 
       <main className={clsx(styles.main, immersive && styles.mainImmersive)} data-scroll>
         <MainOverlayContext.Provider value={overlay}>{children}</MainOverlayContext.Provider>

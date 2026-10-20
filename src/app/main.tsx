@@ -13,6 +13,8 @@ import { FullScreenSpinner } from '@/ui/Spinner'
 import { PERSIST_OPTIONS } from '@/features/sync/persist'
 import { startSync, syncNow } from '@/features/sync/outbox'
 import { startPwa } from './pwa'
+// Catches the browser's install event before React mounts (see features/install).
+import '@/features/install/state'
 import { routeTree } from './routeTree.gen'
 
 applyTheme()
