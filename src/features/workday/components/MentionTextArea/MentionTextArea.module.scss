@@ -1,0 +1,65 @@
+@use '@/styles/abstracts' as *;
+
+.field {
+  @include flex(column, $gap: space(1.5));
+  min-width: 0;
+}
+
+// Right under the text: on phones the keyboard covers what floats lower
+.list {
+  @include surface;
+  @include flex(column);
+  max-height: 264px;
+  overflow-y: auto;
+  padding: space(1);
+  margin: 0;
+  list-style: none;
+}
+
+.heading {
+  @include eyebrow;
+  padding: space(1.5) space(3) space(1);
+  color: $color-ink-subtle;
+}
+
+.option {
+  @include flex(row, $gap: space(2.5), $align: center);
+  @include transition-colors;
+  width: 100%;
+  min-height: 44px;
+  padding: space(2) space(3);
+  border-radius: $radius-sm;
+  background: transparent;
+  text-align: left;
+  color: $color-ink;
+  cursor: pointer;
+
+  svg {
+    flex: none;
+    color: $color-ink-subtle;
+  }
+
+  @include hover {
+    background: $color-muted;
+  }
+
+  &[data-active] {
+    background: $color-lime-soft;
+    color: $color-lime-soft-ink;
+
+    svg {
+      color: currentColor;
+    }
+
+    @include dark {
+      background: $color-muted;
+      color: $color-ink;
+    }
+  }
+}
+
+.name {
+  min-width: 0;
+  font-weight: $weight-bold;
+  overflow-wrap: anywhere;
+}

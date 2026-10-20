@@ -1,0 +1,37 @@
+@use '@/styles/abstracts' as *;
+
+.tags {
+  @include flex(row, $gap: space(1.5), $align: center);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+// A quiet pill: the store's data, not a status
+.tag {
+  @include flex(row, $gap: space(1), $align: center);
+  @include text(label);
+  min-width: 0;
+  max-width: 100%;
+  padding: space(0.5) space(2);
+  border-radius: $radius-full;
+  background: $color-muted;
+  font-weight: $weight-bold;
+  color: $color-ink-muted;
+
+  svg {
+    flex: none;
+  }
+
+  &[data-missing] {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px $color-line;
+    font-weight: $weight-medium;
+    color: $color-ink-subtle;
+  }
+}
+
+// Long channel names ("Almacén / Despensa / Fiambrería / Rotisería") wrap inside the pill
+.text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
