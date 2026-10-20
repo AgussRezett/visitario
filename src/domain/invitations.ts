@@ -98,3 +98,12 @@ export function inviteError(message: string): string {
   if (/invalid/.test(message)) return 'Revisá el DNI y el email.'
   return 'No se pudo completar. Probá de nuevo.'
 }
+
+/** Why the invitation email did not go out, for the admin (the code comes from the invitation function). */
+export function sendErrorText(code: string | null | undefined): string {
+  if (!code) return ''
+  if (code.startsWith('not_configured')) return 'El envío de mails todavía no está configurado.'
+  if (code.includes('auth')) return 'Gmail rechazó la cuenta de envío: revisá la contraseña de aplicación.'
+  if (code.startsWith('rejected')) return 'Gmail no aceptó el mail (puede ser el límite diario).'
+  return 'No pudimos conectar con Gmail.'
+}

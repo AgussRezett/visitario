@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Check, Copy, MailCheck, MailWarning, MessageCircle } from 'lucide-react'
 import { formatTime } from '@/domain/dates'
-import { INVITE_MINUTES, inviteMessage } from '@/domain/invitations'
+import { INVITE_MINUTES, inviteMessage, sendErrorText } from '@/domain/invitations'
 import { whatsappLink } from '@/domain/people'
 import { Banner } from '@/ui/Banner'
 import { Button, buttonClass } from '@/ui/Button'
@@ -32,7 +32,7 @@ export function InviteLink({ result, email, company }: InviteLinkProps) {
         </Banner>
       ) : (
         <Banner tone="warn" icon={<MailWarning size={18} aria-hidden />} title="No pudimos mandar el mail">
-          La invitación está creada: mandale el enlace por WhatsApp. Vence en 1 hora, a las {until}.
+          {sendErrorText(result.error)} La invitación está creada: mandale el enlace por WhatsApp. Vence en 1 hora, a las {until}.
         </Banner>
       )}
       <p className={styles.link}>{result.link}</p>

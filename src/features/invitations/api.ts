@@ -25,6 +25,8 @@ export interface SentInvitation {
   id: string
   link: string
   sent: boolean
+  /** Why the email did not go out: not_configured, rejected (auth, limits) or unreachable. */
+  error?: string
 }
 
 async function invoke(body: Record<string, unknown>): Promise<SentInvitation> {
