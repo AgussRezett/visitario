@@ -59,6 +59,9 @@ export interface ImportPayloadRow {
   lng?: number
   location_status?: 'verified' | 'approximate'
   task?: string
+  /** The store's seller and channel ids. */
+  seller?: number
+  channel?: number
 }
 
 export interface ImportResult {

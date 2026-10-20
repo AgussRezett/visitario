@@ -4,12 +4,15 @@ import { Button } from '@/ui/Button'
 import { StatusChip } from '@/ui/StatusChip'
 import type { Visit } from '@/features/workday/api/queries'
 import type { useAssign } from '@/features/team/api/mutations'
+import type { StoreTags } from '@/features/workday/store-tags'
 import styles from './AssignPage.module.scss'
 
 interface StopRowProps {
   v: Visit
   n: number
   typeName: (id: number) => string
+  /** The store's channel and seller names. */
+  tags: StoreTags
   assign: ReturnType<typeof useAssign>
   /** The task copied from another row, to paste here. */
   copied: string | null
@@ -17,7 +20,7 @@ interface StopRowProps {
 }
 
 /** A stop of the plan: its store, its task (with copy and paste between rows) and removing it. */
-export function StopRow({ v, n, typeName, assign, copied, onCopy }: StopRowProps) {
+export function StopRow({ v, n, typeName, tags, assign, copied, onCopy }: StopRowProps) {
   const [task, setTask] = useState(v.task ?? '')
   useEffect(() => setTask(v.task ?? ''), [v.task])
   const editable = v.workStatus === 'pending'
@@ -35,7 +38,7 @@ export function StopRow({ v, n, typeName, assign, copied, onCopy }: StopRowProps
       <span className={styles.stopBody}>
         <span className={styles.stopName}>{label}</span>
         <span className={styles.stopMeta}>
-          {[v.store.name ? v.store.address : null, v.store.area, v.store.customerNumber && `Cliente ${v.store.customerNumber}`, v.resumedFrom ? 'retomada' : null, v.source === 'added' ? 'agregada por el activador' : null].filter(Boolean).join(' · ')}
+          {[v.store.name ? v.store.address : null, v.store.area, v.store.customerNumber && `Cliente ${v.store.customerNumber}`, tags.channel, tags.seller && `vend. ${tags.seller}`, v.resumedFrom ? 'retomada' : null, v.source === 'added' ? 'agregada por el activador' : null].filter(Boolean).join(' · ')}
         </span>
         {v.displays.length ? (
           <span className={styles.tags}>{v.displays.map((d) => <span key={d.id} className={styles.tag}>{typeName(d.typeId)}</span>)}</span>

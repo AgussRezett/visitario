@@ -58,6 +58,7 @@ export function ReportsPage({ date: requested }: { date?: string }) {
           visits: data.data.visits,
           metrics: metrics.map((m) => ({ name: m.name, reportLabel: m.reportLabel, total: data.data?.metrics[personId]?.[m.id] ?? 0 })),
           template: catalogs.data.templates.daily_report,
+          channelName: (id) => catalogs.data?.channels?.find((c) => c.id === id)?.name ?? null,
         })
       : ''
   const selected = rows.find((r) => r.personId === chosen) ?? rows[0]

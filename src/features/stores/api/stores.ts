@@ -18,19 +18,24 @@ export interface DirectoryRow {
   locationStatus: LocationStatus
   source: StoreSource
   createdByName: string | null
+  channelId: number | null
+  sellerId: number | null
   lastVisit: { date: string; status: Enums<'work_status'>; review: Enums<'review_status'>; by: string } | null
   visits30d: number
 }
 
-export const directoryQuery = (companyId: string, q: { query: string; filter: DirectoryFilter; area: string | null; page: number }) =>
+/** Channel and seller filters: an id, 0 for "without", null for all. */
+export const directoryQuery = (companyId: string, q: { query: string; filter: DirectoryFilter; area: string | null; channel: number | null; seller: number | null; page: number }) =>
   queryOptions({
     queryKey: ['stores', 'directory', companyId, q],
     queryFn: async (): Promise<{ rows: DirectoryRow[]; total: number }> => {
-      const { data, error } = await supabase.rpc('store_directory', {
+      const { data, error } = await supabase.rpc('store_directory_v2', {
         p_company: companyId,
         p_query: q.query || undefined,
         p_filter: q.filter,
         p_area: q.area ?? undefined,
+        p_channel: q.channel ?? undefined,
+        p_seller: q.seller ?? undefined,
         p_limit: PAGE_SIZE,
         p_offset: q.page * PAGE_SIZE,
       })
@@ -44,6 +49,8 @@ export const directoryQuery = (companyId: string, q: { query: string; filter: Di
         locationStatus: r.location_status,
         source: r.source,
         createdByName: r.created_by_name,
+        channelId: r.channel_id,
+        sellerId: r.seller_id,
         lastVisit: r.last_visit_date && r.last_visit_status && r.last_visit_review
           ? { date: r.last_visit_date, status: r.last_visit_status, review: r.last_visit_review, by: r.last_merchandiser ?? '' }
           : null,
@@ -81,6 +88,8 @@ export interface StoreDetail {
   source: StoreSource
   createdAt: string
   createdByName: string | null
+  channelId: number | null
+  sellerId: number | null
   /** Taken out of the directory by hand. */
   archivedAt: string | null
   /** Merged into this store: it is out for good. */
@@ -104,6 +113,8 @@ export const storeQuery = (storeId: string) =>
         id: data.id, companyId: data.company_id, name: data.name, address: data.address, area: data.area, customerNumber: data.customer_number,
         lat: data.lat, lng: data.lng, locationStatus: data.location_status, source: data.source, createdAt: data.created_at,
         createdByName: (data.creator as { first_name: string } | null)?.first_name ?? null,
+        channelId: data.channel_id,
+        sellerId: data.seller_id,
         archivedAt: data.merged_into || data.removed_at ? null : data.deleted_at,
         mergedInto: data.merged_into,
         removedAt: data.removed_at,
@@ -151,6 +162,8 @@ export interface StoreChange {
   lat?: number | null
   lng?: number | null
   locationStatus?: LocationStatus
+  channelId?: number | null
+  sellerId?: number | null
 }
 
 export function useStoreAdmin(storeId: string) {
@@ -160,6 +173,7 @@ export function useStoreAdmin(storeId: string) {
     mutationFn: async (c: StoreChange) => {
       const { error } = await supabase.from('store').update({
         name: c.name, address: c.address, area: c.area, customer_number: c.customerNumber, lat: c.lat, lng: c.lng, location_status: c.locationStatus,
+        channel_id: c.channelId, seller_id: c.sellerId,
       }).eq('id', storeId)
       if (error) throw new Error(storeError(error.message))
     },

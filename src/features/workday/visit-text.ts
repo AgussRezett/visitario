@@ -2,6 +2,7 @@ import { formatDayMonth, formatTime } from '@/domain/dates'
 import { CONSENT_LABEL } from '@/domain/visit'
 import { mapsSearchUrl } from '@/domain/places'
 import type { Visit } from './api/queries'
+import type { StoreTags } from './store-tags'
 
 /** Who added the visit, as the wireframes say it. */
 export function originLabel(v: Visit) {
@@ -14,8 +15,11 @@ export function mapsUrl(v: Visit) {
   return mapsSearchUrl(v.store)
 }
 
-/** Values a company template can use. `typeName` names the displays ("2 Puntera, Góndola"). */
-export function messageValues(v: Visit, merchandiser: string, typeName?: (id: number) => string) {
+/**
+ * Values a company template can use. `typeName` names the displays ("2 Puntera, Góndola");
+ * `tags` are the store's channel and seller names.
+ */
+export function messageValues(v: Visit, merchandiser: string, typeName?: (id: number) => string, tags?: StoreTags) {
   const counts = new Map<string, number>()
   for (const d of v.displays) {
     const name = typeName?.(d.typeId) ?? 'Exhibición'
@@ -23,6 +27,9 @@ export function messageValues(v: Visit, merchandiser: string, typeName?: (id: nu
   }
   return {
     date: formatDayMonth(v.workDate, true),
+    short_date: formatDayMonth(v.workDate),
+    channel: tags?.channel ?? null,
+    seller: tags?.seller ?? null,
     address: v.store.address,
     store_name: v.store.name ?? v.store.address,
     customer_number: v.store.customerNumber,

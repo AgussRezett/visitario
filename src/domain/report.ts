@@ -6,6 +6,8 @@ export interface ReportVisit {
   address: string
   added: boolean // added by the merchandiser (an "extra")
   workStatus: WorkStatus
+  /** The store's channel name, if it has one. */
+  channel?: string | null
 }
 
 export interface ReportMetric {
@@ -16,6 +18,16 @@ export interface ReportMetric {
 
 const SUFFIX: Partial<Record<WorkStatus, string>> = { closed: ' (cerrado)', refused: ' (no autorizó)' }
 const list = (lines: string[]) => (lines.length ? lines.join('\n') : '-')
+
+/** "Autoservicio: 3", one line per channel in the order they appear; stores without one last. */
+function byChannel(done: ReportVisit[]) {
+  const counts = new Map<string, number>()
+  for (const v of done) counts.set(v.channel ?? '', (counts.get(v.channel ?? '') ?? 0) + 1)
+  if (!counts.size || (counts.size === 1 && counts.has(''))) return ''
+  const named = [...counts].filter(([name]) => name)
+  const none = counts.get('')
+  return [...named.map(([name, n]) => `${name}: ${n}`), ...(none ? [`Sin canal: ${none}`] : [])].join('\n')
+}
 
 /** Numbers for the report cards. */
 export function reportTotals(visits: ReportVisit[]) {
@@ -41,6 +53,7 @@ export function buildDailyReport(input: { date: string; visits: ReportVisit[]; m
       .filter((m) => m.reportLabel)
       .map((m) => `${m.reportLabel}: ${m.total}`)
       .join('\n'),
+    by_channel: byChannel(done),
     visited: list(done.filter((v) => !v.added).map(line)),
     not_visited: list(input.visits.filter((v) => !isVisited(v.workStatus)).map(line)),
     added: list(done.filter((v) => v.added).map(line)),

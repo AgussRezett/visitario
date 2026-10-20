@@ -58,7 +58,7 @@ describe('guessing the columns', () => {
   })
 
   it("maps Panda's spreadsheet from its titles", () => {
-    expect(guessMapping(panda, true)).toEqual(['customer_number', 'name', 'address', 'area', 'merchandiser', 'ignore'])
+    expect(guessMapping(panda, true)).toEqual(['customer_number', 'name', 'address', 'area', 'merchandiser', 'seller'])
   })
 
   it('without titles, guesses from the content', () => {
@@ -88,9 +88,14 @@ describe('rows', () => {
 
   it('pasted lines become rows with what each line has', () => {
     expect(linesToRows(['Moldes 1365', '20577; Moldes 1365; Belgrano', '—'])).toEqual([
-      { line: 1, customerNumber: '', name: '', address: 'Moldes 1365', area: '', merchandiser: '', task: '' },
-      { line: 2, customerNumber: '20577', name: '', address: 'Moldes 1365', area: 'Belgrano', merchandiser: '', task: '' },
+      { line: 1, customerNumber: '', name: '', address: 'Moldes 1365', area: '', merchandiser: '', seller: '', channel: '', task: '' },
+      { line: 2, customerNumber: '20577', name: '', address: 'Moldes 1365', area: 'Belgrano', merchandiser: '', seller: '', channel: '', task: '' },
     ])
+  })
+
+  it('a pasted line names its seller with @ and its channel with #', () => {
+    const mentions = { sellers: [{ id: 1, name: 'Florencia' }], channels: [{ id: 7, name: 'Autoservicio' }] }
+    expect(linesToRows(['1462; Altolaguirre 1952 @florencia #Autoservicio'], mentions)[0]).toMatchObject({ customerNumber: '1462', address: 'Altolaguirre 1952', seller: 'Florencia', channel: 'Autoservicio' })
   })
 })
 

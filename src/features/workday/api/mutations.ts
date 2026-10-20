@@ -22,6 +22,17 @@ export function useOpenWorkday() {
   })
 }
 
+async function storeOfVisit(visitId: string) {
+  const { data, error } = await supabase.from('visit').select('store_id').eq('id', visitId).single()
+  if (error) throw new WorkdayError(workdayErrorMessage(error))
+  return data.store_id
+}
+
+/** Sets a store's channel and seller (null leaves one as it is). */
+export async function tagStore(storeId: string, channelId: number | null, sellerId: number | null) {
+  await rpc(supabase.rpc('tag_store', { p_store: storeId, p_channel: channelId ?? undefined, p_seller: sellerId ?? undefined }))
+}
+
 export interface NewAddress {
   storeId?: string
   address?: string
@@ -33,13 +44,16 @@ export interface NewAddress {
   locationStatus?: Enums<'location_status'>
   task?: string
   displayTypes?: number[]
+  /** The store's channel and seller (a merchandiser only fills them while empty). */
+  channelId?: number | null
+  sellerId?: number | null
 }
 
 export function useAddVisit(workdayId: string) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (a: NewAddress) =>
-      rpc<string>(
+    mutationFn: async (a: NewAddress) => {
+      const visitId = await rpc<string>(
         supabase.rpc('add_visit', {
           p_workday: workdayId,
           p_store: a.storeId,
@@ -53,7 +67,10 @@ export function useAddVisit(workdayId: string) {
           p_task: a.task,
           p_display_types: a.displayTypes ?? [],
         }),
-      ),
+      )
+      if (a.channelId || a.sellerId) await tagStore(a.storeId ?? (await storeOfVisit(visitId)), a.channelId ?? null, a.sellerId ?? null)
+      return visitId
+    },
     onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: workdayKeys.all }), qc.invalidateQueries({ queryKey: ['team'] })]),
   })
 }

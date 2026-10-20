@@ -24,6 +24,8 @@ URL: `https://mjpzawlyjjlmluozjwap.supabase.co`
 | `20261018200000_self_review.sql` | applied | `visit_guard`: a merchandiser who is also supervisor or admin of the company reviews their own visits (a fix still needs the comment) |
 | `20261018220000_platform.sql` | applied (in two parts) | Super admin: `platform_companies`, `platform_totals`, `platform_create_company`, `platform_set_plan`, `start_support`, `support_company` (read only, needs an open session) |
 | `20261019000000_email_invitations.sql` | applied (in two parts) | `invitation` (DNI + email, token SHA-256, 1 hour), `create/resend/cancel_invitation`, `mark_invitation_sent`, `invitation_preview` (anon), `accept_invitation`, `my_invitations`, `platform_new_company`; `complete_identity` lets an email invitation claim an old placeholder DNI |
+| `20261020000000_seller_role.sql` | applied | `role` gets `seller` (own file: a new enum value is usable only after commit) |
+| `20261020000100_channels_sellers.sql` | applied (in two parts) | `channel` and `seller` catalogs (RLS: members read, admins edit; `seller.person_id` only by the `link_seller` membership trigger), `store.channel_id` / `seller_id`, up to 4 roles per membership, `tag_store` (supervisors set, others fill blanks), `store_directory_v2` (channel and seller filters, 0 = without), `seller_stores` (a seller's clients, security definer), `import_workdays` rows take `seller` and `channel` |
 
 Files with `delete`/`drop` statements are refused by the agent connector; apply those with the CLI (`supabase link --project-ref mjpzawlyjjlmluozjwap && supabase db push`) or the SQL Editor.
 

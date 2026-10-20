@@ -86,13 +86,13 @@
   color: $color-ink-subtle;
 }
 
-// Role: three big options
+// Role: four big options, two by two on desktop
 .roles {
   display: grid;
   gap: space(2);
 
   @include up(lg) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

@@ -4,6 +4,7 @@ import {
   type ImportField, type ImportMapping, type ImportRow, type Person, type PersonMatch, type RowStatus, type StoreMatch, type Table,
 } from '@/domain/import'
 import { captureToTable, type CaptureRow } from '@/domain/capture'
+import type { Mentionable } from '@/domain/mentions'
 import type { Sheet } from './api/read-file'
 import type { SavedFormat } from './api/import'
 
@@ -71,8 +72,8 @@ export function useDraft(fallback: string | null) {
 }
 
 /** The rows as they will be imported, with the addresses typed in the review. */
-export function draftRows(d: Draft): ImportRow[] {
-  const rows = d.lines ? linesToRows(d.lines) : toRows(tableOf(d), d.mapping.columns, d.mapping.hasHeader)
+export function draftRows(d: Draft, mentions?: { sellers: readonly Mentionable[]; channels: readonly Mentionable[] }): ImportRow[] {
+  const rows = d.lines ? linesToRows(d.lines, mentions) : toRows(tableOf(d), d.mapping.columns, d.mapping.hasHeader)
   return rows.map((r) => (d.edits[r.line] !== undefined ? { ...r, address: d.edits[r.line] ?? r.address } : r))
 }
 

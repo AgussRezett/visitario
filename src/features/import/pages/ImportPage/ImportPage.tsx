@@ -5,6 +5,8 @@ import { addDays, todayInArgentina } from '@/domain/dates'
 import type { Person } from '@/domain/import'
 import { useWorkContext } from '@/features/workday/context'
 import { teamDayQuery } from '@/features/team/api/queries'
+import { useCatalogs } from '@/features/workday/api/queries'
+import { pickable } from '@/features/workday/store-tags'
 import { formatsQuery } from '@/features/import/api/import'
 import { draftRows, emptyDraft, useDraft, useNames, type Draft } from '@/features/import/draft'
 import { SourceStep } from './SourceStep'
@@ -31,7 +33,9 @@ export function ImportPage({ date: requested, person }: ImportSearch) {
     () => (team.data ?? []).map((m) => ({ id: m.personId, firstName: m.firstName, lastName: m.lastName, me: m.personId === ctx?.personId })),
     [team.data, ctx?.personId],
   )
-  const rows = useMemo(() => draftRows(draft), [draft])
+  const catalogs = useCatalogs(ctx?.companyId ?? '').data
+  const tags = useMemo(() => ({ sellers: pickable(catalogs?.sellers, null), channels: pickable(catalogs?.channels, null) }), [catalogs])
+  const rows = useMemo(() => draftRows(draft, tags), [draft, tags])
   const names = useNames(rows, people, draft.mapping.aliases)
   if (!ctx) return null
 
@@ -41,7 +45,7 @@ export function ImportPage({ date: requested, person }: ImportSearch) {
     setStep(next)
   }
 
-  if (step === 1) return <SourceStep companyId={ctx.companyId} draft={draft} formats={formats.data ?? []} onCancel={() => void toAssign()} onRead={read} />
+  if (step === 1) return <SourceStep companyId={ctx.companyId} tags={tags} draft={draft} formats={formats.data ?? []} onCancel={() => void toAssign()} onRead={read} />
   if (step === 2) {
     return (
       <ColumnsStep
@@ -53,7 +57,7 @@ export function ImportPage({ date: requested, person }: ImportSearch) {
   }
   return (
     <ReviewStep
-      companyId={ctx.companyId} draft={draft} rows={rows} people={people} names={names}
+      companyId={ctx.companyId} draft={draft} rows={rows} people={people} names={names} tags={tags}
       date={date} onDate={setDate} update={update} setAlias={setAlias}
       onBack={() => setStep(draft.lines ? 1 : 2)}
       onDiscard={() => {

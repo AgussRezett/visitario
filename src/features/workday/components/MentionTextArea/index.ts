@@ -1,0 +1,1 @@
+export { MentionTextArea } from './MentionTextArea'

@@ -16,6 +16,8 @@ import { usePhotoUrls } from '@/features/workday/api/photos'
 import { PhotoThumb } from '@/features/workday/components/PhotoThumb'
 import { PhotoViewer } from '@/features/workday/components/PhotoViewer'
 import { Conversation } from '@/features/workday/components/Conversation'
+import { StoreTagsLine } from '@/features/workday/components/StoreTagsLine'
+import { storeTags } from '@/features/workday/store-tags'
 import type { TeamVisit } from '@/features/team/api/queries'
 import { useReview } from '@/features/team/api/mutations'
 import styles from './ReviewDetail.module.scss'
@@ -65,6 +67,7 @@ export function ReviewDetail({ visit: v, meId, draft }: { visit: TeamVisit; meId
           <div className={styles.titles}>
             <h2 className={styles.title}>{v.store.name ?? v.store.address}</h2>
             <span className={styles.muted}>{[v.store.name ? v.store.address : null, v.store.area, v.store.customerNumber && `Cliente ${v.store.customerNumber}`].filter(Boolean).join(' · ')}</span>
+            <StoreTagsLine tags={storeTags(catalogs.data, v.store)} showMissing={Boolean(catalogs.data?.channels?.length || catalogs.data?.sellers?.length)} />
           </div>
           <StatusChip work={v.workStatus} review={v.reviewStatus} />
         </div>

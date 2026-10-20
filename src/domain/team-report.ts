@@ -10,6 +10,8 @@ export interface ReportDayVisit {
   added: boolean
   workStatus: WorkStatus
   reviewStatus: ReviewStatus
+  /** The store's channel id, named with the catalogs. */
+  channelId?: number | null
 }
 
 export interface MemberDay {
@@ -74,10 +76,10 @@ export function reviewSummary(r: Pick<MemberDay, 'approved' | 'toReview' | 'need
 }
 
 /** One merchandiser's report, as they would send it (same template as theirs). */
-export function memberReport(input: { date: string; personId: string; visits: readonly ReportDayVisit[]; metrics: readonly ReportMetric[]; template: string }) {
+export function memberReport(input: { date: string; personId: string; visits: readonly ReportDayVisit[]; metrics: readonly ReportMetric[]; template: string; channelName?: (id: number | null | undefined) => string | null }) {
   const visits = input.visits
     .filter((v) => v.merchandiserId === input.personId)
-    .map((v) => ({ address: v.address, added: v.added, workStatus: v.workStatus }))
+    .map((v) => ({ address: v.address, added: v.added, workStatus: v.workStatus, channel: input.channelName?.(v.channelId) ?? null }))
   return buildDailyReport({ date: input.date, visits, metrics: [...input.metrics], template: input.template })
 }
 

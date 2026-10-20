@@ -14,7 +14,7 @@ import { ItemSheet, type Editing } from './ItemSheet'
 import { KINDS } from './kinds'
 import styles from './CatalogsPage.module.scss'
 
-/** Brands, display types, work metrics and saved import formats (D02 / DM02). */
+/** Brands, display types, work metrics, channels, sellers and saved import formats (D02 / DM02). */
 export function CatalogsPage() {
   const ctx = useWorkContext()
   const catalogs = useQuery({ ...adminCatalogsQuery(ctx?.companyId ?? ''), enabled: Boolean(ctx) })
@@ -36,13 +36,14 @@ export function CatalogsPage() {
           </span>
           <Button variant="secondary" size="sm" onClick={() => setEditing({ kind, item: null })} aria-label={`Agregar ${k.one}`}><Plus size={16} aria-hidden />Agregar</Button>
         </div>
+        {k.intro ? <p className={styles.cardIntro}>{k.intro}</p> : null}
         {items.length ? (
           <ul className={styles.items}>
             {items.map((i) => (
               <li key={i.id} className={styles.item} data-inactive={!i.active || undefined}>
                 <span className={styles.itemText}>
-                  <span className={styles.name}>{i.name}</span>
-                  {k.extra ? <span className={styles.extra}>{i.extra || k.extra.empty}</span> : null}
+                  <span className={styles.name}>{kind === 'channel' && i.extra ? `${i.extra}. ${i.name}` : i.name}</span>
+                  {k.extra && kind !== 'channel' ? <span className={styles.extra}>{i.extra || k.extra.empty}</span> : null}
                 </span>
                 <Switch checked={i.active} onChange={(on) => save.mutate({ kind, id: i.id, active: on })} className={styles.switch}>
                   <span className={styles.srOnly}>{i.name} activo</span>
@@ -70,7 +71,7 @@ export function CatalogsPage() {
       {save.error ? <Banner tone="error">{save.error.message}</Banner> : null}
 
       {catalogs.isPending ? (
-        <div className={styles.grid}>{[0, 1, 2, 3].map((i) => <Skeleton key={i} height={220} />)}</div>
+        <div className={styles.grid}>{[0, 1, 2, 3, 4, 5].map((i) => <Skeleton key={i} height={220} />)}</div>
       ) : catalogs.error ? (
         <Banner tone="error">No pudimos cargar los catálogos. Revisá la conexión.</Banner>
       ) : (
@@ -78,6 +79,8 @@ export function CatalogsPage() {
           {section('brand')}
           {section('display_type')}
           {section('work_metric')}
+          {section('channel')}
+          {section('seller')}
           <section className={styles.card} aria-label="Formatos de carga guardados">
             <div className={styles.head}><h2 className={styles.heading}>Formatos de carga guardados</h2></div>
             {catalogs.data.formats.length ? (

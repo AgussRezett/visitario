@@ -10,6 +10,7 @@ import { TextArea } from '@/ui/TextArea'
 import { useCatalogs } from '@/features/workday/api/queries'
 import { useWorkContext } from '@/features/workday/context'
 import { messageValues } from '@/features/workday/visit-text'
+import { storeTags } from '@/features/workday/store-tags'
 import { companyQuery, useCompanyUpdate } from '@/features/admin/api/company'
 import { sampleMetricsQuery, sampleVisitsQuery, templatesQuery, useSaveTemplate } from '@/features/admin/api/templates'
 import styles from './TemplatesPage.module.scss'
@@ -52,11 +53,11 @@ export function TemplatesPage() {
     : kind === 'daily_report'
       ? buildDailyReport({
           date: visit.workDate,
-          visits: sameDay.map((v) => ({ address: v.store.address, added: v.source === 'added', workStatus: v.workStatus })),
+          visits: sameDay.map((v) => ({ address: v.store.address, added: v.source === 'added', workStatus: v.workStatus, channel: storeTags(catalogs.data, v.store).channel })),
           metrics: (catalogs.data?.metrics ?? []).map((m) => ({ name: m.name, reportLabel: m.reportLabel, total: metrics.data?.[m.id] ?? 0 })),
           template: body,
         })
-      : fillTemplate(body, messageValues(visit, visit.merchandiserName.split(' ')[0] ?? '', typeName))
+      : fillTemplate(body, messageValues(visit, visit.merchandiserName.split(' ')[0] ?? '', typeName, storeTags(catalogs.data, visit.store)))
 
   const insert = (token: string) => {
     const el = area.current
@@ -101,7 +102,7 @@ export function TemplatesPage() {
 
         <section className={styles.editor} aria-label="Editor">
           <TextArea ref={area} label="Texto" value={body} onChange={(e) => setBody(e.target.value)} rows={9} className={styles.text} maxLength={4000}
-            help="Si un dato está vacío, su línea no se muestra." />
+            help="Si un dato está vacío, su línea no se muestra. Escrito en mayúsculas ({CANAL}), el dato sale en mayúsculas." />
           <span className={styles.label}>Insertar dato</span>
           <div className={styles.tokens}>
             {TEMPLATE_FIELDS[kind].map((f) => (

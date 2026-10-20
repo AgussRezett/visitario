@@ -81,6 +81,33 @@ export type Database = {
           },
         ]
       }
+      channel: {
+        Row: {
+          active: boolean
+          company_id: string
+          id: number
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          company_id: string
+          id?: never
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          company_id?: string
+          id?: never
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       comment: {
         Row: {
           author_id: string
@@ -733,10 +760,41 @@ export type Database = {
         }
         Relationships: []
       }
+      seller: {
+        Row: {
+          active: boolean
+          company_id: string
+          id: number
+          name: string
+          person_id: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          company_id: string
+          id?: never
+          name: string
+          person_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          company_id?: string
+          id?: never
+          name?: string
+          person_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       store: {
         Row: {
           address: string
           area: string | null
+          channel_id: number | null
           company_id: string
           created_at: string
           created_by: string | null
@@ -749,6 +807,7 @@ export type Database = {
           merged_into: string | null
           name: string | null
           removed_at: string | null
+          seller_id: number | null
           source: Database["public"]["Enums"]["store_source"]
           updated_at: string
           version: number
@@ -756,6 +815,7 @@ export type Database = {
         Insert: {
           address: string
           area?: string | null
+          channel_id?: number | null
           company_id: string
           created_at?: string
           created_by?: string | null
@@ -768,6 +828,7 @@ export type Database = {
           merged_into?: string | null
           name?: string | null
           removed_at?: string | null
+          seller_id?: number | null
           source?: Database["public"]["Enums"]["store_source"]
           updated_at?: string
           version?: number
@@ -775,6 +836,7 @@ export type Database = {
         Update: {
           address?: string
           area?: string | null
+          channel_id?: number | null
           company_id?: string
           created_at?: string
           created_by?: string | null
@@ -787,6 +849,7 @@ export type Database = {
           merged_into?: string | null
           name?: string | null
           removed_at?: string | null
+          seller_id?: number | null
           source?: Database["public"]["Enums"]["store_source"]
           updated_at?: string
           version?: number
@@ -1809,6 +1872,56 @@ export type Database = {
           visits_30d: number
         }[]
       }
+      store_directory_v2: {
+        Args: {
+          p_area?: string
+          p_channel?: number
+          p_company: string
+          p_filter?: string
+          p_limit?: number
+          p_offset?: number
+          p_query?: string
+          p_seller?: number
+        }
+        Returns: {
+          address: string
+          area: string
+          channel_id: number
+          created_by_name: string
+          customer_number: string
+          id: string
+          last_merchandiser: string
+          last_visit_date: string
+          last_visit_review: Database["public"]["Enums"]["review_status"]
+          last_visit_status: Database["public"]["Enums"]["work_status"]
+          location_status: Database["public"]["Enums"]["location_status"]
+          name: string
+          seller_id: number
+          source: Database["public"]["Enums"]["store_source"]
+          total: number
+          visits_30d: number
+        }[]
+      }
+      seller_stores: {
+        Args: { p_company: string }
+        Returns: {
+          address: string
+          area: string
+          channel_id: number
+          customer_number: string
+          id: string
+          last_merchandiser: string
+          last_visit_date: string
+          last_visit_review: Database["public"]["Enums"]["review_status"]
+          last_visit_status: Database["public"]["Enums"]["work_status"]
+          name: string
+          visits_30d: number
+        }[]
+      }
+      tag_store: {
+        Args: { p_channel?: number; p_seller?: number; p_store: string }
+        Returns: undefined
+      }
       store_directory_counts: {
         Args: { p_company: string }
         Returns: {
@@ -1873,7 +1986,7 @@ export type Database = {
       plan_kind: "free" | "pilot" | "team" | "internal"
       rapport_kind: "welcoming" | "restricted" | "indifferent" | "unwilling"
       review_status: "unreviewed" | "approved" | "needs_fix"
-      role: "merchandiser" | "supervisor" | "admin"
+      role: "merchandiser" | "seller" | "supervisor" | "admin"
       store_source: "imported" | "manual" | "merchandiser"
       subscription_status: "active" | "expired" | "canceled"
       template_kind: "before" | "after" | "daily_report" | "visit_report"
@@ -2026,7 +2139,7 @@ export const Constants = {
       plan_kind: ["free", "pilot", "team", "internal"],
       rapport_kind: ["welcoming", "restricted", "indifferent", "unwilling"],
       review_status: ["unreviewed", "approved", "needs_fix"],
-      role: ["merchandiser", "supervisor", "admin"],
+      role: ["merchandiser", "seller", "supervisor", "admin"],
       store_source: ["imported", "manual", "merchandiser"],
       subscription_status: ["active", "expired", "canceled"],
       template_kind: ["before", "after", "daily_report", "visit_report"],

@@ -17,6 +17,9 @@ export const SECTIONS: Record<Role, Section[]> = {
     { slug: 'route', label: 'Recorrido', title: 'Recorrido', icon: Route, stage: 6, summary: 'El mejor orden para visitar tus locales, en auto o a pie.' },
     { slug: 'report', label: 'Informe', title: 'Informe del día', icon: FileText, stage: 1, summary: 'El resumen del día listo para copiar si te lo piden por WhatsApp.' },
   ],
+  seller: [
+    { slug: 'clients', label: 'Clientes', title: 'Mis clientes', icon: Store, stage: 7, summary: 'Tus clientes con su canal y la última activación.' },
+  ],
   supervisor: [
     { slug: 'today', label: 'Hoy', title: 'Hoy en el equipo', icon: LayoutGrid, stage: 3, summary: 'El avance de cada activador, alertas y lo que falta revisar.' },
     { slug: 'review', label: 'Revisión', title: 'Revisión', icon: Inbox, stage: 3, summary: 'Aprobar visitas o pedir correcciones con un comentario.' },

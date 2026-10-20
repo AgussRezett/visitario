@@ -1,0 +1,121 @@
+@use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(4));
+  padding: space(4) space(4) space(6);
+
+  @include up(lg) {
+    gap: space(5);
+    max-width: 880px;
+    padding: space(6) space(8);
+  }
+}
+
+.titles {
+  @include flex(column, $gap: space(0.5));
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+.title {
+  @include heading(title);
+
+  @include up(lg) {
+    @include heading(display);
+  }
+}
+
+.lead {
+  @include text(small);
+  margin: 0;
+  color: $color-ink-muted;
+}
+
+.search {
+  @include flex(row, $gap: space(2), $align: center);
+  height: $control-height;
+  padding-inline: space(3.5);
+  border: 1.5px solid $color-control;
+  border-radius: $radius-md;
+  background: $color-card;
+  color: $color-ink-subtle;
+
+  &:focus-within {
+    border-color: $color-forest;
+  }
+
+  input {
+    @include text(base);
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: $color-ink;
+  }
+}
+
+.list {
+  @include surface;
+  @include flex(column);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  overflow: hidden;
+}
+
+// The client on the left, its last activation on the right; stacked when narrow
+.row {
+  @include flex(row, $gap: space(3), $align: flex-start, $justify: space-between);
+  flex-wrap: wrap;
+  padding: space(3.5) space(4);
+
+  & + & {
+    border-top: 1px solid $color-line;
+  }
+}
+
+.row-text {
+  @include flex(column, $gap: space(1));
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.name {
+  font-weight: $weight-bold;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+// Under the client on phones, at the right when there is room
+.last {
+  @include flex(column, $gap: space(1), $align: flex-start);
+  flex: none;
+
+  @include up(sm) {
+    align-items: flex-end;
+    text-align: right;
+  }
+}
+
+.empty {
+  @include surface;
+  @include flex(column, $gap: space(2), $align: center);
+  padding: space(8) space(5);
+  text-align: center;
+}
+
+.empty-icon {
+  @include icon-tile;
+}
+
+.empty-title {
+  @include heading(title);
+  margin: 0;
+}

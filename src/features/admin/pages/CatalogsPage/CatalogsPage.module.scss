@@ -142,3 +142,10 @@
   @include text(label);
   color: $color-ink-subtle;
 }
+
+// What a catalog is for, under its title
+.card-intro {
+  @include text(label);
+  margin: 0;
+  color: $color-ink-subtle;
+}

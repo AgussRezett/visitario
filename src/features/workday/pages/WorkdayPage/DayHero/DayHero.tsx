@@ -2,7 +2,9 @@ import { Link } from '@tanstack/react-router'
 import { Camera, Check, Copy, FileText, Map, PartyPopper } from 'lucide-react'
 import type { workdayProgress } from '@/domain/visit'
 import { useCopy } from '@/lib/share'
-import type { Visit } from '@/features/workday/api/queries'
+import { useCatalogs, type Visit } from '@/features/workday/api/queries'
+import { StoreTagsLine } from '@/features/workday/components/StoreTagsLine'
+import { storeTags } from '@/features/workday/store-tags'
 import { mapsUrl, originLabel } from '@/features/workday/visit-text'
 import styles from './DayHero.module.scss'
 
@@ -16,6 +18,7 @@ interface DayHeroProps {
 /** The day at a glance: progress, and the next store with what to do there. */
 export function DayHero({ progress, next, stop, date }: DayHeroProps) {
   const { copied, copy } = useCopy()
+  const catalogs = useCatalogs(next?.companyId ?? '').data
   const share = progress.total ? progress.visited / progress.total : 0
 
   return (
@@ -42,6 +45,7 @@ export function DayHero({ progress, next, stop, date }: DayHeroProps) {
             <span className={styles.soft}>
               {[next.store.name ? next.store.address : null, next.store.area, next.store.customerNumber && `Cliente ${next.store.customerNumber}`].filter(Boolean).join(' · ')}
             </span>
+            {next ? <StoreTagsLine tags={storeTags(catalogs, next.store)} className={styles.tags} /> : null}
             <span className={styles.meta}>
               {[next.task, next.displays.length ? `${next.displays.length} ${next.displays.length === 1 ? 'exhibición' : 'exhibiciones'}` : null, originLabel(next)].filter(Boolean).join(' · ')}
             </span>

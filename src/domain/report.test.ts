@@ -49,6 +49,18 @@ describe('daily report', () => {
     expect(reportTotals(visits)).toEqual({ visited: 4, extras: 1, notVisited: 1 })
   })
 
+  it('counts the visited stores per channel', () => {
+    const tagged = [
+      { address: 'A', added: false, workStatus: 'done' as const, channel: 'Autoservicio' },
+      { address: 'B', added: true, workStatus: 'done' as const, channel: 'Autoservicio' },
+      { address: 'C', added: false, workStatus: 'closed' as const, channel: 'Kiosco' },
+      { address: 'D', added: false, workStatus: 'done' as const, channel: null },
+      { address: 'E', added: false, workStatus: 'pending' as const, channel: 'Kiosco' },
+    ]
+    expect(buildDailyReport({ date: '2026-10-09', visits: tagged, metrics: [], template: '{POR_CANAL}' })).toBe('AUTOSERVICIO: 2\nKIOSCO: 1\nSIN CANAL: 1')
+    expect(buildDailyReport({ date: '2026-10-09', visits, metrics: [], template: 'X\nCanales:\n{por_canal}' })).toBe('X\nCanales:')
+  })
+
   it('shows a dash for empty lists', () => {
     expect(buildDailyReport({ date: '2026-10-09', visits: [], metrics: [], template })).toContain('Visitados:\n-')
   })

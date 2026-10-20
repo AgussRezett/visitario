@@ -6,12 +6,13 @@ import type { Visit } from '@/features/workday/api/queries'
 import { localPhotoBlob } from '@/features/workday/api/photos'
 import { VisitSection } from '@/features/workday/components/VisitSection'
 import { messageValues } from '@/features/workday/visit-text'
+import type { StoreTags } from '@/features/workday/store-tags'
 import styles from './MessagesSection.module.scss'
 
 /** The ANTES / DESPUÉS messages, while WhatsApp is still the bridge with the supervisor. */
-export function MessagesSection({ visit: v, templates, firstName, typeName }: { visit: Visit; templates: Record<TemplateKind, string>; firstName: string; typeName?: (id: number) => string }) {
+export function MessagesSection({ visit: v, templates, firstName, typeName, tags }: { visit: Visit; templates: Record<TemplateKind, string>; firstName: string; typeName?: (id: number) => string; tags?: StoreTags }) {
   const { copied, copy } = useCopy()
-  const values = messageValues(v, firstName, typeName)
+  const values = messageValues(v, firstName, typeName, tags)
   const items: { key: string; label: string; text: string }[] = [
     { key: 'address', label: 'Dirección', text: v.store.address },
     { key: 'before', label: 'ANTES', text: fillTemplate(templates.before, values) },

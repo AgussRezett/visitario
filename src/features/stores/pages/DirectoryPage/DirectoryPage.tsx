@@ -15,6 +15,9 @@ import { Skeleton } from '@/ui/Skeleton'
 import { StatusChip } from '@/ui/StatusChip'
 import { Table } from '@/ui/Table'
 import { useWorkContext } from '@/features/workday/context'
+import { useCatalogs } from '@/features/workday/api/queries'
+import { StoreTagsLine } from '@/features/workday/components/StoreTagsLine'
+import { storeTags } from '@/features/workday/store-tags'
 import { useStoreReputation } from '@/features/reputation/api'
 import { DirectoryTabs } from '@/features/stores/components/DirectoryTabs'
 import { RapportLevel } from '@/features/reputation/components/RapportLevel'
@@ -31,11 +34,15 @@ export function DirectoryPage() {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<DirectoryFilter>('all')
   const [area, setArea] = useState<string | null>(null)
+  /** An id, 0 for "without", null for all. */
+  const [channel, setChannel] = useState<number | null>(null)
+  const [seller, setSeller] = useState<number | null>(null)
   const [page, setPage] = useState(0)
   const q = useDebounced(query.trim(), 300)
   const companyId = ctx?.companyId ?? ''
-  const list = useQuery({ ...directoryQuery(companyId, { query: q, filter, area, page }), enabled: Boolean(ctx), placeholderData: keepPreviousData })
+  const list = useQuery({ ...directoryQuery(companyId, { query: q, filter, area, channel, seller, page }), enabled: Boolean(ctx), placeholderData: keepPreviousData })
   const counts = useQuery({ ...directoryCountsQuery(companyId), enabled: Boolean(ctx) })
+  const catalogs = useCatalogs(companyId).data
   const reputation = useStoreReputation(companyId, (list.data?.rows ?? []).map((r) => r.id)).data
   const { askArchive, askRemove, restore, busy, error: archiveError, dialog } = useStoreArchive()
   if (!ctx) return null
@@ -46,6 +53,10 @@ export function DirectoryPage() {
   const name = (r: DirectoryRow) => r.name ?? r.address
   const last = (r: DirectoryRow) => (r.lastVisit ? `${when(r.lastVisit.date)} · ${r.lastVisit.by}` : 'Nunca')
   const archived = filter === 'archived'
+  const tagsOf = (r: DirectoryRow) => storeTags(catalogs, r)
+  const pick = (value: string) => (value === '' ? null : Number(value))
+  const channels = catalogs?.channels ?? []
+  const sellers = catalogs?.sellers ?? []
 
   return (
     <div className={styles.page}>
@@ -64,6 +75,14 @@ export function DirectoryPage() {
           {counts.data?.areas.length ? (
             <Select label="Zona" value={area ?? ''} onChange={(e) => { setArea(e.target.value || null); setPage(0) }} className={styles.area}
               options={[{ value: '', label: 'Zona: todas' }, ...counts.data.areas.map((a) => ({ value: a, label: a }))]} />
+          ) : null}
+          {channels.length ? (
+            <Select label="Canal" value={channel === null ? '' : String(channel)} onChange={(e) => { setChannel(pick(e.target.value)); setPage(0) }} className={styles.area}
+              options={[{ value: '', label: 'Canal: todos' }, { value: '0', label: 'Sin canal' }, ...channels.map((c) => ({ value: String(c.id), label: c.name }))]} />
+          ) : null}
+          {sellers.length ? (
+            <Select label="Vendedor" value={seller === null ? '' : String(seller)} onChange={(e) => { setSeller(pick(e.target.value)); setPage(0) }} className={styles.area}
+              options={[{ value: '', label: 'Vendedor: todos' }, { value: '0', label: 'Sin vendedor' }, ...sellers.map((s) => ({ value: String(s.id), label: s.name }))]} />
           ) : null}
           <button type="button" className={styles.chip} aria-pressed={filter === 'unverified'} data-tone="warn" onClick={() => toggle('unverified')}>
             <MapPinOff size={16} aria-hidden />Sin ubicación · {counts.data?.unverified ?? 0}
@@ -85,12 +104,12 @@ export function DirectoryPage() {
       ) : list.error ? (
         <Banner tone="error">No pudimos cargar el directorio. Revisá la conexión.</Banner>
       ) : !rows.length ? (
-        <p className={styles.empty}>{archived && !q && !area ? 'No hay comercios archivados.' : q || filter !== 'all' || area ? 'Ningún comercio coincide.' : 'Todavía no hay comercios. Se suman al importar planillas o agregar direcciones.'}</p>
+        <p className={styles.empty}>{archived && !q && !area ? 'No hay comercios archivados.' : q || filter !== 'all' || area || channel !== null || seller !== null ? 'Ningún comercio coincide.' : 'Todavía no hay comercios. Se suman al importar planillas o agregar direcciones.'}</p>
       ) : (
         <Refreshing active={list.isPlaceholderData}>
           {desktop ? (
             <Table label="Comercios">
-              <thead><tr><th>Comercio</th><th>Cliente</th><th>Zona</th><th>Ubicación</th><th>Trato</th><th>Última visita</th><th>Visitas 30 días</th><th><span className={styles.srOnly}>Acciones</span></th></tr></thead>
+              <thead><tr><th>Comercio</th><th>Cliente</th><th>Canal y vendedor</th><th>Zona</th><th>Ubicación</th><th>Trato</th><th>Última visita</th><th>Visitas 30 días</th><th><span className={styles.srOnly}>Acciones</span></th></tr></thead>
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.id}>
@@ -101,6 +120,12 @@ export function DirectoryPage() {
                       </Link>
                     </td>
                     <td className={styles.num}>{r.customerNumber ?? '—'}</td>
+                    <td>
+                      <span className={styles.tagCell}>
+                        <span className={tagsOf(r).channel ? undefined : styles.meta}>{tagsOf(r).channel ?? 'Sin canal'}</span>
+                        <span className={styles.meta}>{tagsOf(r).seller ?? 'Sin vendedor'}</span>
+                      </span>
+                    </td>
                     <td>{r.area ?? '—'}</td>
                     <td><span className={styles.location} data-status={r.locationStatus}>{LOCATION_LABEL[r.locationStatus]}</span></td>
                     <td>{reputation?.get(r.id) ? <RapportLevel level={(reputation.get(r.id) as StoreReputation).level} trend={(reputation.get(r.id) as StoreReputation).trend} /> : <span className={styles.meta}>Sin datos</span>}</td>
@@ -135,6 +160,7 @@ export function DirectoryPage() {
                       <span className={styles.meta}>
                         {[r.name ? r.address : null, r.customerNumber, r.source === 'merchandiser' && r.createdByName ? `agregado por ${r.createdByName}` : r.area, r.locationStatus === 'verified' ? null : 'sin verificar'].filter(Boolean).join(' · ')}
                       </span>
+                      <StoreTagsLine tags={tagsOf(r)} />
                       {reputation?.get(r.id) ? <RapportLevel level={(reputation.get(r.id) as StoreReputation).level} trend={(reputation.get(r.id) as StoreReputation).trend} /> : null}
                     </span>
                     <span className={styles.rowLast}>{r.lastVisit ? when(r.lastVisit.date) : 'Nunca'}</span>

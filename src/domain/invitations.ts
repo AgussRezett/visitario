@@ -43,7 +43,7 @@ export function timeLeft(expiresAt: string, now: Date) {
   return `venció hace ${Math.round(ago / 1440)} días`
 }
 
-const ROLE_PHRASE: Record<Role, string> = { merchandiser: 'activador', supervisor: 'supervisor', admin: 'admin de la empresa' }
+const ROLE_PHRASE: Record<Role, string> = { merchandiser: 'activador', seller: 'vendedor', supervisor: 'supervisor', admin: 'admin de la empresa' }
 
 /** "activador", "activador y supervisor". */
 export function rolesPhrase(roles: readonly Role[]) {

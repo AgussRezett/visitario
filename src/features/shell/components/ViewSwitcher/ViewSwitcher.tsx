@@ -1,13 +1,14 @@
 import { useState } from 'react'
-import { Check, ChevronDown, ClipboardCheck, MapPin, Settings } from 'lucide-react'
+import { BadgeDollarSign, Check, ChevronDown, ClipboardCheck, MapPin, Settings } from 'lucide-react'
 import { ROLE_LABEL, viewGroups, type ActiveMembership, type Role, type ViewOption } from '@/domain/roles'
 import { Sheet } from '@/ui/Sheet'
 import { useSwitchView } from './useSwitchView'
 import styles from './ViewSwitcher.module.scss'
 
-const ROLE_ICON = { merchandiser: MapPin, supervisor: ClipboardCheck, admin: Settings } as const
+const ROLE_ICON = { merchandiser: MapPin, seller: BadgeDollarSign, supervisor: ClipboardCheck, admin: Settings } as const
 const ROLE_HINT: Record<Role, string> = {
   merchandiser: 'Tu jornada, tus visitas y el informe',
+  seller: 'Tus clientes y sus activaciones',
   supervisor: 'El avance del equipo y las revisiones',
   admin: 'Usuarios, catálogos y datos de la empresa',
 }

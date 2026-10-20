@@ -28,7 +28,8 @@ export function ItemSheet({ editing, companyId, onClose }: { editing: Editing; c
   if (!editing) return null
   const k = KINDS[editing.kind]
   const submit = async () => {
-    await save.mutateAsync({ kind: editing.kind, id: editing.item?.id, name: name.trim(), extra: k.extra ? extra.trim() || null : undefined, active })
+    const editable = k.extra && !k.extra.readOnly
+    await save.mutateAsync({ kind: editing.kind, id: editing.item?.id, name: name.trim(), extra: editable ? extra.trim() || null : undefined, active })
     onClose()
   }
 
@@ -44,12 +45,20 @@ export function ItemSheet({ editing, companyId, onClose }: { editing: Editing; c
         </>
       }
     >
-      <Field label="Nombre" value={name} onChange={(e) => setName(e.target.value)} maxLength={editing.kind === 'brand' ? 60 : 40} autoFocus />
-      {k.extra ? <Field label={k.extra.label} value={extra} onChange={(e) => setExtra(e.target.value)} placeholder={k.extra.placeholder} help={k.extra.help} maxLength={80} /> : null}
+      <Field label="Nombre" value={name} onChange={(e) => setName(e.target.value)} maxLength={k.max ?? (editing.kind === 'brand' ? 60 : 40)} autoFocus />
+      {k.extra && !k.extra.readOnly ? (
+        <Field label={k.extra.label} value={extra} onChange={(e) => setExtra(k.extra?.numeric ? e.target.value.replace(/\D/g, '').slice(0, 3) : e.target.value)}
+          inputMode={k.extra.numeric ? 'numeric' : undefined} placeholder={k.extra.placeholder} help={k.extra.help} maxLength={k.extra.numeric ? 3 : 80} />
+      ) : null}
+      {editing.kind === 'seller' ? (
+        <p className={styles.help}>{editing.item?.extra ? 'Tiene usuario en Visitario: ve sus clientes y las activaciones.' : 'Sin usuario todavía. Invitalo desde Usuarios con el rol Vendedor y el mismo nombre: se une solo.'}</p>
+      ) : null}
       {editing.item ? (
         <Switch checked={active} onChange={setActive}>
           Activo
-          <span className={styles.help}>Inactivo: deja de aparecer en la ficha{editing.kind === 'work_metric' ? ' y en el informe' : ''}. Las visitas anteriores lo conservan.</span>
+          <span className={styles.help}>{editing.kind === 'channel' || editing.kind === 'seller'
+            ? 'Inactivo: no se ofrece para comercios nuevos. Los comercios que lo tienen lo conservan.'
+            : `Inactivo: deja de aparecer en la ficha${editing.kind === 'work_metric' ? ' y en el informe' : ''}. Las visitas anteriores lo conservan.`}</span>
         </Switch>
       ) : null}
       {save.error ? <Banner tone="error">{save.error.message}</Banner> : null}

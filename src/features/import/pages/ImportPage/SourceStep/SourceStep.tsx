@@ -4,7 +4,8 @@ import { parsePasted } from '@/domain/import'
 import { formatDayMonth, todayInArgentina } from '@/domain/dates'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
-import { TextArea } from '@/ui/TextArea'
+import type { Mentionable } from '@/domain/mentions'
+import { MentionTextArea } from '@/features/workday/components/MentionTextArea'
 import { FileError, readSpreadsheet } from '@/features/import/api/read-file'
 import type { SavedFormat } from '@/features/import/api/import'
 import { CaptureError, readCapture } from '@/features/import/api/capture'
@@ -14,6 +15,8 @@ import styles from './SourceStep.module.scss'
 
 interface SourceStepProps {
   companyId: string
+  /** Offered with @ and # in the pasted text. */
+  tags: { sellers: readonly Mentionable[]; channels: readonly Mentionable[] }
   draft: Draft
   formats: SavedFormat[]
   onCancel: () => void
@@ -22,7 +25,7 @@ interface SourceStepProps {
 }
 
 /** Step 1: a spreadsheet file or pasted text. */
-export function SourceStep({ companyId, draft, formats, onCancel, onRead }: SourceStepProps) {
+export function SourceStep({ companyId, tags, draft, formats, onCancel, onRead }: SourceStepProps) {
   const [pasted, setPasted] = useState('')
   const [reading, setReading] = useState(false)
   const [capturing, setCapturing] = useState(false)
@@ -102,16 +105,18 @@ export function SourceStep({ companyId, draft, formats, onCancel, onRead }: Sour
         </label>
 
         <div className={styles.paste}>
-          <TextArea
+          <MentionTextArea
             label="O pegá el texto"
             value={pasted}
-            onChange={(e) => setPasted(e.target.value)}
+            onChange={setPasted}
+            sellers={tags.sellers}
+            channels={tags.channels}
             rows={7}
-            placeholder={'Un local por línea. Nro. de cliente y zona, si los tenés:\n12345; Tres Arroyos 762; Paternal\nAmenábar 1260'}
+            placeholder={`Un local por línea. Nro. de cliente y zona, si los tenés:\n12345; Tres Arroyos 762; Paternal${tags.sellers.length ? ' @vendedor' : ''}\nAmenábar 1260`}
             help={
               pastedLines
                 ? `${pastedLines} ${pastedLines === 1 ? 'línea' : 'líneas'}`
-                : 'Separá con ; o coma, en cualquier orden. Si copiás del Excel con títulos o más columnas, te pregunta qué es cada una.'
+                : `Separá con ; o coma, en cualquier orden.${tags.sellers.length || tags.channels.length ? ' Con @ elegís el vendedor y con # el canal.' : ''} Si copiás del Excel con títulos o más columnas, te pregunta qué es cada una.`
             }
           />
         </div>

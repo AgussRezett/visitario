@@ -184,8 +184,13 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
       const b = body()
       const id = `v${state.visits.length + 1}`
       const planned = (state.workdays ?? []).find((w) => w.id === b.p_workday)
-      state.visits.push(visitRow(id, state.visits.length, String(b.p_address), planned ? { workday_id: planned.id, work_date: planned.work_date, merchandiser_id: planned.merchandiser_id, source: 'assigned', task: b.p_task ?? null } : {}))
+      const store = { store_id: b.p_store ?? `s-${id}` }
+      state.visits.push(visitRow(id, state.visits.length, String(b.p_address), planned ? { ...store, workday_id: planned.id, work_date: planned.work_date, merchandiser_id: planned.merchandiser_id, source: 'assigned', task: b.p_task ?? null } : store))
       return json(id)
+    }
+    if (path.endsWith('/rpc/tag_store')) {
+      ;(state.tagged ??= []).push(body())
+      return route.fulfill({ status: 204 })
     }
     if (path.endsWith('/rpc/store_reputation')) {
       const ids = (body().p_stores as string[]) ?? []
@@ -231,7 +236,7 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
       const found = state.visits.filter((v) => matches(v, url.searchParams))
       if (url.searchParams.get('order')?.startsWith('sort_order')) found.sort((a, b) => Number(a.sort_order) - Number(b.sort_order))
       if (req.method() === 'HEAD') return route.fulfill({ status: 200, headers: { 'content-range': `*/${found.length}`, 'access-control-allow-origin': '*', 'access-control-expose-headers': 'content-range' } })
-      return json(id ? found : found)
+      return json((req.headers().accept ?? '').includes('vnd.pgrst.object') ? (found[0] ?? null) : found)
     }
     if (path.endsWith('/functions/v1/photos')) {
       if (state.uploadDelayMs) await new Promise((resolve) => setTimeout(resolve, state.uploadDelayMs))

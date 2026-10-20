@@ -7,10 +7,12 @@ import type { Visit } from '@/features/workday/api/queries'
 import { useStoreReputation } from '@/features/reputation/api'
 import { RapportLevel } from '@/features/reputation/components/RapportLevel'
 import { mapsUrl } from '@/features/workday/visit-text'
+import { StoreTagsLine } from '@/features/workday/components/StoreTagsLine'
+import type { StoreTags } from '@/features/workday/store-tags'
 import styles from './StoreInfo.module.scss'
 
-/** Address, customer number, task, and quick actions for getting there. */
-export function StoreInfo({ visit: v }: { visit: Visit }) {
+/** Address, customer number, channel and seller, task, and quick actions for getting there. */
+export function StoreInfo({ visit: v, tags }: { visit: Visit; tags: StoreTags }) {
   const { copied, copy } = useCopy()
   const reputation = useStoreReputation(v.companyId, [v.store.id]).data?.get(v.store.id)
   const address = [v.store.address, v.store.area].filter(Boolean).join(' · ')
@@ -19,6 +21,7 @@ export function StoreInfo({ visit: v }: { visit: Visit }) {
       <div className={styles.lines}>
         <span className={styles.address}>{address}</span>
         <span className={styles.meta}>{[v.store.customerNumber && `Cliente ${v.store.customerNumber}`, v.task && `Tarea: ${v.task}`].filter(Boolean).join(' · ') || 'Sin número de cliente'}</span>
+        <StoreTagsLine tags={tags} />
         {reputation ? <RapportLevel level={reputation.level} text={expectText(reputation.level)} /> : null}
       </div>
       <div className={styles.actions}>
