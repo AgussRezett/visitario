@@ -6,9 +6,11 @@
 //   POST { action: 'signup', token, password }                                          (anyone with the link)
 //     → { email }: creates the invited email's account, already confirmed (the link proves it).
 // The token is random, travels only in the link and the email; the database keeps its SHA-256.
-// Email through Resend: RESEND_API_KEY and INVITE_FROM ("Visitario <invitaciones@tu-dominio>").
+// Email through Gmail with nodemailer: GMAIL_USER (visitarioadmin@gmail.com) and GMAIL_APP_PASSWORD
+// (an app password of that account, not its normal password). Port 465: Supabase blocks 25 and 587.
 // Without them the invitation is still created and the admin is told the email did not go out.
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import nodemailer from 'npm:nodemailer@6.9.16'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,8 +23,22 @@ const json = (body: unknown, status = 200) =>
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
 const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-const resendKey = Deno.env.get('RESEND_API_KEY') ?? ''
-const from = Deno.env.get('INVITE_FROM') ?? ''
+const gmailUser = Deno.env.get('GMAIL_USER') ?? ''
+// Google shows app passwords in groups of four ("abcd efgh ijkl mnop"): spaces are not part of it.
+const gmailPassword = (Deno.env.get('GMAIL_APP_PASSWORD') ?? '').replace(/\s+/g, '')
+// Gmail sends as the account itself; only the name shown can change.
+const fromName = Deno.env.get('INVITE_FROM_NAME') ?? 'Visitario'
+const mailer = gmailUser && gmailPassword
+  ? nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: { user: gmailUser, pass: gmailPassword },
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 15_000,
+    })
+  : null
 const appUrl = (Deno.env.get('APP_URL') ?? 'https://visitario.vercel.app').replace(/\/$/, '')
 
 const ROLE: Record<string, string> = { merchandiser: 'activador', seller: 'vendedor', supervisor: 'supervisor', admin: 'admin de la empresa' }
@@ -69,19 +85,16 @@ function message(m: Mail, link: string) {
 
 /** Sends the email; returns null when it went out, or why it did not. */
 async function send(m: Mail, link: string): Promise<string | null> {
-  if (!resendKey || !from) return 'not_configured'
+  if (!mailer) return 'not_configured'
   const { subject, text, html } = message(m, link)
   try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      signal: AbortSignal.timeout(15000),
-      headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to: [m.email], subject, text, html }),
-    })
-    if (res.ok) return null
-    const detail = await res.json().catch(() => null) as { message?: string } | null
-    return `rejected: ${detail?.message ?? res.status}`.slice(0, 200)
-  } catch {
+    await mailer.sendMail({ from: { name: fromName, address: gmailUser }, to: m.email, subject, text, html })
+    return null
+  } catch (e) {
+    const err = e as { code?: string; responseCode?: number; message?: string }
+    // EAUTH: Gmail refused the user or the app password. Other codes: network or limits.
+    if (err.code === 'EAUTH') return 'auth'
+    if (err.responseCode) return `rejected: ${err.responseCode} ${err.message ?? ''}`.slice(0, 200)
     return 'unreachable'
   }
 }

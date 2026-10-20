@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { inviteError, inviteMessage, inviteState, rolesPhrase, timeLeft, toLinkPreview } from './invitations'
+import { inviteError, inviteMessage, sendErrorText, inviteState, rolesPhrase, timeLeft, toLinkPreview } from './invitations'
 
 const now = new Date('2026-10-18T22:00:00Z')
 const at = (min: number) => new Date(now.getTime() + min * 60_000).toISOString()
@@ -30,6 +30,13 @@ describe('invitations', () => {
       .toMatchObject({ state: 'pending', company: 'Panda', dniEnd: '333', hasAccount: false })
     expect(toLinkPreview({ state: 'weird' }).state).toBe('invalid')
     expect(toLinkPreview(null).state).toBe('invalid')
+  })
+
+  it('why the email did not go out', () => {
+    expect(sendErrorText('not_configured')).toMatch(/no está configurado/)
+    expect(sendErrorText('rejected')).toMatch(/Gmail no aceptó/)
+    expect(sendErrorText('unreachable')).toMatch(/conectar con Gmail/)
+    expect(sendErrorText(null)).toBe('')
   })
 
   it('errors in Spanish', () => {

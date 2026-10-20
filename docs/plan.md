@@ -125,6 +125,6 @@ Cómo quedó: Directorio → Reputación (últimos 30 o 90 días): índice de tr
 - [x] El admin ve las invitaciones abiertas (enviada con cuánto falta, no se pudo enviar, vencida) y las reenvía con un enlace nuevo, copia el enlace o las cancela (e2e).
 - [x] Si el mail no sale, la invitación igual se crea y el admin manda el enlace por WhatsApp (e2e).
 - [x] En el perfil aparecen las invitaciones abiertas para mi DNI, también sin el mail (base + e2e).
-- [ ] Activar Resend (dominio verificado + `RESEND_API_KEY` e `INVITE_FROM`) y probar con un mail real.
+- [ ] Activar el envío por Gmail (`GMAIL_USER` y `GMAIL_APP_PASSWORD`, contraseña de aplicación de visitarioadmin@gmail.com) y probar con un mail real.
 
 Fuera de esta versión: migración del MVP, exportar informes, reportes con diseño, push, cobro automático, acceso para marcas.
