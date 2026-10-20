@@ -7,6 +7,7 @@ import { useWorkContext } from '@/features/workday/context'
 import { teamDayQuery } from '@/features/team/api/queries'
 import { useCatalogs } from '@/features/workday/api/queries'
 import { pickable } from '@/features/workday/store-tags'
+import { useAddSeller, useCanAddSellers } from '@/features/workday/api/sellers'
 import { formatsQuery } from '@/features/import/api/import'
 import { draftRows, emptyDraft, useDraft, useNames, type Draft } from '@/features/import/draft'
 import { SourceStep } from './SourceStep'
@@ -36,6 +37,8 @@ export function ImportPage({ date: requested, person }: ImportSearch) {
   const catalogs = useCatalogs(ctx?.companyId ?? '').data
   const tags = useMemo(() => ({ sellers: pickable(catalogs?.sellers, null), channels: pickable(catalogs?.channels, null) }), [catalogs])
   const rows = useMemo(() => draftRows(draft, tags), [draft, tags])
+  const canAdd = useCanAddSellers(ctx?.companyId ?? '')
+  const newSeller = useAddSeller(ctx?.companyId ?? '')
   const names = useNames(rows, people, draft.mapping.aliases)
   if (!ctx) return null
 
@@ -45,7 +48,7 @@ export function ImportPage({ date: requested, person }: ImportSearch) {
     setStep(next)
   }
 
-  if (step === 1) return <SourceStep companyId={ctx.companyId} tags={tags} draft={draft} formats={formats.data ?? []} onCancel={() => void toAssign()} onRead={read} />
+  if (step === 1) return <SourceStep companyId={ctx.companyId} tags={tags} onAddSeller={canAdd ? (name) => newSeller.mutateAsync(name) : undefined} draft={draft} formats={formats.data ?? []} onCancel={() => void toAssign()} onRead={read} />
   if (step === 2) {
     return (
       <ColumnsStep

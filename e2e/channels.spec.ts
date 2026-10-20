@@ -49,7 +49,7 @@ test('an unknown @name is flagged and the store goes without it', async ({ page 
   await page.getByRole('button', { name: 'Agregar locales' }).click()
   const sheet = page.getByRole('dialog', { name: 'Agregar a la jornada de Lucía' })
   await sheet.getByRole('radio', { name: 'Pegar varias' }).click()
-  await sheet.getByLabel('Direcciones').fill('Cuba 2200 @Pedro')
+  await sheet.getByLabel('Direcciones').fill('Cuba 2200 @Pedro\nMoldes 1365')
   await expect(sheet.getByText('No encontramos @Pedro.', { exact: false })).toBeVisible()
 })
 
@@ -95,7 +95,8 @@ test('the directory shows and filters by channel and seller; the store edits the
   await page.getByRole('button', { name: 'Editar datos' }).click()
   const sheet = page.getByRole('dialog', { name: 'Editar datos' })
   await sheet.getByLabel('Canal').selectOption({ label: 'Autoservicio' })
-  await sheet.getByLabel('Vendedor').selectOption({ label: 'Martín Sosa' })
+  await sheet.getByLabel('Vendedor').fill('mar')
+  await sheet.getByRole('option', { name: 'Martín Sosa' }).click()
   await sheet.getByRole('button', { name: 'Guardar' }).click()
   await expect.poll(() => state.stores?.find((x) => x.id === 's2')).toMatchObject({ channel_id: 10, seller_id: 2 })
 })
@@ -115,4 +116,24 @@ test('a seller opens Visitario on their clients', async ({ page }, info) => {
   await expect(page.getByText('Hoy · Agustín')).toBeVisible()
   await expect(page.getByText('Sin activaciones')).toBeVisible()
   await page.screenshot({ path: `test-results/clients-${info.project.name}.png`, fullPage: true })
+})
+
+test('an admin adds a seller right from the @ list, and picks one for a single store', async ({ page }) => {
+  const state: FakeState = {
+    workday: null, visits: [], uploads: [], memberships: as(['supervisor', 'admin']), catalogs: { ...catalogs(), seller: [] },
+    people: [{ id: 'p2', first_name: 'Lucía', last_name: 'Gómez' }],
+  }
+  await installFakeSupabase(page, state, 'supervisor')
+  await page.goto('/s/assign?date=2026-10-16')
+  await page.getByRole('button', { name: 'Agregar locales' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Agregar a la jornada de Lucía' })
+  await sheet.getByLabel('Vendedor').fill('Flo')
+  await expect(sheet.getByRole('option', { name: 'Agregar «Flo» como vendedor' })).toBeVisible()
+  await sheet.getByRole('radio', { name: 'Pegar varias' }).click()
+  const text = sheet.getByLabel('Direcciones')
+  await text.pressSequentially('Cuba 2200 @Florencia')
+  await sheet.getByRole('option', { name: 'Agregar «Florencia» como vendedor' }).click()
+  await expect.poll(() => state.catalogs?.seller?.map((x) => x.name)).toEqual(['Florencia'])
+  await expect(text).toHaveValue('Cuba 2200 @Florencia ')
+  await expect(sheet.getByText(/1 con vendedor/)).toBeVisible()
 })

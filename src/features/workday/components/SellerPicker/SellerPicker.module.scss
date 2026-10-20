@@ -1,0 +1,21 @@
+@use '@/styles/abstracts' as *;
+
+.picker {
+  @include flex(column, $gap: space(1.5));
+  min-width: 0;
+}
+
+.clear {
+  @include center;
+  @include transition-colors;
+  width: 44px;
+  height: 44px;
+  border-radius: $radius-sm;
+  color: $color-ink-subtle;
+  cursor: pointer;
+
+  @include hover {
+    background: $color-muted;
+    color: $color-ink;
+  }
+}

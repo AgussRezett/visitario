@@ -37,7 +37,7 @@ test('Martín imports the spreadsheet: columns, names, review, into five drafts'
   await expect(page.getByLabel('Qué hay en CLIENTE')).toHaveValue('customer_number')
   await expect(page.getByLabel('Qué hay en DOMICILIO')).toHaveValue('address')
   await expect(page.getByLabel('Qué hay en REPOSITOR')).toHaveValue('merchandiser')
-  await expect(page.getByLabel('Qué hay en VENDEDOR')).toHaveValue('ignore')
+  await expect(page.getByLabel('Qué hay en VENDEDOR')).toHaveValue('seller')
   await expect(page.getByText('¿Es Nicolás Ferrari?')).toBeVisible()
   await page.getByRole('button', { name: 'Confirmar' }).click()
   await expect(page.getByText('¿Es Nicolás Ferrari?')).toHaveCount(0)
