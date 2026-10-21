@@ -1,0 +1,207 @@
+@use '@/styles/abstracts' as *;
+
+// No operativo yet: one quiet row that says what it is for
+.invite {
+  @include surface;
+  @include flex(row, $gap: space(3), $align: center);
+  flex-wrap: wrap;
+  padding: space(3.5) space(4);
+}
+
+.invite-text {
+  @include flex(column, $gap: space(0.5));
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.card {
+  @include surface;
+  @include flex(column, $gap: space(3.5));
+  padding: space(4);
+  border-color: $color-lime;
+  box-shadow: inset 0 0 0 1px $color-lime;
+}
+
+.head {
+  @include flex(row, $gap: space(3), $align: flex-start);
+}
+
+.icon {
+  @include icon-tile(space(10), $radius-sm);
+  background: $color-lime-soft;
+  color: $color-lime-soft-ink;
+
+  @include dark {
+    background: $color-muted;
+    color: $color-lime;
+  }
+}
+
+.head-text {
+  @include flex(column, $gap: space(0.5));
+  min-width: 0;
+}
+
+.eyebrow {
+  @include eyebrow;
+  @include flex(row, $gap: space(1.5), $align: center);
+  color: $color-done-ink;
+}
+
+// Pulses while the operativo is live
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: $radius-full;
+  background: $color-done;
+  animation: pulse 1.6s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.title {
+  @include heading(title);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.members {
+  @include flex(column, $gap: space(2));
+  padding: 0;
+  margin: 0;
+  list-style: none;
+
+  @include up(sm) {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+}
+
+.member {
+  @include flex(row, $gap: space(2.5), $align: center);
+  min-width: 0;
+}
+
+.avatar {
+  position: relative;
+  flex: none;
+}
+
+// Online right now (its presence arrived)
+.dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 11px;
+  height: 11px;
+  border: 2px solid $color-card;
+  border-radius: $radius-full;
+  background: $color-control;
+
+  &[data-on] {
+    background: $color-done;
+  }
+}
+
+.member-text {
+  @include flex(column);
+  min-width: 0;
+}
+
+.member-name {
+  @include text(small);
+  font-weight: $weight-bold;
+  overflow-wrap: anywhere;
+}
+
+.host {
+  font-weight: $weight-medium;
+  color: $color-ink-subtle;
+}
+
+.share {
+  @include flex(column, $gap: space(2));
+  padding-top: space(3);
+  border-top: 1px solid $color-line;
+}
+
+.actions {
+  @include flex(row, $gap: space(2), $align: center);
+  flex-wrap: wrap;
+
+  > * {
+    flex: 1 1 auto;
+
+    @include up(lg) {
+      flex: 0 0 auto;
+    }
+  }
+}
+
+.cancel {
+  @include up(lg) {
+    flex: 1;
+  }
+}
+
+// Bringing my stops: checkboxes with the store
+.bring-list {
+  @include surface;
+  @include flex(column);
+  padding: space(1);
+  margin: 0;
+  list-style: none;
+}
+
+.bring-row {
+  @include flex(row, $gap: space(3), $align: center);
+  @include transition-colors;
+  width: 100%;
+  min-height: 52px;
+  padding: space(2) space(3);
+  border-radius: $radius-sm;
+  background: transparent;
+  text-align: left;
+  color: $color-ink;
+  cursor: pointer;
+
+  @include hover {
+    background: $color-muted;
+  }
+}
+
+.bring-check {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid $color-control;
+  border-radius: $radius-sm;
+
+  &[data-on] {
+    border-color: $color-forest;
+    background: $color-forest;
+    box-shadow: inset 0 0 0 4px $color-card;
+  }
+}
+
+.bring-text {
+  @include flex(column);
+  min-width: 0;
+}
+
+.bring-name {
+  font-weight: $weight-bold;
+  overflow-wrap: anywhere;
+}

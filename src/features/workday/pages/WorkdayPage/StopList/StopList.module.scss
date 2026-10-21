@@ -162,3 +162,17 @@
 .rapport {
   padding-top: space(1);
 }
+
+// A stop of the operativo, and who of the team is there now
+.team {
+  @include flex(row, $gap: space(1), $align: center);
+  @include text(label);
+  flex-wrap: wrap;
+  font-weight: $weight-bold;
+  color: $color-done-ink;
+}
+
+.here {
+  font-weight: $weight-extrabold;
+  color: $color-active-ink;
+}

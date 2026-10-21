@@ -1,0 +1,103 @@
+@use '@/styles/abstracts' as *;
+
+.picker {
+  @include flex(column, $gap: space(2));
+  min-width: 0;
+}
+
+.search {
+  @include flex(row, $gap: space(2), $align: center);
+  height: $control-height;
+  padding-inline: space(3.5);
+  border: 1.5px solid $color-control;
+  border-radius: $radius-md;
+  background: $color-card;
+  color: $color-ink-subtle;
+
+  &:focus-within {
+    border-color: $color-forest;
+  }
+
+  input {
+    @include text(base);
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: $color-ink;
+  }
+}
+
+.list {
+  @include surface;
+  @include flex(column);
+  max-height: 320px;
+  overflow-y: auto;
+  padding: space(1);
+  margin: 0;
+  list-style: none;
+}
+
+.person {
+  @include flex(row, $gap: space(3), $align: center);
+  @include transition-colors;
+  width: 100%;
+  min-height: 52px;
+  padding: space(2) space(3);
+  border-radius: $radius-sm;
+  background: transparent;
+  text-align: left;
+  color: $color-ink;
+  cursor: pointer;
+
+  @include hover {
+    background: $color-muted;
+  }
+
+  &[aria-checked='true']:not(:disabled) {
+    background: $color-lime-soft;
+
+    @include dark {
+      background: $color-muted;
+    }
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  font-weight: $weight-bold;
+  overflow-wrap: anywhere;
+}
+
+.check {
+  @include center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid $color-control;
+  border-radius: $radius-sm;
+
+  &[data-on] {
+    border-color: $color-forest;
+    background: $color-forest;
+    color: $color-white;
+  }
+}
+
+.lock {
+  @include text(label);
+  flex: none;
+  color: $color-ink-subtle;
+}
+
+.empty {
+  @include text(small);
+  padding: space(3);
+  color: $color-ink-muted;
+}

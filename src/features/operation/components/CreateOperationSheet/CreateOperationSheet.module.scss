@@ -1,0 +1,14 @@
+@use '@/styles/abstracts' as *;
+
+.lead {
+  @include text(small);
+  margin: 0;
+  color: $color-ink-muted;
+}
+
+.cancel {
+  // Side by side on desktop; on phones the footer is a column and flex: 1 would squash it.
+  @include up(lg) {
+    flex: 1;
+  }
+}
