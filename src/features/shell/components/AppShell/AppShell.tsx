@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link, useMatches } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { Building2, UserRound } from 'lucide-react'
 import clsx from 'clsx'
 import { Logo } from '@/ui/Logo'
@@ -12,6 +13,7 @@ import { RoleSwitcher } from '@/features/shell/components/RoleSwitcher'
 import { ViewSwitcher } from '@/features/shell/components/ViewSwitcher'
 import { UpdateBanner } from '@/features/shell/components/UpdateBanner'
 import { InstallOffer } from '@/features/install/components/InstallOffer'
+import { useLive } from '@/features/live/live'
 import { SyncStatus } from '@/features/sync/components/SyncStatus'
 import { useNavBadges } from '@/features/shell/useNavBadges'
 import { MainOverlayContext } from './main-overlay-context'
@@ -32,6 +34,7 @@ const activeProps = { className: styles.active }
 export function AppShell({ me, active, children }: Props) {
   const [overlay, setOverlay] = useState<HTMLElement | null>(null)
   const badges = useNavBadges(me.person.id, active)
+  useLive(useQueryClient(), active?.companyId ?? null)
   const badge = (slug: string) => (badges[slug] ? <span className={styles.badge} aria-label={`${badges[slug]} pendientes`}>{badges[slug]}</span> : null)
   const sections = active ? SECTIONS[active.role] : []
   const name = `${me.person.firstName} ${me.person.lastName}`
