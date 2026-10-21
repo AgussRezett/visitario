@@ -7,7 +7,11 @@ import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
 import { Refreshing } from '@/ui/Refreshing'
 import type { WorkContext } from '@/features/workday/context'
-import { dayMetricsQuery, resumableQuery, useCatalogs, visitsQuery, type Workday } from '@/features/workday/api/queries'
+import { dayMetricsQuery, resumableQuery, useCatalogs, type Workday } from '@/features/workday/api/queries'
+import { useOperationDay } from '@/features/operation/useOperationDay'
+import { useOperationPresence } from '@/features/operation/presence'
+import { useLocationError } from '@/features/operation/location'
+import { OperationCard } from '@/features/operation/components/OperationCard'
 import { useVisitList } from '@/features/sync/hooks'
 import { useStoreReputation } from '@/features/reputation/api'
 import { AddAddressSheet } from '../AddAddressSheet'
@@ -33,7 +37,9 @@ interface DayViewProps {
 /** The day's stores with the next one up front (wireframes Main / AD04). The header lives in the page. */
 export function DayView({ ctx, workday, sheet, onSheet }: DayViewProps) {
   const [filter, setFilter] = useState<StopFilter>('all')
-  const visits = useQuery({ ...visitsQuery(workday.id, ctx.personId), placeholderData: keepPreviousData })
+  const day = useOperationDay(ctx.companyId, ctx.personId, workday, workday.workDate)
+  const presence = useOperationPresence(day.op && !day.op.endedAt ? day.op.id : null, day.works ? { personId: ctx.personId, firstName: ctx.firstName } : null)
+  const locationError = useLocationError()
   const resumable = useQuery({ ...resumableQuery(ctx.companyId, workday.workDate), placeholderData: keepPreviousData })
   const totals = useQuery({ ...dayMetricsQuery(ctx.companyId, ctx.personId, workday.workDate), placeholderData: keepPreviousData })
   const setAdding = (open: boolean) => onSheet(open ? 'add' : null)
@@ -42,7 +48,12 @@ export function DayView({ ctx, workday, sheet, onSheet }: DayViewProps) {
   const resuming = sheet === 'resume'
   const catalogs = useCatalogs(ctx.companyId)
 
-  const list = useVisitList(visits.data) ?? []
+  const list = useVisitList(day.visits) ?? []
+  const myPending = list.filter((v) => !day.operationStops.has(v.id) && v.workStatus === 'pending')
+  const operation = (
+    <OperationCard companyId={ctx.companyId} meId={ctx.personId} date={workday.workDate} op={day.op} works={day.works} isHost={day.isHost}
+      stops={list.filter((v) => day.operationStops.has(v.id))} myPending={myPending} presence={presence} locationError={locationError} />
+  )
   const reputation = useStoreReputation(ctx.companyId, list.map((v) => v.store.id))
   const progress = workdayProgress(list)
   const fixes = list.filter((v) => v.reviewStatus === 'needs_fix')
@@ -52,18 +63,18 @@ export function DayView({ ctx, workday, sheet, onSheet }: DayViewProps) {
 
   const sheets = (
     <>
-      <AddAddressSheet open={adding} onClose={() => setAdding(false)} ctx={ctx} workdayId={workday.id} date={workday.workDate} />
+      <AddAddressSheet open={adding} onClose={() => setAdding(false)} ctx={ctx} workdayId={day.addTo ?? workday.id} date={workday.workDate} />
       <ResumeSheet open={resuming} onClose={() => setResuming(false)} ctx={ctx} date={workday.workDate} workdayId={workday.id} visits={pending} onDone={() => setResuming(false)} />
     </>
   )
 
-  if (visits.isPending) return <DaySkeleton />
-  if (visits.isError) {
+  if (day.isPending) return <DaySkeleton />
+  if (day.isError) {
     return (
       <>
         <Banner tone="error" title="No pudimos cargar los locales">
           <span>Revisá la conexión y volvé a intentar.</span>
-          <Button variant="secondary" size="sm" className={styles.retry} onClick={() => visits.refetch()}>Reintentar</Button>
+          <Button variant="secondary" size="sm" className={styles.retry} onClick={() => void day.refetch()}>Reintentar</Button>
         </Banner>
       </>
     )
@@ -72,6 +83,7 @@ export function DayView({ ctx, workday, sheet, onSheet }: DayViewProps) {
   if (list.length === 0) {
     return (
       <>
+        {operation}
         <section className={styles.empty}>
           <span className={styles.emptyIcon}><MapPinPlus size={28} aria-hidden /></span>
           <h2 className={styles.emptyTitle}>Tu jornada está abierta y vacía</h2>
@@ -93,7 +105,7 @@ export function DayView({ ctx, workday, sheet, onSheet }: DayViewProps) {
   }
 
   return (
-    <Refreshing active={visits.isPlaceholderData}>
+    <Refreshing active={day.isPlaceholderData}>
       <div className={styles.layout}>
         <div className={styles.main}>
           {fixes.length ? (
@@ -105,9 +117,10 @@ export function DayView({ ctx, workday, sheet, onSheet }: DayViewProps) {
               </span>
             </Banner>
           ) : null}
+          {operation}
           <DayHero progress={progress} next={next} stop={next ? list.indexOf(next) + 1 : 0} date={workday.workDate} />
           <DayStats visits={list} />
-          <StopList visits={shown} all={list} filter={filter} onFilter={setFilter} reputation={reputation.data} />
+          <StopList visits={shown} all={list} filter={filter} onFilter={setFilter} reputation={reputation.data} operationStops={day.operationStops} presence={presence} meId={ctx.personId} />
           <div className={styles.phoneOnly}>
             <ResumePanel items={pending} onResume={() => setResuming(true)} />
           </div>

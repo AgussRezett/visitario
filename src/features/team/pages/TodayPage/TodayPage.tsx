@@ -15,6 +15,9 @@ import { useWorkContext } from '@/features/workday/context'
 import { reviewQuery, shiftOf, shiftsQuery, teamDayQuery } from '@/features/team/api/queries'
 import { DaySegments } from '@/features/team/components/DaySegments'
 import { MemberAlerts } from '@/features/team/components/MemberAlerts'
+import { sharedRepeats } from '@/domain/operations'
+import { useDayOperations } from '@/features/operation/api'
+import { OperationsBoard } from '@/features/operation/components/OperationsBoard'
 import styles from './TodayPage.module.scss'
 
 /** The team's day: progress per merchandiser, what is waiting for review, and alerts (S01 / SM01). */
@@ -27,12 +30,16 @@ export function TodayPage({ date: requested }: { date?: string }) {
   const team = useQuery({ ...teamDayQuery(ctx?.companyId ?? '', date), enabled: on, placeholderData: keepPreviousData })
   const queue = useQuery({ ...reviewQuery(ctx?.companyId ?? '', ctx?.personId ?? '', 'to_review', today), enabled: on })
   const shifts = useQuery({ ...shiftsQuery(ctx?.companyId ?? ''), enabled: on })
+  const ops = useDayOperations(ctx?.companyId ?? '', date, on)
   if (!ctx) return null
 
   const goTo = (d: string) => navigate({ to: '/s/today', search: d === today ? {} : { date: d } })
   const now = new Date()
   const members = team.data ?? []
-  const totals = teamTotals(members)
+  // A visit of an operativo counts in each member's row; the team's sums count it once.
+  const repeats = sharedRepeats(ops.data ?? [], members.map((m) => m.personId))
+  const raw = teamTotals(members)
+  const totals = { ...raw, total: raw.total - repeats.total, visited: raw.visited - repeats.visited, needsFix: raw.needsFix - repeats.needsFix, refused: raw.refused - repeats.refused }
   const shift = (m: TeamMember) => shiftOf(shifts.data, m.personId)
   const alertsOf = (m: TeamMember) => memberAlerts(m, now, shift(m), date)
   /** Activity in words; before the hours start, when they start. */
@@ -66,7 +73,7 @@ export function TodayPage({ date: requested }: { date?: string }) {
           <div className={styles.kpi}>
             <span className={styles.kpiLabel}>Con resultado</span>
             <b className={styles.kpiValue}>{totals.visited}<span className={styles.kpiOf}> / {totals.total}</span></b>
-            <DaySegments m={members.reduce((a, m) => ({ total: a.total + m.total, visited: a.visited + m.visited, approved: a.approved + m.approved, needsFix: a.needsFix + m.needsFix, refused: a.refused + m.refused, closed: a.closed + m.closed, inProgress: a.inProgress + m.inProgress }), { total: 0, visited: 0, approved: 0, needsFix: 0, refused: 0, closed: 0, inProgress: 0 })} />
+            <DaySegments m={members.reduce((a, m) => ({ total: a.total + m.total, visited: a.visited + m.visited, approved: a.approved + m.approved, needsFix: a.needsFix + m.needsFix, refused: a.refused + m.refused, closed: a.closed + m.closed, inProgress: a.inProgress + m.inProgress }), { total: -repeats.total, visited: -repeats.visited, approved: -repeats.approved, needsFix: -repeats.needsFix, refused: -repeats.refused, closed: -repeats.closed, inProgress: -repeats.inProgress })} />
           </div>
           <Link to="/s/review" className={styles.kpi}>
             <span className={styles.kpiLabel}>Por revisar</span>
@@ -95,6 +102,8 @@ export function TodayPage({ date: requested }: { date?: string }) {
             {[m.lastPlace && `Último local: ${m.lastPlace}`, m.syncPending ? `${m.syncPending} cambios sin subir` : null].filter(Boolean).join(' · ') || 'Le quedan locales por visitar.'}
           </Banner>
         ))}
+
+        <OperationsBoard companyId={ctx.companyId} meId={ctx.personId} ops={ops.data ?? []} />
 
         <div className={styles.columns}>
           <section className={styles.team} aria-label="Activadores">

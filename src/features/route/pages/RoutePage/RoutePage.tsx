@@ -5,13 +5,14 @@ import { formatLongDate, todayInArgentina } from '@/domain/dates'
 import { applyRouteOrder, approximateRoute, inRoute, type Point, type Stop } from '@/domain/route'
 import { Banner } from '@/ui/Banner'
 import { useWorkContext } from '@/features/workday/context'
-import { visitsQuery, workdayQuery, type Visit } from '@/features/workday/api/queries'
+import { workdayQuery, type Visit } from '@/features/workday/api/queries'
 import { useVisitList } from '@/features/sync/hooks'
 import { visitChanges } from '@/features/sync/changes'
 import { DaySkeleton } from '@/features/workday/components/Skeletons'
 import { streetRoute } from '../../api'
 import { RouteSetup, type RouteOptions } from './RouteSetup'
 import { RouteResult, type RoutePlan } from './RouteResult'
+import { useOperationDay } from '@/features/operation/useOperationDay'
 import styles from './RoutePage.module.scss'
 
 const located = (v: Visit) => v.store.lat !== null && v.store.lng !== null
@@ -25,8 +26,9 @@ export function RoutePage({ date: requested }: { date?: string }) {
   const companyId = ctx?.companyId ?? ''
   const personId = ctx?.personId ?? ''
   const workday = useQuery({ ...workdayQuery(companyId, personId, date), enabled: Boolean(ctx) })
-  const visits = useQuery({ ...visitsQuery(workday.data?.id ?? '', personId), enabled: Boolean(workday.data) })
-  const day = useVisitList(visits.data)
+  // With an operativo, its stops are on my route too.
+  const visits = useOperationDay(companyId, personId, workday.data, date)
+  const day = useVisitList(visits.visits)
 
   const todo = useMemo(() => (day ?? []).filter(inRoute), [day])
   const missing = todo.filter((v) => !located(v))

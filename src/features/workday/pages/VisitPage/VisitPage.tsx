@@ -22,6 +22,7 @@ import { ConsentSection } from './ConsentSection'
 import { DisplaysSection } from './DisplaysSection'
 import { WorkSection } from './WorkSection'
 import { MessagesSection } from './MessagesSection'
+import { OperationHere } from '@/features/operation/components/OperationHere'
 import { storeTags } from '@/features/workday/store-tags'
 import { FinishBar } from './FinishBar'
 import { RemoveStop } from './RemoveStop'
@@ -116,6 +117,7 @@ function VisitBody(props: {
         </div>
 
         <div className={styles.content}>
+          <OperationHere visit={v} meId={meId} firstName={firstName} />
           <StoreInfo visit={v} tags={tags} />
           <CorrectionPanel
             visit={v}

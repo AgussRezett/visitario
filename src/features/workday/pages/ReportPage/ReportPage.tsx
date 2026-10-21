@@ -12,11 +12,12 @@ import { Refreshing } from '@/ui/Refreshing'
 import { Table } from '@/ui/Table'
 import { TextArea } from '@/ui/TextArea'
 import { useWorkContext } from '@/features/workday/context'
-import { dayMetricsQuery, historyQuery, useCatalogs, visitsQuery, workdayQuery } from '@/features/workday/api/queries'
+import { dayMetricsQuery, historyQuery, useCatalogs, workdayQuery } from '@/features/workday/api/queries'
 import { WeekStrip } from '@/features/workday/components/WeekStrip'
 import { useVisitList } from '@/features/sync/hooks'
 import { ReportSkeleton } from '@/features/workday/components/Skeletons'
 import { storeTags } from '@/features/workday/store-tags'
+import { useOperationDay } from '@/features/operation/useOperationDay'
 import styles from './ReportPage.module.scss'
 
 /** The day's report, generated from the visits, editable and ready to copy (wireframes A16 / AD13). */
@@ -29,7 +30,8 @@ export function ReportPage({ date: requested }: { date?: string }) {
   const personId = ctx?.personId ?? ''
   // While another day loads, the previous one stays on screen (faded) instead of a skeleton.
   const workday = useQuery({ ...workdayQuery(companyId, personId, date), enabled: on, placeholderData: keepPreviousData })
-  const visits = useQuery({ ...visitsQuery(workday.data?.id ?? '', personId), enabled: Boolean(workday.data), placeholderData: keepPreviousData })
+  // With an operativo, its stops count in my report too.
+  const visits = useOperationDay(companyId, personId, workday.data, date)
   const metrics = useQuery({ ...dayMetricsQuery(companyId, personId, date), enabled: on, placeholderData: keepPreviousData })
   const switching = workday.isPlaceholderData || visits.isPlaceholderData || metrics.isPlaceholderData
   const shownDate = workday.data?.workDate ?? date
@@ -37,7 +39,7 @@ export function ReportPage({ date: requested }: { date?: string }) {
   const catalogs = useCatalogs(companyId)
   const { copied, copy } = useCopy()
 
-  const dayVisits = useVisitList(visits.data) // includes changes not sent yet
+  const dayVisits = useVisitList(visits.visits) // includes changes not sent yet
   const reportVisits = useMemo(
     () => (dayVisits ?? []).map((v) => ({ address: v.store.address, added: v.source === 'added', workStatus: v.workStatus, channel: storeTags(catalogs.data, v.store).channel })),
     [dayVisits, catalogs.data],

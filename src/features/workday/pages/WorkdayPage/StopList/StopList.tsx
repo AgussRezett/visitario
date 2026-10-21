@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Camera, ChevronRight, Clock, LayoutGrid } from 'lucide-react'
+import { Camera, ChevronRight, Clock, LayoutGrid, Users } from 'lucide-react'
 import clsx from 'clsx'
 import { formatHour, formatTime } from '@/domain/dates'
 import { isVisited, type WorkStatus } from '@/domain/visit'
@@ -7,6 +7,7 @@ import { Segmented } from '@/ui/Segmented'
 import { StatusChip } from '@/ui/StatusChip'
 import { Table } from '@/ui/Table'
 import type { StoreReputation } from '@/domain/reputation'
+import { namesList, othersAt, type Presence } from '@/domain/operations'
 import { useCatalogs, type Visit } from '@/features/workday/api/queries'
 import { StoreTagsLine } from '@/features/workday/components/StoreTagsLine'
 import { storeTags } from '@/features/workday/store-tags'
@@ -43,14 +44,27 @@ interface StopListProps {
   onFilter: (f: StopFilter) => void
   /** How each store usually receives merchandisers, by store id. */
   reputation?: Map<string, StoreReputation>
+  /** The operativo's stops, and who of its members is at each one now. */
+  operationStops?: Set<string>
+  presence?: Presence[]
+  meId?: string
 }
 
 /** The day's stores: cards on phones, a table on desktop, same filter. */
-export function StopList({ visits, all, filter, onFilter, reputation }: StopListProps) {
+export function StopList({ visits, all, filter, onFilter, reputation, operationStops, presence = [], meId = '' }: StopListProps) {
   const todo = all.filter((v) => !isVisited(v.workStatus)).length
   const stop = (v: Visit) => all.indexOf(v) + 1
   const catalogs = useCatalogs(all[0]?.companyId ?? '').data
   const tagsOf = (v: Visit) => storeTags(catalogs, v.store)
+  const team = (v: Visit) => {
+    if (!operationStops?.has(v.id)) return null
+    const there = othersAt(presence, v.store.id, meId).map((p) => p.firstName)
+    return (
+      <span className={styles.team}>
+        <Users size={14} aria-hidden />Operativo{there.length ? <b className={styles.here}> · {namesList(there)} {there.length === 1 ? 'está' : 'están'} acá</b> : null}
+      </span>
+    )
+  }
 
   return (
     <section className={styles.section} aria-label="Locales">
@@ -90,6 +104,7 @@ export function StopList({ visits, all, filter, onFilter, reputation }: StopList
                       <span className={styles.address}>
                         {[v.store.name ? v.store.address : null, v.store.area].filter(Boolean).join(' · ') || (v.source === 'added' ? 'Agregada por vos' : '')}
                       </span>
+                      {team(v)}
                       <StoreTagsLine tags={tagsOf(v)} />
                       {v.task ? <span className={styles.task}>{v.task}</span> : null}
                       {reputation?.get(v.store.id) ? <RapportLevel level={(reputation.get(v.store.id) as StoreReputation).level} className={styles.rapport} /> : null}
@@ -118,6 +133,7 @@ export function StopList({ visits, all, filter, onFilter, reputation }: StopList
                   <td>
                     <Link to="/visit/$visitId" params={{ visitId: v.id }} className={styles.cellLink}>
                       <span className={styles.cellName}>{v.store.name ?? v.store.address}</span>
+                      {team(v)}
                       <span className={styles.cellSub}>
                         {[v.store.name ? v.store.address : null, v.store.area, tagsOf(v).channel, tagsOf(v).seller && `vend. ${tagsOf(v).seller}`, v.source === 'added' ? 'agregada por vos' : null].filter(Boolean).join(' · ')}
                       </span>
