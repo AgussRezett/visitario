@@ -14,6 +14,7 @@ import { ViewSwitcher } from '@/features/shell/components/ViewSwitcher'
 import { UpdateBanner } from '@/features/shell/components/UpdateBanner'
 import { InstallOffer } from '@/features/install/components/InstallOffer'
 import { useLive } from '@/features/live/live'
+import { OperationLive } from '@/features/operation/OperationLive'
 import { SyncStatus } from '@/features/sync/components/SyncStatus'
 import { useNavBadges } from '@/features/shell/useNavBadges'
 import { MainOverlayContext } from './main-overlay-context'
@@ -88,6 +89,7 @@ export function AppShell({ me, active, children }: Props) {
 
       <UpdateBanner />
       <InstallOffer />
+      {active?.role === 'merchandiser' ? <OperationLive companyId={active.companyId} personId={me.person.id} firstName={me.person.firstName} /> : null}
 
       <main className={clsx(styles.main, immersive && styles.mainImmersive)} data-scroll>
         <MainOverlayContext.Provider value={overlay}>{children}</MainOverlayContext.Provider>

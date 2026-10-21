@@ -712,6 +712,48 @@ const tagDay = '2026-10-23'
 await as('martin', `select import_workdays($1, $2, $3)`, [panda, tagDay, JSON.stringify([{ merchandiser: agus, address: 'Cuba 2200', seller: flor, channel: autoservicio }])])
 check('An import row sets its store’s seller and channel', (await sys(`select seller_id, channel_id from store where address = 'Cuba 2200'`))[0].seller_id === flor)
 
+// Operativos: a shared day; each member works its stops and it counts in each one's day
+const opDay = '2026-10-30'
+await expectError('An operativo needs someone else', () => as('agus', `select create_operation($1, $2, '{}')`, [panda, opDay]), /at least two/)
+await expectError('Only merchandisers join', () => as('agus', `select create_operation($1, $2, array[$3]::uuid[])`, [panda, opDay, martin]), /not an active merchandiser/)
+await expectError('A merchandiser does not create one for someone else', () => as('agus', `select create_operation($1, $2, array[$3]::uuid[], $3)`, [panda, opDay, luciaId]), /someone else/)
+const op = (await as('agus', `select create_operation($1, $2, array[$3]::uuid[], null, 'Coto Cabildo') id`, [panda, opDay, luciaId]))[0].id
+const opRow = (await sys(`select workday_id, host_id from operation where id = $1`, [op]))[0]
+check('Agus hosts it: his day is the operativo, published', opRow.host_id === agus && (await sys(`select status::text s from workday where id = $1`, [opRow.workday_id]))[0].s === 'published')
+check('Lucía got her own day for that date', (await sys(`select count(*)::int n from workday where merchandiser_id = $1 and work_date = $2`, [luciaId, opDay]))[0].n === 1)
+await expectError('Nobody is in two operativos the same day', () => as('lucia', `select create_operation($1, $2, array[$3]::uuid[])`, [panda, opDay, agus]), /already in an operativo/)
+
+const [{ id: opS1 }] = await as('agus', `select add_visit($1, $2) id`, [opRow.workday_id, s1])
+const opS2 = (await as('lucia', `select add_visit($1, p_address => 'Cabildo 2280') id`, [opRow.workday_id]))[0].id
+check('Lucía adds a stop to the operativo (as added by her)', (await sys(`select source::text s, added_by from visit where id = $1`, [opS2]))[0].added_by === luciaId)
+check('Lucía sees the operativo’s stops', (await as('lucia', `select count(*)::int n from visit where workday_id = $1`, [opRow.workday_id]))[0].n === 2)
+await as('lucia', `update visit set work_status = 'in_progress' where id = $1`, [opS1])
+await as('lucia', `insert into photo (id, company_id, visit_id, kind, taken_at, bytes, width, height) values ('01926f00-0000-7000-8000-00000000e001', $1, $2, 'storefront', now(), 100, 10, 10)`, [panda, opS1])
+check('…and works them: arrival and photos are hers', (await sys(`select created_by from photo where id = '01926f00-0000-7000-8000-00000000e001'`))[0].created_by === luciaId)
+await expectError('…but does not review them', () => as('lucia', `update visit set review_status = 'approved' where id = $1`, [opS1]))
+check('Someone outside the operativo does not see it', (await as('nora', `select count(*)::int n from visit where workday_id = $1`, [opRow.workday_id]))[0].n === 0
+  && (await as('nora', `select count(*)::int n from operation`))[0].n === 0)
+check('Another company does not see it', (await as('beto', `select count(*)::int n from operation`))[0].n === 0)
+check('Agus’s supervisor sees it', (await as('martin', `select jsonb_array_length(day_operations($1, $2)) n`, [panda, opDay]))[0].n === 1)
+
+const luciaDay = (await as('lucia', `select total from daily_progress where merchandiser_id = $1 and work_date = $2`, [luciaId, opDay]))[0]
+check(`The operativo counts in Lucía’s day too (${JSON.stringify(luciaDay)})`, Number(luciaDay?.total) === 2)
+const opTeam = await as('carla', `select first_name, total, in_progress from team_day($1, $2)`, [panda, opDay])
+check('The team view counts it for both', opTeam.find((r) => r.first_name === 'Lucía')?.total === 2 && opTeam.find((r) => r.first_name === 'Agustín')?.total === 2)
+
+const own = (await as('lucia', `select add_visit((select id from workday where merchandiser_id = $1 and work_date = $2), p_address => 'Moldes 1365') id`, [luciaId, opDay]))[0].id
+check('Lucía brings a pending stop of her day', (await as('lucia', `select bring_to_operation($1, array[$2]::uuid[]) n`, [op, own]))[0].n === 1
+  && (await sys(`select deleted_at is not null d from visit where id = $1`, [own]))[0].d
+  && (await sys(`select count(*)::int n from visit v join store s on s.id = v.store_id where v.workday_id = $1 and s.address = 'Moldes 1365' and v.deleted_at is null`, [opRow.workday_id]))[0].n === 1)
+
+await expectError('The host does not leave: ends it', () => as('agus', `select leave_operation($1)`, [op]), /host ends/)
+await as('lucia', `select leave_operation($1)`, [op])
+await expectError('After leaving she no longer works its stops', () => as('lucia', `update visit set notes = 'x' where id = $1`, [opS2]))
+check('…but still sees what she did', (await as('lucia', `select count(*)::int n from visit where workday_id = $1`, [opRow.workday_id]))[0].n >= 2)
+await as('agus', `select add_operation_member($1, $2)`, [op, luciaId])
+await as('agus', `select end_operation($1)`, [op])
+check('Ended: Lucía can join another one that day', (await as('lucia', `select create_operation($1, $2, array[$3]::uuid[]) id`, [panda, opDay, agus]))[0].id !== op)
+
 // Password detection (Google users who later set a password)
 await sys(`update auth.users set encrypted_password = '$2a$10$hash' where id = $1`, [U.agus]);
 check('has_password is true for a user with a password', (await as('agus', `select has_password() v`))[0].v === true);

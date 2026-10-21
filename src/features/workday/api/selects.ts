@@ -38,6 +38,6 @@ export const STORE_SELECT = `
 
 // The team's reports: what each visit adds to its merchandiser's day.
 export const REPORT_VISIT_SELECT = `
-  id, merchandiser_id, sort_order, source, work_status, review_status,
+  id, workday_id, merchandiser_id, sort_order, source, work_status, review_status,
   store:store!visit_company_id_store_id_fkey (address, channel_id)
 `

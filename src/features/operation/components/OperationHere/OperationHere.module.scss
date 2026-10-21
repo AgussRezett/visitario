@@ -1,0 +1,16 @@
+@use '@/styles/abstracts' as *;
+
+.here {
+  @include flex(row, $gap: space(2), $align: center);
+  @include text(label);
+  margin: 0;
+  padding: space(2.5) space(3.5);
+  border-radius: $radius-md;
+  background: $color-done-soft;
+  font-weight: $weight-bold;
+  color: $color-done-ink;
+
+  svg {
+    flex: none;
+  }
+}

@@ -18,6 +18,8 @@ import { teamDayQuery } from '../../api/queries'
 import { teamReportQuery } from '../../api/reports'
 import { ReportsTable } from './ReportsTable'
 import { CHIP } from './chip'
+import { sharedRepeats } from '@/domain/operations'
+import { useDayOperations } from '@/features/operation/api'
 import styles from './ReportsPage.module.scss'
 
 /** What a person's row says under the name on the phone: what stands out that day. */
@@ -49,7 +51,19 @@ export function ReportsPage({ date: requested }: { date?: string }) {
         .filter((r) => r.total > 0),
     [team.data, data.data],
   )
-  const totals = teamTotals(rows)
+  // A shared visit (and its work) is in each member's report; the team's numbers count it once.
+  const ops = useDayOperations(companyId, date, Boolean(ctx))
+  const repeats = sharedRepeats(ops.data ?? [], rows.map((r) => r.personId))
+  const sum = teamTotals(rows)
+  const totals = {
+    ...sum,
+    total: sum.total - repeats.total,
+    visited: sum.visited - repeats.visited,
+    refused: sum.refused - repeats.refused,
+    approved: sum.approved - repeats.approved,
+    needsFix: sum.needsFix - repeats.needsFix,
+    metrics: Object.fromEntries(Object.entries(sum.metrics).map(([id, q]) => [id, q - (repeats.metrics[Number(id)] ?? 0)])),
+  }
   const reportOf = (personId: string) =>
     catalogs.data && data.data
       ? memberReport({

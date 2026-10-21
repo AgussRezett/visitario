@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { CalendarPlus, Check, ClipboardPaste, FileUp, History, Plus, Send } from 'lucide-react'
+import { CalendarPlus, Check, ClipboardPaste, FileUp, History, Plus, Send, Users } from 'lucide-react'
 import { addDays, formatLongDate, todayInArgentina } from '@/domain/dates'
 import { planLabel, type TeamMember } from '@/domain/team'
 import { initials } from '@/lib/format'
@@ -20,6 +20,9 @@ import { useAssign } from '@/features/team/api/mutations'
 import { PendingSheet } from './PendingSheet'
 import { StopRow } from './StopRow'
 import { storeTags } from '@/features/workday/store-tags'
+import { useDayOperations } from '@/features/operation/api'
+import { OperationsBoard } from '@/features/operation/components/OperationsBoard'
+import { CreateOperationSheet } from '@/features/operation/components/CreateOperationSheet'
 import styles from './AssignPage.module.scss'
 
 export interface AssignSearch {
@@ -36,6 +39,8 @@ export function AssignPage({ date: requested, person, imported }: AssignSearch) 
   const date = requested ?? addDays(todayInArgentina(), 1)
   const team = useQuery({ ...teamDayQuery(ctx?.companyId ?? '', date), enabled: Boolean(ctx), placeholderData: keepPreviousData })
   const assign = useAssign(ctx?.companyId ?? '')
+  const ops = useDayOperations(ctx?.companyId ?? '', date, Boolean(ctx))
+  const [creating, setCreating] = useState(false)
   const { confirm, dialog } = useConfirm()
   if (!ctx) return null
 
@@ -66,6 +71,9 @@ export function AssignPage({ date: requested, person, imported }: AssignSearch) 
           <Field label="Fecha" type="date" value={date} onChange={(e) => e.target.value && go({ date: e.target.value })} className={styles.dateField} />
           <Button variant="secondary" size="md" onClick={() => navigate({ to: '/s/import', search: { date, person: selected?.personId } })} className={styles.importButton}>
             <FileUp size={18} aria-hidden />Importar planilla
+          </Button>
+          <Button variant="secondary" size="md" onClick={() => setCreating(true)}>
+            <Users size={18} aria-hidden />Armar operativo
           </Button>
           <Button size="md" onClick={publish} disabled={!drafts.length} loading={assign.publish.isPending} className={styles.publishDesktop}>
             <Send size={18} aria-hidden />{drafts.length ? `Publicar a ${drafts.length} ${drafts.length === 1 ? 'activador' : 'activadores'}` : 'Nada para publicar'}
@@ -100,6 +108,7 @@ export function AssignPage({ date: requested, person, imported }: AssignSearch) 
       )}
 
       <Refreshing active={team.isPlaceholderData}>
+        <OperationsBoard companyId={ctx.companyId} meId={ctx.personId} ops={ops.data ?? []} />
         {selected ? <MemberPlan key={`${selected.personId}-${date}`} ctx={ctx} member={selected} date={date} /> : null}
       </Refreshing>
 
@@ -108,6 +117,7 @@ export function AssignPage({ date: requested, person, imported }: AssignSearch) 
           <Send size={18} aria-hidden />{drafts.length ? `Publicar a ${drafts.length} ${drafts.length === 1 ? 'activador' : 'activadores'}` : 'Nada para publicar'}
         </Button>
       </div>
+      <CreateOperationSheet open={creating} onClose={() => setCreating(false)} companyId={ctx.companyId} date={date} meId={null} />
       {dialog}
     </div>
   )

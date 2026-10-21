@@ -568,6 +568,78 @@ export type Database = {
           },
         ]
       }
+      operation: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          ended_at: string | null
+          host_id: string
+          id: string
+          name: string | null
+          updated_at: string
+          version: number
+          work_date: string
+          workday_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          ended_at?: string | null
+          host_id: string
+          id?: string
+          name?: string | null
+          updated_at?: string
+          version?: number
+          work_date: string
+          workday_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          ended_at?: string | null
+          host_id?: string
+          id?: string
+          name?: string | null
+          updated_at?: string
+          version?: number
+          work_date?: string
+          workday_id?: string
+        }
+        Relationships: []
+      }
+      operation_member: {
+        Row: {
+          added_by: string | null
+          company_id: string
+          joined_at: string
+          left_at: string | null
+          operation_id: string
+          person_id: string
+          workday_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          company_id: string
+          joined_at?: string
+          left_at?: string | null
+          operation_id: string
+          person_id: string
+          workday_id: string
+        }
+        Update: {
+          added_by?: string | null
+          company_id?: string
+          joined_at?: string
+          left_at?: string | null
+          operation_id?: string
+          person_id?: string
+          workday_id?: string
+        }
+        Relationships: []
+      }
       person: {
         Row: {
           auth_user_id: string | null
@@ -1872,6 +1944,15 @@ export type Database = {
           visits_30d: number
         }[]
       }
+      create_operation: {
+        Args: { p_company: string; p_date: string; p_host?: string; p_members: string[]; p_name?: string }
+        Returns: string
+      }
+      add_operation_member: { Args: { p_operation: string; p_person: string }; Returns: undefined }
+      leave_operation: { Args: { p_operation: string }; Returns: undefined }
+      end_operation: { Args: { p_operation: string }; Returns: undefined }
+      bring_to_operation: { Args: { p_operation: string; p_visits: string[] }; Returns: number }
+      day_operations: { Args: { p_company: string; p_date: string }; Returns: Json }
       store_directory_v2: {
         Args: {
           p_area?: string

@@ -1,0 +1,82 @@
+@use '@/styles/abstracts' as *;
+
+.wrap {
+  @include flex(column, $gap: space(1.5));
+}
+
+.map {
+  width: 100%;
+  height: 340px;
+  border: 1px solid $color-line;
+  border-radius: $radius-lg;
+  background: $color-muted;
+  overflow: hidden;
+
+  @include up(lg) {
+    height: 440px;
+  }
+
+  :global(.maplibregl-ctrl-group) {
+    border-radius: $radius-md;
+  }
+
+  :global(.maplibregl-ctrl-group button) {
+    @include square(36px);
+  }
+
+  :global(.maplibregl-popup-content) {
+    padding: space(2.5) space(3);
+    border-radius: $radius-md;
+    background: $color-card;
+    color: $color-ink;
+    font-family: $font-sans;
+    box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
+  }
+
+  :global(.maplibregl-popup-tip) {
+    border-top-color: $color-card;
+    border-bottom-color: $color-card;
+  }
+}
+
+.note {
+  @include text(tiny);
+  margin: 0;
+  color: $color-ink-subtle;
+}
+
+// A stop: its number; green once it has a result.
+.stop {
+  @include center;
+  @include square(26px);
+  @include text(tiny);
+  border: 2px solid $color-card;
+  border-radius: $radius-sm;
+  background: $color-forest;
+  font-weight: $weight-extrabold;
+  color: $color-on-forest;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.25);
+  cursor: pointer;
+}
+
+.done {
+  background: $color-done;
+}
+
+// A member: round, with their initial; me in lime.
+.person {
+  @include center;
+  @include square(34px);
+  @include text(label);
+  border: 3px solid $color-white;
+  border-radius: $radius-full;
+  background: $color-active;
+  font-weight: $weight-extrabold;
+  color: $color-white;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.3);
+}
+
+.me {
+  background: $color-lime;
+  color: $color-forest;
+}

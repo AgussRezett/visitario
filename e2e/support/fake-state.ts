@@ -18,6 +18,10 @@ export interface FakeState {
   dnis?: Record<string, Row>
   /** tag_store calls: the store's channel and seller. */
   tagged?: Row[]
+  /** Operativos: day_operations rows, the activadores to pick, and the actions called. */
+  operations?: Row[]
+  teammates?: Row[]
+  operationCalls?: Row[]
   /** Let the install guide open by itself (other tests keep it away). */
   installOffer?: boolean
   /** A seller's clients (seller_stores). */

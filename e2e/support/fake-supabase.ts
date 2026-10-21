@@ -1,6 +1,7 @@
 import type { Page, Request } from '@playwright/test'
 import { handleAdmin } from './fake-admin'
 import { handlePlatform } from './fake-platform'
+import { handleOperation } from './fake-operation'
 import type { FakeState, Row } from './fake-state'
 
 export type { FakeState, Row } from './fake-state'
@@ -78,6 +79,8 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
     if (platform) return platform
     const handled = await handleAdmin({ path, url, req, route, state, json, body })
     if (handled) return handled
+    const operation = await handleOperation({ path, url, state, json, body })
+    if (operation) return operation
     if (path.endsWith('/membership')) {
       return json(state.memberships ?? [{ id: 'm1', company_id: COMPANY, roles: ['merchandiser'], status: 'active', starts_on: '2026-10-01', company: { name: 'Panda' } }])
     }

@@ -1,0 +1,131 @@
+@use '@/styles/abstracts' as *;
+
+.board {
+  @include flex(column, $gap: space(3));
+}
+
+.heading {
+  @include heading(title);
+  margin: 0;
+}
+
+.cards {
+  display: grid;
+  gap: space(3);
+
+  @include up(lg) {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+}
+
+.card {
+  @include surface;
+  @include flex(column, $gap: space(3));
+  min-width: 0;
+  padding: space(4);
+}
+
+.head {
+  @include flex(row, $gap: space(3), $align: center);
+}
+
+.icon {
+  @include icon-tile(space(9), $radius-sm);
+  background: $color-lime-soft;
+  color: $color-lime-soft-ink;
+
+  @include dark {
+    background: $color-muted;
+    color: $color-lime;
+  }
+}
+
+.head-text {
+  @include flex(column);
+  min-width: 0;
+}
+
+.title {
+  font-weight: $weight-extrabold;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: space(1);
+  border-radius: $radius-full;
+  background: $color-done;
+}
+
+.bar {
+  height: space(2);
+  overflow: hidden;
+  border-radius: 4px;
+  background: $color-muted;
+
+  i {
+    display: block;
+    height: 100%;
+    border-radius: 4px;
+    background: $color-done;
+    transition: width 400ms $ease-standard;
+  }
+}
+
+.members {
+  @include flex(column, $gap: space(2));
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.member {
+  @include flex(row, $gap: space(2.5), $align: center);
+  min-width: 0;
+}
+
+.avatar {
+  position: relative;
+  flex: none;
+}
+
+.dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid $color-card;
+  border-radius: $radius-full;
+  background: $color-control;
+
+  &[data-on] {
+    background: $color-done;
+  }
+}
+
+.member-text {
+  @include flex(column);
+  min-width: 0;
+}
+
+.name {
+  @include text(small);
+  font-weight: $weight-bold;
+}
+
+.actions {
+  @include flex(row, $gap: space(2));
+  flex-wrap: wrap;
+
+  > * {
+    flex: 1 1 auto;
+  }
+}
