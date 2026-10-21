@@ -12,8 +12,11 @@ export const teamKeys = {
   visit: (visitId: string) => ['team', 'visit', visitId] as const,
 }
 
-/** Refreshes on its own while the supervisor watches the day. */
-const LIVE = { refetchInterval: 60_000, refetchIntervalInBackground: false } as const
+/**
+ * Changes arrive live (features/live); this slow refetch is only the safety net for a
+ * socket that dropped without saying so.
+ */
+const LIVE = { refetchInterval: 5 * 60_000, refetchIntervalInBackground: false } as const
 
 export const teamDayQuery = (companyId: string, date: string) =>
   queryOptions({

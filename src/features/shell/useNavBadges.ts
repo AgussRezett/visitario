@@ -4,7 +4,7 @@ import type { Role } from '@/domain/roles'
 
 /**
  * In-app notices on the navigation: visits waiting for the supervisor's review, and
- * fixes the merchandiser was asked for. Refreshed every minute while the app is open.
+ * fixes the merchandiser was asked for. Live (features/live), with a slow safety refetch.
  */
 export function useNavBadges(personId: string, active: { companyId: string; role: Role } | null): Record<string, number> {
   const role = active?.role
@@ -12,7 +12,7 @@ export function useNavBadges(personId: string, active: { companyId: string; role
   const badges = useQuery({
     queryKey: ['team', 'badges', companyId, role, personId],
     enabled: Boolean(active) && role !== 'admin',
-    refetchInterval: 60_000,
+    refetchInterval: 5 * 60_000, // changes arrive live; this is the safety net
     queryFn: async (): Promise<Record<string, number>> => {
       const base = supabase.from('visit').select('id', { count: 'exact', head: true }).eq('company_id', companyId).is('deleted_at', null)
       const { count, error } =
