@@ -1,0 +1,140 @@
+@use '@/styles/abstracts' as *;
+
+.section {
+  @include flex(column, $gap: space(3));
+}
+
+.head {
+  @include flex(column, $gap: space(3));
+
+  @include up(lg) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.title {
+  @include text(heading);
+  font-weight: $weight-extrabold;
+}
+
+.empty {
+  @include surface;
+  padding: space(5) space(4);
+  text-align: center;
+  color: $color-ink-subtle;
+}
+
+.list {
+  @include flex(column, $gap: space(2));
+}
+
+.item {
+  @include surface;
+  @include flex(row, $gap: space(3), $align: flex-start);
+  padding: space(3.5);
+}
+
+// The stop the activador is at: a tone step, not a border.
+.item-now {
+  background: $color-active-soft;
+}
+
+.link {
+  @include transition-colors;
+
+  @include hover {
+    background: $color-muted;
+  }
+}
+
+.num {
+  @include center;
+  @include square(28px);
+  @include text(label);
+  flex-shrink: 0;
+  border-radius: $radius-sm;
+  background: $color-pending-soft;
+  font-weight: $weight-extrabold;
+  color: $color-pending-ink;
+}
+
+.num-active {
+  background: $color-active;
+  color: $color-white;
+}
+
+.num-done {
+  background: $color-done-soft;
+  color: $color-done-ink;
+}
+
+.num-refused {
+  background: $color-refused-soft;
+  color: $color-refused-ink;
+}
+
+.num-closed {
+  background: $color-closed-soft;
+  color: $color-closed-ink;
+}
+
+.body {
+  @include flex(column, $gap: 2px);
+  flex: 1;
+  min-width: 0;
+}
+
+.row {
+  @include flex(row, $gap: space(2), $align: center);
+  flex-wrap: wrap;
+}
+
+.name {
+  font-weight: $weight-bold;
+}
+
+.mark {
+  @include text(tiny);
+  padding: 2px space(2);
+  border-radius: $radius-full;
+  background: $color-lime-soft;
+  font-weight: $weight-extrabold;
+  color: $color-lime-soft-ink;
+}
+
+.mark-now {
+  background: $color-active;
+  color: $color-white;
+}
+
+.sub {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.team {
+  @include flex(row, $gap: space(1), $align: center);
+  display: inline-flex;
+  margin-left: space(2);
+  font-weight: $weight-bold;
+  color: $color-active-ink;
+}
+
+.when {
+  @include flex(row, $gap: space(1), $align: center);
+  @include text(tiny);
+  padding-top: space(1);
+  font-weight: $weight-semibold;
+  color: $color-ink-subtle;
+}
+
+.end {
+  @include flex(column, $gap: space(1), $align: flex-end);
+  flex-shrink: 0;
+}
+
+.go {
+  color: $color-ink-subtle;
+}

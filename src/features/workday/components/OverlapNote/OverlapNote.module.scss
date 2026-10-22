@@ -1,0 +1,17 @@
+@use '@/styles/abstracts' as *;
+
+// A heads-up, not an error: the store can still be added.
+.note {
+  @include flex(row, $gap: space(1.5), $align: flex-start);
+  @include text(label);
+  padding: space(1.5) space(2.5);
+  border-radius: $radius-sm;
+  background: $color-closed-soft;
+  font-weight: $weight-semibold;
+  color: $color-closed-ink;
+}
+
+.icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}

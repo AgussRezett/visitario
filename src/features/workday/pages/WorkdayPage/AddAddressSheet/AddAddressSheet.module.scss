@@ -1,7 +1,5 @@
 @use '@/styles/abstracts' as *;
 
-@include keyframes-spin;
-
 .block {
   @include flex(column, $gap: space(2));
 }
@@ -33,89 +31,6 @@
   }
 }
 
-.eyebrow {
-  @include eyebrow;
-  padding-top: space(1);
-}
-
-.result {
-  @include flex(row, $gap: space(3), $align: center);
-  @include transition-colors;
-  width: 100%;
-  min-height: 56px;
-  padding: space(3) space(3.5);
-  border: 1.5px solid $color-line;
-  border-radius: 14px;
-  background: $color-card;
-  text-align: left;
-
-  @include hover {
-    border-color: $color-forest;
-    background: $color-lime-soft;
-
-    @include dark {
-      border-color: $color-lime;
-      background: $color-muted;
-    }
-  }
-
-  // The tap shows at once, and the one being added stays marked while it saves.
-  &:active,
-  &[data-picked] {
-    border-color: $color-forest;
-    background: $color-lime-soft;
-
-    @include dark {
-      border-color: $color-lime;
-      background: $color-muted;
-    }
-  }
-
-  &:disabled:not([data-picked]) {
-    opacity: 0.5;
-  }
-}
-
-.result-icon {
-  @include center;
-  @include square(28px);
-  flex-shrink: 0;
-  border-radius: $radius-sm;
-  background: $color-lime-soft;
-  color: $color-lime-soft-ink;
-}
-
-.result-text {
-  @include flex(column, $gap: space(0.5));
-  flex: 1;
-  min-width: 0;
-}
-
-.result-name {
-  font-weight: $weight-bold;
-}
-
-.result-meta {
-  @include text(label);
-  color: $color-ink-subtle;
-}
-
-.result-add,
-.result-adding {
-  @include flex(row, $gap: space(1), $align: center);
-  @include text(label);
-  flex-shrink: 0;
-  font-weight: $weight-bold;
-  color: $color-forest;
-
-  @include dark {
-    color: $color-lime;
-  }
-}
-
-.ring {
-  @include spinner-ring(16px, 2px);
-}
 
 .divider {
   @include flex(row, $gap: space(3), $align: center);
@@ -173,4 +88,10 @@
   @include up(lg) {
     display: inline-flex;
   }
+}
+
+.repeated {
+  @include flex(column, $gap: space(1));
+  margin: 0;
+  padding-left: space(4);
 }
