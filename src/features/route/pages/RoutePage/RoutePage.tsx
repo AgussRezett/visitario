@@ -1,15 +1,15 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { formatLongDate, todayInArgentina } from '@/domain/dates'
-import { applyRouteOrder, approximateRoute, inRoute, type Point, type Stop } from '@/domain/route'
+import { applyRouteOrder, approximateRoute, inRoute, lineFromFirstStop, type Point, type Stop } from '@/domain/route'
 import { Banner } from '@/ui/Banner'
 import { useWorkContext } from '@/features/workday/context'
 import { workdayQuery, type Visit } from '@/features/workday/api/queries'
 import { useVisitList } from '@/features/sync/hooks'
 import { visitChanges } from '@/features/sync/changes'
 import { DaySkeleton } from '@/features/workday/components/Skeletons'
-import { streetRoute } from '../../api'
+import { savedRouteQuery, streetRoute, useSaveRoute } from '../../api'
 import { RouteSetup, type RouteOptions } from './RouteSetup'
 import { RouteResult, type RoutePlan } from './RouteResult'
 import { useOperationDay } from '@/features/operation/useOperationDay'
@@ -39,10 +39,24 @@ export function RoutePage({ date: requested }: { date?: string }) {
   const lastId = options.lastId ?? selected.find((v) => v.workStatus === 'closed')?.id ?? 'auto'
   const [plan, setPlan] = useState<(RoutePlan & { key: string }) | null>(null)
   const [busy, setBusy] = useState(false)
-  const [step, setStep] = useState<'setup' | 'result'>('setup')
+  /** Unset until the person moves: then a route kept from before opens on the result. */
+  const [step, setStep] = useState<'setup' | 'result' | null>(null)
+  const workdayId = workday.data?.id ?? ''
+  const saved = useQuery({ ...savedRouteQuery(workdayId), enabled: Boolean(workdayId) })
+  const save = useSaveRoute(workdayId)
+
+  // Coming back to a route kept from before: recalculating starts from how it was made.
+  const savedMode = saved.data?.mode
+  useEffect(() => {
+    if (savedMode) setOptions((o) => ({ ...o, mode: savedMode }))
+  }, [savedMode])
 
   const key = JSON.stringify([options.mode, options.origin, options.firstId, lastId, selected.map((v) => v.id)])
   const current = plan?.key === key ? plan : null
+  // What shows: the route just calculated, or the last one kept for the day.
+  const kept = !current && saved.data ? saved.data : null
+  const shown = current ?? kept
+  const view = shown ? (step ?? 'result') : 'setup'
 
   const calculate = async () => {
     const stops = selected.map(toStop)
@@ -58,13 +72,18 @@ export function RoutePage({ date: requested }: { date?: string }) {
     setBusy(true)
     const byStreet = await streetRoute({ stops, origin, firstId, lastId: last, mode: options.mode })
     setBusy(false)
-    if (byStreet) setPlan({ key, ids: byStreet.ids, km: byStreet.km, minutes: byStreet.minutes, byStreet: true, line: byStreet.line })
+    const final = byStreet ? { ids: byStreet.ids, km: byStreet.km, minutes: byStreet.minutes, byStreet: true, line: byStreet.line } : { ...straight, minutes: null, byStreet: false, line: null }
+    if (byStreet) setPlan({ key, ...final })
+    // Kept for the day, without the stretch from the phone: where the person was is never saved.
+    const first = stops.find((s) => s.id === final.ids[0])
+    const line = final.line?.length && first ? (origin ? lineFromFirstStop(final.line, first.location) : final.line) : null
+    save.mutate({ ...final, line, mode: options.mode, fromOrigin: Boolean(origin) })
   }
 
   const apply = async () => {
-    if (!current || !day) return
+    if (!shown || !day) return
     const byId = new Map(day.map((v) => [v.id, v]))
-    for (const move of applyRouteOrder(day, current.ids)) {
+    for (const move of applyRouteOrder(day, shown.ids)) {
       const v = byId.get(move.id)
       if (v) await visitChanges(v).patch({ sort_order: move.sortOrder })
     }
@@ -83,7 +102,7 @@ export function RoutePage({ date: requested }: { date?: string }) {
   if (workday.isError || visits.isError) body = <Banner tone="error">No pudimos cargar tu jornada. Revisá la conexión y recargá.</Banner>
   else if (workday.isPending || (workday.data && !day)) body = <DaySkeleton />
   else if (!workday.data) body = <Banner tone="info" title="Hoy todavía no hay recorrido">Cuando abras la jornada y cargues los locales, acá vas a poder ordenarlos.</Banner>
-  else if (!todo.length) body = <Banner tone="ok" title="No quedan locales por visitar">Los de esta jornada ya están terminados, aprobados o no autorizaron la visita.</Banner>
+  else if (!todo.length && !kept) body = <Banner tone="ok" title="No quedan locales por visitar">Los de esta jornada ya están terminados, aprobados o no autorizaron la visita.</Banner>
   else {
     const setup = (
       <RouteSetup
@@ -98,19 +117,22 @@ export function RoutePage({ date: requested }: { date?: string }) {
     )
     const result = (
       <RouteResult
-        plan={current}
-        visits={todo}
-        mode={options.mode}
-        origin={options.origin}
+        plan={shown}
+        visits={day ?? []}
+        mode={kept ? kept.mode : options.mode}
+        origin={kept ? null : options.origin}
+        fromOrigin={kept ? kept.fromOrigin : Boolean(options.origin)}
         lastId={lastId}
         refining={busy}
+        savedAt={kept?.savedAt ?? null}
+        canRecalculate={todo.length > 0}
         onBack={() => setStep('setup')}
         onRecalculate={() => void calculate()}
         onApply={() => void apply()}
       />
     )
     body = (
-      <div className={styles.columns} data-step={current ? step : 'setup'}>
+      <div className={styles.columns} data-step={view}>
         <div className={styles.setup}>{setup}</div>
         <div className={styles.result}>{result}</div>
       </div>
@@ -119,7 +141,7 @@ export function RoutePage({ date: requested }: { date?: string }) {
 
   return (
     <div className={styles.page}>
-      <div className={styles.top} data-step={current ? step : 'setup'}>{head}</div>
+      <div className={styles.top} data-step={view}>{head}</div>
       {body}
     </div>
   )

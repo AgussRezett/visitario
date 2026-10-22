@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canRemoveVisit, canTransition, finishCheck, isVisited, workdayProgress } from './visit'
+import { canRemoveVisit, canTransition, finishCheck, isVisited, stopTone, workdayProgress } from './visit'
 
 describe('visit rules', () => {
   it('mirrors the database transitions', () => {
@@ -46,5 +46,17 @@ describe('canRemoveVisit', () => {
     expect(canRemoveVisit({ addedByMe: false, resumedFrom: 'v0', reviewStatus: 'needs_fix' })).toBe(true)
     expect(canRemoveVisit({ addedByMe: false, resumedFrom: null, reviewStatus: 'unreviewed' })).toBe(false)
     expect(canRemoveVisit({ addedByMe: true, resumedFrom: null, reviewStatus: 'approved' })).toBe(false)
+  })
+})
+
+describe('stopTone', () => {
+  it('uses the colors of the status chips, review first', () => {
+    expect(stopTone('pending')).toBe('pending')
+    expect(stopTone('in_progress')).toBe('active')
+    expect(stopTone('done')).toBe('done')
+    expect(stopTone('closed')).toBe('closed')
+    expect(stopTone('refused')).toBe('refused')
+    expect(stopTone('done', 'approved')).toBe('approved')
+    expect(stopTone('done', 'needs_fix')).toBe('fix')
   })
 })

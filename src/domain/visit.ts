@@ -104,3 +104,23 @@ export function workdayProgress(visits: ProgressInput[]) {
     inProgress: count((v) => v.workStatus === 'in_progress'),
   }
 }
+
+/** How a stop is going, in the colors of the status chips (review wins, like StatusChip). */
+export type StopTone = 'pending' | 'active' | 'done' | 'approved' | 'fix' | 'closed' | 'refused'
+
+export function stopTone(work: WorkStatus, review: ReviewStatus = 'unreviewed'): StopTone {
+  if (review === 'approved') return 'approved'
+  if (review === 'needs_fix') return 'fix'
+  return ({ pending: 'pending', in_progress: 'active', done: 'done', closed: 'closed', refused: 'refused' } as const)[work]
+}
+
+/** The tone in words, for screen readers and legends. */
+export const STOP_TONE_LABEL: Record<StopTone, string> = {
+  pending: 'por hacer',
+  active: 'en curso',
+  done: 'terminada',
+  approved: 'aprobada',
+  fix: 'con corrección',
+  closed: 'cerrado, volver después',
+  refused: 'no autorizada',
+}
