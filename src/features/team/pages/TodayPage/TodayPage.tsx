@@ -119,7 +119,11 @@ export function TodayPage({ date: requested }: { date?: string }) {
                   <tbody>
                     {members.map((m) => (
                       <tr key={m.personId}>
-                        <td><span className={styles.person}><Avatar name={initials(m.firstName, m.lastName)} size={32} /><span className={styles.strong}>{m.firstName} {m.lastName}</span></span></td>
+                        <td>
+                          <Link to="/s/today/$personId" params={{ personId: m.personId }} search={date === today ? {} : { date }} className={styles.person} aria-label={`Ver la jornada de ${m.firstName} ${m.lastName}`}>
+                            <Avatar name={initials(m.firstName, m.lastName)} size={32} /><span className={styles.strong}>{m.firstName} {m.lastName}</span>
+                          </Link>
+                        </td>
                         <td>
                           <span className={styles.progress}>
                             <span className={styles.count}>{m.workdayStatus ? `${m.visited} / ${m.total}` : 'Sin jornada'}{m.workdayStatus === 'draft' ? ' · sin publicar' : ''}</span>
@@ -136,7 +140,7 @@ export function TodayPage({ date: requested }: { date?: string }) {
                 <ul className={styles.list}>
                   {members.map((m) => (
                     <li key={m.personId}>
-                      <Link to="/s/review" search={{ tab: 'all', date }} className={styles.row}>
+                      <Link to="/s/today/$personId" params={{ personId: m.personId }} search={date === today ? {} : { date }} className={styles.row}>
                         <Avatar name={initials(m.firstName, m.lastName)} size={36} />
                         <span className={styles.rowBody}>
                           <span className={styles.rowTop}><span className={styles.strong}>{m.firstName} {m.lastName}</span><span className={styles.count}>{m.workdayStatus ? `${m.visited}/${m.total}` : 'Sin jornada'}</span></span>

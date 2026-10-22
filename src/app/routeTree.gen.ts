@@ -38,6 +38,7 @@ import { Route as AppSUsersRouteImport } from './../routes/_app/s.users'
 import { Route as AppSWorkdayRouteImport } from './../routes/_app/s.workday'
 import { Route as AppStoresStoreIdRouteImport } from './../routes/_app/stores.$storeId'
 import { Route as AppVisitVisitIdRouteImport } from './../routes/_app/visit.$visitId'
+import { Route as AppSTodayPersonIdRouteImport } from './../routes/_app/s.today_.$personId'
 import { Route as AppSUsersNewRouteImport } from './../routes/_app/s.users_.new'
 
 const IndexRoute = IndexRouteImport.update({
@@ -184,6 +185,11 @@ const AppVisitVisitIdRoute = AppVisitVisitIdRouteImport.update({
   path: '/visit/$visitId',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSTodayPersonIdRoute = AppSTodayPersonIdRouteImport.update({
+  id: '/s/today_/$personId',
+  path: '/s/today/$personId',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSUsersNewRoute = AppSUsersNewRouteImport.update({
   id: '/s/users_/new',
   path: '/s/users/new',
@@ -219,6 +225,7 @@ export interface FileRoutesByFullPath {
   '/stores/$storeId': typeof AppStoresStoreIdRoute
   '/visit/$visitId': typeof AppVisitVisitIdRoute
   '/platform/': typeof AppPlatformIndexRoute
+  '/s/today/$personId': typeof AppSTodayPersonIdRoute
   '/s/users/new': typeof AppSUsersNewRoute
 }
 export interface FileRoutesByTo {
@@ -249,6 +256,7 @@ export interface FileRoutesByTo {
   '/stores/$storeId': typeof AppStoresStoreIdRoute
   '/visit/$visitId': typeof AppVisitVisitIdRoute
   '/platform': typeof AppPlatformIndexRoute
+  '/s/today/$personId': typeof AppSTodayPersonIdRoute
   '/s/users/new': typeof AppSUsersNewRoute
 }
 export interface FileRoutesById {
@@ -282,6 +290,7 @@ export interface FileRoutesById {
   '/_app/stores/$storeId': typeof AppStoresStoreIdRoute
   '/_app/visit/$visitId': typeof AppVisitVisitIdRoute
   '/_app/platform/': typeof AppPlatformIndexRoute
+  '/_app/s/today_/$personId': typeof AppSTodayPersonIdRoute
   '/_app/s/users_/new': typeof AppSUsersNewRoute
 }
 export interface FileRouteTypes {
@@ -315,6 +324,7 @@ export interface FileRouteTypes {
     | '/stores/$storeId'
     | '/visit/$visitId'
     | '/platform/'
+    | '/s/today/$personId'
     | '/s/users/new'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -345,6 +355,7 @@ export interface FileRouteTypes {
     | '/stores/$storeId'
     | '/visit/$visitId'
     | '/platform'
+    | '/s/today/$personId'
     | '/s/users/new'
   id:
     | '__root__'
@@ -377,6 +388,7 @@ export interface FileRouteTypes {
     | '/_app/stores/$storeId'
     | '/_app/visit/$visitId'
     | '/_app/platform/'
+    | '/_app/s/today_/$personId'
     | '/_app/s/users_/new'
   fileRoutesById: FileRoutesById
 }
@@ -595,6 +607,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppVisitVisitIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/s/today_/$personId': {
+      id: '/_app/s/today_/$personId'
+      path: '/s/today/$personId'
+      fullPath: '/s/today/$personId'
+      preLoaderRoute: typeof AppSTodayPersonIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/s/users_/new': {
       id: '/_app/s/users_/new'
       path: '/s/users/new'
@@ -640,6 +659,7 @@ interface AppRouteChildren {
   AppSWorkdayRoute: typeof AppSWorkdayRoute
   AppStoresStoreIdRoute: typeof AppStoresStoreIdRoute
   AppVisitVisitIdRoute: typeof AppVisitVisitIdRoute
+  AppSTodayPersonIdRoute: typeof AppSTodayPersonIdRoute
   AppSUsersNewRoute: typeof AppSUsersNewRoute
 }
 
@@ -664,6 +684,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSWorkdayRoute: AppSWorkdayRoute,
   AppStoresStoreIdRoute: AppStoresStoreIdRoute,
   AppVisitVisitIdRoute: AppVisitVisitIdRoute,
+  AppSTodayPersonIdRoute: AppSTodayPersonIdRoute,
   AppSUsersNewRoute: AppSUsersNewRoute,
 }
 
