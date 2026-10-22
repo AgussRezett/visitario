@@ -122,6 +122,15 @@ export async function answerInvitation(by: { token: string } | { id: string }, a
     p_accept: accept,
   })
   if (error) throw new InviteError(inviteError(error.message))
+  if (accept) tellInviter()
   const r = (data ?? {}) as { company_id?: string; company?: string; roles?: Role[] }
   return { companyId: r.company_id ?? '', company: r.company ?? '', roles: r.roles ?? [] }
+}
+
+/**
+ * Emails the admin who invited that the person joined. In the background: the person is
+ * already in, and a mail that does not go out must not stop them.
+ */
+function tellInviter() {
+  void supabase.functions.invoke('invitation', { body: { action: 'accepted' } }).catch(() => undefined)
 }

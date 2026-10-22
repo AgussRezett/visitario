@@ -5,12 +5,15 @@
 //       if the email could not go out.
 //   POST { action: 'signup', token, password }                                          (anyone with the link)
 //     → { email }: creates the invited email's account, already confirmed (the link proves it).
+//   POST { action: 'accepted' }                                                         (who just accepted)
+//     → { sent }: emails the admin who invited them (or the company's admins) that they joined, once.
 // The token is random, travels only in the link and the email; the database keeps its SHA-256.
 // Email through Gmail with nodemailer: GMAIL_USER (visitarioadmin@gmail.com) and GMAIL_APP_PASSWORD
 // (an app password of that account, not its normal password). Port 465: Supabase blocks 25 and 587.
 // Without them the invitation is still created and the admin is told the email did not go out.
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import nodemailer from 'npm:nodemailer@6.9.16'
+import { acceptedMessage, inviteMessage, type Accepted } from './mail.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -41,8 +44,6 @@ const mailer = gmailUser && gmailPassword
   : null
 const appUrl = (Deno.env.get('APP_URL') ?? 'https://visitario.vercel.app').replace(/\/$/, '')
 
-const ROLE: Record<string, string> = { merchandiser: 'activador', seller: 'vendedor', supervisor: 'supervisor', admin: 'admin de la empresa' }
-
 interface Mail { id: string; email: string; roles: string[]; expires_at: string; company: string; inviter: string }
 
 /** Where the link points: the app the admin is using, if it is ours. */
@@ -57,38 +58,12 @@ function newToken() {
   return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
-const escape = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] ?? c)
-
-function message(m: Mail, link: string) {
-  const roles = m.roles.map((r) => ROLE[r] ?? r).join(' y ')
-  const until = new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute: '2-digit' }).format(new Date(m.expires_at))
-  const subject = `${m.inviter} te invitó a ${m.company} en Visitario`
-  const text = [
-    `${m.inviter} te invitó a sumarte a ${m.company} en Visitario como ${roles}.`,
-    '',
-    `Aceptá la invitación acá: ${link}`,
-    '',
-    `El enlace vence en 1 hora (a las ${until}). Si vence, pedile a ${m.inviter} que te la reenvíe.`,
-    'Si no esperabas este mail, ignoralo: nadie entra a tu nombre sin este enlace.',
-  ].join('\n')
-  const html = `<!doctype html><html lang="es"><body style="margin:0;background:#f6f7f2;font-family:Arial,Helvetica,sans-serif;color:#173b30">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:32px 16px"><tr><td align="center">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;padding:32px">
-<tr><td style="font-size:22px;font-weight:800;letter-spacing:-0.3px">Visitario</td></tr>
-<tr><td style="padding-top:24px;font-size:20px;font-weight:800;line-height:28px">${escape(m.inviter)} te invitó a ${escape(m.company)}</td></tr>
-<tr><td style="padding-top:8px;font-size:15px;line-height:22px;color:#3f5a50">Te suma como <b>${escape(roles)}</b>. Con Visitario vas a ver tus jornadas, registrar las visitas con fotos y mandar el informe del día.</td></tr>
-<tr><td style="padding-top:24px"><a href="${escape(link)}" style="display:inline-block;background:#173b30;color:#ffffff;text-decoration:none;font-weight:700;font-size:16px;padding:14px 28px;border-radius:12px">Aceptar invitación</a></td></tr>
-<tr><td style="padding-top:20px;font-size:13px;line-height:19px;color:#5d7268">El enlace vence en 1 hora (a las ${escape(until)}). Si vence, pedile a ${escape(m.inviter)} que te la reenvíe.<br>Si no esperabas este mail, ignoralo: nadie entra a tu nombre sin este enlace.</td></tr>
-</table></td></tr></table></body></html>`
-  return { subject, text, html }
-}
-
 /** Sends the email; returns null when it went out, or why it did not. */
-async function send(m: Mail, link: string): Promise<string | null> {
+async function send(to: string, mail: { subject: string; text: string; html: string }): Promise<string | null> {
   if (!mailer) return 'not_configured'
-  const { subject, text, html } = message(m, link)
+  const { subject, text, html } = mail
   try {
-    await mailer.sendMail({ from: { name: fromName, address: gmailUser }, to: m.email, subject, text, html })
+    await mailer.sendMail({ from: { name: fromName, address: gmailUser }, to, subject, text, html })
     return null
   } catch (e) {
     const err = e as { code?: string; responseCode?: number; message?: string }
@@ -125,6 +100,20 @@ Deno.serve(async (req) => {
   const { data: auth } = await user.auth.getUser(authorization.replace(/^Bearer\s+/i, ''))
   if (!auth.user) return json({ error: 'unauthorized' }, 401)
 
+  // ---- The invited person just accepted: tell the admin who invited them (once).
+  if (action === 'accepted') {
+    if (!mailer) return json({ sent: 0, error: 'not_configured' })
+    const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
+    const { data, error } = await admin.rpc('take_acceptance_notices', { p_auth_user: auth.user.id })
+    if (error) return json({ error: 'failed' }, 500)
+    let sent = 0
+    for (const n of (data ?? []) as (Accepted & { recipients: string[] })[]) {
+      const message = acceptedMessage(n, appUrl)
+      for (const to of n.recipients) if ((await send(to, message)) === null) sent++
+    }
+    return json({ sent })
+  }
+
   const token = newToken()
   let mail: Mail | null = null
   if (action === 'create') {
@@ -147,7 +136,7 @@ Deno.serve(async (req) => {
   }
 
   const link = `${linkBase(body?.origin)}/invitacion/${token}`
-  const failure = await send(mail, link)
+  const failure = await send(mail.email, inviteMessage(mail, link, appUrl))
   await user.rpc('mark_invitation_sent', { p_invitation: mail.id, p_error: failure })
   return json({ id: mail.id, link, sent: failure === null, ...(failure ? { error: failure.split(':')[0] } : {}) })
 })
