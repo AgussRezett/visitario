@@ -14,6 +14,8 @@ export interface Catalogs {
   templates: Record<TemplateKind, string>
   /** The company still uses WhatsApp as the bridge: show the copy buttons on the visit. */
   showWhatsapp: boolean
+  /** One ANTES / DESPUÉS per display instead of one per visit. */
+  messagesPerDisplay: boolean
 }
 
 export const catalogsQuery = (companyId: string) =>
@@ -26,7 +28,7 @@ export const catalogsQuery = (companyId: string) =>
         supabase.from('display_type').select('id, name').eq('company_id', companyId).eq('active', true).order('sort_order').order('name'),
         supabase.from('work_metric').select('id, name, report_label').eq('company_id', companyId).eq('active', true).order('sort_order'),
         supabase.from('message_template').select('kind, body').eq('company_id', companyId),
-        supabase.from('company').select('show_whatsapp').eq('id', companyId).maybeSingle(),
+        supabase.from('company').select('show_whatsapp, messages_per_display').eq('id', companyId).maybeSingle(),
         supabase.from('channel').select('id, name, active, sort_order').eq('company_id', companyId).order('sort_order').order('name'),
         supabase.from('seller').select('id, name, person_id, active').eq('company_id', companyId).order('name'),
       ])
@@ -40,6 +42,7 @@ export const catalogsQuery = (companyId: string) =>
         metrics: (metrics.data ?? []).map((m) => ({ id: m.id, name: m.name, reportLabel: m.report_label })),
         templates: { ...DEFAULT_TEMPLATES, ...own },
         showWhatsapp: company.data?.show_whatsapp ?? true,
+        messagesPerDisplay: company.data?.messages_per_display ?? false,
       }
     },
   })

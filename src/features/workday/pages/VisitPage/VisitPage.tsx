@@ -173,7 +173,7 @@ function VisitBody(props: {
               ) : null}
               {catalogs && catalogs.showWhatsapp !== false ? (
                 <div className={styles.messages}>
-                  <MessagesSection visit={v} templates={catalogs.templates} firstName={firstName} typeName={(id) => catalogs.displayTypes.find((t) => t.id === id)?.name ?? 'Exhibición'} tags={tags} />
+                  <MessagesSection visit={v} templates={catalogs.templates} firstName={firstName} typeName={(id) => catalogs.displayTypes.find((t) => t.id === id)?.name ?? 'Exhibición'} tags={tags} perDisplay={catalogs.messagesPerDisplay} />
                 </div>
               ) : null}
               <div className={styles.finish}>
