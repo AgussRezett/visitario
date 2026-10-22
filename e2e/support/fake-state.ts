@@ -2,6 +2,8 @@
 export type Row = Record<string, unknown>
 
 export interface FakeState {
+  /** Signed photo links (https://photos.test/<id>.jpg); the spec serves them. */
+  photoUrls?: boolean
   workday: Row | null
   visits: Row[]
   uploads: { bytes: Buffer; meta: Row }[]
