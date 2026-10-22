@@ -46,6 +46,8 @@ export interface FakeState {
   /** What the route function answers by streets (503 without it) and what it was asked. */
   route?: Row
   routeAsked?: Row[]
+  /** The day's saved route (route_plan), as save_route_plan left it. */
+  routePlan?: Row
   /** What reading a capture with AI answers: rows, or an error status. */
   capture?: { rows?: Row[]; unreadable?: number; status?: number }
   /** Reputation: store_reputation rows and rapport_facts rows (by week). */
