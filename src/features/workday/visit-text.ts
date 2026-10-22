@@ -1,6 +1,7 @@
 import { formatDayMonth, formatTime } from '@/domain/dates'
 import { CONSENT_LABEL } from '@/domain/visit'
 import { mapsSearchUrl } from '@/domain/places'
+import { displayLabels } from '@/domain/templates'
 import type { Visit } from './api/queries'
 import type { StoreTags } from './store-tags'
 
@@ -41,4 +42,12 @@ export function messageValues(v: Visit, merchandiser: string, typeName?: (id: nu
     consent: v.consent ? CONSENT_LABEL[v.consent] : null,
     displays: [...counts].map(([name, n]) => (n > 1 ? `${n} ${name}` : name)).join(', ') || null,
   }
+}
+
+/** One set of values per display: {exhibiciones} names only that one. */
+export function displayMessageValues(v: Visit, merchandiser: string, typeName?: (id: number) => string, tags?: StoreTags) {
+  const base = messageValues(v, merchandiser, typeName, tags)
+  const names = v.displays.map((d) => typeName?.(d.typeId) ?? 'Exhibición')
+  const labels = displayLabels(names)
+  return v.displays.map((d, i) => ({ id: d.id, label: labels[i] ?? '', values: { ...base, displays: names[i] ?? null } }))
 }

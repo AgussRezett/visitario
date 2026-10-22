@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fillTemplate } from './templates'
+import { displayLabels, fillTemplate } from './templates'
 
 describe('fillTemplate', () => {
   it('a line whose data are empty is left out', () => {
@@ -20,5 +20,12 @@ describe('fillTemplate', () => {
     expect(fillTemplate(body, { date: '09/10/2026', address: 'Tres Arroyos 762', customer_number: '12345', area: 'Paternal' })).toBe(
       '*ACTIVACIÓN DE GONDOLA ANTES\nFecha: 09/10/2026\nDireccion: Tres Arroyos 762\nNum clte: 12345\nZona: Paternal',
     )
+  })
+})
+
+describe('displayLabels', () => {
+  it('numbers only the types that repeat, in order', () => {
+    expect(displayLabels(['Góndola', 'Puntera', 'Góndola'])).toEqual(['Góndola 1', 'Puntera', 'Góndola 2'])
+    expect(displayLabels([])).toEqual([])
   })
 })

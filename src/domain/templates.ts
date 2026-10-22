@@ -89,3 +89,18 @@ export function fillTemplate(body: string, values: Values) {
     .replace(/\n{3,}/g, '\n\n')
     .trim()
 }
+
+/**
+ * Labels for one message per display: "Puntera", "Góndola 1", "Góndola 2"
+ * (a type that repeats is numbered, in the visit's order).
+ */
+export function displayLabels(names: readonly string[]): string[] {
+  const total = new Map<string, number>()
+  for (const n of names) total.set(n, (total.get(n) ?? 0) + 1)
+  const seen = new Map<string, number>()
+  return names.map((n) => {
+    const i = (seen.get(n) ?? 0) + 1
+    seen.set(n, i)
+    return (total.get(n) ?? 0) > 1 ? `${n} ${i}` : n
+  })
+}
