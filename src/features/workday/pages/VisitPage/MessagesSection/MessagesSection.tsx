@@ -1,12 +1,15 @@
-import { Check, Copy, MessageSquare, Share2 } from 'lucide-react'
+import { useState } from 'react'
+import { Check, ChevronRight, Copy, MessageSquare, Send as SendIcon } from 'lucide-react'
+import { buildSends } from '@/domain/share-queue'
 import { fillTemplate, type TemplateKind } from '@/domain/templates'
-import { canShare, share, useCopy } from '@/lib/share'
+import { canShare, useCopy } from '@/lib/share'
 import { Button } from '@/ui/Button'
 import type { Visit } from '@/features/workday/api/queries'
-import { localPhotoBlob } from '@/features/workday/api/photos'
 import { VisitSection } from '@/features/workday/components/VisitSection'
 import { displayMessageValues, messageValues } from '@/features/workday/visit-text'
 import type { StoreTags } from '@/features/workday/store-tags'
+import { SendSheet } from '../SendSheet'
+import { useSent } from '../SendSheet/sent'
 import styles from './MessagesSection.module.scss'
 
 interface MessagesSectionProps {
@@ -17,6 +20,7 @@ interface MessagesSectionProps {
   tags?: StoreTags
   /** The company sends one ANTES / DESPUÉS per display. */
   perDisplay?: boolean
+  urlFor: (id: string) => string | undefined
 }
 
 interface Item {
@@ -28,8 +32,10 @@ interface Item {
 }
 
 /** The ANTES / DESPUÉS messages, while WhatsApp is still the bridge with the supervisor. */
-export function MessagesSection({ visit: v, templates, firstName, typeName, tags, perDisplay = false }: MessagesSectionProps) {
+export function MessagesSection({ visit: v, templates, firstName, typeName, tags, perDisplay = false, urlFor }: MessagesSectionProps) {
   const { copied, copy } = useCopy()
+  const [sending, setSending] = useState(false)
+  const { sent, mark } = useSent(v.id)
   const address: Item = { key: 'address', label: 'Dirección', name: 'Copiar Dirección', text: v.store.address }
   const values = messageValues(v, firstName, typeName, tags)
   const general: Item[] = [
@@ -47,7 +53,13 @@ export function MessagesSection({ visit: v, templates, firstName, typeName, tags
         ],
       }))
     : []
-  const storefront = v.photos.find((p) => p.kind === 'storefront')
+  const sends = buildSends({
+    address: v.store.address,
+    photos: v.photos,
+    displays: perDisplay ? byDisplay.map((d) => ({ id: d.id, label: d.label, before: d.items[0]?.text ?? '', after: d.items[1]?.text ?? '' })) : null,
+    general: { before: general[1]?.text ?? '', after: general[2]?.text ?? '' },
+  })
+  const done = sends.filter((s) => sent.has(s.key)).length
 
   const button = (i: Item, size: 'sm' | 'md' = 'sm') => (
     <Button key={i.key} variant="secondary" size={size} className={styles.copy} onClick={() => copy(i.key, i.text)} aria-label={i.name}>
@@ -63,6 +75,20 @@ export function MessagesSection({ visit: v, templates, firstName, typeName, tags
       title="Mensajes para WhatsApp"
       subtitle={perDisplay ? 'Dirección · ANTES y DESPUÉS de cada exhibición' : 'Dirección · ANTES · DESPUÉS'}
     >
+      {canShare() ? (
+        <>
+          <button type="button" className={styles.send} onClick={() => setSending(true)}>
+            <span className={styles.sendIcon} aria-hidden><SendIcon size={20} /></span>
+            <span className={styles.sendTexts}>
+              <span className={styles.sendTitle}>Enviar a WhatsApp</span>
+              <span className={styles.sendMeta}>{done === 0 ? 'Fotos y mensaje de cada una, en orden' : done === sends.length ? 'Todo enviado' : `${done} de ${sends.length} enviados`}</span>
+            </span>
+            <ChevronRight size={20} className={styles.chevron} aria-hidden />
+          </button>
+          <span className={styles.or}>O copiá solo el texto</span>
+          <SendSheet open={sending} onClose={() => setSending(false)} address={v.store.address} sends={sends} sent={sent} onSent={mark} urlFor={urlFor} />
+        </>
+      ) : null}
       {perDisplay ? (
         <>
           <div className={styles.address}>{button(address)}</div>
@@ -82,19 +108,6 @@ export function MessagesSection({ visit: v, templates, firstName, typeName, tags
       ) : (
         <div className={styles.buttons}>{general.map((i) => button(i))}</div>
       )}
-      {canShare() ? (
-        <Button
-          variant="ghost"
-          size="sm"
-          className={styles.share}
-          onClick={() => {
-            const blob = storefront ? localPhotoBlob(storefront.id) : undefined
-            void share({ text: v.store.address, files: blob ? [new File([blob], 'fachada.jpg', { type: 'image/jpeg' })] : undefined })
-          }}
-        >
-          <Share2 size={16} aria-hidden />Compartir fachada y dirección
-        </Button>
-      ) : null}
     </VisitSection>
   )
 }

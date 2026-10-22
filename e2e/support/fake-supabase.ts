@@ -256,7 +256,10 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
       if (v && meta.kind === 'storefront' && v.work_status === 'pending') Object.assign(v, { work_status: 'in_progress', arrived_at: now }) // like the sync_arrival trigger
       return json({ id: meta.id, uploaded: true })
     }
-    if (path.endsWith('/functions/v1/photos/urls')) return json({ urls: {} })
+    if (path.endsWith('/functions/v1/photos/urls')) {
+      const ids = state.photoUrls ? ((body() as { ids?: string[] }).ids ?? []) : []
+      return json({ urls: Object.fromEntries(ids.map((id) => [id, `https://photos.test/${id}.jpg`])) })
+    }
     if (path.endsWith('/display_type')) return json([{ id: 1, name: 'Puntera' }, { id: 3, name: 'Góndola' }])
     if (path.endsWith('/message_template')) return json([])
     return json([])
