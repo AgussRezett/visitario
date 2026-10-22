@@ -169,6 +169,15 @@
 
 .person {
   @include flex(row, $gap: space(2.5), $align: center);
+  min-height: $touch-target;
+
+  // The name opens the activador's day.
+  @include hover {
+    .strong {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+  }
 }
 
 .strong {

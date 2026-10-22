@@ -754,6 +754,35 @@ await as('agus', `select add_operation_member($1, $2)`, [op, luciaId])
 await as('agus', `select end_operation($1)`, [op])
 check('Ended: Lucía can join another one that day', (await as('lucia', `select create_operation($1, $2, array[$3]::uuid[]) id`, [panda, opDay, agus]))[0].id !== op)
 
+// ---- Who else has this store that day (day_overlaps)
+{
+  const day = '2026-11-03'
+  const wAgus = (await as('martin', `select plan_workday($1, $2, $3) id`, [panda, agus, day]))[0].id
+  await as('martin', `select add_visit($1, p_store => $2)`, [wAgus, s1])
+  await as('martin', `select add_visit($1, p_address => 'Juramento 2101')`, [wAgus])
+  const wLucia = (await as('lucia', `select open_workday($1, $2) id`, [panda, day]))[0].id
+  const ask = (who, workday, rows) => as(who, `select * from day_overlaps($1, $2::jsonb)`, [workday, JSON.stringify(rows)])
+
+  check('Draft day: an activador is not told about stops not yet published', (await ask('lucia', wLucia, [{ store_id: s1 }])).length === 0)
+  check('…but the admin who assigns is', (await ask('carla', wLucia, [{ store_id: s1 }])).some(r => r.merchandiser_first === 'Agustín'))
+  await as('martin', `update workday set status = 'published' where id = $1`, [wAgus])
+
+  const byStore = await ask('lucia', wLucia, [{ store_id: s1 }])
+  check('Lucía (another team) is told Agustín has Mas Ahorro that day, assigned by Martín',
+    byStore.length === 1 && byStore[0].merchandiser_first === 'Agustín' && byStore[0].added_by_first === 'Martín' && !byStore[0].added_by_merchandiser && !byStore[0].same_workday && byStore[0].idx === 0)
+  check('Found by customer number too', (await ask('lucia', wLucia, [{ customer_number: ' 12345 ' }]))[0]?.store_id === s1)
+  check('Found by address written another way', (await ask('lucia', wLucia, [{ address: 'juramento   2101' }])).length === 1)
+  const rows = await ask('lucia', wLucia, [{ address: 'Cabildo 9999' }, { address: 'JURAMENTO 2101' }])
+  check('Each answer says which row it is for', rows.length === 1 && rows[0].idx === 1)
+  check('Agus asking about his own day: same workday', (await ask('agus', wAgus, [{ store_id: s1 }]))[0]?.same_workday === true)
+  check('A store on another day does not count', (await ask('lucia', wLucia, [{ address: 'Moldes 1365' }])).length === 0)
+  check('Beto (another company) gets nothing, even with the workday id', (await ask('beto', wAgus, [{ store_id: s1 }])).length === 0)
+  check('Nothing for an empty or odd request', (await ask('lucia', wLucia, [])).length === 0 && (await as('lucia', `select * from day_overlaps($1, '{"a":1}'::jsonb)`, [wLucia])).length === 0)
+  await expectError('Anonymous cannot ask', () => asAnon(`select * from day_overlaps('${wAgus}', '[]'::jsonb)`))
+  await as('martin', `update visit set deleted_at = now() where workday_id = $1 and store_id = $2`, [wAgus, s1])
+  check('A stop taken off the day no longer counts', (await ask('lucia', wLucia, [{ store_id: s1 }])).length === 0)
+}
+
 // Password detection (Google users who later set a password)
 await sys(`update auth.users set encrypted_password = '$2a$10$hash' where id = $1`, [U.agus]);
 check('has_password is true for a user with a password', (await as('agus', `select has_password() v`))[0].v === true);

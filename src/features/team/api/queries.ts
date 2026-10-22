@@ -2,7 +2,7 @@ import { queryOptions } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { Shift, TeamMember } from '@/domain/team'
 import { TEAM_VISIT_SELECT } from '@/features/workday/api/selects'
-import { toVisit, type Visit, type VisitRow } from '@/features/workday/api/queries'
+import { toVisit, type Visit, type VisitRow, type Workday } from '@/features/workday/api/queries'
 
 export const teamKeys = {
   all: ['team'] as const,
@@ -130,6 +130,29 @@ export const teamVisitQuery = (visitId: string, personId: string) =>
       const { data, error } = await supabase.from('visit').select(TEAM_VISIT_SELECT).eq('id', visitId).maybeSingle()
       if (error) throw error
       return data ? toTeamVisit(data as unknown as TeamVisitRow, personId) : null
+    },
+  })
+
+/**
+ * An activador's workday, as their supervisor sees it (read-only). Its own key: the
+ * supervisor may have a workday of their own that same date. Under 'workday' so live
+ * changes refresh it.
+ */
+export const memberWorkdayQuery = (companyId: string, personId: string, date: string) =>
+  queryOptions({
+    queryKey: ['workday', 'member', companyId, personId, date] as const,
+    ...LIVE,
+    queryFn: async (): Promise<Workday | null> => {
+      const { data, error } = await supabase
+        .from('workday')
+        .select('id, company_id, work_date, status, created_by')
+        .eq('company_id', companyId)
+        .eq('merchandiser_id', personId)
+        .eq('work_date', date)
+        .is('deleted_at', null)
+        .maybeSingle()
+      if (error) throw error
+      return data && { id: data.id, companyId: data.company_id, workDate: data.work_date, status: data.status, createdByMe: data.created_by === personId }
     },
   })
 

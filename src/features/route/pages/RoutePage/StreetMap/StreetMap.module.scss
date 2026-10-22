@@ -80,6 +80,17 @@
   color: $color-forest;
 }
 
+// The supervisor's view of a day: what is done, and where the activador is now.
+.done {
+  background: $color-done;
+  color: $color-white;
+}
+
+.current {
+  background: $color-active;
+  color: $color-white;
+}
+
 .origin {
   @include square(18px);
   border: 3px solid $color-white;

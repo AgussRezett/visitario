@@ -1,0 +1,210 @@
+@use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(4));
+  padding: space(4) space(5) space(6);
+
+  @include up(lg) {
+    gap: space(5);
+    padding: space(6) space(8);
+  }
+}
+
+.top {
+  @include flex(column, $gap: space(3));
+
+  @include up(lg) {
+    flex-flow: row wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+}
+
+.back {
+  @include flex(row, $gap: space(1.5), $align: center);
+  @include text(label);
+  width: 100%;
+  min-height: $touch-target;
+  font-weight: $weight-bold;
+  color: $color-ink-muted;
+
+  @include hover {
+    color: $color-ink;
+  }
+}
+
+.titles {
+  @include flex(row, $gap: space(3), $align: center);
+}
+
+.eyebrow {
+  @include eyebrow;
+  @include flex(row, $gap: space(1), $align: center);
+}
+
+.title {
+  @include heading(title);
+
+  @include up(lg) {
+    @include heading(display);
+  }
+}
+
+.actions {
+  @include flex(row, $gap: space(2), $align: center);
+  flex-wrap: wrap;
+}
+
+.skeletons {
+  @include flex(column, $gap: space(2));
+}
+
+.empty {
+  @include surface;
+  padding: space(5) space(4);
+  text-align: center;
+  color: $color-ink-subtle;
+}
+
+// No workday that date: say so and offer to plan it.
+.none {
+  @include surface;
+  @include flex(column, $gap: space(3), $align: flex-start);
+  padding: space(5);
+}
+
+.none-text {
+  @include text(heading);
+  font-weight: $weight-bold;
+}
+
+.assign {
+  @include flex(row, $gap: space(2), $align: center);
+  @include text(label);
+  @include transition-colors;
+  height: space(11);
+  padding-inline: space(4);
+  border-radius: $radius-md;
+  background: $color-action;
+  font-weight: $weight-extrabold;
+  color: $color-action-ink;
+
+  @include hover {
+    background: $color-action-hover;
+  }
+}
+
+// ---- The day: stops on the left, the map on the right on a computer
+.layout {
+  @include flex(column, $gap: space(4));
+
+  @include up(lg) {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(320px, 2fr);
+    align-items: start;
+    gap: space(6);
+  }
+}
+
+.main {
+  @include flex(column, $gap: space(4));
+  min-width: 0;
+}
+
+.summary {
+  @include surface;
+  @include flex(row, $gap: space(2) space(4), $align: center);
+  flex-wrap: wrap;
+  padding: space(3.5) space(4);
+}
+
+.figure {
+  @include text(body);
+  color: $color-ink-muted;
+
+  b {
+    @include heading(title);
+    color: $color-ink;
+  }
+}
+
+.draft {
+  @include text(label);
+  padding: space(1) space(2.5);
+  border-radius: $radius-full;
+  background: $color-closed-soft;
+  font-weight: $weight-bold;
+  color: $color-closed-ink;
+}
+
+.op {
+  @include flex(row, $gap: space(1), $align: center);
+  @include text(label);
+  font-weight: $weight-bold;
+  color: $color-active-ink;
+}
+
+.activity {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.aside {
+  @include surface;
+  @include flex(column, $gap: space(3));
+  padding: space(3.5);
+
+  @include up(lg) {
+    position: sticky;
+    top: space(4);
+  }
+}
+
+.map-head {
+  @include flex(row, $gap: space(2), $align: center, $justify: space-between);
+}
+
+.map-title {
+  @include text(heading);
+  font-weight: $weight-extrabold;
+}
+
+.map-toggle {
+  @include up(lg) {
+    display: none;
+  }
+}
+
+.legend {
+  @include flex(row, $gap: space(1.5), $align: center);
+  @include text(tiny);
+  flex-wrap: wrap;
+  font-weight: $weight-semibold;
+  color: $color-ink-subtle;
+}
+
+%dot {
+  @include square(10px);
+  display: inline-block;
+  margin-left: space(1.5);
+  border-radius: 3px;
+
+  &:first-child {
+    margin-left: 0;
+  }
+}
+
+.dot-done {
+  @extend %dot;
+  background: $color-done;
+}
+
+.dot-now {
+  @extend %dot;
+  background: $color-active;
+}
+
+.dot-todo {
+  @extend %dot;
+  background: $color-forest;
+}

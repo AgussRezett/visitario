@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { directionsUrl, placeQuery, type Point, type TravelMode } from '@/domain/route'
+import { isVisited } from '@/domain/visit'
 import type { Visit } from '@/features/workday/api/queries'
 import { placeName } from '../stop'
 import { RouteSketch } from '../RouteSketch'
@@ -16,10 +17,12 @@ interface StreetMapProps {
   /** The path by streets as [lng, lat]; without it the stops are joined in straight lines. */
   line: [number, number][] | null
   mode: TravelMode
+  /** Show how the day is going (supervisor's view): done stops in green, the one in progress in blue. */
+  progress?: boolean
 }
 
 /** The route on a real street map: numbered stops to tap, zoom, and the path between them. */
-export default function StreetMap({ stops, origin, line, mode }: StreetMapProps) {
+export default function StreetMap({ stops, origin, line, mode, progress = false }: StreetMapProps) {
   const box = useRef<HTMLDivElement>(null)
   const [failed, setFailed] = useState(false)
   const located = stops.filter((v) => v.store.lat !== null && v.store.lng !== null)
@@ -83,9 +86,11 @@ export default function StreetMap({ stops, origin, line, mode }: StreetMapProps)
       const n = stops.indexOf(v) + 1
       const pin = document.createElement('button')
       pin.type = 'button'
-      pin.className = n === 1 ? `${styles.pin} ${styles.first}` : styles.pin ?? ''
+      const state = progress ? (isVisited(v.workStatus) ? styles.done : v.workStatus === 'in_progress' ? styles.current : '') : n === 1 ? styles.first : ''
+      pin.className = `${styles.pin ?? ''} ${state ?? ''}`.trim()
       pin.textContent = String(n)
-      pin.setAttribute('aria-label', `${n}. ${placeName(v)}`)
+      const said = progress ? (isVisited(v.workStatus) ? ', hecho' : v.workStatus === 'in_progress' ? ', en curso' : ', por hacer') : ''
+      pin.setAttribute('aria-label', `${n}. ${placeName(v)}${said}`)
       const popup = new maplibregl.Popup({ offset: 18, closeButton: false, maxWidth: '260px' }).setDOMContent(card(n, v, mode))
       new maplibregl.Marker({ element: pin }).setLngLat([v.store.lng as number, v.store.lat as number]).setPopup(popup).addTo(map)
     })

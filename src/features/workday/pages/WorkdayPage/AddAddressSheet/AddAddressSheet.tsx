@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Check, MapPinOff, Plus, Search, Store } from 'lucide-react'
-import { formatLongDate } from '@/domain/dates'
+import { Check, MapPinOff, Search } from 'lucide-react'
+import { formatLongDate, todayInArgentina } from '@/domain/dates'
+import { overlapText } from '@/domain/overlaps'
 import { supabase } from '@/lib/supabase'
 import { useDebounced } from '@/lib/useDebounced'
 import { Banner } from '@/ui/Banner'
@@ -22,7 +23,10 @@ import { MentionTextArea } from '@/features/workday/components/MentionTextArea'
 import { SellerPicker } from '@/features/workday/components/SellerPicker'
 import { useAddSeller, useCanAddSellers } from '@/features/workday/api/sellers'
 import { pickable } from '@/features/workday/store-tags'
+import { useDayOverlaps } from '@/features/workday/api/overlaps'
+import { OverlapNote } from '@/features/workday/components/OverlapNote'
 import { pastedHelp, readLines } from './paste-lines'
+import { DirectoryResults } from './DirectoryResults'
 
 interface AddAddressSheetProps {
   open: boolean
@@ -92,6 +96,26 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
   const newSeller = useAddSeller(ctx.companyId)
   const addSeller = canAdd ? (name: string) => newSeller.mutateAsync(name) : undefined
   const unknown = [...new Set(lines.flatMap((l) => l.unknown))].filter((u) => !pasted.endsWith(u))
+
+  // Who else already has these stores that day, before adding them again.
+  const when = date === todayInArgentina() ? 'de hoy' : 'de ese día'
+  const foundOverlaps = useDayOverlaps(workdayId, (found.data ?? []).map((st) => ({ storeId: st.id })), open && mode === 'one' && online)
+  const typed = useDebounced(`${form.address.trim()}|${form.customerNumber.trim()}`, 500).split('|')
+  const newOverlaps = useDayOverlaps(workdayId, [{ address: typed[0], customerNumber: typed[1] }], open && mode === 'one' && online)
+  const pastedLines = useDebounced(lines.map((l) => [l.address, l.customerNumber ?? ''].join('|')).join('\n'), 500)
+  const pastedAsks = pastedLines ? pastedLines.split('\n').map((r) => ({ address: r.split('|')[0], customerNumber: r.split('|')[1] })) : []
+  const pastedOverlaps = useDayOverlaps(workdayId, pastedAsks, open && mode === 'many' && online)
+  const repeated = [...(pastedOverlaps.data ?? [])].flatMap(([i, list]) => (lines[i] ? [`${lines[i].address || lines[i].customerNumber}: ${overlapText(list, when)}`] : []))
+
+  const pick = async (storeId: string) => {
+    setPicked(storeId)
+    try {
+      await add.mutateAsync({ storeId })
+      onClose()
+    } finally {
+      setPicked(null)
+    }
+  }
 
   const addNew = async () => {
     await add.mutateAsync({
@@ -184,41 +208,7 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
               <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar comercio, dirección o nro. de cliente" aria-label="Buscar en el directorio" />
             </label>
             {found.data?.length ? (
-              <>
-                <span className={styles.eyebrow}>En el directorio</span>
-                {found.data.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    className={styles.result}
-                    data-picked={picked === s.id || undefined}
-                    aria-busy={picked === s.id}
-                    disabled={add.isPending}
-                    onClick={async () => {
-                      setPicked(s.id)
-                      try {
-                        await add.mutateAsync({ storeId: s.id })
-                        onClose()
-                      } finally {
-                        setPicked(null)
-                      }
-                    }}
-                  >
-                    <span className={styles.resultIcon}><Store size={16} aria-hidden /></span>
-                    <span className={styles.resultText}>
-                      <span className={styles.resultName}>{s.name ?? s.address}</span>
-                      <span className={styles.resultMeta}>
-                        {[s.name ? s.address : s.area, s.customer_number && `Cliente ${s.customer_number}`].filter(Boolean).join(' · ')}
-                      </span>
-                    </span>
-                    {picked === s.id ? (
-                      <span className={styles.resultAdding}><span className={styles.ring} aria-hidden />Agregando…</span>
-                    ) : (
-                      <span className={styles.resultAdd}><Plus size={18} aria-hidden />Agregar</span>
-                    )}
-                  </button>
-                ))}
-              </>
+              <DirectoryResults stores={found.data} picked={picked} busy={add.isPending} onPick={(id) => void pick(id)} overlaps={foundOverlaps.data} when={when} />
             ) : q.length >= 2 && found.isSuccess ? (
               <p className={styles.help}>No está en el directorio. Cargalo como comercio nuevo.</p>
             ) : null}
@@ -240,6 +230,7 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
                   <span className={styles.noLocation}><MapPinOff size={14} aria-hidden />Sin ubicación: se guarda igual y la verificás después</span>
                 )
               ) : null}
+              {typed[0] === form.address.trim() ? <OverlapNote list={newOverlaps.data?.get(0)} when={when} /> : null}
             </div>
             <div className={styles.pair}>
               <Field label="Nombre" value={form.name} onChange={set('name')} placeholder="Opcional" />
@@ -282,6 +273,11 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
             help={pastedHelp(lines, true)}
           />
           {unknown.length ? <Banner tone="warn">No encontramos {unknown.join(', ')}. Elegilos de la lista que aparece al escribir @ o #; si no están, se cargan en Catálogos.</Banner> : null}
+          {repeated.length ? (
+            <Banner tone="warn" title={repeated.length === 1 ? 'Una dirección ya está en otra jornada' : `${repeated.length} direcciones ya están en otras jornadas`}>
+              <ul className={styles.repeated}>{repeated.map((r) => <li key={r}>{r}</li>)}</ul>
+            </Banner>
+          ) : null}
           {leftOut ? <Banner tone="warn">{leftOut}</Banner> : null}
         </>
       )}
