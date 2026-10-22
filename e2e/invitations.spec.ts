@@ -36,6 +36,7 @@ test('new to Visitario: from the email, create the account and accept', async ({
   await page.getByRole('button', { name: 'Aceptar y sumarme' }).click()
   await expect(page.getByRole('heading', { name: '¡Listo! Ya sos parte de Panda' })).toBeVisible()
   expect(state.invite?.accepted?.[0]).toMatchObject({ p_token: TOKEN, p_accept: true })
+  await expect.poll(() => state.invite?.toldInviter).toBe(1) // the admin who invited gets an email
   await page.screenshot({ path: `test-results/invitation-done-${info.project.name}.png`, fullPage: true })
   await page.getByRole('button', { name: 'Empezar' }).click()
   await expect(page).toHaveURL(/\/s\/workday$/)
@@ -74,6 +75,7 @@ test('declining says it plainly', async ({ page }) => {
   await page.getByRole('button', { name: 'Rechazar' }).click()
   await expect(page.getByRole('heading', { name: 'Rechazaste la invitación' })).toBeVisible()
   expect(state.invite?.accepted?.[0]).toMatchObject({ p_accept: false })
+  expect(state.invite?.toldInviter).toBeUndefined() // declining tells nobody
 })
 
 for (const [state, heading] of [
