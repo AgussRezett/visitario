@@ -39,6 +39,21 @@ test('an activador starts an operativo with a teammate', async ({ page }, info) 
   expect(state.operationCalls?.[0]?.p_host).toBeUndefined()
 })
 
+test('someone just made activador shows up the next time the picker opens', async ({ page }) => {
+  const state: FakeState = { workday, visits: [visitRow('v1', 0, 'Moldes 1365')], uploads: [], teammates: [teammates[0] as Row] }
+  await installFakeSupabase(page, state)
+  await page.goto('/s/workday')
+  await page.getByRole('button', { name: 'Armar operativo' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Armar operativo' })
+  await expect(sheet.getByText('No hay otros activadores en la empresa.')).toBeVisible()
+  await page.keyboard.press('Escape')
+
+  // An admin gives Lucía the role meanwhile.
+  state.teammates = teammates
+  await page.getByRole('button', { name: 'Armar operativo' }).click()
+  await expect(sheet.getByRole('checkbox', { name: /Lucía Gómez/ })).toBeVisible()
+})
+
 test('a member sees the operativo’s stops in their day, brings their own and can leave', async ({ page }, info) => {
   const state: FakeState = {
     workday, uploads: [], teammates, operations: [operation()],

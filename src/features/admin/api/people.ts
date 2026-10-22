@@ -2,6 +2,7 @@ import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query
 import { supabase } from '@/lib/supabase'
 import type { Role } from '@/domain/roles'
 import type { CompanyPerson, MembershipStatus, Team } from '@/domain/people'
+import { operationKeys } from '@/features/operation/api'
 
 export const adminKeys = {
   people: (companyId: string) => ['admin', 'people', companyId] as const,
@@ -77,7 +78,7 @@ export interface MembershipChange {
 
 export function useAdminPeople(companyId: string) {
   const qc = useQueryClient()
-  const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ['admin'] }), qc.invalidateQueries({ queryKey: ['team'] })])
+  const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ['admin'] }), qc.invalidateQueries({ queryKey: ['team'] }), qc.invalidateQueries({ queryKey: operationKeys.people(companyId) })])
   const update = useMutation({
     mutationFn: ({ membershipId, roles, teamId, status, startsOn, shift, autoApprove }: MembershipChange) =>
       run(

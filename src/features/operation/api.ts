@@ -43,11 +43,14 @@ export interface Teammate {
   lastName: string
 }
 
-/** The company's active activadores, to pick who goes out together. */
+/**
+ * The company's active activadores, to pick who goes out together. Asked again each time
+ * the picker opens: an admin may have just given someone the role or turned them off.
+ */
 export const teammatesQuery = (companyId: string) =>
   queryOptions({
     queryKey: operationKeys.people(companyId),
-    staleTime: 10 * 60_000,
+    staleTime: 0,
     queryFn: async (): Promise<Teammate[]> => {
       const { data, error } = await supabase
         .from('membership')
