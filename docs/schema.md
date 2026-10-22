@@ -6,7 +6,7 @@ Proyecto Supabase `visitario` (ref `mjpzawlyjjlmluozjwap`, São Paulo, Postgres 
 Tablas, columnas, enums, funciones y mensajes de error en inglés. Catálogos, plantillas y textos de la interfaz en español.
 
 ## Tablas (concepto → nombre)
-Persona `person` · datos privados `person_private` · super admin `platform_admin` · empresa `company` · suscripción `subscription` · equipo `team` · membresía `membership` · marca `brand` · tipo de exhibición `display_type` · canal `channel` · vendedor `seller` · operativo `operation` · integrante `operation_member` · número de trabajo `work_metric` · plantilla `message_template` · formato de carga `import_format` · comercio `store` · jornada `workday` · visita `visit` · exhibición `display` · foto `photo` · trabajo de la visita `visit_metric` · marcas de la visita `visit_brand` · comentario `comment` · historial `visit_event` · acceso de soporte `support_access` · búsqueda por DNI `dni_lookup` · uso de IA `ai_usage`.
+Persona `person` · datos privados `person_private` · super admin `platform_admin` · empresa `company` · suscripción `subscription` · equipo `team` · membresía `membership` · marca `brand` · tipo de exhibición `display_type` · canal `channel` · vendedor `seller` · operativo `operation` · integrante `operation_member` · número de trabajo `work_metric` · plantilla `message_template` · formato de carga `import_format` · comercio `store` · jornada `workday` · recorrido guardado `route_plan` · visita `visit` · exhibición `display` · foto `photo` · trabajo de la visita `visit_metric` · marcas de la visita `visit_brand` · comentario `comment` · historial `visit_event` · acceso de soporte `support_access` · búsqueda por DNI `dni_lookup` · uso de IA `ai_usage`.
 
 Enums: `role` (merchandiser, seller, supervisor, admin) · `work_status` (pending, in_progress, done, refused, closed) · `review_status` (unreviewed, approved, needs_fix) · `consent_kind` (yes, with_objection, refused, closed) · `photo_kind` (storefront, before, after) · `visit_source` (assigned, added) · `workday_status` (draft, published, closed).
 
@@ -23,6 +23,9 @@ Cada comercio tiene un canal (`store.channel_id`, catálogo `channel`, su númer
 
 ## Operativos
 Un operativo es la jornada de quien lo arma, compartida (`operation.workday_id`). Cada integrante (`operation_member`) conserva su propia jornada y trabaja las visitas del operativo como propias (`visit_role` = merchandiser mientras no salió); el supervisor de cualquier integrante lo ve y revisa. Lo hecho cuenta en el día de cada integrante (`daily_progress`, `daily_metrics`, `team_day`); en los totales del equipo una visita compartida cuenta una vez (`day_operations` trae sus números). Presencia y ubicación viajan solo por el canal privado de Realtime `operation:<id>`: nunca se guardan.
+
+## Recorrido guardado
+El último recorrido calculado de cada jornada (`route_plan`, uno por `workday_id`): orden, km, minutos y la línea por calles. Lo guarda solo el activador dueño de la jornada con `save_route_plan`; lo leen él, su supervisor y el admin. Nunca guarda la ubicación: si se calculó desde el teléfono, la línea arranca en el primer local y solo queda `from_origin`.
 
 ## Tiempo real
 Supabase Realtime publica visit, photo, display, workday, comment, operation y operation_member; cada persona recibe solo lo que su RLS le deja leer. La app escucha por empresa y recarga lo que está en pantalla; al volver de segundo plano recarga igual.
