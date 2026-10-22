@@ -1,0 +1,109 @@
+@use '@/styles/abstracts' as *;
+
+.card {
+  @include surface;
+  padding: space(1) space(3.5);
+}
+
+.order {
+  @include flex(column);
+}
+
+.stop {
+  @include flex(row, $gap: space(3), $align: center);
+  min-height: 56px;
+  padding-block: space(2);
+
+  & + & {
+    border-top: 1px solid $color-line;
+  }
+
+  // Done stops stay in their place, quieter.
+  &[data-tone='done'],
+  &[data-tone='approved'],
+  &[data-tone='refused'] {
+    .name {
+      color: $color-ink-subtle;
+    }
+  }
+}
+
+.num {
+  @include center;
+  @include square(28px);
+  @include text(label);
+  flex-shrink: 0;
+  border-radius: $radius-sm;
+  background: $color-muted;
+  font-weight: $weight-extrabold;
+}
+
+// The same colors as the status chips and the pins on the map.
+.active {
+  background: $color-active;
+  color: $color-white;
+}
+
+.done {
+  background: $color-done;
+  color: $color-white;
+}
+
+.fix {
+  background: $color-fix;
+  color: $color-white;
+}
+
+.closed {
+  background: $color-closed;
+  color: $color-white;
+}
+
+.refused {
+  background: $color-refused;
+  color: $color-white;
+}
+
+.text {
+  @include flex(column);
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  @include truncate;
+  font-weight: $weight-bold;
+}
+
+.note {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.go {
+  flex-shrink: 0;
+}
+
+.legend {
+  @include flex(row, $gap: space(3), $align: center);
+  @include text(tiny);
+  flex-wrap: wrap;
+  padding: space(2) 0 space(2.5);
+  border-top: 1px solid $color-line;
+  color: $color-ink-subtle;
+}
+
+.key {
+  @include flex(row, $gap: space(1.5), $align: center);
+}
+
+.dot {
+  @include square(10px);
+  border-radius: 3px;
+  background: $color-muted;
+  border: 1px solid $color-line;
+}
+
+.hidden {
+  @include visually-hidden;
+}

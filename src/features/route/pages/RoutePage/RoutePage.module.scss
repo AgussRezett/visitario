@@ -196,11 +196,6 @@
 }
 
 .choice-text,
-.stop-text {
-  @include flex(column);
-  flex: 1;
-  min-width: 0;
-}
 
 .choice-name {
   @include truncate;
@@ -286,6 +281,7 @@
     @include text(heading);
     font-weight: $weight-extrabold;
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
 
   span {
@@ -347,43 +343,6 @@
 }
 
 // ---- Order
-.order-card {
-  @include surface;
-  padding: space(1) space(3.5);
-}
-
-.order {
-  @include flex(column);
-}
-
-.stop {
-  @include flex(row, $gap: space(3), $align: center);
-  min-height: 56px;
-  padding-block: space(2);
-
-  & + & {
-    border-top: 1px solid $color-line;
-  }
-}
-
-.num {
-  @include center;
-  @include square(28px);
-  @include text(label);
-  flex-shrink: 0;
-  border-radius: $radius-sm;
-  background: $color-muted;
-  font-weight: $weight-extrabold;
-}
-
-.num-first {
-  background: $color-forest;
-  color: $color-on-forest;
-}
-
-.go {
-  flex-shrink: 0;
-}
 
 .legs {
   display: grid;
