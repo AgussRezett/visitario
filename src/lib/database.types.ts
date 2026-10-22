@@ -1681,6 +1681,22 @@ export type Database = {
       }
       copy_workday: { Args: { p_from: string; p_to: string }; Returns: number }
       create_personal_company: { Args: never; Returns: string }
+      day_overlaps: {
+        Args: { p_rows: Json; p_workday: string }
+        Returns: {
+          added_by_first: string
+          added_by_merchandiser: boolean
+          address: string
+          idx: number
+          merchandiser_first: string
+          merchandiser_last: string
+          same_workday: boolean
+          store_id: string
+          store_name: string
+          visit_id: string
+          work_status: Database["public"]["Enums"]["work_status"]
+        }[]
+      }
       dismiss_resumable: { Args: { p_visits: string[] }; Returns: number }
       find_person_by_dni: {
         Args: { p_company: string; p_dni: string }
