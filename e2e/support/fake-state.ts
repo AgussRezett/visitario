@@ -32,6 +32,8 @@ export interface FakeState {
   templates?: Row[]
   subscription?: Row
   usage?: Row
+  /** Stops of other people's days that day_overlaps reports (store_id / address / customer_number to match). */
+  overlaps?: Row[]
   /** Import: the directory, saved formats and what the geocoder finds (by address). */
   stores?: Row[]
   /** Pending stops from today on, per store (what archiving removes). */

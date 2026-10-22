@@ -18,6 +18,13 @@ const scrollTop = (l: Locator) => l.evaluate((el) => el.scrollTop)
 
 /** While a dialog is open every scroll region behind it is locked. */
 async function expectBackgroundLocked(page: Page, region: Locator) {
+  // Opening a sheet can shorten the page behind it by a few pixels: measure once it settles.
+  let settled = -1
+  await expect.poll(async () => {
+    const was = settled
+    settled = await scrollTop(region)
+    return settled === was
+  }, { intervals: [150] }).toBe(true)
   const before = await scrollTop(region)
   await page.mouse.move(20, 20) // over the backdrop, outside the sheet
   await page.mouse.wheel(0, 600)
