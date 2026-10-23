@@ -199,7 +199,7 @@ test('templates: write with Spanish data, preview on a real visit, save, hide Wh
   await page.getByRole('button', { name: 'Insertar Tarea' }).click()
   await expect(page.getByLabel('Texto', { exact: true })).toHaveValue('HOLA {nombre}\nZona: {zona}\nTarea: {tarea}')
   await expect(preview.getByText(/HOLA Mas Ahorro/)).toBeVisible()
-  await expect(preview.getByText(/Tarea:/)).toHaveCount(0) // no task: the line is left out
+  await expect(preview.getByText(/Tarea: -/)).toBeVisible() // no task: the line stays, with a dash
   await page.screenshot({ path: `test-results/templates-${info.project.name}.png`, fullPage: true })
   await page.getByRole('button', { name: 'Guardar', exact: true }).click()
   await expect(page.getByText('Guardada: los activadores la usan desde su próxima visita.')).toBeVisible()
