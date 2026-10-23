@@ -168,3 +168,8 @@
   @include text(label);
   color: $color-ink-subtle;
 }
+
+// The phone closed the app while a photo was being chosen
+.interrupted {
+  @include flex(column, $gap: space(1), $align: flex-start);
+}
