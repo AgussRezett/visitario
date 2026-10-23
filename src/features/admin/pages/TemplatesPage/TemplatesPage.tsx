@@ -113,7 +113,7 @@ export function TemplatesPage() {
 
         <section className={styles.editor} aria-label="Editor">
           <TextArea ref={area} label="Texto" value={body} onChange={(e) => setBody(e.target.value)} rows={9} className={styles.text} maxLength={4000}
-            help="Si un dato está vacío, su línea no se muestra. Escrito en mayúsculas ({CANAL}), el dato sale en mayúsculas." />
+            help="Si falta un dato, la línea sale igual con un guion (RESPONSABLE: -). Escrito en mayúsculas ({CANAL}), el dato sale en mayúsculas." />
           <span className={styles.label}>Insertar dato</span>
           <div className={styles.tokens}>
             {TEMPLATE_FIELDS[kind].map((f) => (

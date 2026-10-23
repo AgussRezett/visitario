@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { displayLabels, fillTemplate } from './templates'
 
 describe('fillTemplate', () => {
-  it('a line whose data are empty is left out', () => {
-    expect(fillTemplate('Fecha: {date}\nNum clte: {customer_number}\nNota fija', { date: '09/10/2026' })).toBe('Fecha: 09/10/2026\nNota fija')
-    expect(fillTemplate('{store_name} · {address}', { address: 'Moldes 1365' })).toBe('· Moldes 1365')
+  it('a missing piece of data keeps its line, with a dash', () => {
+    expect(fillTemplate('Fecha: {date}\nNum clte: {customer_number}\nNota fija', { date: '09/10/2026' })).toBe('Fecha: 09/10/2026\nNum clte: -\nNota fija')
+    expect(fillTemplate('{store_name} · {address}', { address: 'Moldes 1365', store_name: '  ' })).toBe('- · Moldes 1365')
+    expect(fillTemplate('RESPONSABLE: {VENDEDOR}\nCLIENTE: {nro_cliente}', { seller: null, customer_number: undefined })).toBe('RESPONSABLE: -\nCLIENTE: -')
   })
   it('takes the Spanish names the admin types', () => {
-    expect(fillTemplate('Fecha: {fecha}\nDireccion: {direccion}\nZona: {zona}', { date: '09/10', address: 'Tres Arroyos 762', area: '' })).toBe('Fecha: 09/10\nDireccion: Tres Arroyos 762')
+    expect(fillTemplate('Fecha: {fecha}\nDireccion: {direccion}\nZona: {zona}', { date: '09/10', address: 'Tres Arroyos 762', area: '' })).toBe('Fecha: 09/10\nDireccion: Tres Arroyos 762\nZona: -')
   })
   it('a placeholder in capitals gives the value in capitals', () => {
     const body = 'FECHA DE EJECUCION: {fecha_corta}\nCANAL: {CANAL}\nCLIENTE: {nro_cliente}\nRESPONSABLE: {RESPONSABLE}\nZona: {Zona}'

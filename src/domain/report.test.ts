@@ -58,7 +58,7 @@ describe('daily report', () => {
       { address: 'E', added: false, workStatus: 'pending' as const, channel: 'Kiosco' },
     ]
     expect(buildDailyReport({ date: '2026-10-09', visits: tagged, metrics: [], template: '{POR_CANAL}' })).toBe('AUTOSERVICIO: 2\nKIOSCO: 1\nSIN CANAL: 1')
-    expect(buildDailyReport({ date: '2026-10-09', visits, metrics: [], template: 'X\nCanales:\n{por_canal}' })).toBe('X\nCanales:')
+    expect(buildDailyReport({ date: '2026-10-09', visits, metrics: [], template: 'X\nCanales:\n{por_canal}' })).toBe('X\nCanales:\n-')
   })
 
   it('shows a dash for empty lists', () => {
