@@ -838,6 +838,24 @@ check('Ended: Lucía can join another one that day', (await as('lucia', `select 
   await expectError('Anonymous cannot read catalogs', () => asAnon(`select company_catalogs('${panda}')`))
 }
 
+// ---- Profile: photo and phone, by their owner only
+{
+  const uid = U.agus
+  await as('agus', `update person set avatar_path = $1 where id = $2`, [`${uid}/1792740000000.jpg`, agus])
+  check('I set my own profile photo, and my_identity returns it', (await as('agus', `select my_identity() j`))[0].j.person.avatar_path === `${uid}/1792740000000.jpg`)
+  check('A coworker sees it with my name', (await as('martin', `select avatar_path from person where id = $1`, [agus]))[0]?.avatar_path === `${uid}/1792740000000.jpg`)
+  await expectError('A photo from someone else’s folder is refused', () => as('agus', `update person set avatar_path = $1 where id = $2`, [`${U.martin}/1.jpg`, agus]), /avatar_own_folder/)
+  const r = await as('martin', `update person set avatar_path = null where id = $1 returning id`, [agus])
+  check('Nobody else changes my photo', r.length === 0)
+  await as('agus', `update person set avatar_path = null where id = $1`, [agus])
+  await sys(`update person_private set phone_verified_at = now() where person_id = $1`, [agus])
+  await as('agus', `update person_private set phone = '+5491144443333' where person_id = $1`, [agus])
+  const ph = (await sys(`select phone, phone_verified_at from person_private where person_id = $1`, [agus]))[0]
+  check('I change my phone; the new number is not verified', ph.phone === '+5491144443333' && ph.phone_verified_at === null)
+  await expectError('…and it must look like a phone', () => as('agus', `update person_private set phone = 'abc' where person_id = $1`, [agus]))
+  await expectError('The DNI is not editable', () => as('agus', `update person_private set dni = '11222333' where person_id = $1`, [agus]))
+}
+
 // Password detection (Google users who later set a password)
 await sys(`update auth.users set encrypted_password = '$2a$10$hash' where id = $1`, [U.agus]);
 check('has_password is true for a user with a password', (await as('agus', `select has_password() v`))[0].v === true);

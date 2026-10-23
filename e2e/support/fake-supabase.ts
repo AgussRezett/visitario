@@ -73,7 +73,26 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
     const body = () => (req.postDataJSON() ?? {}) as Row
 
     if (path.endsWith('/auth/v1/user')) {
-      return json({ id: 'u1', email: 'agus@example.com', identities: [{ provider: 'email' }], aud: 'authenticated', app_metadata: {}, user_metadata: {}, created_at: '2026-01-01' })
+      if (req.method() === 'PUT') {
+        const b = body()
+        if (b.email) (state.profile ??= {}).new_email = b.email
+      }
+      return json({ id: 'u1', email: 'agus@example.com', new_email: state.profile?.new_email, identities: [{ provider: 'email' }], aud: 'authenticated', app_metadata: {}, user_metadata: {}, created_at: '2026-01-01' })
+    }
+    // ---- Profile: my rows and the photo bucket
+    if (req.method() === 'PATCH' && (path.endsWith('/person') || path.endsWith('/person_private'))) {
+      Object.assign((state.profile ??= {}), body())
+      return route.fulfill({ status: 204 })
+    }
+    if (path.includes('/storage/v1/object/public/avatars/')) return route.fulfill({ contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64') })
+    if (path.includes('/storage/v1/object/avatars')) {
+      if (req.method() === 'DELETE') {
+        ;(state.avatarsRemoved ??= []).push(...((body() as { prefixes?: string[] }).prefixes ?? []))
+        return json([])
+      }
+      const name = path.split('/storage/v1/object/avatars/')[1] ?? ''
+      ;(state.avatarsUploaded ??= []).push(name)
+      return json({ Key: `avatars/${name}`, Id: name })
     }
     if (path.endsWith('/rpc/has_password')) return json(true)
     if (path.endsWith('/person')) return json(state.invite?.noPerson ? [] : [{ id: ME, first_name: 'Agustín', last_name: 'Rezett' }])
@@ -81,7 +100,7 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
     if (path.endsWith('/platform_admin')) return json(state.platform ? { person_id: ME } : null)
     // The bundled reads, built from the same fake rows the separate reads use.
     if (path.endsWith('/rpc/my_identity')) {
-      const person = state.invite?.noPerson ? null : { id: ME, first_name: 'Agustín', last_name: 'Rezett', dni: '35111222', phone: null, birth_date: null }
+      const person = state.invite?.noPerson ? null : { id: ME, first_name: 'Agustín', last_name: 'Rezett', dni: '35111222', phone: null, birth_date: null, avatar_path: null, ...Object.fromEntries(Object.entries(state.profile ?? {}).filter(([k]) => k !== 'new_email')) }
       return json({
         has_password: true, person, is_platform_admin: Boolean(state.platform),
         memberships: person ? (state.memberships ?? [{ id: 'm1', company_id: COMPANY, roles: ['merchandiser'], status: 'active', starts_on: '2026-10-01', company: { name: 'Panda' } }]) : [],

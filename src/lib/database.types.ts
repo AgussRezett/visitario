@@ -645,6 +645,7 @@ export type Database = {
       }
       person: {
         Row: {
+          avatar_path: string | null
           auth_user_id: string | null
           created_at: string
           first_name: string
@@ -654,6 +655,7 @@ export type Database = {
           version: number
         }
         Insert: {
+          avatar_path?: string | null
           auth_user_id?: string | null
           created_at?: string
           first_name: string
@@ -663,6 +665,7 @@ export type Database = {
           version?: number
         }
         Update: {
+          avatar_path?: string | null
           auth_user_id?: string | null
           created_at?: string
           first_name?: string
