@@ -54,6 +54,9 @@ function matches(row: Row, params: URLSearchParams) {
 }
 
 export async function installFakeSupabase(page: Page, state: FakeState, role: 'merchandiser' | 'supervisor' | 'admin' = 'merchandiser') {
+  // Realtime's socket stays here: it never reaches the real project (it would knock with a
+  // fake token and retry forever). Screens work without live events, as with no signal.
+  await page.routeWebSocket(/\/realtime\/v1\/websocket/, () => undefined)
   await page.addInitScript(([token, r, offer]) => {
     localStorage.setItem('visitario.activeRole', JSON.stringify({ companyId: 'c1', role: r }))
     // The install guide opens by itself a few seconds in; only its own tests want it.
@@ -76,6 +79,25 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
     if (path.endsWith('/person')) return json(state.invite?.noPerson ? [] : [{ id: ME, first_name: 'Agustín', last_name: 'Rezett' }])
     if (path.endsWith('/person_private')) return json({ dni: '35111222', phone: null, birth_date: null })
     if (path.endsWith('/platform_admin')) return json(state.platform ? { person_id: ME } : null)
+    // The bundled reads, built from the same fake rows the separate reads use.
+    if (path.endsWith('/rpc/my_identity')) {
+      const person = state.invite?.noPerson ? null : { id: ME, first_name: 'Agustín', last_name: 'Rezett', dni: '35111222', phone: null, birth_date: null }
+      return json({
+        has_password: true, person, is_platform_admin: Boolean(state.platform),
+        memberships: person ? (state.memberships ?? [{ id: 'm1', company_id: COMPANY, roles: ['merchandiser'], status: 'active', starts_on: '2026-10-01', company: { name: 'Panda' } }]) : [],
+        invitations: person ? (state.invite?.mine ?? []) : [],
+      })
+    }
+    if (path.endsWith('/rpc/company_catalogs')) {
+      const c = state.catalogs
+      const active = (rows: Row[] | undefined) => (rows ?? []).filter((r) => r.active !== false)
+      return json({
+        brands: active(c?.brand), metrics: active(c?.work_metric), channels: c?.channel ?? [], sellers: c?.seller ?? [],
+        display_types: c ? active(c.display_type) : [{ id: 1, name: 'Puntera' }, { id: 3, name: 'Góndola' }],
+        templates: state.templates ?? [],
+        company: state.company ? { show_whatsapp: state.company.show_whatsapp ?? true, messages_per_display: state.company.messages_per_display ?? false } : null,
+      })
+    }
     const platform = await handlePlatform({ path, state, json, body })
     if (platform) return platform
     const handled = await handleAdmin({ path, url, req, route, state, json, body })

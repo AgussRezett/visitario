@@ -35,7 +35,7 @@ const activeProps = { className: styles.active }
 export function AppShell({ me, active, children }: Props) {
   const [overlay, setOverlay] = useState<HTMLElement | null>(null)
   const badges = useNavBadges(me.person.id, active)
-  useLive(useQueryClient(), active?.companyId ?? null)
+  useLive(useQueryClient(), active?.companyId ?? null, me.person?.id ?? null)
   const badge = (slug: string) => (badges[slug] ? <span className={styles.badge} aria-label={`${badges[slug]} pendientes`}>{badges[slug]}</span> : null)
   const sections = active ? SECTIONS[active.role] : []
   const name = `${me.person.firstName} ${me.person.lastName}`
