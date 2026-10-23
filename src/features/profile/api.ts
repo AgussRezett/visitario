@@ -7,9 +7,9 @@ import { refreshMe } from '@/features/auth/me'
  * The photo as a square JPEG of 512 px. Drawing it on a canvas drops every EXIF field,
  * so no location (or camera data) ever leaves the phone.
  */
-async function squarePhoto(file: Blob) {
+async function squarePhoto(file: Blob, square?: Square) {
   const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
-  const { sx, sy, side } = centerSquare(bitmap.width, bitmap.height)
+  const { sx, sy, side } = square ?? centerSquare(bitmap.width, bitmap.height)
   const out = Math.min(AVATAR_SIDE, side)
   const canvas = document.createElement('canvas')
   canvas.width = out
@@ -25,12 +25,19 @@ async function squarePhoto(file: Blob) {
 
 export class ProfileError extends Error {}
 
+/** The part of the picture the person framed, in its own pixels. */
+export interface Square {
+  sx: number
+  sy: number
+  side: number
+}
+
 export function useAvatar(userId: string, personId: string, current: string | null) {
   const qc = useQueryClient()
   const done = () => refreshMe(qc)
   const upload = useMutation({
-    mutationFn: async (file: File) => {
-      const blob = await squarePhoto(file).catch(() => {
+    mutationFn: async ({ file, square }: { file: File; square?: Square }) => {
+      const blob = await squarePhoto(file, square).catch(() => {
         throw new ProfileError('No pudimos leer la foto. Probá con otra.')
       })
       const path = avatarPath(userId)

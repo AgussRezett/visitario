@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { avatarPath, centerSquare, formatArPhone, isEmail, readProfile } from './profile'
+import { avatarPath, centerSquare, clampFraming, formatArPhone, framedSquare, isEmail, readProfile } from './profile'
 
 describe('profile', () => {
   it('a round avatar shows the centered square', () => {
@@ -34,5 +34,20 @@ describe('formatArPhone', () => {
   it('writes a mobile the usual way', () => {
     expect(formatArPhone('+5491155554521')).toBe('11 5555-4521')
     expect(formatArPhone(null)).toBeNull()
+  })
+})
+
+describe('framing a photo', () => {
+  it('without moving or zooming it is the centered square', () => {
+    expect(framedSquare({ zoom: 1, x: 0, y: 0 }, 1400, 1050, 300)).toEqual(centerSquare(1400, 1050))
+  })
+  it('zooming takes a smaller square; moving right shows more of the left', () => {
+    expect(framedSquare({ zoom: 2, x: 0, y: 0 }, 1000, 1000, 250)).toEqual({ sx: 250, sy: 250, side: 500 })
+    expect(framedSquare({ zoom: 2, x: 125, y: 0 }, 1000, 1000, 250)).toEqual({ sx: 0, sy: 250, side: 500 })
+  })
+  it('never leaves a gap: movement and zoom are limited', () => {
+    expect(clampFraming({ zoom: 1, x: 999, y: 50 }, 1000, 1000, 250)).toEqual({ zoom: 1, x: 0, y: 0 })
+    expect(clampFraming({ zoom: 9, x: -999, y: 0 }, 2000, 1000, 250)).toEqual({ zoom: 4, x: -875, y: 0 })
+    expect(clampFraming({ zoom: 0.2, x: 0, y: 0 }, 1000, 1000, 250).zoom).toBe(1)
   })
 })
