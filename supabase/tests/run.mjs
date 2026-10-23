@@ -821,6 +821,8 @@ check('Ended: Lucía can join another one that day', (await as('lucia', `select 
   check('The next day it is offered with the pending ones', offered.some((r) => r.visit_id === vStale))
   check('Running again does nothing', (await sys(`select private.expire_stale_visits() n`))[0].n === 0)
   await sys(`update visit set deleted_at = now() where workday_id = $1`, [wStale])
+}
+
 // ---- Bundled reads: who I am and a company's catalogs, one request each
 {
   const id = (await as('agus', `select my_identity() j`))[0].j
