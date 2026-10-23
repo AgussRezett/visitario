@@ -9,6 +9,13 @@
     border-radius: $radius-full;
     background: $color-forest;
     color: $color-white;
+    overflow: hidden;
     font-weight: $weight-extrabold;
+  }
+
+  .photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 }

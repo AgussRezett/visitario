@@ -18,9 +18,11 @@ export interface Invitation {
 export interface Me {
   userId: string
   email: string | null
+  /** A new email waiting for its confirmation link to be opened. */
+  pendingEmail: string | null
   hasPassword: boolean
   providers: string[]
-  person: { id: string; firstName: string; lastName: string; dni: string; phone: string | null; birthDate: string | null } | null
+  person: { id: string; firstName: string; lastName: string; dni: string; phone: string | null; birthDate: string | null; avatarPath: string | null } | null
   memberships: ActiveMembership[]
   invitations: Invitation[]
   isPlatformAdmin: boolean
@@ -28,7 +30,7 @@ export interface Me {
 
 interface IdentityRow {
   has_password: boolean
-  person: { id: string; first_name: string; last_name: string; dni: string; phone: string | null; birth_date: string | null } | null
+  person: { id: string; first_name: string; last_name: string; dni: string; phone: string | null; birth_date: string | null; avatar_path?: string | null } | null
   memberships: { id: string; company_id: string; roles: Enums<'role'>[]; status: Enums<'membership_status'>; starts_on: string; company: { name: string; kind: Enums<'company_kind'> } | null }[]
   is_platform_admin: boolean
   invitations: { id: string; company: string; roles: Enums<'role'>[]; starts_on: string; expires_at: string | null; inviter: string | null }[]
@@ -46,14 +48,14 @@ async function fetchMe(): Promise<Me | null> {
   if (error) throw error
   const id = data as unknown as IdentityRow
   // A Google user who later sets a password gets no 'email' identity: the server knows.
-  const base = { userId: user.id, email: user.email ?? null, providers, hasPassword: providers.includes('email') || id.has_password }
+  const base = { userId: user.id, email: user.email ?? null, pendingEmail: user.new_email ?? null, providers, hasPassword: providers.includes('email') || id.has_password }
   const person = id.person
   if (!person) return { ...base, person: null, memberships: [], invitations: [], isPlatformAdmin: false }
 
   const rows = id.memberships ?? []
   return {
     ...base,
-    person: { id: person.id, firstName: person.first_name, lastName: person.last_name, dni: person.dni, phone: person.phone, birthDate: person.birth_date },
+    person: { id: person.id, firstName: person.first_name, lastName: person.last_name, dni: person.dni, phone: person.phone, birthDate: person.birth_date, avatarPath: person.avatar_path ?? null },
     memberships: rows.filter((m) => m.status === 'active').map((m) => ({ companyId: m.company_id, companyName: m.company?.name ?? '', personal: m.company?.kind === 'personal', roles: m.roles })),
     invitations: [
       ...(id.invitations ?? []).map((i): Invitation => ({ kind: 'email', id: i.id, companyName: i.company, roles: i.roles, startsOn: i.starts_on, expiresAt: i.expires_at, inviter: i.inviter })),

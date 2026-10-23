@@ -5,6 +5,7 @@ import { Building2, UserRound } from 'lucide-react'
 import clsx from 'clsx'
 import { Logo } from '@/ui/Logo'
 import { Avatar } from '@/ui/Avatar'
+import { avatarUrl } from '@/lib/avatars'
 import { initials } from '@/lib/format'
 import type { Me } from '@/features/auth/me'
 import type { Role } from '@/domain/roles'
@@ -35,6 +36,7 @@ const activeProps = { className: styles.active }
 export function AppShell({ me, active, children }: Props) {
   const [overlay, setOverlay] = useState<HTMLElement | null>(null)
   const badges = useNavBadges(me.person.id, active)
+  const photo = avatarUrl(me.person.avatarPath)
   useLive(useQueryClient(), active?.companyId ?? null, me.person?.id ?? null)
   const badge = (slug: string) => (badges[slug] ? <span className={styles.badge} aria-label={`${badges[slug]} pendientes`}>{badges[slug]}</span> : null)
   const sections = active ? SECTIONS[active.role] : []
@@ -69,7 +71,7 @@ export function AppShell({ me, active, children }: Props) {
         ) : null}
         <p className={styles.accountTitle}>Cuenta</p>
         <Link to="/profile" className={styles.navLink} activeProps={activeProps}>
-          <Avatar name={short} size={24} />
+          <Avatar name={short} src={photo} size={24} />
           <span className={styles.accountName}>{name}</span>
         </Link>
       </aside>
@@ -81,7 +83,7 @@ export function AppShell({ me, active, children }: Props) {
           {active ? <ViewSwitcher memberships={me.memberships} active={active} /> : null}
           {active?.role === 'merchandiser' ? null : (
             <Link to="/profile" aria-label="Mi perfil">
-              <Avatar name={short} size={36} />
+              <Avatar name={short} src={photo} size={36} />
             </Link>
           )}
         </div>

@@ -2,6 +2,10 @@
 export type Row = Record<string, unknown>
 
 export interface FakeState {
+  /** My own rows as the profile changed them (person, person_private, a pending new_email). */
+  profile?: Row
+  avatarsUploaded?: string[]
+  avatarsRemoved?: string[]
   /** Signed photo links (https://photos.test/<id>.jpg); the spec serves them. */
   photoUrls?: boolean
   workday: Row | null

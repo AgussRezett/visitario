@@ -34,6 +34,7 @@ URL: `https://mjpzawlyjjlmluozjwap.supabase.co`
 | `20261022140000_messages_per_display.sql` | applied | `company.messages_per_display`: one ANTES / DESPUÉS per display (admin decides; on for Panda) |
 | `20261023120000_expire_stale_visits.sql` | applied (by hand, with its cron) | `private.expire_stale_visits()`: a visit in progress for 12 hours goes back to pending without its record (photos soft-deleted, found displays, numbers, brands, notes, rating); hourly via `supabase/cron/expire.sql` |
 | `20261023140000_bundled_reads.sql` | applied | `my_identity()` (who I am: was 6 requests) and `company_catalogs(p_company)` (was 7), security invoker |
+| `20261023160000_profile.sql` | applied | `person.avatar_path` + public `avatars` bucket (own folder only), phone editable by its owner (a new number is unverified), `my_identity` returns the photo |
 
 Files with `delete`/`drop` statements are refused by the agent connector; apply those with the CLI (`supabase link --project-ref mjpzawlyjjlmluozjwap && supabase db push`) or the SQL Editor.
 

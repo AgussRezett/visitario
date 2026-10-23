@@ -1,0 +1,121 @@
+@use '@/styles/abstracts' as *;
+
+@include keyframes-spin;
+
+// Photo, name and roles; the photo is the button that changes it
+.header {
+  @include flex(row, $gap: space(4), $align: center);
+  flex-wrap: wrap;
+}
+
+.photo {
+  position: relative;
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  border-radius: $radius-full;
+  background: none;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid $color-focus;
+    outline-offset: 3px;
+  }
+
+  &:disabled {
+    cursor: progress;
+  }
+
+  @include hover {
+    .badge {
+      background: $color-lime;
+    }
+  }
+}
+
+.avatar {
+  @include text(title);
+  box-shadow: 0 0 0 3px $color-card, 0 0 0 4px $color-line;
+}
+
+// The little camera that says the photo can change
+.badge {
+  @include center;
+  @include square(space(8));
+  @include transition-colors;
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  border: 2px solid $color-card;
+  border-radius: $radius-full;
+  background: $color-lime-soft;
+  color: $color-forest;
+}
+
+.spinner {
+  @include spinner-ring(space(3.5), 2px);
+}
+
+.identity {
+  @include flex(column, $gap: space(0.5));
+  flex: 1;
+  min-width: 0;
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+.name {
+  @include text(title);
+  margin: 0;
+  font-weight: $weight-extrabold;
+  overflow-wrap: anywhere;
+
+  @include up(lg) {
+    @include text(display);
+  }
+}
+
+.meta {
+  @include text(label);
+  margin: 0;
+  color: $color-ink-subtle;
+}
+
+.error {
+  flex-basis: 100%;
+}
+
+.options {
+  @include flex(column, $gap: space(2));
+}
+
+.option {
+  @include surface;
+  @include transition-colors;
+  @include text(base);
+  @include flex(row, $gap: space(3), $align: center);
+  min-height: space(13);
+  padding: 0 space(4);
+  border-radius: $radius-md;
+  color: $color-ink;
+  font: inherit;
+  font-weight: $weight-bold;
+  cursor: pointer;
+
+  @include hover {
+    background: $color-muted;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-focus;
+    outline-offset: 2px;
+  }
+}
+
+.remove {
+  justify-content: flex-start;
+  padding-inline: space(4);
+  color: $color-refused-ink;
+}

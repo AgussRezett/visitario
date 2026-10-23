@@ -8,6 +8,8 @@ interface PhotoPickerProps {
   onPick: (file: File) => void
   /** camera: opens the rear camera on phones; gallery: lets the person choose a picture. */
   source?: 'camera' | 'gallery'
+  /** Which camera opens on phones: the rear one (stores) or the front one (a selfie). */
+  facing?: 'environment' | 'user'
   className?: string
   label?: string
   disabled?: boolean
@@ -15,7 +17,7 @@ interface PhotoPickerProps {
 }
 
 /** Button that takes or picks one photo. On desktop it opens the file picker and accepts a dropped image. */
-export function PhotoPicker({ onPick, source = 'camera', className, label, disabled, children }: PhotoPickerProps) {
+export function PhotoPicker({ onPick, source = 'camera', facing = 'environment', className, label, disabled, children }: PhotoPickerProps) {
   const input = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
   return (
@@ -45,7 +47,7 @@ export function PhotoPicker({ onPick, source = 'camera', className, label, disab
         type="file"
         accept="image/*"
         hidden
-        capture={source === 'camera' && isPhone() ? 'environment' : undefined}
+        capture={source === 'camera' && isPhone() ? facing : undefined}
         onChange={(e) => {
           const file = e.target.files?.[0]
           e.target.value = ''
