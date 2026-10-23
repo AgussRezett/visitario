@@ -28,7 +28,7 @@
 
   @include hover {
     .badge {
-      background: $color-lime;
+      background: $color-action-hover;
     }
   }
 }
@@ -48,8 +48,9 @@
   bottom: -2px;
   border: 2px solid $color-card;
   border-radius: $radius-full;
-  background: $color-lime-soft;
-  color: $color-forest;
+  // Forest with white in light, lime with dark ink in dark: always above 10:1.
+  background: $color-action;
+  color: $color-action-ink;
 }
 
 .spinner {
