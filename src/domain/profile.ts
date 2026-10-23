@@ -46,3 +46,34 @@ export function formatArPhone(e164: string | null) {
   const d = e164.replace(/^\+549/, '')
   return d.length === 10 ? `${d.slice(0, 2)} ${d.slice(2, 6)}-${d.slice(6)}` : e164
 }
+
+/**
+ * Framing a photo in a round avatar: the picture covers a square view of `view` px, scaled
+ * by `zoom` (1 = it just covers the view) and moved by `x`, `y` px from the center.
+ */
+export interface Framing {
+  zoom: number
+  x: number
+  y: number
+}
+
+export const MIN_ZOOM = 1
+export const MAX_ZOOM = 4
+
+/** The picture never leaves a gap inside the view: zoom kept in range, movement limited. */
+export function clampFraming(f: Framing, width: number, height: number, view: number): Framing {
+  const zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, f.zoom))
+  const scale = (view / Math.min(width, height)) * zoom
+  const maxX = Math.max(0, (width * scale - view) / 2)
+  const maxY = Math.max(0, (height * scale - view) / 2)
+  const clamp = (v: number, max: number) => Math.min(max, Math.max(-max, v))
+  return { zoom, x: clamp(f.x, maxX), y: clamp(f.y, maxY) }
+}
+
+/** The square of the original picture that the view shows, in its own pixels. */
+export function framedSquare(f: Framing, width: number, height: number, view: number) {
+  const { zoom, x, y } = clampFraming(f, width, height, view)
+  const scale = (view / Math.min(width, height)) * zoom
+  const side = view / scale
+  return { sx: Math.round(width / 2 - x / scale - side / 2), sy: Math.round(height / 2 - y / scale - side / 2), side: Math.round(side) }
+}

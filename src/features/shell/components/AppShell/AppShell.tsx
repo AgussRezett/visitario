@@ -112,7 +112,7 @@ export function AppShell({ me, active, children }: Props) {
               </Link>
             ) : (
               <Link key="profile" to="/profile" className={styles.tab} activeProps={activeProps}>
-                <UserRound size={22} aria-hidden />
+                {photo ? <Avatar name={short} src={photo} size={24} className={styles.tabAvatar} /> : <UserRound size={22} aria-hidden />}
                 Perfil
               </Link>
             ),

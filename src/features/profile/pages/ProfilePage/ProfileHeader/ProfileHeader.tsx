@@ -9,7 +9,8 @@ import { Button } from '@/ui/Button'
 import { Sheet } from '@/ui/Sheet'
 import type { Me } from '@/features/auth/me'
 import { PhotoPicker } from '@/features/workday/components/PhotoPicker'
-import { useAvatar } from '@/features/profile/api'
+import { useAvatar, type Square } from '@/features/profile/api'
+import { AvatarCropper } from './AvatarCropper'
 import styles from './ProfileHeader.module.scss'
 
 type Person = NonNullable<Me['person']>
@@ -17,14 +18,20 @@ type Person = NonNullable<Me['person']>
 /** The photo, the name and what I do; tapping the photo changes it. */
 export function ProfileHeader({ me, person: p }: { me: Me; person: Person }) {
   const [open, setOpen] = useState(false)
+  /** The picture just chosen, waiting to be framed. */
+  const [file, setFile] = useState<File | null>(null)
   const { upload, remove } = useAvatar(me.userId, p.id, p.avatarPath)
   const busy = upload.isPending || remove.isPending
   const error = upload.error ?? remove.error
   const roles = [...new Set(me.memberships.flatMap((m) => m.roles))].map((r) => ROLE_LABEL[r]).join(' · ')
   const companies = me.memberships.filter((m) => !m.personal).map((m) => m.companyName).join(', ')
-  const pick = (file: File) => {
+  const close = () => {
     setOpen(false)
-    upload.mutate(file)
+    setFile(null)
+  }
+  const use = (square: Square) => {
+    if (file) upload.mutate({ file, square })
+    close()
   }
 
   return (
@@ -40,20 +47,22 @@ export function ProfileHeader({ me, person: p }: { me: Me; person: Person }) {
       </div>
       {error ? <div className={styles.error}><Banner tone="error">{error.message}</Banner></div> : null}
 
-      <Sheet open={open} onClose={() => setOpen(false)} title="Foto de perfil" subtitle="La ven tus compañeros y supervisores. Se guarda sin ubicación.">
+      <Sheet open={open} onClose={close} title={file ? 'Encuadrá tu foto' : 'Foto de perfil'} subtitle={file ? 'Así la van a ver en Visitario.' : 'La ven tus compañeros y supervisores. Se guarda sin ubicación.'}>
+        {file ? <AvatarCropper file={file} onConfirm={use} onChooseAnother={() => setFile(null)} /> : (
         <div className={styles.options}>
-          <PhotoPicker onPick={pick} source="camera" facing="user" className={styles.option}>
+          <PhotoPicker onPick={setFile} source="camera" facing="user" className={styles.option}>
             <Camera size={20} aria-hidden />Sacar una foto
           </PhotoPicker>
-          <PhotoPicker onPick={pick} source="gallery" className={styles.option}>
+          <PhotoPicker onPick={setFile} source="gallery" className={styles.option}>
             <ImagePlus size={20} aria-hidden />Elegir de la galería
           </PhotoPicker>
           {p.avatarPath ? (
-            <Button variant="ghost" size="lg" className={styles.remove} onClick={() => { setOpen(false); remove.mutate() }}>
+            <Button variant="ghost" size="lg" className={styles.remove} onClick={() => { close(); remove.mutate() }}>
               <Trash2 size={20} aria-hidden />Quitar la foto
             </Button>
           ) : null}
         </div>
+        )}
       </Sheet>
     </header>
   )

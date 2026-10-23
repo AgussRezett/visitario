@@ -48,6 +48,24 @@ test('everyone sees their data, edits it and adds a profile photo', async ({ pag
   const sheet = page.getByRole('dialog', { name: 'Foto de perfil' })
   await expect(sheet.getByText('Se guarda sin ubicación.', { exact: false })).toBeVisible()
   await page.locator('input[type=file]').nth(1).setInputFiles(await photo(page))
+  // Framing: the person moves and zooms before using it; nothing is uploaded until then.
+  const crop = page.getByRole('dialog', { name: 'Encuadrá tu foto' })
+  const frame = crop.getByRole('group', { name: /Encuadre de la foto/ })
+  await expect(frame.locator('img')).toBeVisible()
+  await crop.getByRole('slider', { name: 'Acercar' }).fill('2')
+  const box = await frame.boundingBox()
+  if (box) {
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2, { steps: 4 })
+    await page.mouse.up()
+  }
+  await page.screenshot({ path: `test-results/profile-crop-${info.project.name}.png` })
+  expect(state.avatarsUploaded ?? []).toHaveLength(0)
+  await crop.getByRole('button', { name: 'Elegir otra' }).click()
+  await expect(page.getByRole('dialog', { name: 'Foto de perfil' })).toBeVisible()
+  await page.locator('input[type=file]').nth(1).setInputFiles(await photo(page))
+  await page.getByRole('dialog', { name: 'Encuadrá tu foto' }).getByRole('button', { name: 'Usar esta foto' }).click()
   await expect.poll(() => state.avatarsUploaded?.length).toBe(1)
   expect(state.avatarsUploaded?.[0]).toMatch(/^u1\/\d+\.jpg$/)
   await expect.poll(() => state.profile?.avatar_path).toBe(state.avatarsUploaded?.[0])
@@ -74,6 +92,13 @@ test('changing the email sends a link and says so until it is opened', async ({ 
   expect(state.profile?.new_email).toBe('agus.nuevo@example.com')
   await page.reload()
   await expect(page.getByText('Te mandamos un enlace a agus.nuevo@example.com.', { exact: false })).toBeVisible()
+})
+
+test('my photo shows in the bottom bar and the sidebar', async ({ page }, info) => {
+  await installFakeSupabase(page, base({ profile: { avatar_path: 'u1/1792740000000.jpg' } }))
+  await page.goto('/s/workday')
+  const where = info.project.name === 'mobile' ? page.getByRole('navigation', { name: 'Secciones' }) : page.locator('aside')
+  await expect(where.getByRole('link', { name: /Perfil|Agustín/ }).locator('img')).toHaveAttribute('src', /avatars\/u1\/1792740000000\.jpg$/)
 })
 
 test('a supervisor sees the same profile, with their photo in the header', async ({ page }) => {
