@@ -1,0 +1,75 @@
+@use '@/styles/abstracts' as *;
+
+.card {
+  gap: space(3);
+}
+
+// Label over value on phones, side by side on wider screens
+.list {
+  @include flex(column);
+  margin: 0;
+}
+
+.row {
+  @include flex(column, $gap: space(0.5));
+  padding-block: space(3);
+
+  & + & {
+    border-top: 1px solid $color-line;
+  }
+
+  @include up(sm) {
+    display: grid;
+    grid-template-columns: minmax(0, 11rem) minmax(0, 1fr);
+    gap: space(3);
+    align-items: baseline;
+  }
+}
+
+.label {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.value {
+  @include flex(column, $gap: space(1));
+  @include text(body);
+  margin: 0;
+  font-weight: $weight-semibold;
+  overflow-wrap: anywhere;
+}
+
+.empty {
+  @include text(body);
+  margin: 0;
+  color: $color-ink-subtle;
+}
+
+.locked {
+  @include text(label);
+  @include flex(row, $gap: space(1), $align: center);
+  color: $color-ink-subtle;
+  font-weight: $weight-medium;
+}
+
+.edit {
+  align-self: flex-start;
+}
+
+.form {
+  @include flex(column, $gap: space(3));
+}
+
+.pair {
+  display: grid;
+  gap: space(3);
+
+  @include up(sm) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.buttons {
+  @include flex(row, $gap: space(2));
+  flex-wrap: wrap;
+}
