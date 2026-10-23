@@ -1,7 +1,6 @@
 import clsx from 'clsx'
 import { reviewSummary, type MemberDay, type teamTotals } from '@/domain/team-report'
-import { initials } from '@/lib/format'
-import { Avatar } from '@/ui/Avatar'
+import { PersonAvatar } from '@/features/people/PersonAvatar'
 import { Table } from '@/ui/Table'
 import { CHIP } from './chip'
 import styles from './ReportsPage.module.scss'
@@ -33,7 +32,7 @@ export function ReportsTable({ rows, totals, metrics, selectedId, onSelect, last
             <tr key={r.personId} className={clsx(r.personId === selectedId && styles.rowOn)}>
               <td>
                 <button type="button" className={styles.rowButton} onClick={() => onSelect(r.personId)} aria-pressed={r.personId === selectedId}>
-                  <Avatar name={initials(r.name, lastName(r.personId))} size={28} />{r.name}
+                  <PersonAvatar personId={r.personId} firstName={r.name} lastName={lastName(r.personId)} size={28} />{r.name}
                 </button>
               </td>
               <td className={styles.num}>{r.visited} / {r.total}</td>

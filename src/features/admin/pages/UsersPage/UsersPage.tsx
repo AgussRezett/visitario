@@ -4,9 +4,8 @@ import { useNavigate } from '@tanstack/react-router'
 import { Plus, Search, UserPlus } from 'lucide-react'
 import { STATUS_LABEL, filterPeople, lastSeen, rolesLabel, type CompanyPerson, type MembershipStatus, type PeopleFilter, type Team } from '@/domain/people'
 import { ROLE_LABEL, ROLE_PRIORITY } from '@/domain/roles'
-import { initials } from '@/lib/format'
 import { useIsDesktop } from '@/lib/useMedia'
-import { Avatar } from '@/ui/Avatar'
+import { PersonAvatar } from '@/features/people/PersonAvatar'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
 import { Segmented } from '@/ui/Segmented'
@@ -70,7 +69,7 @@ export function UsersPage() {
               <tr key={p.membershipId}>
                 <td>
                   <button type="button" className={styles.who} onClick={() => open(p)}>
-                    <Avatar name={initials(p.firstName, p.lastName)} size={32} />
+                    <PersonAvatar personId={p.personId} firstName={p.firstName} lastName={p.lastName} size={32} />
                     <span className={styles.whoText}>
                       <span className={styles.name}>{p.firstName} {p.lastName}</span>
                       {p.phoneLast4 ? <span className={styles.meta}>Celular •••• {p.phoneLast4}</span> : null}
@@ -90,7 +89,7 @@ export function UsersPage() {
           {shown.map((p) => (
             <li key={p.membershipId}>
               <button type="button" className={styles.row} onClick={() => open(p)}>
-                <Avatar name={initials(p.firstName, p.lastName)} size={36} />
+                <PersonAvatar personId={p.personId} firstName={p.firstName} lastName={p.lastName} size={36} />
                 <span className={styles.whoText}>
                   <span className={styles.name}>{p.firstName} {p.lastName}</span>
                   <span className={styles.meta}>

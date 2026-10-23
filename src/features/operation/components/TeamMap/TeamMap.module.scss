@@ -74,6 +74,9 @@
   font-weight: $weight-extrabold;
   color: $color-white;
   box-shadow: 0 2px 8px rgb(0 0 0 / 0.3);
+  // With a photo, it fills the dot
+  background-position: center;
+  background-size: cover;
 }
 
 .me {

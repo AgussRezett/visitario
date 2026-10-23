@@ -34,7 +34,7 @@ export interface Square {
 
 export function useAvatar(userId: string, personId: string, current: string | null) {
   const qc = useQueryClient()
-  const done = () => refreshMe(qc)
+  const done = () => Promise.all([refreshMe(qc), qc.invalidateQueries({ queryKey: ['people', 'photos'] })])
   const upload = useMutation({
     mutationFn: async ({ file, square }: { file: File; square?: Square }) => {
       const blob = await squarePhoto(file, square).catch(() => {

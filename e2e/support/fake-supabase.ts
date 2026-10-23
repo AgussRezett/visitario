@@ -95,6 +95,8 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
       return json({ Key: `avatars/${name}`, Id: name })
     }
     if (path.endsWith('/rpc/has_password')) return json(true)
+    // Who has a profile photo (people photos for avatars across the app)
+    if (path.endsWith('/person') && (url.searchParams.get('select') ?? '').includes('avatar_path')) return json(state.photos ?? [])
     if (path.endsWith('/person')) return json(state.invite?.noPerson ? [] : [{ id: ME, first_name: 'Agustín', last_name: 'Rezett' }])
     if (path.endsWith('/person_private')) return json({ dni: '35111222', phone: null, birth_date: null })
     if (path.endsWith('/platform_admin')) return json(state.platform ? { person_id: ME } : null)

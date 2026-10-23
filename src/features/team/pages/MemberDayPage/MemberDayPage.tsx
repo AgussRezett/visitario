@@ -5,8 +5,7 @@ import { ArrowLeft, CalendarPlus, ChevronLeft, ChevronRight, Eye, Map as MapIcon
 import { addDays, formatLongDate, todayInArgentina } from '@/domain/dates'
 import { lastActivityText } from '@/domain/team'
 import { workdayProgress } from '@/domain/visit'
-import { initials } from '@/lib/format'
-import { Avatar } from '@/ui/Avatar'
+import { PersonAvatar } from '@/features/people/PersonAvatar'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
 import { Refreshing } from '@/ui/Refreshing'
@@ -45,7 +44,7 @@ export function MemberDayPage({ personId, date: requested }: { personId: string;
       <header className={styles.top}>
         <Link to="/s/today" search={back} className={styles.back}><ArrowLeft size={18} aria-hidden />Hoy en el equipo</Link>
         <div className={styles.titles}>
-          {member ? <Avatar name={initials(member.firstName, member.lastName)} size={48} /> : null}
+          {member ? <PersonAvatar personId={personId} firstName={member.firstName} lastName={member.lastName} size={48} /> : null}
           <div>
             <span className={styles.eyebrow}><Eye size={14} aria-hidden />{formatLongDate(date)} · solo vista</span>
             <h1 className={styles.title}>{member ? `Jornada de ${member.firstName} ${member.lastName}` : team.isPending ? 'Jornada' : 'Jornada del activador'}</h1>
