@@ -823,6 +823,21 @@ check('Ended: Lucía can join another one that day', (await as('lucia', `select 
   await sys(`update visit set deleted_at = now() where workday_id = $1`, [wStale])
 }
 
+// ---- Bundled reads: who I am and a company's catalogs, one request each
+{
+  const id = (await as('agus', `select my_identity() j`))[0].j
+  const mine = await as('agus', `select id from membership where person_id = $1`, [agus])
+  check('my_identity: the person, private data and memberships, as the separate reads gave them',
+    id.person?.id === agus && id.person.dni === '34567890' && id.memberships.length === mine.length && id.memberships.every((m) => m.company?.name || m.company === null) && typeof id.has_password === 'boolean' && id.is_platform_admin === ((await as('agus', `select count(*)::int n from platform_admin`))[0].n > 0) && Array.isArray(id.invitations))
+  await expectError('Anonymous cannot ask who it is', () => asAnon(`select my_identity()`))
+  const cat = (await as('agus', `select company_catalogs($1) j`, [panda]))[0].j
+  const direct = await as('agus', `select id from display_type where company_id = $1 and active`, [panda])
+  check('company_catalogs: the same display types, channels, sellers and settings', cat.display_types.length === direct.length && Array.isArray(cat.channels) && Array.isArray(cat.sellers) && typeof cat.company?.show_whatsapp === 'boolean')
+  const other = (await as('beto', `select company_catalogs($1) j`, [panda]))[0].j
+  check('Another company gets nothing of Panda’s catalogs', other.brands.length === 0 && other.display_types.length === 0 && other.templates.length === 0 && other.sellers.length === 0 && other.company === null)
+  await expectError('Anonymous cannot read catalogs', () => asAnon(`select company_catalogs('${panda}')`))
+}
+
 // Password detection (Google users who later set a password)
 await sys(`update auth.users set encrypted_password = '$2a$10$hash' where id = $1`, [U.agus]);
 check('has_password is true for a user with a password', (await as('agus', `select has_password() v`))[0].v === true);

@@ -156,16 +156,21 @@ export const workdayQuery = (companyId: string, personId: string, date: string) 
     queryFn: async (): Promise<Workday | null> => {
       const { data, error } = await supabase
         .from('workday')
-        .select('id, company_id, work_date, status, created_by')
+        .select(WORKDAY_SELECT)
         .eq('company_id', companyId)
         .eq('merchandiser_id', personId)
         .eq('work_date', date)
         .is('deleted_at', null)
         .maybeSingle()
       if (error) throw error
-      return data && { id: data.id, companyId: data.company_id, workDate: data.work_date, status: data.status, createdByMe: data.created_by === personId }
+      return data && toWorkday(data, personId)
     },
   })
+
+export const WORKDAY_SELECT = 'id, company_id, work_date, status, created_by'
+export const toWorkday = (d: { id: string; company_id: string; work_date: string; status: Workday['status']; created_by: string }, personId: string): Workday => ({
+  id: d.id, companyId: d.company_id, workDate: d.work_date, status: d.status, createdByMe: d.created_by === personId,
+})
 
 export const visitsQuery = (workdayId: string, personId: string) =>
   queryOptions({

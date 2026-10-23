@@ -1712,6 +1712,8 @@ export type Database = {
         }[]
       }
       has_password: { Args: never; Returns: boolean }
+      my_identity: { Args: never; Returns: Json }
+      company_catalogs: { Args: { p_company: string }; Returns: Json }
       import_mvp_backup: {
         Args: { p_company: string; p_data: Json }
         Returns: Json

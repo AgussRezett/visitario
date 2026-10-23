@@ -48,6 +48,9 @@ function reportSoon() {
   reportTimer = setTimeout(() => void report(), 2_000)
 }
 
+const REPORT_AGAIN_MS = 5 * 60_000
+const lastReport = new Map<string, { said: string; at: number }>()
+
 async function report(extra: string[] = []) {
   if (!navigator.onLine) return // reported again when signal returns
   const byCompany = new Map<string, { pending: number; failed: number; photos: number; oldest: string | null }>()
@@ -62,8 +65,13 @@ async function report(extra: string[] = []) {
     byCompany.set(r.op.companyId, c)
   }
   for (const [companyId, c] of byCompany) {
+    // The same news again soon after adds nothing for the supervisor.
+    const said = `${c.pending}|${c.failed}|${c.photos}|${c.oldest ?? ''}`
+    const last = lastReport.get(companyId)
+    if (last && last.said === said && Date.now() - last.at < REPORT_AGAIN_MS) continue
     const { error } = await supabase.rpc('report_sync', { p_company: companyId, p_pending: c.pending, p_failed: c.failed, p_photos: c.photos, p_oldest: c.oldest ?? undefined })
     if (error) continue
+    lastReport.set(companyId, { said, at: Date.now() })
     if (c.pending || c.failed) reported.add(companyId)
     else reported.delete(companyId)
   }
@@ -162,6 +170,10 @@ export function forgetAll() {
   set({ rows: [], lastSyncAt: null })
 }
 
+let lastSent = 0
+/** When this phone last sent changes: their echo over Realtime is already refreshed. */
+export const sentRecently = (ms = 15_000) => Date.now() - lastSent < ms
+
 /** "Reintentar ahora": skips the wait before the next attempt. */
 export const syncNow = () => kick()
 
@@ -219,6 +231,7 @@ async function drain() {
     set({ sending: false })
   }
   if (sentAny) {
+    lastSent = Date.now()
     // Keep showing the sent changes until the refreshed data from the server includes them.
     const sent = new Set(state.rows.filter((r) => r.sent).map((r) => r.id))
     await client.invalidateQueries({ queryKey: ['workday'] }).catch(() => null)
