@@ -4,8 +4,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { CalendarPlus, Check, ClipboardPaste, FileUp, History, Plus, Send, Users } from 'lucide-react'
 import { addDays, formatLongDate, todayInArgentina } from '@/domain/dates'
 import { planLabel, type TeamMember } from '@/domain/team'
-import { initials } from '@/lib/format'
-import { Avatar } from '@/ui/Avatar'
+import { PersonAvatar } from '@/features/people/PersonAvatar'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
 import { useConfirm } from '@/ui/ConfirmDialog'
@@ -97,7 +96,7 @@ export function AssignPage({ date: requested, person, imported }: AssignSearch) 
         <div className={styles.people} role="radiogroup" aria-label="Activador">
           {members.map((m) => (
             <button key={m.personId} type="button" role="radio" aria-checked={m.personId === selected?.personId} className={styles.person} data-on={m.personId === selected?.personId || undefined} onClick={() => go({ person: m.personId })}>
-              <Avatar name={initials(m.firstName, m.lastName)} size={28} />
+              <PersonAvatar personId={m.personId} firstName={m.firstName} lastName={m.lastName} size={28} />
               <span className={styles.personText}>
                 <span className={styles.personName}>{m.firstName}{m.personId === ctx.personId ? ' (vos)' : ''}</span>
                 <span className={styles.personMeta}>{planLabel(m)}</span>

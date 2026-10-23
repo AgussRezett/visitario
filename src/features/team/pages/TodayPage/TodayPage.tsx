@@ -3,8 +3,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { AlertTriangle, ChevronLeft, ChevronRight, CloudOff, Plus } from 'lucide-react'
 import { addDays, formatLongDate, formatTime, todayInArgentina } from '@/domain/dates'
 import { agoText, lastActivityText, memberAlerts, shiftLabel, shiftPhase, teamTotals, type TeamMember } from '@/domain/team'
-import { initials } from '@/lib/format'
-import { Avatar } from '@/ui/Avatar'
+import { PersonAvatar } from '@/features/people/PersonAvatar'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
 import { Refreshing } from '@/ui/Refreshing'
@@ -121,7 +120,7 @@ export function TodayPage({ date: requested }: { date?: string }) {
                       <tr key={m.personId}>
                         <td>
                           <Link to="/s/today/$personId" params={{ personId: m.personId }} search={date === today ? {} : { date }} className={styles.person} aria-label={`Ver la jornada de ${m.firstName} ${m.lastName}`}>
-                            <Avatar name={initials(m.firstName, m.lastName)} size={32} /><span className={styles.strong}>{m.firstName} {m.lastName}</span>
+                            <PersonAvatar personId={m.personId} firstName={m.firstName} lastName={m.lastName} size={32} /><span className={styles.strong}>{m.firstName} {m.lastName}</span>
                           </Link>
                         </td>
                         <td>
@@ -141,7 +140,7 @@ export function TodayPage({ date: requested }: { date?: string }) {
                   {members.map((m) => (
                     <li key={m.personId}>
                       <Link to="/s/today/$personId" params={{ personId: m.personId }} search={date === today ? {} : { date }} className={styles.row}>
-                        <Avatar name={initials(m.firstName, m.lastName)} size={36} />
+                        <PersonAvatar personId={m.personId} firstName={m.firstName} lastName={m.lastName} size={36} />
                         <span className={styles.rowBody}>
                           <span className={styles.rowTop}><span className={styles.strong}>{m.firstName} {m.lastName}</span><span className={styles.count}>{m.workdayStatus ? `${m.visited}/${m.total}` : 'Sin jornada'}</span></span>
                           {m.total ? <DaySegments m={m} height={6} /> : null}

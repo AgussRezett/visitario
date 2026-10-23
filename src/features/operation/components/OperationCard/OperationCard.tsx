@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { ArrowDownToLine, DoorOpen, Flag, Map as MapIcon, UserPlus, Users } from 'lucide-react'
 import { formatTime, todayInArgentina } from '@/domain/dates'
 import { activeMembers, doingText, operationTitle, type Operation, type Presence } from '@/domain/operations'
-import { initials } from '@/lib/format'
-import { Avatar } from '@/ui/Avatar'
+import { PersonAvatar } from '@/features/people/PersonAvatar'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
 import { useConfirm } from '@/ui/ConfirmDialog'
@@ -92,7 +91,7 @@ export function OperationCard({ companyId, meId, date, op, works, isHost, stops,
           return (
             <li key={m.personId} className={styles.member}>
               <span className={styles.avatar}>
-                <Avatar name={initials(m.firstName, m.lastName)} size={32} />
+                <PersonAvatar personId={m.personId} firstName={m.firstName} lastName={m.lastName} size={32} />
                 {live ? <span className={styles.dot} data-on={Boolean(p) || undefined} aria-hidden /> : null}
               </span>
               <span className={styles.memberText}>

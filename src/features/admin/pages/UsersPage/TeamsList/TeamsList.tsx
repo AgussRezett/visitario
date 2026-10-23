@@ -1,7 +1,6 @@
 import { membersOf, supervisorsOf, type CompanyPerson, type Team } from '@/domain/people'
 import { Pencil } from 'lucide-react'
-import { initials } from '@/lib/format'
-import { Avatar } from '@/ui/Avatar'
+import { PersonAvatar } from '@/features/people/PersonAvatar'
 import { Button } from '@/ui/Button'
 import styles from './TeamsList.module.scss'
 
@@ -24,7 +23,7 @@ export function TeamsList({ teams, people, onEdit }: { teams: Team[]; people: Co
             <span className={styles.lead}>Supervisor: {leads.length ? leads.map((p) => `${p.firstName} ${p.lastName}`).join(', ') : 'sin asignar'}</span>
             {members.length ? (
               <span className={styles.stack} aria-hidden>
-                {members.slice(0, 8).map((p) => <Avatar key={p.personId} name={initials(p.firstName, p.lastName)} size={30} className={styles.avatar} />)}
+                {members.slice(0, 8).map((p) => <PersonAvatar key={p.personId} personId={p.personId} firstName={p.firstName} lastName={p.lastName} size={30} className={styles.avatar} />)}
               </span>
             ) : null}
             <span className={styles.meta}>

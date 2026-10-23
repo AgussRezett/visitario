@@ -2,6 +2,8 @@
 export type Row = Record<string, unknown>
 
 export interface FakeState {
+  /** person rows with avatar_path, for the people photos read. */
+  photos?: Row[]
   /** My own rows as the profile changed them (person, person_private, a pending new_email). */
   profile?: Row
   avatarsUploaded?: string[]

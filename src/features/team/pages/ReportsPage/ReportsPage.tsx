@@ -5,9 +5,8 @@ import { Check, Copy, FileSpreadsheet, Share2 } from 'lucide-react'
 import clsx from 'clsx'
 import { formatLongDate, todayInArgentina } from '@/domain/dates'
 import { memberDay, memberReport, reviewSummary, teamReport, teamTotals, type MemberDay } from '@/domain/team-report'
-import { initials } from '@/lib/format'
 import { canShare, share, useCopy } from '@/lib/share'
-import { Avatar } from '@/ui/Avatar'
+import { PersonAvatar } from '@/features/people/PersonAvatar'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
 import { Refreshing } from '@/ui/Refreshing'
@@ -121,7 +120,7 @@ export function ReportsPage({ date: requested }: { date?: string }) {
             {rows.map((r) => (
               <li key={r.personId}>
                 <button type="button" className={styles.person} aria-pressed={r.personId === selected?.personId} onClick={() => setChosen(r.personId)}>
-                  <Avatar name={initials(r.name, lastName(r.personId))} size={32} />
+                  <PersonAvatar personId={r.personId} firstName={r.name} lastName={lastName(r.personId)} size={32} />
                   <span className={styles.personText}>
                     <span className={styles.personName}>{r.name}</span>
                     <span className={styles.personNote}>{standout(r, metrics[0])}</span>
