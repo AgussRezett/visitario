@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canRemoveVisit, canTransition, finishCheck, isVisited, workdayProgress } from './visit'
+import { canRemoveVisit, canTransition, finishCheck, isVisited, staleSoon, workdayProgress } from './visit'
 
 describe('visit rules', () => {
   it('mirrors the database transitions', () => {
@@ -46,5 +46,18 @@ describe('canRemoveVisit', () => {
     expect(canRemoveVisit({ addedByMe: false, resumedFrom: 'v0', reviewStatus: 'needs_fix' })).toBe(true)
     expect(canRemoveVisit({ addedByMe: false, resumedFrom: null, reviewStatus: 'unreviewed' })).toBe(false)
     expect(canRemoveVisit({ addedByMe: true, resumedFrom: null, reviewStatus: 'approved' })).toBe(false)
+  })
+})
+
+describe('staleSoon', () => {
+  const arrived = '2026-10-23T12:00:00Z'
+  const at = (iso: string) => new Date(iso).getTime()
+  it('warns in the last 2 of the 12 hours an in-progress visit has', () => {
+    expect(staleSoon({ workStatus: 'in_progress', arrivedAt: arrived }, at('2026-10-23T21:59:00Z'))).toBeNull()
+    expect(staleSoon({ workStatus: 'in_progress', arrivedAt: arrived }, at('2026-10-23T22:00:00Z'))).toBe('2026-10-24T00:00:00.000Z')
+  })
+  it('only for visits in progress', () => {
+    expect(staleSoon({ workStatus: 'done', arrivedAt: arrived }, at('2026-10-23T23:00:00Z'))).toBeNull()
+    expect(staleSoon({ workStatus: 'in_progress', arrivedAt: null })).toBeNull()
   })
 })
