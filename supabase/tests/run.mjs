@@ -789,6 +789,40 @@ check('Ended: Lucía can join another one that day', (await as('lucia', `select 
   check('A stop taken off the day no longer counts', (await ask('lucia', wLucia, [{ store_id: s1 }])).length === 0)
 }
 
+// ---- A visit left in progress for 12 hours goes back to pending, without its record
+{
+  const wStale = (await sys(`insert into workday (company_id, merchandiser_id, work_date, status, created_by) values ($1, $2, '2026-09-22', 'published', $2) returning id`, [panda, agus]))[0].id
+  const sStale = (await sys(`insert into store (company_id, address) values ($1, 'Holmberg 2800') returning id`, [panda]))[0].id
+  const newVisit = async () => (await sys(`insert into visit (company_id, workday_id, merchandiser_id, work_date, store_id, added_by, task) values ($1, $2, $3, '2026-09-22', $4, $3, 'Armar puntera') returning id`, [panda, wStale, agus, sStale]))[0].id
+  const vStale = await newVisit(), vFresh = await newVisit()
+  const assigned = (await sys(`insert into display (company_id, visit_id, display_type_id, source) values ($1, $2, $3, 'assigned') returning id`, [panda, vStale, endcap]))[0].id
+  const found = (await sys(`insert into display (company_id, visit_id, display_type_id, source) values ($1, $2, $3, 'found') returning id`, [panda, vStale, endcap]))[0].id
+  for (const v of [vStale, vFresh]) {
+    await sys(`insert into photo (id, company_id, visit_id, kind, taken_at, uploaded_at, bytes, width, height, created_by) values (gen_random_uuid(), $1, $2, 'storefront', now(), null, 1, 1, 1, $3)`, [panda, v, agus])
+    await sys(`update photo set uploaded_at = now() where visit_id = $1`, [v]) // the arrival
+  }
+  await sys(`insert into photo (id, company_id, visit_id, display_id, kind, taken_at, uploaded_at, bytes, width, height, created_by) values (gen_random_uuid(), $1, $2, $3, 'before', now(), now(), 1, 1, 1, $4)`, [panda, vStale, assigned, agus])
+  await sys(`insert into visit_metric (company_id, visit_id, metric_id, quantity) values ($1, $2, $3, 4)`, [panda, vStale, kits])
+  await sys(`update visit set consent = 'yes', notes = 'Faltó SKYY', rapport = 'welcoming', arrived_at = now() - interval '13 hours' where id = $1`, [vStale])
+  await sys(`update visit set arrived_at = now() - interval '11 hours' where id = $1`, [vFresh])
+  await expectError('Nobody can expire visits from the app', () => as('carla', `select private.expire_stale_visits()`))
+  check('Only the visits in progress for 12 hours expire', (await sys(`select private.expire_stale_visits() n`))[0].n === 1)
+  const after = (await sys(`select work_status::text s, arrived_at, consent, notes, rapport, task, deleted_at from visit where id = $1`, [vStale]))[0]
+  check('It is pending again, as if nobody had arrived, and keeps its task', after.s === 'pending' && !after.arrived_at && !after.consent && !after.notes && !after.rapport && after.task === 'Armar puntera' && !after.deleted_at)
+  check('Its photos, work numbers and found displays are gone; the assigned display stays',
+    (await sys(`select count(*)::int n from photo where visit_id = $1 and deleted_at is null`, [vStale]))[0].n === 0
+    && (await sys(`select count(*)::int n from visit_metric where visit_id = $1`, [vStale]))[0].n === 0
+    && (await sys(`select deleted_at is null a from display where id = $1`, [assigned]))[0].a === true
+    && (await sys(`select deleted_at is not null f from display where id = $1`, [found]))[0].f === true)
+  check('The history says it went back to pending, with no one doing it',
+    (await sys(`select count(*)::int n from visit_event where visit_id = $1 and kind = 'work' and from_value = 'in_progress' and to_value = 'pending' and actor_id is null`, [vStale]))[0].n === 1)
+  check('The one started 11 hours ago stays in progress', (await sys(`select work_status::text s from visit where id = $1`, [vFresh]))[0].s === 'in_progress')
+  const offered = await as('agus', `select visit_id from resumable_visits($1, '2026-09-23')`, [panda])
+  check('The next day it is offered with the pending ones', offered.some((r) => r.visit_id === vStale))
+  check('Running again does nothing', (await sys(`select private.expire_stale_visits() n`))[0].n === 0)
+  await sys(`update visit set deleted_at = now() where workday_id = $1`, [wStale])
+}
+
 // Password detection (Google users who later set a password)
 await sys(`update auth.users set encrypted_password = '$2a$10$hash' where id = $1`, [U.agus]);
 check('has_password is true for a user with a password', (await as('agus', `select has_password() v`))[0].v === true);

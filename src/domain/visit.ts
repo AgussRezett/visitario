@@ -104,3 +104,15 @@ export function workdayProgress(visits: ProgressInput[]) {
     inProgress: count((v) => v.workStatus === 'in_progress'),
   }
 }
+
+/** A visit left in progress this long goes back to pending, without what was recorded (see the database). */
+export const STALE_AFTER_HOURS = 12
+/** From when the visit warns that it is about to go back to pending. */
+const WARN_HOURS = 2
+
+/** When an in-progress visit will go back to pending, if that is close; null otherwise. */
+export function staleSoon(v: { workStatus: WorkStatus; arrivedAt: string | null }, now = Date.now()): string | null {
+  if (v.workStatus !== 'in_progress' || !v.arrivedAt) return null
+  const at = new Date(v.arrivedAt).getTime() + STALE_AFTER_HOURS * 3_600_000
+  return at - now <= WARN_HOURS * 3_600_000 ? new Date(at).toISOString() : null
+}
