@@ -43,17 +43,17 @@ export function addZones(map: maplibregl.Map) {
 }
 
 /**
- * The points' source, grouping near points and counting them by legend entry (so each
- * group can show its colors). Rebuilt when the legend changes: the counts are fixed when
- * the source is made.
+ * The points' source, grouping near points (when `grouped`) and counting them by legend
+ * entry (so each group can show its colors). Rebuilt when the legend or the grouping
+ * changes: both are fixed when the source is made.
  */
-export function setPoints(map: maplibregl.Map, data: FeatureCollection, legend: readonly LegendItem[]) {
+export function setPoints(map: maplibregl.Map, data: FeatureCollection, legend: readonly LegendItem[], grouped: boolean) {
   for (const id of ['points', 'points-halo']) if (map.getLayer(id)) map.removeLayer(id)
   if (map.getSource('points')) map.removeSource('points')
   map.addSource('points', {
     type: 'geojson',
     data,
-    cluster: true,
+    cluster: grouped,
     clusterRadius: CLUSTER_RADIUS,
     clusterMaxZoom: CLUSTER_MAX_ZOOM,
     clusterProperties: Object.fromEntries(legend.map((l) => [countKey(l.key), ['+', ['case', ['==', ['get', 'key'], l.key], 1, 0]]])),

@@ -98,3 +98,35 @@ test('a group of points moves with the map at once, never behind it', async ({ p
   // MapLibre moves a marker through its own transform: animating it is what lagged.
   expect(await group.evaluate((el) => getComputedStyle(el).transitionProperty)).not.toMatch(/transform|all/)
 })
+
+test.describe(() => {
+  // After a reload the app's service worker would fetch the map style itself, past the stub.
+  test.use({ serviceWorkers: 'block' })
+
+  test('grouping near points can be turned off, and the device remembers it', async ({ page }, info) => {
+    const style = { version: 8, sources: {}, layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#eeeeee' } }] }
+    await page.route('https://tiles.openfreemap.org/**', (route) => route.fulfill({ json: style }))
+    const near = Array.from({ length: 12 }, (_, i) => point(`n${i}`, { lat: -34.6 + i * 0.0002, lng: -58.43 + i * 0.0002 }))
+    const state: FakeState = { workday: null, visits: [], uploads: [], memberships: role('supervisor'), catalogs: catalogs(), mapPoints: [...near, point('far', { lat: -34.5, lng: -58.5 })] }
+    await installFakeSupabase(page, state, 'supervisor')
+    await page.goto('/s/map')
+    const group = page.getByRole('button', { name: /^12 puntos juntos/ })
+    await expect(group).toBeVisible()
+    const openFilters = async () => {
+      if (info.project.name === 'mobile') await page.getByRole('button', { name: 'Filtros', exact: true }).click()
+    }
+    await openFilters()
+    const toggle = page.getByRole('switch', { name: 'Agrupar puntos cercanos' })
+    await expect(toggle).toBeChecked()
+    await toggle.click()
+    await expect(group).toHaveCount(0)
+
+    await page.reload()
+    await expect(page.getByRole('heading', { name: 'Mapa de puntos de venta' })).toBeVisible()
+    await openFilters()
+    await expect(toggle).not.toBeChecked()
+    await expect(group).toHaveCount(0)
+    await toggle.click()
+    await expect(group).toBeVisible()
+  })
+})
