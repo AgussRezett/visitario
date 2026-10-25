@@ -1,4 +1,4 @@
-import { BarChart3, Building2, CalendarDays, FileText, Inbox, LayoutGrid, MapPin, MessageSquareText, Route, Store, Tags, Users, type LucideIcon } from 'lucide-react'
+import { BarChart3, Building2, CalendarDays, FileText, Inbox, LayoutGrid, MapPin, MapPinned, MessageSquareText, Route, Store, Tags, Users, type LucideIcon } from 'lucide-react'
 import type { Role } from '@/domain/roles'
 
 export interface Section {
@@ -19,12 +19,14 @@ export const SECTIONS: Record<Role, Section[]> = {
   ],
   seller: [
     { slug: 'clients', label: 'Clientes', title: 'Mis clientes', icon: Store, stage: 7, summary: 'Tus clientes con su canal y la última activación.' },
+    { slug: 'map', label: 'Mapa', title: 'Mapa de clientes', icon: MapPinned, stage: 7, summary: 'Los puntos de venta en el mapa, por vendedor, última visita, canal o trato.' },
   ],
   supervisor: [
     { slug: 'today', label: 'Hoy', title: 'Hoy en el equipo', icon: LayoutGrid, stage: 3, summary: 'El avance de cada activador, alertas y lo que falta revisar.' },
     { slug: 'review', label: 'Revisión', title: 'Revisión', icon: Inbox, stage: 3, summary: 'Aprobar visitas o pedir correcciones con un comentario.' },
     { slug: 'assign', label: 'Asignar', title: 'Asignar jornadas', icon: CalendarDays, stage: 3, summary: 'Armar y publicar la jornada de cada activador.' },
     { slug: 'stores', label: 'Directorio', title: 'Directorio', icon: Store, stage: 5, summary: 'Los comercios de la empresa con su historial de visitas.' },
+    { slug: 'map', label: 'Mapa', title: 'Mapa de puntos', icon: MapPinned, stage: 7, summary: 'Los puntos de venta en el mapa, por vendedor, última visita, canal o trato.' },
     { slug: 'reports', label: 'Informes', title: 'Informes', icon: BarChart3, stage: 6, summary: 'Los números del día por activador y sus informes para copiar.' },
   ],
   admin: [
@@ -33,6 +35,7 @@ export const SECTIONS: Record<Role, Section[]> = {
     { slug: 'templates', label: 'Plantillas', title: 'Plantillas de mensajes', icon: MessageSquareText, stage: 5, summary: 'Los mensajes ANTES, DESPUÉS y el informe.' },
     { slug: 'company', label: 'Empresa', title: 'Empresa y plan', icon: Building2, stage: 5, summary: 'Datos de la empresa, plan y facturación.' },
     { slug: 'stores', label: 'Directorio', title: 'Directorio', icon: Store, stage: 5, summary: 'Los comercios de la empresa con su historial de visitas.' },
+    { slug: 'map', label: 'Mapa', title: 'Mapa de puntos', icon: MapPinned, stage: 7, summary: 'Los puntos de venta en el mapa, por vendedor, última visita, canal o trato.' },
   ],
 }
 

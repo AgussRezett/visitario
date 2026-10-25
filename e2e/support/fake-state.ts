@@ -2,6 +2,9 @@
 export type Row = Record<string, unknown>
 
 export interface FakeState {
+  /** store_map rows, and client_history answers by store id. */
+  mapPoints?: Row[]
+  clientHistory?: Record<string, Row>
   /** person rows with avatar_path, for the people photos read. */
   photos?: Row[]
   /** My own rows as the profile changed them (person, person_private, a pending new_email). */

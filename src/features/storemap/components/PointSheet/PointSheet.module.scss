@@ -1,0 +1,58 @@
+@use '@/styles/abstracts' as *;
+
+.body {
+  @include flex(column, $gap: space(4));
+}
+
+.band {
+  @include text(label);
+  @include flex(row, $gap: space(2), $align: center);
+  margin: 0;
+  font-weight: $weight-bold;
+  color: $color-ink;
+}
+
+.dot {
+  @include square(space(3));
+  border-radius: $radius-full;
+}
+
+.facts {
+  @include flex(column);
+  margin: 0;
+}
+
+.fact {
+  @include flex(column, $gap: space(0.5));
+  padding-block: space(2.5);
+
+  & + & {
+    border-top: 1px solid $color-line;
+  }
+
+  @include up(sm) {
+    display: grid;
+    grid-template-columns: 10rem minmax(0, 1fr);
+    gap: space(3);
+  }
+}
+
+.label {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.value {
+  @include text(body);
+  margin: 0;
+  font-weight: $weight-semibold;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  @include flex(column, $gap: space(2));
+}
+
+.action {
+  width: 100%;
+}

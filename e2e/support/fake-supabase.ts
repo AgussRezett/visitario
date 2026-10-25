@@ -53,7 +53,7 @@ function matches(row: Row, params: URLSearchParams) {
   return true
 }
 
-export async function installFakeSupabase(page: Page, state: FakeState, role: 'merchandiser' | 'supervisor' | 'admin' = 'merchandiser') {
+export async function installFakeSupabase(page: Page, state: FakeState, role: 'merchandiser' | 'seller' | 'supervisor' | 'admin' = 'merchandiser') {
   // Realtime's socket stays here: it never reaches the real project (it would knock with a
   // fake token and retry forever). Screens work without live events, as with no signal.
   await page.routeWebSocket(/\/realtime\/v1\/websocket/, () => undefined)
@@ -130,6 +130,12 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
     }
 
     // ---- Supervisor side
+    // ---- Points of sale map
+    if (path.endsWith('/rpc/store_map')) return json(state.mapPoints ?? [])
+    if (path.endsWith('/rpc/client_history')) {
+      const id = String(body().p_store)
+      return json(state.clientHistory?.[id] ?? null)
+    }
     if (path.endsWith('/rpc/report_sync')) {
       ;(state.reports ??= []).push(body())
       return json(null)

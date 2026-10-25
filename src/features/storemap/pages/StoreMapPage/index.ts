@@ -1,0 +1,1 @@
+export { StoreMapPage } from './StoreMapPage'
