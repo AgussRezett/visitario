@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { daysBetween } from './dates'
-import { applyFilters, convexHull, insights, NO_FILTERS, NONE_COLOR, painter, recencyOf, SERIES, zoneOf, type MapPoint } from './store-map'
+import { applyFilters, convexHull, insights, NO_FILTERS, NONE_COLOR, painter, recencyOf, ringArcs, ringSize, SERIES, zoneOf, type MapPoint } from './store-map'
 
 const TODAY = '2026-10-25'
 const p = (id: string, extra: Partial<MapPoint> = {}): MapPoint => ({
@@ -55,5 +55,26 @@ describe('store map', () => {
     expect(hull).not.toContainEqual([1, 1])
     expect(zoneOf([[-58.46, -34.56]]).length).toBeGreaterThan(4)
     expect(zoneOf([])).toEqual([])
+  })
+})
+
+describe('groups of points', () => {
+  it('each point counts under its legend entry', () => {
+    const { keyOf } = painter('seller', TODAY, sellers, [])
+    expect(keyOf(p('a', { sellerId: 11 }))).toBe('11')
+    expect(keyOf(p('a'))).toBe('none')
+    expect(painter('recency', TODAY, sellers, []).keyOf(p('a', { lastVisitDate: '2026-10-20' }))).toBe('recent')
+  })
+  it('a ring has one arc per color with points, sized by share', () => {
+    const arcs = ringArcs([{ color: 'blue', count: 3 }, { color: 'gray', count: 1 }, { color: 'red', count: 0 }], 20, 6)
+    expect(arcs.map((a) => a.color)).toEqual(['blue', 'gray'])
+    expect(arcs[0]?.d).toContain(' 0 1 1 ') // three quarters: the large arc
+    expect(arcs[1]?.d).toContain(' 0 0 1 ')
+    expect(ringArcs([{ color: 'blue', count: 5 }], 20, 6)).toHaveLength(1)
+    expect(ringArcs([], 20, 6)).toEqual([])
+  })
+  it('bigger groups are bigger, up to a limit', () => {
+    expect(ringSize(2)).toBeLessThan(ringSize(20))
+    expect(ringSize(10_000)).toBe(64)
   })
 })

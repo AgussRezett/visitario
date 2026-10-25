@@ -1,25 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 import maplibregl, { type GeoJSONSource } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import type { FeatureCollection } from 'geojson'
 import type { MapPoint } from '@/domain/store-map'
+import { syncGroups } from './groups'
+import { addZones, frame, pointsData, setPoints, zonesData, type Paint, type Zone } from './layers'
 import styles from './PointsMap.module.scss'
+
+export type { Zone } from './layers'
 
 // OpenFreeMap: OpenStreetMap streets, free and without a key (attribution shown on the map).
 const STYLE = { light: 'https://tiles.openfreemap.org/styles/positron', dark: 'https://tiles.openfreemap.org/styles/dark' }
 // Buenos Aires, when there is nothing to show yet.
 const CENTER: [number, number] = [-58.44, -34.6]
 
-export interface Zone {
-  key: string
-  label: string
-  color: string
-  ring: [number, number][]
-}
-
 interface PointsMapProps {
   points: MapPoint[]
-  colorOf: (p: MapPoint) => string
+  paint: Paint
   zones: Zone[]
   selectedId: string | null
   onSelect: (id: string) => void
@@ -27,37 +23,21 @@ interface PointsMapProps {
   frameKey: string
 }
 
-type FC = FeatureCollection
-
-const pointsData = (points: MapPoint[], colorOf: (p: MapPoint) => string, selectedId: string | null): FC => ({
-  type: 'FeatureCollection',
-  features: points.map((p) => ({
-    type: 'Feature',
-    properties: { id: p.id, color: colorOf(p), name: p.name ?? p.address, selected: p.id === selectedId ? 1 : 0 },
-    geometry: { type: 'Point', coordinates: [p.lng as number, p.lat as number] },
-  })),
-})
-
-const zonesData = (zones: Zone[]): FC => ({
-  type: 'FeatureCollection',
-  features: zones.filter((z) => z.ring.length >= 4).map((z) => ({ type: 'Feature', properties: { color: z.color, label: z.label }, geometry: { type: 'Polygon', coordinates: [z.ring] } })),
-})
-
-function frame(map: maplibregl.Map, points: MapPoint[]) {
-  if (!points.length) return
-  const lngs = points.map((p) => p.lng as number)
-  const lats = points.map((p) => p.lat as number)
-  map.fitBounds([[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]], { padding: 56, maxZoom: 15, duration: 600 })
-}
-
-/** The points of sale as balloons on a street map; tap one to see it. */
-export default function PointsMap({ points, colorOf, zones, selectedId, onSelect, frameKey }: PointsMapProps) {
+/**
+ * The points of sale on a street map. Near points gather in a group that shows how many
+ * they are and, as a ring, the colors they have; tapping a group comes closer, tapping a
+ * point opens it.
+ */
+export default function PointsMap({ points, paint, zones, selectedId, onSelect, frameKey }: PointsMapProps) {
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<maplibregl.Map | null>(null)
+  const groups = useRef(new Map<string, maplibregl.Marker>())
+  const legendKeys = useRef('')
+  const version = useRef(0)
+  const latest = useRef({ paint, onSelect })
+  latest.current = { paint, onSelect }
   const [ready, setReady] = useState(false)
   const [failed, setFailed] = useState(false)
-  const select = useRef(onSelect)
-  select.current = onSelect
 
   useEffect(() => {
     const el = box.current
@@ -92,26 +72,10 @@ export default function PointsMap({ points, colorOf, zones, selectedId, onSelect
     })
     const hover = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12, className: styles.tip })
     m.on('load', () => {
-      m.addSource('zones', { type: 'geojson', data: zonesData([]) })
-      m.addSource('points', { type: 'geojson', data: pointsData([], () => '', null) })
-      m.addLayer({ id: 'zones-fill', type: 'fill', source: 'zones', paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.12 } })
-      m.addLayer({ id: 'zones-line', type: 'line', source: 'zones', paint: { 'line-color': ['get', 'color'], 'line-width': 2, 'line-opacity': 0.75 } })
-      m.addLayer({
-        id: 'points-halo', type: 'circle', source: 'points', filter: ['==', ['get', 'selected'], 1],
-        paint: { 'circle-radius': 16, 'circle-color': ['get', 'color'], 'circle-opacity': 0.28 },
-      })
-      m.addLayer({
-        id: 'points', type: 'circle', source: 'points',
-        paint: {
-          'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 5, 14, 8, 17, 11],
-          'circle-color': ['get', 'color'],
-          'circle-stroke-color': '#ffffff',
-          'circle-stroke-width': ['case', ['==', ['get', 'selected'], 1], 3, 2],
-        },
-      })
+      addZones(m)
       m.on('click', 'points', (e) => {
         const id = e.features?.[0]?.properties?.id
-        if (typeof id === 'string') select.current(id)
+        if (typeof id === 'string') latest.current.onSelect(id)
       })
       m.on('mouseenter', 'points', (e) => {
         m.getCanvas().style.cursor = 'pointer'
@@ -122,24 +86,39 @@ export default function PointsMap({ points, colorOf, zones, selectedId, onSelect
         m.getCanvas().style.cursor = ''
         hover.remove()
       })
+      // Groups are HTML (a ring of colors with the count): kept in step as the map moves.
+      m.on('render', () => syncGroups(m, groups.current, latest.current.paint.legend, styles.group ?? '', String(version.current)))
       setReady(true)
     })
     map.current = m
+    const markers = groups.current
     return () => {
       hover.remove()
+      markers.forEach((g) => g.remove())
+      markers.clear()
       m.remove()
       map.current = null
+      legendKeys.current = ''
       setReady(false)
     }
   }, [failed])
 
-  // Data changes repaint without redrawing the map.
+  // Data or colors change: repaint without redrawing the map.
   useEffect(() => {
     const m = map.current
     if (!m || !ready) return
-    ;(m.getSource('points') as GeoJSONSource | undefined)?.setData(pointsData(points, colorOf, selectedId))
+    const data = pointsData(points, paint, selectedId)
+    const keys = paint.legend.map((l) => l.key).join('|')
+    version.current++
+    if (keys !== legendKeys.current) {
+      legendKeys.current = keys
+      setPoints(m, data, paint.legend)
+    } else {
+      ;(m.getSource('points') as GeoJSONSource | undefined)?.setData(data)
+    }
     ;(m.getSource('zones') as GeoJSONSource | undefined)?.setData(zonesData(zones))
-  }, [ready, points, colorOf, zones, selectedId])
+    m.triggerRepaint()
+  }, [ready, points, paint, zones, selectedId])
 
   // New filters: frame what is left.
   useEffect(() => {
