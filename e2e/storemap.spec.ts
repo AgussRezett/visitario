@@ -84,3 +84,17 @@ test('a seller sees their clients on the map, and each one with its history', as
   await page.screenshot({ path: `test-results/client-${info.project.name}.png`, fullPage: true })
   expect(TODAY).toBeTruthy()
 })
+
+test('a group of points moves with the map at once, never behind it', async ({ page }) => {
+  const style = { version: 8, sources: {}, layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#eeeeee' } }] }
+  await page.route('https://tiles.openfreemap.org/**', (route) => route.fulfill({ json: style }))
+  const near = Array.from({ length: 12 }, (_, i) => point(`n${i}`, { lat: -34.6 + i * 0.0002, lng: -58.43 + i * 0.0002, seller_id: i % 2 ? 1 : null }))
+  const far = point('far', { lat: -34.5, lng: -58.5 })
+  const state: FakeState = { workday: null, visits: [], uploads: [], memberships: role('supervisor'), catalogs: catalogs(), mapPoints: [...near, far] }
+  await installFakeSupabase(page, state, 'supervisor')
+  await page.goto('/s/map')
+  const group = page.getByRole('button', { name: /^12 puntos juntos/ })
+  await expect(group).toBeVisible()
+  // MapLibre moves a marker through its own transform: animating it is what lagged.
+  expect(await group.evaluate((el) => getComputedStyle(el).transitionProperty)).not.toMatch(/transform|all/)
+})
