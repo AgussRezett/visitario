@@ -224,3 +224,51 @@ test('editing many stores at once: the marks survive the filters, and saving ask
   await ask.getByRole('button', { name: 'Sí, guardar' }).click()
   await expect.poll(() => state.bulkUpdates?.[1]).toEqual({ ids: ['s3', 's4'], patch: { area: 'Palermo' } })
 })
+
+test('the filters and marks are still there after opening a store and coming back', async ({ page }, info) => {
+  const state = directory()
+  await installFakeSupabase(page, state, 'supervisor')
+  await page.goto('/s/stores')
+  await page.getByLabel('Zona', { exact: true }).selectOption('Belgrano')
+  await page.getByRole('checkbox', { name: 'Seleccionar Autoservicio Lili' }).check()
+  await expect(page.getByRole('link', { name: /Mas Ahorro/ })).toHaveCount(0)
+
+  // Back by the page's own link
+  await page.getByRole('link', { name: /Autoservicio Lili/ }).click()
+  await expect(page.getByRole('heading', { name: 'Autoservicio Lili', level: 1 })).toBeVisible()
+  await page.getByRole('link', { name: 'Directorio', exact: true }).first().click()
+  await expect(page.getByLabel('Zona', { exact: true })).toHaveValue('Belgrano')
+  await expect(page.getByRole('link', { name: /Mas Ahorro/ })).toHaveCount(0)
+  await expect(page.getByRole('checkbox', { name: 'Seleccionar Autoservicio Lili' })).toBeChecked()
+
+  // Back by the browser, and after a reload
+  await page.getByRole('link', { name: /Autoservicio Lili/ }).click()
+  await page.goBack()
+  await expect(page.getByLabel('Zona', { exact: true })).toHaveValue('Belgrano')
+  await page.reload()
+  await expect(page.getByLabel('Zona', { exact: true })).toHaveValue('Belgrano')
+
+  await page.getByRole('button', { name: 'Limpiar filtros' }).click()
+  await expect(page.getByLabel('Zona', { exact: true })).toHaveValue('')
+  await expect(page.getByRole('link', { name: /Mas Ahorro/ })).toBeVisible()
+  await page.screenshot({ path: `test-results/directory-kept-${info.project.name}.png` })
+})
+
+test('a store shows where it is on a map, or says it is not located yet', async ({ page }, info) => {
+  const style = { version: 8, sources: {}, layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#e8ebe4' } }] }
+  await page.route('https://tiles.openfreemap.org/**', (route) => route.fulfill({ json: style }))
+  const state = directory()
+  await installFakeSupabase(page, state, 'supervisor')
+  await page.goto('/stores/s1')
+  const where = page.getByRole('region', { name: 'Ubicación' })
+  await expect(where.getByRole('region', { name: 'Mapa: Mas Ahorro' })).toBeVisible()
+  await expect(where.getByRole('img', { name: 'Mas Ahorro' })).toBeVisible()
+  await expect(where).toContainText('Tres Arroyos 762')
+  await expect(where).toContainText('Verificada')
+  await expect(page.getByRole('region', { name: 'Datos del comercio' })).toContainText('Sin vendedor')
+  await page.screenshot({ path: `test-results/store-map-${info.project.name}.png`, fullPage: true })
+
+  await page.goto('/stores/s2')
+  await expect(page.getByRole('region', { name: 'Ubicación' })).toContainText('Todavía no sabemos dónde está')
+  await expect(page.getByRole('region', { name: 'Ubicación' }).getByRole('button', { name: /Verificar dirección/ })).toBeVisible()
+})
