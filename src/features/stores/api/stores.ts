@@ -185,7 +185,7 @@ export function useStoreAdmin(storeId: string) {
    */
   const verify = useMutation({
     mutationFn: async ({ address, area, scope, current }: { address: string; area: string | null; scope: 'caba' | 'argentina'; current: LocationStatus }): Promise<VerifyResult> => {
-      const [place] = await geocode(address, scope)
+      const [place] = await geocode(address, scope, area)
       if (!place) return 'not_found'
       if (!place.exact && current === 'verified') return 'kept'
       const { error } = await supabase.from('store').update({ lat: place.lat, lng: place.lng, location_status: place.exact ? 'verified' : 'approximate', area: area ?? place.area })

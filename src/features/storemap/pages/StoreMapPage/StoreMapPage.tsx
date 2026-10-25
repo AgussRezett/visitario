@@ -17,7 +17,7 @@ import { useWorkContext } from '@/features/workday/context'
 import { storeMapQuery } from '@/features/storemap/api'
 import { InsightsPanel } from '@/features/storemap/components/InsightsPanel'
 import { PointSheet } from '@/features/storemap/components/PointSheet'
-import type { Zone } from '@/features/storemap/components/PointsMap/PointsMap'
+import type { Zone } from '@/features/storemap/components/PointsMap/layers'
 import styles from './StoreMapPage.module.scss'
 
 const PointsMap = lazy(() => import('@/features/storemap/components/PointsMap/PointsMap'))
@@ -119,7 +119,7 @@ export function StoreMapPage({ point }: { point?: string }) {
         <div className={styles.layout}>
           <div className={styles.mapColumn}>
             <Suspense fallback={<Skeleton height={420} />}>
-              <PointsMap points={located} colorOf={paint.color} zones={zoneList} selectedId={selected} onSelect={setSelected} frameKey={JSON.stringify([f, all.length])} />
+              <PointsMap points={located} paint={paint} zones={zoneList} selectedId={selected} onSelect={setSelected} frameKey={JSON.stringify([f, all.length])} />
             </Suspense>
             <ul className={styles.legend} aria-label="Referencias">
               {paint.legend.map((l) => (

@@ -67,6 +67,13 @@ export function painter(by: ColorBy, today: string, sellers: readonly Named[], c
     if (by === 'rapport') return p.rapport === null ? NONE_COLOR : RAPPORT_COLOR[levelOf(p.rapport)]
     return RECENCY_COLOR[recencyOf(p, today).band]
   }
+  /** The legend entry a point belongs to (groups count their points by it). */
+  const keyOf = (p: MapPoint): string => {
+    if (by === 'seller') return p.sellerId === null ? 'none' : String(p.sellerId)
+    if (by === 'channel') return p.channelId === null ? 'none' : String(p.channelId)
+    if (by === 'rapport') return p.rapport === null ? 'none' : levelOf(p.rapport)
+    return recencyOf(p, today).band
+  }
   const named = (list: readonly Named[], colors: Map<number, string>, none: string): LegendItem[] => [
     ...list.map((x) => ({ key: String(x.id), label: SERIES[list.indexOf(x)] ? x.name : `${x.name} (otros)`, color: colors.get(x.id) ?? NONE_COLOR })),
     { key: 'none', label: none, color: NONE_COLOR },
@@ -76,7 +83,7 @@ export function painter(by: ColorBy, today: string, sellers: readonly Named[], c
     : by === 'channel' ? named(channels, channelColor, 'Sin canal')
     : by === 'rapport' ? [...(Object.keys(RAPPORT_COLOR) as Rapport[]).map((r) => ({ key: r, label: RAPPORT_SHORT[r], color: RAPPORT_COLOR[r] })), { key: 'none', label: 'Sin calificar', color: NONE_COLOR }]
     : (Object.keys(RECENCY_COLOR) as Recency[]).map((r) => ({ key: r, label: RECENCY_LABEL[r], color: RECENCY_COLOR[r] }))
-  return { color, legend }
+  return { color, keyOf, legend }
 }
 
 export interface MapFilters {
@@ -177,3 +184,37 @@ export function zoneOf(points: readonly LngLat[], margin = 0.0014): LngLat[] {
     Array.from({ length: 8 }, (_, i) => [lng + margin * Math.cos((i * Math.PI) / 4), lat + margin * Math.sin((i * Math.PI) / 4)] as LngLat))
   return convexHull(around)
 }
+
+export interface Slice {
+  color: string
+  count: number
+}
+
+/**
+ * A group of points as a ring: one arc per color, as long as its share, around the count.
+ * SVG paths for a ring of outer radius `r` and thickness `w`, centered in a `2r` square.
+ */
+export function ringArcs(slices: readonly Slice[], r: number, w: number): { color: string; d: string }[] {
+  const total = slices.reduce((n, s) => n + s.count, 0)
+  const parts = slices.filter((s) => s.count > 0)
+  if (!total || !parts.length) return []
+  const inner = r - w
+  const at = (angle: number, radius: number) => [r + radius * Math.sin(angle), r - radius * Math.cos(angle)].map((v) => Math.round(v * 100) / 100)
+  if (parts.length === 1) {
+    // A full circle cannot be one arc: two halves.
+    const [o1, o2, i1, i2] = [at(0, r), at(Math.PI, r), at(0, inner), at(Math.PI, inner)]
+    const color = parts[0]?.color ?? ''
+    return [{ color, d: `M${o1}A${r},${r} 0 1 1 ${o2}A${r},${r} 0 1 1 ${o1}M${i1}A${inner},${inner} 0 1 0 ${i2}A${inner},${inner} 0 1 0 ${i1}Z` }]
+  }
+  let start = 0
+  return parts.map((s) => {
+    const end = start + (s.count / total) * Math.PI * 2
+    const large = end - start > Math.PI ? 1 : 0
+    const [a, b, c, d] = [at(start, r), at(end, r), at(end, inner), at(start, inner)]
+    start = end
+    return { color: s.color, d: `M${a}A${r},${r} 0 ${large} 1 ${b}L${c}A${inner},${inner} 0 ${large} 0 ${d}Z` }
+  })
+}
+
+/** A group's size grows with its count, within reason. */
+export const ringSize = (count: number) => Math.round(Math.min(64, 30 + Math.sqrt(count) * 5))
