@@ -47,6 +47,8 @@ export interface FakeState {
   overlaps?: Row[]
   /** Import: the directory, saved formats and what the geocoder finds (by address). */
   stores?: Row[]
+  /** Bulk edits from the directory: which stores and what changed. */
+  bulkUpdates?: { ids: string[]; patch: Row }[]
   /** Pending stops from today on, per store (what archiving removes). */
   openStops?: Record<string, number>
   /** Assigning: the merchandiser's pending stops offered, and the ones added. */

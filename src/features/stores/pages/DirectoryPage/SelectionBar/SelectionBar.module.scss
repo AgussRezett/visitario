@@ -1,0 +1,50 @@
+@use '@/styles/abstracts' as *;
+
+// Floats at the bottom of the page while scrolling (above the phone's tab bar).
+.bar {
+  @include flex(column, $gap: space(2));
+  position: sticky;
+  bottom: space(3);
+  z-index: 2;
+  padding: space(3) space(3.5);
+  border: 1.5px solid $color-forest;
+  border-radius: $radius-lg;
+  background: $color-card;
+  box-shadow: $shadow-sheet;
+
+  @include up(sm) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.text {
+  @include flex(column);
+  @include text(small);
+  margin: 0;
+}
+
+.hidden {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(2);
+
+  > * {
+    padding-inline: space(2);
+    white-space: nowrap;
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  @include up(sm) {
+    display: flex;
+  }
+}
