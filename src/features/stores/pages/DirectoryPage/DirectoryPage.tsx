@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { Archive, ArchiveRestore, CheckCheck, ChevronLeft, ChevronRight, MapPinOff, Search, Trash2, UserRound } from 'lucide-react'
+import { Archive, ArchiveRestore, CheckCheck, X, ChevronLeft, ChevronRight, MapPinOff, Search, Trash2, UserRound } from 'lucide-react'
 import { formatDayMonth, todayInArgentina } from '@/domain/dates'
 import { LOCATION_LABEL } from '@/domain/stores'
 import type { StoreReputation } from '@/domain/reputation'
@@ -24,6 +24,8 @@ import { RapportLevel } from '@/features/reputation/components/RapportLevel'
 import { PAGE_SIZE, directoryCountsQuery, directoryQuery, type DirectoryFilter, type DirectoryRow } from '@/features/stores/api/stores'
 import { fetchAllMatching } from '@/features/stores/api/bulk'
 import { useSelection } from '@/features/stores/useSelection'
+import { useDirectoryFilters } from '@/features/stores/useDirectoryFilters'
+import { NO_DIRECTORY_FILTERS } from '@/domain/directory-filters'
 import { useStoreArchive } from '@/features/stores/useStoreArchive'
 import { BulkEditSheet } from './BulkEditSheet'
 import { PageCheckbox, RowCheckbox } from './RowCheckbox'
@@ -36,33 +38,35 @@ const when = (date: string) => (date === todayInArgentina() ? 'Hoy' : formatDayM
 export function DirectoryPage() {
   const ctx = useWorkContext()
   const desktop = useIsDesktop()
-  const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState<DirectoryFilter>('all')
-  const [area, setArea] = useState<string | null>(null)
-  /** An id, 0 for "without", null for all. */
-  const [channel, setChannel] = useState<number | null>(null)
-  const [seller, setSeller] = useState<number | null>(null)
-  const [page, setPage] = useState(0)
-  const q = useDebounced(query.trim(), 300)
   const companyId = ctx?.companyId ?? ''
+  // Kept for this tab: coming back from a store finds them as they were.
+  const [{ query, filter, area, channel, seller, page }, setFilters] = useDirectoryFilters(companyId)
+  const q = useDebounced(query.trim(), 300)
   const list = useQuery({ ...directoryQuery(companyId, { query: q, filter, area, channel, seller, page }), enabled: Boolean(ctx), placeholderData: keepPreviousData })
   const counts = useQuery({ ...directoryCountsQuery(companyId), enabled: Boolean(ctx) })
   const catalogs = useCatalogs(companyId).data
   const reputation = useStoreReputation(companyId, (list.data?.rows ?? []).map((r) => r.id)).data
   const { askArchive, askRemove, restore, busy, error: archiveError, dialog } = useStoreArchive()
   // Marked rows stay marked across filters and pages.
-  const selection = useSelection()
+  const selection = useSelection(companyId)
   const [editing, setEditing] = useState(false)
   const [saved, setSaved] = useState<number | null>(null)
   const [matching, setMatching] = useState(false)
+  // A page kept from before that no longer exists (fewer stores now): the first one.
+  const gone = page > 0 && list.data !== undefined && !list.isPlaceholderData && list.data.rows.length === 0
+  useEffect(() => {
+    if (gone) setFilters({ page: 0 })
+  }, [gone, setFilters])
   if (!ctx) return null
 
-  const toggle = (f: DirectoryFilter) => { setFilter((x) => (x === f ? 'all' : f)); setPage(0) }
+  const toggle = (f: DirectoryFilter) => setFilters({ filter: filter === f ? 'all' : f })
+  const setPage = (n: number) => setFilters({ page: n })
   const rows = list.data?.rows ?? []
   const total = list.data?.total ?? 0
   const name = (r: DirectoryRow) => r.name ?? r.address
   const last = (r: DirectoryRow) => (r.lastVisit ? `${when(r.lastVisit.date)} · ${r.lastVisit.by}` : 'Nunca')
   const archived = filter === 'archived'
+  const filtered = query.trim() !== '' || filter !== 'all' || area !== null || channel !== null || seller !== null
   const tagsOf = (r: DirectoryRow) => storeTags(catalogs, r)
   const pick = (value: string) => (value === '' ? null : Number(value))
   const channels = catalogs?.channels ?? []
@@ -91,19 +95,19 @@ export function DirectoryPage() {
       <div className={styles.filters}>
         <label className={styles.search}>
           <Search size={18} aria-hidden />
-          <input value={query} onChange={(e) => { setQuery(e.target.value); setPage(0) }} placeholder="Nombre, nro. de cliente o dirección" aria-label="Buscar comercios" />
+          <input value={query} onChange={(e) => setFilters({ query: e.target.value })} placeholder="Nombre, nro. de cliente o dirección" aria-label="Buscar comercios" />
         </label>
         <div className={styles.chips}>
           {counts.data?.areas.length ? (
-            <Select label="Zona" value={area ?? ''} onChange={(e) => { setArea(e.target.value || null); setPage(0) }} className={styles.area}
+            <Select label="Zona" value={area ?? ''} onChange={(e) => setFilters({ area: e.target.value || null })} className={styles.area}
               options={[{ value: '', label: 'Zona: todas' }, ...counts.data.areas.map((a) => ({ value: a, label: a }))]} />
           ) : null}
           {channels.length ? (
-            <Select label="Canal" value={channel === null ? '' : String(channel)} onChange={(e) => { setChannel(pick(e.target.value)); setPage(0) }} className={styles.area}
+            <Select label="Canal" value={channel === null ? '' : String(channel)} onChange={(e) => setFilters({ channel: pick(e.target.value) })} className={styles.area}
               options={[{ value: '', label: 'Canal: todos' }, { value: '0', label: 'Sin canal' }, ...channels.map((c) => ({ value: String(c.id), label: c.name }))]} />
           ) : null}
           {sellers.length ? (
-            <Select label="Vendedor" value={seller === null ? '' : String(seller)} onChange={(e) => { setSeller(pick(e.target.value)); setPage(0) }} className={styles.area}
+            <Select label="Vendedor" value={seller === null ? '' : String(seller)} onChange={(e) => setFilters({ seller: pick(e.target.value) })} className={styles.area}
               options={[{ value: '', label: 'Vendedor: todos' }, { value: '0', label: 'Sin vendedor' }, ...sellers.map((s) => ({ value: String(s.id), label: s.name }))]} />
           ) : null}
           <button type="button" className={styles.chip} aria-pressed={filter === 'unverified'} data-tone="warn" onClick={() => toggle('unverified')}>
@@ -117,6 +121,7 @@ export function DirectoryPage() {
               <Archive size={16} aria-hidden />Archivados · {counts.data?.archived ?? 0}
             </button>
           ) : null}
+          {filtered ? <Button variant="ghost" size="sm" onClick={() => setFilters(NO_DIRECTORY_FILTERS)}><X size={16} aria-hidden />Limpiar filtros</Button> : null}
         </div>
       </div>
 
@@ -209,8 +214,8 @@ export function DirectoryPage() {
         <div className={styles.pager}>
           <span className={styles.meta}>Mostrando {page * PAGE_SIZE + 1} a {Math.min(total, (page + 1) * PAGE_SIZE)} de {total.toLocaleString('es-AR')}</span>
           <div className={styles.pagerButtons}>
-            <Button variant="secondary" size="md" disabled={page === 0} onClick={() => setPage((p) => p - 1)}><ChevronLeft size={16} aria-hidden />Anterior</Button>
-            <Button variant="secondary" size="md" disabled={(page + 1) * PAGE_SIZE >= total} onClick={() => setPage((p) => p + 1)}>Siguiente<ChevronRight size={16} aria-hidden /></Button>
+            <Button variant="secondary" size="md" disabled={page === 0} onClick={() => setPage(page - 1)}><ChevronLeft size={16} aria-hidden />Anterior</Button>
+            <Button variant="secondary" size="md" disabled={(page + 1) * PAGE_SIZE >= total} onClick={() => setPage(page + 1)}>Siguiente<ChevronRight size={16} aria-hidden /></Button>
           </div>
         </div>
       ) : null}

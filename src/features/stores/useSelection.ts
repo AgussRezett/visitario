@@ -1,12 +1,20 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { DirectoryRow } from '@/features/stores/api/stores'
+
+type Picked = ReadonlyMap<string, DirectoryRow>
+
+// Per company, while the app is open: opening a store and coming back keeps the marks.
+const kept = new Map<string, Picked>()
 
 /**
  * The stores marked in the directory. It keeps each row as it was seen, so the selection
  * survives changing filters or pages, and its current seller, channel and zone are known.
  */
-export function useSelection() {
-  const [picked, setPicked] = useState<ReadonlyMap<string, DirectoryRow>>(new Map())
+export function useSelection(companyId: string) {
+  const [picked, setPicked] = useState<Picked>(() => kept.get(companyId) ?? new Map())
+  useEffect(() => {
+    kept.set(companyId, picked)
+  }, [companyId, picked])
 
   const toggle = useCallback((row: DirectoryRow) => {
     setPicked((m) => {
