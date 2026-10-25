@@ -714,6 +714,28 @@ const clients = await as('nora', `select * from seller_stores($1)`, [panda])
 check('A seller sees their clients', clients.length === 1 && clients[0].id === tagged && clients[0].channel_id === kiosco)
 check('…someone who is not a seller sees none', (await as('agus', `select count(*)::int n from seller_stores($1)`, [panda]))[0].n === 0)
 
+// ---- The points of sale map
+{
+  await sys(`update store set lat = -34.56, lng = -58.46 where id = $1`, [tagged])
+  const mine = await as('nora', `select * from store_map($1)`, [panda])
+  check('Map: a seller sees only their clients, with their place', mine.length === 1 && mine[0].id === tagged && mine[0].lat === -34.56 && mine[0].seller_id === noraSeller)
+  const all = await as('martin', `select * from store_map($1)`, [panda])
+  check('Map: a supervisor sees every point of the company', all.length === (await sys(`select count(*)::int n from store where company_id = $1 and deleted_at is null`, [panda]))[0].n)
+  check('Map: an activador sees nothing', (await as('agus', `select count(*)::int n from store_map($1)`, [panda]))[0].n === 0)
+  check('Map: another company sees nothing of Panda', (await as('beto', `select count(*)::int n from store_map($1)`, [panda]))[0].n === 0)
+  const vMap = (await sys(`insert into visit (company_id, workday_id, merchandiser_id, work_date, store_id, added_by) values ($1, $2, $3, current_date, $4, $3) returning id`, [panda, w2, agus, tagged]))[0].id
+  await sys(`update visit set work_status = 'in_progress', arrived_at = now(), consent = 'yes', rapport = 'welcoming' where id = $1`, [vMap])
+  await sys(`update workday set status = 'published' where id = $1`, [w2])
+  const point = (await as('nora', `select * from store_map($1)`, [panda]))[0]
+  check('Map: the last activation, its counts and the reputation', point.visits_30d >= 1 && point.last_merchandiser === 'Agustín' && Number(point.rapport) === 3)
+  const h = (await as('nora', `select client_history($1, $2) j`, [panda, tagged]))[0].j
+  check('Client history: the point and its activations, for its seller', h.store.id === tagged && h.visits.some((v) => v.id === vMap && v.merchandiser === 'Agustín Rezett'))
+  const other = (await as('nora', `select id from store where company_id = $1 and id <> $2 limit 1`, [panda, tagged]))[0]
+  check('Client history: nothing about someone else’s client', other ? (await as('nora', `select client_history($1, $2) j`, [panda, other.id]))[0].j === null : true)
+  check('Client history: the supervisor sees any point', (await as('martin', `select client_history($1, $2) j`, [panda, tagged]))[0].j?.store.id === tagged)
+  await expectError('Anonymous cannot read the map', () => asAnon(`select * from store_map('${panda}')`))
+}
+
 const tagDay = '2026-10-23'
 await as('martin', `select import_workdays($1, $2, $3)`, [panda, tagDay, JSON.stringify([{ merchandiser: agus, address: 'Cuba 2200', seller: flor, channel: autoservicio }])])
 check('An import row sets its store’s seller and channel', (await sys(`select seller_id, channel_id from store where address = 'Cuba 2200'`))[0].seller_id === flor)

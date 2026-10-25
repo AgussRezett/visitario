@@ -84,3 +84,12 @@ export function weekdayInitial(date: string) {
 export function dayOfMonth(date: string) {
   return parts(date).d
 }
+
+/** Whole days from one date to another ('2026-10-01' → '2026-10-25' is 24). */
+export function daysBetween(from: string, to: string) {
+  const utc = (d: string) => {
+    const [y = 0, m = 1, day = 1] = d.split('-').map(Number)
+    return Date.UTC(y, m - 1, day)
+  }
+  return Math.round((utc(to) - utc(from)) / 86_400_000)
+}
