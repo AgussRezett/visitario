@@ -19,20 +19,22 @@ interface PointsMapProps {
   zones: Zone[]
   selectedId: string | null
   onSelect: (id: string) => void
+  /** Near points gather in one bubble with their count; off, every point shows alone. */
+  grouped: boolean
   /** Changes when the filters do: the map frames the points again. */
   frameKey: string
 }
 
 /**
- * The points of sale on a street map. Near points gather in a group that shows how many
+ * The points of sale on a street map. Near points can gather in a group that shows how many
  * they are and, as a ring, the colors they have; tapping a group comes closer, tapping a
  * point opens it.
  */
-export default function PointsMap({ points, paint, zones, selectedId, onSelect, frameKey }: PointsMapProps) {
+export default function PointsMap({ points, paint, zones, selectedId, onSelect, grouped, frameKey }: PointsMapProps) {
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<maplibregl.Map | null>(null)
   const groups = useRef(new Map<string, maplibregl.Marker>())
-  const legendKeys = useRef('')
+  const sourceKey = useRef('')
   const version = useRef(0)
   const latest = useRef({ paint, onSelect })
   latest.current = { paint, onSelect }
@@ -98,7 +100,7 @@ export default function PointsMap({ points, paint, zones, selectedId, onSelect, 
       markers.clear()
       m.remove()
       map.current = null
-      legendKeys.current = ''
+      sourceKey.current = ''
       setReady(false)
     }
   }, [failed])
@@ -108,17 +110,17 @@ export default function PointsMap({ points, paint, zones, selectedId, onSelect, 
     const m = map.current
     if (!m || !ready) return
     const data = pointsData(points, paint, selectedId)
-    const keys = paint.legend.map((l) => l.key).join('|')
+    const keys = `${grouped ? 'grouped' : 'single'}:${paint.legend.map((l) => l.key).join('|')}`
     version.current++
-    if (keys !== legendKeys.current) {
-      legendKeys.current = keys
-      setPoints(m, data, paint.legend)
+    if (keys !== sourceKey.current) {
+      sourceKey.current = keys
+      setPoints(m, data, paint.legend, grouped)
     } else {
       ;(m.getSource('points') as GeoJSONSource | undefined)?.setData(data)
     }
     ;(m.getSource('zones') as GeoJSONSource | undefined)?.setData(zonesData(zones))
     m.triggerRepaint()
-  }, [ready, points, paint, zones, selectedId])
+  }, [ready, points, paint, zones, selectedId, grouped])
 
   // New filters: frame what is left.
   useEffect(() => {

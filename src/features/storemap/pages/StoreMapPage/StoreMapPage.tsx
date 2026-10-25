@@ -10,6 +10,7 @@ import { Select } from '@/ui/Select'
 import { Skeleton } from '@/ui/Skeleton'
 import { Switch } from '@/ui/Switch'
 import { useIsDesktop } from '@/lib/useMedia'
+import { readLocal, writeLocal } from '@/lib/storage'
 import { useMe } from '@/features/auth/me'
 import { useActiveRole } from '@/features/auth/active-role'
 import { useCatalogs } from '@/features/workday/api/queries'
@@ -21,6 +22,9 @@ import type { Zone } from '@/features/storemap/components/PointsMap/layers'
 import styles from './StoreMapPage.module.scss'
 
 const PointsMap = lazy(() => import('@/features/storemap/components/PointsMap/PointsMap'))
+
+// Grouping near points is a per-device choice, remembered.
+const GROUPED_KEY = 'visitario.map.grouped'
 
 const COLOR_OPTIONS: { value: ColorBy; label: string; seller?: boolean }[] = [
   { value: 'seller', label: 'Vendedor', seller: true },
@@ -41,6 +45,7 @@ export function StoreMapPage({ point }: { point?: string }) {
   const catalogs = useCatalogs(companyId).data
   const [by, setBy] = useState<ColorBy>(asSeller ? 'recency' : 'seller')
   const [zones, setZones] = useState(true)
+  const [grouped, setGrouped] = useState(() => readLocal(GROUPED_KEY) !== 'off')
   const [f, setF] = useState<MapFilters>(NO_FILTERS)
   const [selected, setSelected] = useState<string | null>(point ?? null)
   // On phones the filters fold away, so the map comes first.
@@ -64,6 +69,10 @@ export function StoreMapPage({ point }: { point?: string }) {
   }, [asSeller, by, zones, sellers, located, sellerColor])
 
   if (!ctx) return null
+  const group = (on: boolean) => {
+    setGrouped(on)
+    writeLocal(GROUPED_KEY, on ? null : 'off')
+  }
   const set = (patch: Partial<MapFilters>) => setF((x) => ({ ...x, ...patch }))
   const areas = areasOf(all)
   const filtered = JSON.stringify(f) !== JSON.stringify(NO_FILTERS)
@@ -103,6 +112,7 @@ export function StoreMapPage({ point }: { point?: string }) {
         </div>
         <div className={styles.toggles}>
           <Switch checked={f.staleOnly} onChange={(on) => set({ staleOnly: on })}>Solo sin visitar hace +30 días</Switch>
+          <Switch checked={grouped} onChange={group}>Agrupar puntos cercanos</Switch>
           {!asSeller && by === 'seller' ? <Switch checked={zones} onChange={setZones}>Zonas de cada vendedor</Switch> : null}
           {filtered ? <Button variant="ghost" size="sm" onClick={() => setF(NO_FILTERS)}><X size={16} aria-hidden />Limpiar filtros</Button> : null}
         </div>
@@ -119,7 +129,7 @@ export function StoreMapPage({ point }: { point?: string }) {
         <div className={styles.layout}>
           <div className={styles.mapColumn}>
             <Suspense fallback={<Skeleton height={420} />}>
-              <PointsMap points={located} paint={paint} zones={zoneList} selectedId={selected} onSelect={setSelected} frameKey={JSON.stringify([f, all.length])} />
+              <PointsMap points={located} paint={paint} zones={zoneList} selectedId={selected} onSelect={setSelected} grouped={grouped} frameKey={JSON.stringify([f, all.length])} />
             </Suspense>
             <ul className={styles.legend} aria-label="Referencias">
               {paint.legend.map((l) => (
