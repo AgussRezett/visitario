@@ -1,0 +1,133 @@
+@use '@/styles/abstracts' as *;
+
+// The map on top, the address and its actions below, in one card.
+.card {
+  @include surface;
+  overflow: hidden;
+}
+
+.map {
+  width: 100%;
+  height: 220px;
+  border-bottom: 1px solid $color-line;
+  background: $color-muted;
+
+  @include up(lg) {
+    height: 260px;
+  }
+
+  :global(.maplibregl-ctrl-group button) {
+    @include square(36px);
+  }
+}
+
+.map-note,
+.no-map {
+  @include text(label);
+  margin: 0;
+  padding: space(4);
+  border-bottom: 1px solid $color-line;
+  background: $color-muted;
+  color: $color-ink-muted;
+}
+
+.no-map {
+  @include flex(row, $gap: space(3), $align: center);
+  min-height: 120px;
+
+  svg {
+    flex-shrink: 0;
+    color: $color-ink-subtle;
+  }
+}
+
+// The store's pin: a round mark with a halo; amber with a wider halo when it is approximate.
+.pin {
+  @include square(22px);
+  border: 3px solid $color-card;
+  border-radius: $radius-full;
+  background: $color-forest;
+  box-shadow: 0 0 0 6px color-mix(in srgb, $color-forest 22%, transparent), 0 2px 6px rgb(0 0 0 / 0.3);
+
+  @include dark {
+    border-color: $color-ground;
+    background: $color-lime;
+    box-shadow: 0 0 0 6px color-mix(in srgb, $color-lime 25%, transparent), 0 2px 6px rgb(0 0 0 / 0.5);
+  }
+
+  &[data-approximate='true'] {
+    background: $color-closed;
+    box-shadow: 0 0 0 14px color-mix(in srgb, $color-closed 22%, transparent), 0 2px 6px rgb(0 0 0 / 0.3);
+  }
+}
+
+.body {
+  @include flex(column, $gap: space(3));
+  padding: space(3.5) space(4) space(4);
+}
+
+.address {
+  @include flex(column, $gap: space(1));
+  min-width: 0;
+}
+
+.street {
+  @include text(base);
+  font-weight: $weight-extrabold;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  @include flex(row, $gap: space(2), $align: center);
+  @include text(small);
+  flex-wrap: wrap;
+  color: $color-ink-muted;
+}
+
+.status {
+  @include text(tiny);
+  padding: space(1) space(2.5);
+  border-radius: $radius-full;
+  font-weight: $weight-extrabold;
+  background: $color-closed-soft;
+  color: $color-closed-ink;
+
+  &[data-status='verified'] {
+    background: $color-done-soft;
+    color: $color-done-ink;
+  }
+}
+
+.coords {
+  @include text(tiny);
+  color: $color-ink-subtle;
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  @include flex(row, $gap: space(2));
+  flex-wrap: wrap;
+
+  // Side by side when they fit, one under the other when not; never a broken label.
+  > * {
+    flex: 1 1 auto;
+    white-space: nowrap;
+  }
+}
+
+.link {
+  @include flex(row, $gap: space(1.5), $align: center, $justify: center);
+  @include text(small);
+  @include transition-colors;
+  min-height: 44px;
+  padding-inline: space(3);
+  border: 1.5px solid $color-line;
+  border-radius: $radius-md;
+  background: $color-card;
+  font-weight: $weight-bold;
+  white-space: nowrap;
+
+  @include hover {
+    border-color: $color-forest;
+  }
+}

@@ -64,21 +64,48 @@
   }
 }
 
-.columns {
+// Phones: where it is, its data, then the visits. Desktop: the first two on the left,
+// the visits beside them.
+.layout {
   display: grid;
+  grid-template-areas: 'location' 'details' 'activity';
   gap: space(4);
 
   @include up(lg) {
-    grid-template-columns: 380px minmax(0, 1fr);
-    gap: space(6);
+    grid-template-areas: 'location activity' 'details activity';
+    grid-template-columns: 400px minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    gap: space(4) space(6);
     align-items: start;
+  }
+
+  > :first-child {
+    grid-area: location;
   }
 }
 
-.side,
-.main {
+.details {
+  grid-area: details;
+}
+
+.activity {
+  grid-area: activity;
+}
+
+.details,
+.activity {
   @include flex(column, $gap: space(3));
   min-width: 0;
+}
+
+.subtitle {
+  @include text(small);
+  color: $color-ink-muted;
+}
+
+.missing {
+  color: $color-ink-subtle;
+  font-weight: $weight-semibold;
 }
 
 .card {
@@ -99,37 +126,6 @@
     font-weight: $weight-bold;
     text-align: right;
   }
-}
-
-.location {
-  @include text(tiny);
-  display: inline-block;
-  padding: space(1) space(2.5);
-  border-radius: $radius-full;
-  font-weight: $weight-extrabold;
-  background: $color-closed-soft;
-  color: $color-closed-ink;
-
-  &[data-status='verified'] {
-    background: $color-done-soft;
-    color: $color-done-ink;
-  }
-}
-
-.row {
-  @include flex(row, $gap: space(2), $align: center);
-  flex-wrap: wrap;
-}
-
-.link {
-  @include flex(row, $gap: space(1.5), $align: center);
-  @include text(small);
-  min-height: 40px;
-  padding-inline: space(3);
-  border: 1.5px solid $color-line;
-  border-radius: $radius-md;
-  background: $color-card;
-  font-weight: $weight-bold;
 }
 
 .label {
