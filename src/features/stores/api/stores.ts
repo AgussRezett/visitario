@@ -24,40 +24,51 @@ export interface DirectoryRow {
   visits30d: number
 }
 
+export interface DirectorySearch {
+  query: string
+  filter: DirectoryFilter
+  area: string | null
+  channel: number | null
+  seller: number | null
+}
+
+/** One page of the directory, or (with `limit`) every store that matches. */
+export async function fetchDirectory(companyId: string, q: DirectorySearch, limit: number, offset: number): Promise<{ rows: DirectoryRow[]; total: number }> {
+  const { data, error } = await supabase.rpc('store_directory_v2', {
+    p_company: companyId,
+    p_query: q.query || undefined,
+    p_filter: q.filter,
+    p_area: q.area ?? undefined,
+    p_channel: q.channel ?? undefined,
+    p_seller: q.seller ?? undefined,
+    p_limit: limit,
+    p_offset: offset,
+  })
+  if (error) throw error
+  const rows = (data ?? []).map((r) => ({
+    id: r.id,
+    name: r.name,
+    address: r.address,
+    area: r.area,
+    customerNumber: r.customer_number,
+    locationStatus: r.location_status,
+    source: r.source,
+    createdByName: r.created_by_name,
+    channelId: r.channel_id,
+    sellerId: r.seller_id,
+    lastVisit: r.last_visit_date && r.last_visit_status && r.last_visit_review
+      ? { date: r.last_visit_date, status: r.last_visit_status, review: r.last_visit_review, by: r.last_merchandiser ?? '' }
+      : null,
+    visits30d: r.visits_30d,
+  }))
+  return { rows, total: Number(data?.[0]?.total ?? 0) }
+}
+
 /** Channel and seller filters: an id, 0 for "without", null for all. */
-export const directoryQuery = (companyId: string, q: { query: string; filter: DirectoryFilter; area: string | null; channel: number | null; seller: number | null; page: number }) =>
+export const directoryQuery = (companyId: string, q: DirectorySearch & { page: number }) =>
   queryOptions({
     queryKey: ['stores', 'directory', companyId, q],
-    queryFn: async (): Promise<{ rows: DirectoryRow[]; total: number }> => {
-      const { data, error } = await supabase.rpc('store_directory_v2', {
-        p_company: companyId,
-        p_query: q.query || undefined,
-        p_filter: q.filter,
-        p_area: q.area ?? undefined,
-        p_channel: q.channel ?? undefined,
-        p_seller: q.seller ?? undefined,
-        p_limit: PAGE_SIZE,
-        p_offset: q.page * PAGE_SIZE,
-      })
-      if (error) throw error
-      const rows = (data ?? []).map((r) => ({
-        id: r.id,
-        name: r.name,
-        address: r.address,
-        area: r.area,
-        customerNumber: r.customer_number,
-        locationStatus: r.location_status,
-        source: r.source,
-        createdByName: r.created_by_name,
-        channelId: r.channel_id,
-        sellerId: r.seller_id,
-        lastVisit: r.last_visit_date && r.last_visit_status && r.last_visit_review
-          ? { date: r.last_visit_date, status: r.last_visit_status, review: r.last_visit_review, by: r.last_merchandiser ?? '' }
-          : null,
-        visits30d: r.visits_30d,
-      }))
-      return { rows, total: Number(data?.[0]?.total ?? 0) }
-    },
+    queryFn: () => fetchDirectory(companyId, q, PAGE_SIZE, q.page * PAGE_SIZE),
   })
 
 export const directoryCountsQuery = (companyId: string) =>
@@ -143,7 +154,7 @@ export const storeVisitsQuery = (storeId: string, personId: string) =>
     },
   })
 
-function storeError(m: string) {
+export function storeError(m: string) {
   if (m.includes('store_customer_number') || m.includes('duplicate key')) return 'Ese número de cliente ya es de otro comercio. Si es el mismo, fusionalos.'
   if (m.includes('Only supervisors')) return 'Solo supervisores y administradores pueden hacerlo.'
   if (m.includes('removed store')) return 'Este comercio se eliminó y ya no se puede cambiar.'

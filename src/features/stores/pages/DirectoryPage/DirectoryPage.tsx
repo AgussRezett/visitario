@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { Archive, ArchiveRestore, ChevronLeft, ChevronRight, MapPinOff, Search, Trash2, UserRound } from 'lucide-react'
+import { Archive, ArchiveRestore, CheckCheck, ChevronLeft, ChevronRight, MapPinOff, Search, Trash2, UserRound } from 'lucide-react'
 import { formatDayMonth, todayInArgentina } from '@/domain/dates'
 import { LOCATION_LABEL } from '@/domain/stores'
 import type { StoreReputation } from '@/domain/reputation'
@@ -22,7 +22,12 @@ import { useStoreReputation } from '@/features/reputation/api'
 import { DirectoryTabs } from '@/features/stores/components/DirectoryTabs'
 import { RapportLevel } from '@/features/reputation/components/RapportLevel'
 import { PAGE_SIZE, directoryCountsQuery, directoryQuery, type DirectoryFilter, type DirectoryRow } from '@/features/stores/api/stores'
+import { fetchAllMatching } from '@/features/stores/api/bulk'
+import { useSelection } from '@/features/stores/useSelection'
 import { useStoreArchive } from '@/features/stores/useStoreArchive'
+import { BulkEditSheet } from './BulkEditSheet'
+import { PageCheckbox, RowCheckbox } from './RowCheckbox'
+import { SelectionBar } from './SelectionBar'
 import styles from './DirectoryPage.module.scss'
 
 const when = (date: string) => (date === todayInArgentina() ? 'Hoy' : formatDayMonth(date))
@@ -45,6 +50,11 @@ export function DirectoryPage() {
   const catalogs = useCatalogs(companyId).data
   const reputation = useStoreReputation(companyId, (list.data?.rows ?? []).map((r) => r.id)).data
   const { askArchive, askRemove, restore, busy, error: archiveError, dialog } = useStoreArchive()
+  // Marked rows stay marked across filters and pages.
+  const selection = useSelection()
+  const [editing, setEditing] = useState(false)
+  const [saved, setSaved] = useState<number | null>(null)
+  const [matching, setMatching] = useState(false)
   if (!ctx) return null
 
   const toggle = (f: DirectoryFilter) => { setFilter((x) => (x === f ? 'all' : f)); setPage(0) }
@@ -57,6 +67,18 @@ export function DirectoryPage() {
   const pick = (value: string) => (value === '' ? null : Number(value))
   const channels = catalogs?.channels ?? []
   const sellers = catalogs?.sellers ?? []
+  const allHere = rows.length > 0 && rows.every((r) => selection.has(r.id))
+  const hidden = selection.rows.filter((s) => !rows.some((r) => r.id === s.id)).length
+  const many = (n: number) => n.toLocaleString('es-AR')
+  /** All that match: this page, or every page when there are more. */
+  const selectMatching = async () => {
+    setSaved(null)
+    if (total <= rows.length) return selection.toggleAll(rows)
+    setMatching(true)
+    const all = await fetchAllMatching(companyId, { query: q, filter, area, channel, seller }).catch(() => null)
+    setMatching(false)
+    if (all) selection.add(all)
+  }
 
   return (
     <div className={styles.page}>
@@ -99,6 +121,15 @@ export function DirectoryPage() {
       </div>
 
       {archiveError ? <Banner tone="error">{archiveError.message}</Banner> : null}
+      {saved !== null ? <Banner tone="ok">Listo: {saved === 1 ? 'se actualizó 1 comercio' : `se actualizaron ${many(saved)} comercios`}.</Banner> : null}
+      {rows.length ? (
+        <div className={styles.selectLine}>
+          <Button variant="ghost" size="sm" loading={matching} onClick={() => void selectMatching()}>
+            <CheckCheck size={16} aria-hidden />
+            {total <= rows.length ? (allHere ? `Quitar los ${many(total)} de la selección` : `Seleccionar los ${many(total)}`) : `Seleccionar los ${many(total)} que coinciden`}
+          </Button>
+        </div>
+      ) : null}
       {list.isPending ? (
         <Skeleton height={320} />
       ) : list.error ? (
@@ -109,10 +140,11 @@ export function DirectoryPage() {
         <Refreshing active={list.isPlaceholderData}>
           {desktop ? (
             <Table label="Comercios">
-              <thead><tr><th>Comercio</th><th>Cliente</th><th>Canal y vendedor</th><th>Zona</th><th>Ubicación</th><th>Trato</th><th>Última visita</th><th>Visitas 30 días</th><th><span className={styles.srOnly}>Acciones</span></th></tr></thead>
+              <thead><tr><th className={styles.checkCell}><PageCheckbox rows={rows} selection={selection} /></th><th>Comercio</th><th>Cliente</th><th>Canal y vendedor</th><th>Zona</th><th>Ubicación</th><th>Trato</th><th>Última visita</th><th>Visitas 30 días</th><th><span className={styles.srOnly}>Acciones</span></th></tr></thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.id}>
+                  <tr key={r.id} data-selected={selection.has(r.id) || undefined}>
+                    <td className={styles.checkCell}><RowCheckbox row={r} label={name(r)} selection={selection} /></td>
                     <td>
                       <Link to="/stores/$storeId" params={{ storeId: r.id }} className={styles.store}>
                         <span className={styles.name}>{name(r)}{r.source === 'merchandiser' && r.createdByName ? <span className={styles.added}>Agregado por {r.createdByName}</span> : null}</span>
@@ -153,7 +185,8 @@ export function DirectoryPage() {
           ) : (
             <ul className={styles.list}>
               {rows.map((r) => (
-                <li key={r.id}>
+                <li key={r.id} className={styles.item} data-selected={selection.has(r.id) || undefined}>
+                  <RowCheckbox row={r} label={name(r)} selection={selection} />
                   <Link to="/stores/$storeId" params={{ storeId: r.id }} className={styles.row}>
                     <span className={styles.rowText}>
                       <span className={styles.name}>{name(r)}</span>
@@ -181,6 +214,9 @@ export function DirectoryPage() {
           </div>
         </div>
       ) : null}
+      <SelectionBar count={selection.count} hidden={hidden} onEdit={() => { setSaved(null); setEditing(true) }} onClear={selection.clear} />
+      <BulkEditSheet open={editing} onClose={() => setEditing(false)} companyId={companyId} rows={selection.rows} catalogs={catalogs} areas={counts.data?.areas ?? []}
+        onSaved={(n) => { setEditing(false); selection.clear(); setSaved(n) }} />
       {dialog}
     </div>
   )
