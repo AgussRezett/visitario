@@ -41,3 +41,35 @@
   border-radius: $radius-lg;
   color: $color-ink-muted;
 }
+
+// A group of points: a white disc with a ring of their colors and the count
+.group {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: $radius-full;
+  background: transparent;
+  filter: drop-shadow(0 2px 6px rgb(0 0 0 / 0.28));
+  cursor: pointer;
+  transition: transform 120ms $ease-standard;
+
+  @include hover {
+    transform: scale(1.08);
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-focus;
+    outline-offset: 2px;
+  }
+
+  svg {
+    display: block;
+  }
+
+  text {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: $weight-extrabold;
+    fill: #1a1a19;
+  }
+}
