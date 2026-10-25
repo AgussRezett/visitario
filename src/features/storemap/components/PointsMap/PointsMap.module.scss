@@ -1,0 +1,43 @@
+@use '@/styles/abstracts' as *;
+
+.map {
+  width: 100%;
+  height: 380px;
+  border: 1px solid $color-line;
+  border-radius: $radius-lg;
+  background: $color-muted;
+  overflow: hidden;
+
+  @include up(lg) {
+    height: min(68vh, 620px);
+  }
+
+  // MapLibre's own controls, in the app's shapes.
+  :global(.maplibregl-ctrl-group) {
+    border-radius: $radius-md;
+  }
+
+  :global(.maplibregl-ctrl-group button) {
+    @include square(36px);
+  }
+}
+
+// The name shown while the pointer is over a balloon
+.tip {
+  :global(.maplibregl-popup-content) {
+    @include text(label);
+    padding: space(1.5) space(2.5);
+    border-radius: $radius-sm;
+    font-weight: $weight-semibold;
+    color: #1a1a19;
+  }
+}
+
+.note {
+  @include text(small);
+  margin: 0;
+  padding: space(4);
+  border: 1px dashed $color-line;
+  border-radius: $radius-lg;
+  color: $color-ink-muted;
+}

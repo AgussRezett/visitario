@@ -1,0 +1,152 @@
+@use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(4));
+  padding: space(4) space(4) space(6);
+
+  @include up(lg) {
+    gap: space(5);
+    padding: space(6) space(8);
+  }
+}
+
+.top {
+  @include flex(column, $gap: space(0.5));
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+.title {
+  @include heading(title);
+  margin: 0;
+
+  @include up(lg) {
+    @include heading(display);
+  }
+}
+
+.lead {
+  @include text(small);
+  margin: 0;
+  color: $color-ink-muted;
+}
+
+// What to paint by, then the filters in one row on desktop
+.controls {
+  @include flex(column, $gap: space(3));
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(3);
+  align-items: end;
+
+  @include up(lg) {
+    grid-template-columns: repeat(3, minmax(0, 12rem)) minmax(0, 1fr);
+  }
+}
+
+.search {
+  @include flex(row, $gap: space(2), $align: center);
+  grid-column: 1 / -1;
+  height: $control-height;
+  padding-inline: space(3.5);
+  border: 1.5px solid $color-control;
+  border-radius: $radius-md;
+  background: $color-card;
+  color: $color-ink-subtle;
+
+  &:focus-within {
+    border-color: $color-forest;
+  }
+
+  @include up(lg) {
+    grid-column: auto;
+  }
+
+  input {
+    @include text(base);
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: $color-ink;
+  }
+}
+
+.toggles {
+  @include flex(row, $gap: space(3), $align: center);
+  flex-wrap: wrap;
+}
+
+// Map and its legend on the left, the numbers on the right (desktop)
+.layout {
+  display: grid;
+  gap: space(5);
+  align-items: start;
+
+  @include up(lg) {
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  }
+}
+
+.map-column {
+  @include flex(column, $gap: space(2));
+
+  @include up(lg) {
+    position: sticky;
+    top: space(4);
+  }
+}
+
+.legend {
+  @include flex(row, $gap: space(1.5) space(3));
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.legend-item {
+  @include text(label);
+  @include flex(row, $gap: space(1.5), $align: center);
+  color: $color-ink-muted;
+}
+
+.legend-button {
+  @include flex(row, $gap: space(1.5), $align: center);
+  @include transition-colors;
+  @include text(label);
+  min-height: space(9);
+  padding: 0 space(2);
+  border: 0;
+  border-radius: $radius-full;
+  background: transparent;
+  color: $color-ink-muted;
+  cursor: pointer;
+
+  @include hover {
+    background: $color-muted;
+    color: $color-ink;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-focus;
+  }
+}
+
+.swatch {
+  @include square(space(3));
+  flex-shrink: 0;
+  border: 1.5px solid $color-card;
+  border-radius: $radius-full;
+  box-shadow: 0 0 0 1px $color-line;
+}
+
+.filters-toggle {
+  align-self: flex-start;
+}
