@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { daysBetween } from './dates'
-import { applyFilters, convexHull, insights, NO_FILTERS, NONE_COLOR, painter, recencyOf, ringArcs, ringSize, SERIES, zoneOf, type MapPoint } from './store-map'
+import { applyFilters, convexHull, insights, NO_FILTERS, NONE_COLOR, OTHER_COLOR, painter, rankByPoints, recencyOf, ringArcs, ringSize, SERIES, zoneOf, type MapPoint } from './store-map'
 
 const TODAY = '2026-10-25'
 const p = (id: string, extra: Partial<MapPoint> = {}): MapPoint => ({
@@ -23,6 +23,20 @@ describe('store map', () => {
     expect(color(p('a', { sellerId: 11 }))).toBe(SERIES[1])
     expect(color(p('a'))).toBe(NONE_COLOR)
     expect(legend.map((l) => l.label)).toEqual(['Florencia', 'Pedro', 'Sin vendedor'])
+  })
+
+  it('the 8 hues go to the sellers with the most points; past them, "otros" is not the gray of "without seller"', () => {
+    const many = Array.from({ length: 10 }, (_, i) => ({ id: i + 1, name: `V${String(i + 1).padStart(2, '0')}` }))
+    // V10 has the most points, V01 has none.
+    const pts = [...Array.from({ length: 5 }, () => p('x', { sellerId: 10 })), ...many.slice(1, 9).map((m) => p('y', { sellerId: m.id }))]
+    const ranked = rankByPoints(many, pts, (x) => x.sellerId)
+    expect(ranked.map((m) => m.name)).toEqual(['V10', 'V02', 'V03', 'V04', 'V05', 'V06', 'V07', 'V08', 'V09'])
+    const { color, legend } = painter('seller', TODAY, ranked, [])
+    expect(color(p('a', { sellerId: 10 }))).toBe(SERIES[0])
+    expect(color(p('a', { sellerId: 9 }))).toBe(OTHER_COLOR)
+    expect(OTHER_COLOR).not.toBe(NONE_COLOR)
+    expect(legend.map((l) => l.label)).not.toContain('V01')
+    expect(legend.find((l) => l.key === '9')?.label).toBe('V09 (otros)')
   })
 
   it('filters by area, seller ("without" too), channel, stale and text', () => {
