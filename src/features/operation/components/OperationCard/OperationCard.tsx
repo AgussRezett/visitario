@@ -42,10 +42,10 @@ export function OperationCard({ companyId, meId, date, op, works, isHost, stops,
     if (date < todayInArgentina()) return null
     return (
       <section className={styles.invite} aria-label="Operativo">
-        <span className={styles.icon} aria-hidden><Users size={20} /></span>
+        <span className={styles.inviteIcon} aria-hidden><Users size={18} /></span>
         <span className={styles.inviteText}>
-          <span className={styles.title}>¿Salen juntos?</span>
-          <span className={styles.meta}>Armá un operativo: trabajan los mismos locales y cada uno ve lo que hace el otro, en vivo.</span>
+          <span className={styles.inviteTitle}>¿Salen juntos?</span>
+          <span className={styles.meta}>Con un operativo trabajan los mismos locales y se ven en vivo.</span>
         </span>
         <Button variant="secondary" size="md" onClick={() => setOpen('create')}><Users size={18} aria-hidden />Armar operativo</Button>
         <CreateOperationSheet open={open === 'create'} onClose={() => setOpen(null)} companyId={companyId} date={date} meId={meId} />
