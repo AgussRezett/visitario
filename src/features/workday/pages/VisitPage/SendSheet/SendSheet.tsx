@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Camera, Check, CheckCircle2, LoaderCircle, RotateCw, Send as SendIcon } from 'lucide-react'
+import { Camera, Check, CheckCircle2, LoaderCircle, NotebookPen, RotateCw, Send as SendIcon } from 'lucide-react'
 import clsx from 'clsx'
 import { isReady, nextSend, shareFileName, type Send, type SendGroup } from '@/domain/share-queue'
 import { copyText, share } from '@/lib/share'
@@ -22,6 +22,7 @@ const GROUPS: { group: SendGroup; title: string }[] = [
   { group: 'storefront', title: 'Fachada' },
   { group: 'before', title: 'Antes' },
   { group: 'after', title: 'Después' },
+  { group: 'notes', title: 'Observaciones' },
 ]
 
 /**
@@ -35,8 +36,11 @@ export function SendSheet({ open, onClose, address, sends, sent, onSent, urlFor 
   const done = sends.filter((s) => sent.has(s.key)).length
   const missing = sends.filter((s) => !isReady(s)).length
 
+  // The observations need no photo: always ready.
+  const stateOf = (s: Send): SendState => (s.textOnly ? 'ready' : sendState(s.photoIds, files))
+
   const send = (s: Send) => {
-    const state = sendState(s.photoIds, files)
+    const state = stateOf(s)
     if (state === 'error') return retry()
     if (state !== 'ready') return
     const shared = s.photoIds.flatMap((id, i) => {
@@ -52,7 +56,7 @@ export function SendSheet({ open, onClose, address, sends, sent, onSent, urlFor 
     })
   }
 
-  const nextState = next ? sendState(next.photoIds, files) : null
+  const nextState = next ? stateOf(next) : null
   const footer = next ? (
     <div className={styles.footer}>
       <Button size="lg" className={styles.main} loading={nextState === 'loading'} onClick={() => send(next)}>
@@ -91,7 +95,7 @@ export function SendSheet({ open, onClose, address, sends, sent, onSent, urlFor 
               <ul className={styles.rows}>
                 {rows.map((s) => (
                   <li key={s.key}>
-                    <Row send={s} state={sendState(s.photoIds, files)} sent={sent.has(s.key)} isNext={next?.key === s.key} url={s.photoIds[0] ? urlFor(s.photoIds[0]) : undefined} onSend={() => send(s)} />
+                    <Row send={s} state={stateOf(s)} sent={sent.has(s.key)} isNext={next?.key === s.key} url={s.photoIds[0] ? urlFor(s.photoIds[0]) : undefined} onSend={() => send(s)} />
                   </li>
                 ))}
               </ul>
@@ -129,7 +133,7 @@ function Row({ send: s, state, sent, isNext, url, onSend }: { send: Send; state:
       aria-label={`${verb} ${s.label} · ${status.text}`}
     >
       <span className={styles.thumb} aria-hidden>
-        {url && !broken ? <img src={url} alt="" className={styles.image} onError={() => setBroken(true)} /> : <Camera size={20} />}
+        {s.textOnly ? <NotebookPen size={20} /> : url && !broken ? <img src={url} alt="" className={styles.image} onError={() => setBroken(true)} /> : <Camera size={20} />}
         {s.photoIds.length > 1 ? <span className={styles.more}>{s.photoIds.length}</span> : null}
       </span>
       <span className={styles.texts}>

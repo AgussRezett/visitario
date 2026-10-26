@@ -14,6 +14,7 @@ import { useLocationError } from '@/features/operation/location'
 import { OperationCard } from '@/features/operation/components/OperationCard'
 import { useVisitList } from '@/features/sync/hooks'
 import { useStoreReputation } from '@/features/reputation/api'
+import { useIsDesktop } from '@/lib/useMedia'
 import { AddAddressSheet } from '../AddAddressSheet'
 import { ResumeSheet } from '../ResumeSheet'
 import { DayHero } from '../DayHero'
@@ -47,9 +48,12 @@ export function DayView({ ctx, workday, sheet, onSheet }: DayViewProps) {
   const adding = sheet === 'add'
   const resuming = sheet === 'resume'
   const catalogs = useCatalogs(ctx.companyId)
+  const desktop = useIsDesktop()
 
   const list = useVisitList(day.visits) ?? []
   const myPending = list.filter((v) => !day.operationStops.has(v.id) && v.workStatus === 'pending')
+  // A live operativo is the day's work: up front. The invite to start one waits below the
+  // stores (beside them on desktop), visible but not the first thing the activador sees.
   const operation = (
     <OperationCard companyId={ctx.companyId} meId={ctx.personId} date={workday.workDate} op={day.op} works={day.works} isHost={day.isHost}
       stops={list.filter((v) => day.operationStops.has(v.id))} myPending={myPending} presence={presence} locationError={locationError} />
@@ -83,7 +87,7 @@ export function DayView({ ctx, workday, sheet, onSheet }: DayViewProps) {
   if (list.length === 0) {
     return (
       <>
-        {operation}
+        {day.op ? operation : null}
         <section className={styles.empty}>
           <span className={styles.emptyIcon}><MapPinPlus size={28} aria-hidden /></span>
           <h2 className={styles.emptyTitle}>Tu jornada está abierta y vacía</h2>
@@ -99,6 +103,7 @@ export function DayView({ ctx, workday, sheet, onSheet }: DayViewProps) {
             ) : null}
           </div>
         </section>
+        {!day.op ? operation : null}
         {sheets}
       </>
     )
@@ -117,17 +122,19 @@ export function DayView({ ctx, workday, sheet, onSheet }: DayViewProps) {
               </span>
             </Banner>
           ) : null}
-          {operation}
+          {day.op ? operation : null}
           <DayHero progress={progress} next={next} stop={next ? list.indexOf(next) + 1 : 0} date={workday.workDate} />
           <DayStats visits={list} />
           <StopList visits={shown} all={list} filter={filter} onFilter={setFilter} reputation={reputation.data} operationStops={day.operationStops} presence={presence} meId={ctx.personId} />
           <div className={styles.phoneOnly}>
             <ResumePanel items={pending} onResume={() => setResuming(true)} />
           </div>
+          {!day.op && !desktop ? operation : null}
         </div>
         <aside className={styles.aside}>
           <ReportPanel date={workday.workDate} visited={progress.visited} catalogs={catalogs.data} totals={totals.data ?? {}} />
           <ResumePanel items={pending} onResume={() => setResuming(true)} />
+          {!day.op && desktop ? operation : null}
         </aside>
       </div>
 

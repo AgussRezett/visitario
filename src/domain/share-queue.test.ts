@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildSends, nextSend, shareFileName } from './share-queue'
+import { buildSends, nextSend, observationText, shareFileName } from './share-queue'
 
 const photos = [
   { id: 'f1', kind: 'storefront' as const, displayId: null },
@@ -32,6 +32,14 @@ describe('share queue', () => {
     expect(nextSend(sends, new Set())?.key).toBe('storefront')
     expect(nextSend(sends, new Set(['storefront', 'before-d1', 'before-d2']))?.key).toBe('after-d1')
     expect(nextSend(sends, new Set(['storefront', 'before-d1', 'before-d2', 'after-d1']))).toBeNull()
+  })
+
+  it('the observations go last, text only, and only when there are any', () => {
+    const sends = buildSends({ address: 'x', photos, displays: null, general: { before: '', after: '' }, notes: '  Faltó Campari en la góndola  ' })
+    expect(sends.at(-1)).toMatchObject({ key: 'notes', label: 'Observaciones', photoIds: [], textOnly: true, text: 'Observaciones: "Faltó Campari en la góndola"' })
+    expect(nextSend(sends, new Set(['storefront', 'before', 'after']))?.key).toBe('notes')
+    expect(buildSends({ address: 'x', photos, displays: null, general: { before: '', after: '' }, notes: '  ' }).some((s) => s.key === 'notes')).toBe(false)
+    expect(observationText(null)).toBeNull()
   })
 
   it('names the files', () => {

@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import clsx from 'clsx'
 import { Check, ChevronRight, Copy, MessageSquare, Send as SendIcon } from 'lucide-react'
-import { buildSends } from '@/domain/share-queue'
+import { buildSends, observationText } from '@/domain/share-queue'
 import { fillTemplate, type TemplateKind } from '@/domain/templates'
 import { canShare, useCopy } from '@/lib/share'
 import { Button } from '@/ui/Button'
@@ -38,6 +39,8 @@ export function MessagesSection({ visit: v, templates, firstName, typeName, tags
   const { sent, mark } = useSent(v.id)
   const address: Item = { key: 'address', label: 'Dirección', name: 'Copiar Dirección', text: v.store.address }
   const values = messageValues(v, firstName, typeName, tags)
+  const notesText = observationText(v.notes)
+  const notes: Item | null = notesText ? { key: 'notes', label: 'Observaciones', name: 'Copiar Observaciones', text: notesText } : null
   const general: Item[] = [
     address,
     { key: 'before', label: 'ANTES', name: 'Copiar ANTES', text: fillTemplate(templates.before, values) },
@@ -58,11 +61,12 @@ export function MessagesSection({ visit: v, templates, firstName, typeName, tags
     photos: v.photos,
     displays: perDisplay ? byDisplay.map((d) => ({ id: d.id, label: d.label, before: d.items[0]?.text ?? '', after: d.items[1]?.text ?? '' })) : null,
     general: { before: general[1]?.text ?? '', after: general[2]?.text ?? '' },
+    notes: v.notes,
   })
   const done = sends.filter((s) => sent.has(s.key)).length
 
-  const button = (i: Item, size: 'sm' | 'md' = 'sm') => (
-    <Button key={i.key} variant="secondary" size={size} className={styles.copy} onClick={() => copy(i.key, i.text)} aria-label={i.name}>
+  const button = (i: Item, size: 'sm' | 'md' = 'sm', wide = false) => (
+    <Button key={i.key} variant="secondary" size={size} className={clsx(styles.copy, wide && styles.wide)} onClick={() => copy(i.key, i.text)} aria-label={i.name}>
       {copied === i.key ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
       {copied === i.key ? 'Copiado' : i.label}
     </Button>
@@ -73,7 +77,7 @@ export function MessagesSection({ visit: v, templates, firstName, typeName, tags
       state="todo"
       icon={<MessageSquare size={16} />}
       title="Mensajes para WhatsApp"
-      subtitle={perDisplay ? 'Dirección · ANTES y DESPUÉS de cada exhibición' : 'Dirección · ANTES · DESPUÉS'}
+      subtitle={`${perDisplay ? 'Dirección · ANTES y DESPUÉS de cada exhibición' : 'Dirección · ANTES · DESPUÉS'}${notes ? ' · Observaciones' : ''}`}
     >
       {canShare() ? (
         <>
@@ -91,7 +95,7 @@ export function MessagesSection({ visit: v, templates, firstName, typeName, tags
       ) : null}
       {perDisplay ? (
         <>
-          <div className={styles.address}>{button(address)}</div>
+          <div className={styles.address}>{button(address)}{notes ? button(notes, 'sm', true) : null}</div>
           {byDisplay.length ? (
             <ul className={styles.displays} aria-label="Mensajes por exhibición">
               {byDisplay.map((d) => (
@@ -106,8 +110,9 @@ export function MessagesSection({ visit: v, templates, firstName, typeName, tags
           )}
         </>
       ) : (
-        <div className={styles.buttons}>{general.map((i) => button(i))}</div>
+        <div className={styles.buttons}>{general.map((i) => button(i))}{notes ? button(notes, 'sm', true) : null}</div>
       )}
+      {!notes ? <p className={styles.help}>Si escribís observaciones en la visita, también las vas a poder copiar y enviar.</p> : null}
     </VisitSection>
   )
 }

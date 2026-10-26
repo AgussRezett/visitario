@@ -87,3 +87,30 @@ test('without a share sheet (a computer), the texts are still there to copy', as
   await expect(page.getByRole('button', { name: 'Copiar ANTES de Góndola' })).toBeVisible()
   await expect(page.getByRole('button', { name: /Enviar a WhatsApp/ })).toHaveCount(0)
 })
+
+test('the observations are copied and sent too, as text, after the photos', async ({ page }, info) => {
+  await fakeShare(page)
+  const s = state()
+  s.visits = s.visits.map((v) => ({ ...v, notes: 'Faltó SKYY en la góndola' }))
+  await installFakeSupabase(page, s)
+  await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
+  await page.goto('/visit/v1')
+  await page.getByRole('button', { name: 'Copiar Observaciones' }).click()
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe('Observaciones: "Faltó SKYY en la góndola"')
+  await page.screenshot({ path: `test-results/whatsapp-notes-${info.project.name}.png`, fullPage: true })
+
+  await page.getByRole('button', { name: /Enviar a WhatsApp/ }).click()
+  const sheet = page.getByRole('dialog', { name: 'Enviar a WhatsApp' })
+  await expect(sheet.getByText('0 de 6 enviados')).toBeVisible()
+  await sheet.getByRole('region', { name: 'Observaciones' }).getByRole('button', { name: /Enviar Observaciones/ }).click()
+  await expect.poll(() => shares(page)).toEqual([{ text: 'Observaciones: "Faltó SKYY en la góndola"', files: [] }])
+  await expect(sheet.getByText('1 de 6 enviados')).toBeVisible()
+})
+
+test('without observations there is nothing extra to send', async ({ page }) => {
+  await fakeShare(page)
+  await installFakeSupabase(page, state())
+  await page.goto('/visit/v1')
+  await expect(page.getByRole('button', { name: 'Copiar Observaciones' })).toHaveCount(0)
+  await expect(page.getByText('Si escribís observaciones en la visita')).toBeVisible()
+})

@@ -19,6 +19,16 @@
 .address {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: space(1.5);
+}
+
+// "Observaciones": a longer word, on its own line under ANTES · DESPUÉS (beside the address per display)
+.buttons .wide {
+  grid-column: 1 / -1;
+}
+
+.address .wide {
+  grid-column: span 2;
 }
 
 .displays {

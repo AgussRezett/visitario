@@ -1,17 +1,29 @@
 @use '@/styles/abstracts' as *;
 
-// No operativo yet: one quiet row that says what it is for
+// No operativo yet: a quiet row below the day (dashed, no fill), there when it is needed.
 .invite {
-  @include surface;
   @include flex(row, $gap: space(3), $align: center);
   flex-wrap: wrap;
-  padding: space(3.5) space(4);
+  padding: space(3) space(3.5);
+  border: 1.5px dashed $color-line;
+  border-radius: $radius-lg;
+}
+
+.invite-icon {
+  @include icon-tile(space(8), $radius-sm);
+  background: $color-muted;
+  color: $color-ink-muted;
 }
 
 .invite-text {
-  @include flex(column, $gap: space(0.5));
-  flex: 1 1 220px;
+  @include flex(column);
+  flex: 1 1 200px;
   min-width: 0;
+}
+
+.invite-title {
+  @include text(small);
+  font-weight: $weight-extrabold;
 }
 
 .card {
