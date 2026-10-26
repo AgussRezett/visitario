@@ -26,6 +26,8 @@ export type Recency = 'recent' | 'month' | 'stale' | 'never'
 /** Categorical hues in a fixed order (validated for color-blind separation). A 9th seller is "Otros". */
 export const SERIES = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6', '#e34948'] as const
 export const NONE_COLOR = '#8a8a85'
+/** Past the 8 hues ("otros"): a darker neutral, so it never reads as "without seller". */
+export const OTHER_COLOR = '#55504a'
 /** Status colors: never reused for a series; always shown with a label. */
 export const RECENCY_COLOR: Record<Recency, string> = { recent: '#0ca30c', month: '#fab219', stale: '#d03b3b', never: NONE_COLOR }
 export const RECENCY_LABEL: Record<Recency, string> = { recent: 'Últimos 7 días', month: '8 a 30 días', stale: 'Más de 30 días', never: 'Nunca activado' }
@@ -51,10 +53,23 @@ export interface LegendItem {
 
 /**
  * Each seller (or channel) keeps its color whatever the filters: the color follows the
- * entity's place in the company's list, never its rank on screen.
+ * entity's place in the list given (see `rankByPoints`), never its rank on screen.
  */
 export function colorsFor(items: readonly Named[]): Map<number, string> {
-  return new Map(items.map((x, i) => [x.id, SERIES[i] ?? NONE_COLOR]))
+  return new Map(items.map((x, i) => [x.id, SERIES[i] ?? OTHER_COLOR]))
+}
+
+/**
+ * Who gets the 8 hues: the ones with the most points of the company (counted before any
+ * filter, so filtering never repaints), then by name. Those without points take no color.
+ */
+export function rankByPoints(items: readonly Named[], points: readonly MapPoint[], idOf: (p: MapPoint) => number | null): Named[] {
+  const count = new Map<number, number>()
+  for (const p of points) {
+    const id = idOf(p)
+    if (id !== null) count.set(id, (count.get(id) ?? 0) + 1)
+  }
+  return items.filter((x) => count.has(x.id)).sort((a, b) => (count.get(b.id) ?? 0) - (count.get(a.id) ?? 0) || a.name.localeCompare(b.name, 'es'))
 }
 
 /** The color of a point, and the legend of the mode. */
@@ -75,7 +90,7 @@ export function painter(by: ColorBy, today: string, sellers: readonly Named[], c
     return recencyOf(p, today).band
   }
   const named = (list: readonly Named[], colors: Map<number, string>, none: string): LegendItem[] => [
-    ...list.map((x) => ({ key: String(x.id), label: SERIES[list.indexOf(x)] ? x.name : `${x.name} (otros)`, color: colors.get(x.id) ?? NONE_COLOR })),
+    ...list.map((x) => ({ key: String(x.id), label: SERIES[list.indexOf(x)] ? x.name : `${x.name} (otros)`, color: colors.get(x.id) ?? OTHER_COLOR })),
     { key: 'none', label: none, color: NONE_COLOR },
   ]
   const legend: LegendItem[] =

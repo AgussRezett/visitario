@@ -2,7 +2,7 @@ import { lazy, Suspense, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { SlidersHorizontal, Search, X } from 'lucide-react'
 import { todayInArgentina } from '@/domain/dates'
-import { applyFilters, areasOf, colorsFor, insights, NO_FILTERS, NONE_COLOR, painter, zoneOf, type ColorBy, type MapFilters } from '@/domain/store-map'
+import { applyFilters, areasOf, colorsFor, insights, NO_FILTERS, NONE_COLOR, painter, rankByPoints, zoneOf, type ColorBy, type MapFilters } from '@/domain/store-map'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
 import { Segmented } from '@/ui/Segmented'
@@ -57,8 +57,11 @@ export function StoreMapPage({ point }: { point?: string }) {
   const all = useMemo(() => data.data ?? [], [data.data])
   const shown = useMemo(() => applyFilters(all, f, today), [all, f, today])
   const located = useMemo(() => shown.filter((p) => p.lat !== null && p.lng !== null), [shown])
-  const paint = useMemo(() => painter(by, today, sellers, channels), [by, today, sellers, channels])
-  const sellerColor = useMemo(() => colorsFor(sellers), [sellers])
+  // Colors for the ones with the most points (counted before filtering, so they stay put).
+  const sellerRank = useMemo(() => rankByPoints(sellers, all, (p) => p.sellerId), [sellers, all])
+  const channelRank = useMemo(() => rankByPoints(channels, all, (p) => p.channelId), [channels, all])
+  const paint = useMemo(() => painter(by, today, sellerRank, channelRank), [by, today, sellerRank, channelRank])
+  const sellerColor = useMemo(() => colorsFor(sellerRank), [sellerRank])
   const facts = useMemo(() => insights(shown, sellers, today), [shown, sellers, today])
   const zoneList = useMemo((): Zone[] => {
     if (asSeller || by !== 'seller' || !zones) return []
