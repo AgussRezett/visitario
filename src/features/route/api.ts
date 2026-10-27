@@ -64,6 +64,9 @@ const isLine = (l: unknown): l is [number, number][] =>
 export const savedRouteQuery = (workdayId: string) =>
   queryOptions({
     queryKey: ['workday', 'route', workdayId] as const,
+    // One row: asked again every time the page opens, so a copy kept on the phone from before
+    // the route was saved never hides it.
+    staleTime: 0,
     queryFn: async (): Promise<SavedRoute | null> => {
       const { data, error } = await supabase
         .from('route_plan')
