@@ -143,3 +143,21 @@ export { mapsQuery as placeQuery } from './places'
 export function inRoute(v: { workStatus: 'pending' | 'in_progress' | 'done' | 'refused' | 'closed'; reviewStatus: string }): boolean {
   return v.reviewStatus !== 'approved' && (v.workStatus === 'pending' || v.workStatus === 'in_progress' || v.workStatus === 'closed')
 }
+
+/**
+ * The path from the point nearest the first store on. A route calculated from the phone's
+ * position is saved without that stretch: where the person was is never stored.
+ */
+export function lineFromFirstStop(line: readonly [number, number][], first: Point): [number, number][] {
+  if (!line.length) return []
+  let best = 0
+  let bestKm = Infinity
+  line.forEach(([lng, lat], i) => {
+    const km = distanceKm({ lat, lng }, first)
+    if (km < bestKm) {
+      best = i
+      bestKm = km
+    }
+  })
+  return line.slice(best)
+}

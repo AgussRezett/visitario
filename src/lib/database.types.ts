@@ -839,6 +839,26 @@ export type Database = {
         }
         Relationships: []
       }
+      route_plan: {
+        Row: {
+          by_street: boolean
+          company_id: string
+          created_at: string
+          from_origin: boolean
+          km: number
+          line: Json | null
+          merchandiser_id: string
+          minutes: number | null
+          mode: string
+          stop_ids: string[]
+          updated_at: string
+          version: number
+          workday_id: string
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
       seller: {
         Row: {
           active: boolean
@@ -1954,6 +1974,10 @@ export type Database = {
         Returns: string
       }
       run_purge: { Args: never; Returns: number }
+      save_route_plan: {
+        Args: { p_by_street: boolean; p_from_origin: boolean; p_km: number; p_line?: Json; p_minutes?: number; p_mode: string; p_stop_ids: string[]; p_workday: string }
+        Returns: undefined
+      }
       search_stores: {
         Args: { p_company: string; p_limit?: number; p_query: string }
         Returns: {

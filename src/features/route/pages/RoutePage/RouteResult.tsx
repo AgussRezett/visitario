@@ -1,11 +1,12 @@
 import { Suspense } from 'react'
-import { ArrowLeft, Check, Map as MapIcon, Navigation, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Check, Map as MapIcon, RefreshCw } from 'lucide-react'
 import clsx from 'clsx'
-import { MAPS_STOPS, directionsUrl, mapsLegs, placeQuery, type Point, type TravelMode } from '@/domain/route'
+import { formatTime } from '@/domain/dates'
+import { MAPS_STOPS, inRoute, mapsLegs, placeQuery, type Point, type TravelMode } from '@/domain/route'
 import { Button, buttonClass } from '@/ui/Button'
 import type { Visit } from '@/features/workday/api/queries'
-import { placeName, stopNote } from './stop'
 import { RouteSketch } from './RouteSketch'
+import { RouteStops } from './RouteStops'
 import { StreetMap } from './StreetMap'
 import styles from './RoutePage.module.scss'
 
@@ -21,12 +22,18 @@ export interface RoutePlan {
 
 interface RouteResultProps {
   plan: RoutePlan | null
+  /** Every stop of the day: those of the route keep their place and show how they are going. */
   visits: Visit[]
   mode: TravelMode
   origin: Point | null
+  /** It started at the phone (a saved route keeps only that, never where). */
+  fromOrigin: boolean
   lastId: string
-  /** Stores per Google Maps leg: 4 on a phone (3 in between), 10 on a computer. */
   refining: boolean
+  /** When it was calculated, for a route kept from before. */
+  savedAt: string | null
+  /** Nothing left to order: the kept route is only shown. */
+  canRecalculate: boolean
   onBack: () => void
   onRecalculate: () => void
   onApply: () => void
@@ -35,7 +42,7 @@ interface RouteResultProps {
 const km = (n: number) => n.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 
 /** The suggested order, the Maps legs and applying it to the day (wireframes A08, AD08). */
-export function RouteResult({ plan, visits, mode, origin, lastId, refining, onBack, onRecalculate, onApply }: RouteResultProps) {
+export function RouteResult({ plan, visits, mode, origin, fromOrigin, lastId, refining, savedAt, canRecalculate, onBack, onRecalculate, onApply }: RouteResultProps) {
   if (!plan) {
     return (
       <section className={clsx(styles.card, styles.waiting)} aria-label="Orden sugerido">
@@ -48,18 +55,28 @@ export function RouteResult({ plan, visits, mode, origin, lastId, refining, onBa
 
   const byId = new Map(visits.map((v) => [v.id, v]))
   const stops = plan.ids.flatMap((id) => byId.get(id) ?? [])
-  const legs = mapsLegs(stops.map((v) => placeQuery(v.store)), mode, origin ?? undefined, MAPS_STOPS)
-  const how = `${stops.length} ${stops.length === 1 ? 'local' : 'locales'} · ${mode === 'driving' ? 'en auto' : 'a pie'} · ${origin ? 'desde tu ubicación' : 'desde el primer local'}`
+  const left = stops.filter(inRoute)
+  // Closed ones are still to come back to: only those out of the route count as done.
+  const done = stops.length - left.length
+  // Stores added after it was calculated (with a location, so they could be in it).
+  const outside = visits.filter((v) => inRoute(v) && v.store.lat !== null && v.store.lng !== null && !plan.ids.includes(v.id)).length
+  const legs = mapsLegs(left.map((v) => placeQuery(v.store)), mode, origin ?? undefined, MAPS_STOPS)
+  const how = [
+    `${stops.length} ${stops.length === 1 ? 'local' : 'locales'}`,
+    mode === 'driving' ? 'en auto' : 'a pie',
+    origin || fromOrigin ? 'desde tu ubicación' : 'desde el primer local',
+    savedAt ? `calculado ${formatTime(savedAt)}` : null,
+  ].filter(Boolean).join(' · ')
 
   return (
     <section className={styles.resultBody} aria-label="Orden sugerido">
       <div className={styles.appbar}>
-        <button type="button" className={styles.iconButton} onClick={onBack} aria-label="Volver a las opciones"><ArrowLeft size={22} aria-hidden /></button>
+        {canRecalculate ? <button type="button" className={styles.iconButton} onClick={onBack} aria-label="Volver a las opciones"><ArrowLeft size={22} aria-hidden /></button> : null}
         <span className={styles.appbarText}>
           <span className={styles.cardTitle}>Recorrido sugerido</span>
           <span className={styles.help}>{how}</span>
         </span>
-        <button type="button" className={styles.iconButton} onClick={onRecalculate} aria-label="Recalcular"><RefreshCw size={20} aria-hidden /></button>
+        {canRecalculate ? <button type="button" className={styles.iconButton} onClick={onRecalculate} aria-label="Recalcular con los que quedan"><RefreshCw size={20} aria-hidden /></button> : null}
       </div>
 
       <div className={styles.summary} aria-live="polite">
@@ -73,34 +90,28 @@ export function RouteResult({ plan, visits, mode, origin, lastId, refining, onBa
             <span className={styles.figure}><b>{plan.minutes} min</b><span>de traslado, sin tiempo en locales</span></span>
           </>
         ) : null}
+        {done ? (
+          <>
+            <span className={styles.rule} aria-hidden />
+            <span className={styles.figure}><b>{done}/{stops.length}</b><span>{done === stops.length ? 'todos hechos' : 'hechos'}</span></span>
+          </>
+        ) : null}
       </div>
+      {outside ? <p className={styles.help}>{outside === 1 ? 'Sumaste 1 local después de calcularlo: recalculá para ubicarlo.' : `Sumaste ${outside} locales después de calcularlo: recalculá para ubicarlos.`}</p> : null}
 
       <Suspense fallback={<RouteSketch stops={stops} origin={origin} />}>
-        <StreetMap key={`${plan.ids.join(',')}:${plan.line?.length ?? 0}:${origin ? 'o' : ''}`} stops={stops} origin={origin} line={plan.line} mode={mode} />
+        <StreetMap key={`${plan.ids.join(',')}:${plan.line?.length ?? 0}:${origin ? 'o' : ''}:${stops.map((v) => v.workStatus + v.reviewStatus).join()}`} stops={stops} origin={origin} line={plan.line} mode={mode} progress />
       </Suspense>
 
-      <div className={styles.orderCard}>
-        <ol className={styles.order}>
-          {stops.map((v, i) => (
-            <li key={v.id} className={styles.stop}>
-              <span className={clsx(styles.num, i === 0 && styles.numFirst)}>{i + 1}</span>
-              <span className={styles.stopText}>
-                <span className={styles.choiceName}>{placeName(v)}{v.id === lastId && i === stops.length - 1 && stops.length > 1 ? ' · último' : ''}</span>
-                <span className={styles.choiceNote}>{stopNote(v)}</span>
-              </span>
-              <a className={buttonClass('secondary', 'sm', styles.go)} href={directionsUrl(placeQuery(v.store), mode)} target="_blank" rel="noreferrer" aria-label={`Ir a ${placeName(v)}`}>
-                <Navigation size={16} aria-hidden />Ir
-              </a>
-            </li>
-          ))}
-        </ol>
-      </div>
+      <RouteStops stops={stops} mode={mode} lastId={lastId} />
 
-      <div className={styles.footer}>
-        <Button onClick={onApply}><Check size={20} aria-hidden />Aplicar este orden a mi jornada</Button>
-      </div>
+      {left.length ? (
+        <div className={styles.footer}>
+          <Button onClick={onApply}><Check size={20} aria-hidden />Aplicar este orden a mi jornada</Button>
+        </div>
+      ) : null}
 
-      <span className={styles.eyebrow}>Abrir en Google Maps</span>
+      {legs.length ? <span className={styles.eyebrow}>Abrir en Google Maps{done ? ' · los que quedan' : ''}</span> : null}
       <div className={styles.legs}>
         {legs.map((leg, i) => (
           <a key={leg.href} className={buttonClass('secondary', 'sm', styles.leg)} href={leg.href} target="_blank" rel="noreferrer">
@@ -108,7 +119,7 @@ export function RouteResult({ plan, visits, mode, origin, lastId, refining, onBa
           </a>
         ))}
       </div>
-      <p className={styles.help}>
+      <p className={styles.help} hidden={!legs.length}>
         {legs.length > 1 ? `Google Maps admite hasta ${MAPS_STOPS} paradas por vez: abrí los tramos en orden.` : 'Se abre en la app de Google Maps con todas las paradas.'}
       </p>
 

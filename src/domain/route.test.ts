@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyRouteOrder, approximateRoute, distanceKm, inRoute, mapsLegs, placeQuery, routeKm, type Stop } from './route'
+import { applyRouteOrder, approximateRoute, distanceKm, inRoute, lineFromFirstStop, mapsLegs, placeQuery, routeKm, type Stop } from './route'
 
 // Along Cabildo, roughly south to north, about 500 m apart.
 const line: Stop[] = Array.from({ length: 6 }, (_, i) => ({ id: `s${i}`, location: { lat: -34.57 + i * 0.0045, lng: -58.45 } }))
@@ -111,5 +111,16 @@ describe('Google Maps', () => {
 
   it('looks a store up by its address in the city', () => {
     expect(placeQuery({ address: 'Moldes 1365' })).toBe('Moldes 1365, Buenos Aires, Argentina')
+  })
+})
+
+describe('lineFromFirstStop', () => {
+  it('drops the stretch from the phone to the first store', () => {
+    const phone: [number, number] = [-58.40, -34.60]
+    const line: [number, number][] = [phone, [-58.41, -34.60], [-58.42, -34.60], [-58.43, -34.61]]
+    expect(lineFromFirstStop(line, { lng: -58.42, lat: -34.6001 })).toEqual([[-58.42, -34.60], [-58.43, -34.61]])
+  })
+  it('keeps nothing from an empty path', () => {
+    expect(lineFromFirstStop([], { lat: 0, lng: 0 })).toEqual([])
   })
 })

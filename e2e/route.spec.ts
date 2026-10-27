@@ -98,7 +98,7 @@ test('the route on a street map: numbered stops to tap, the path by streets, the
   await expect(map).toBeVisible()
   await expect(map.getByRole('button', { name: /^\d+\. / })).toHaveCount(5)
   await expect(map.getByRole('button', { name: 'Acercar' })).toBeVisible()
-  await map.getByRole('button', { name: '1. Autoservicio Lili' }).click()
+  await map.getByRole('button', { name: /^1\. Autoservicio Lili, por hacer$/ }).click()
   await expect(page.getByRole('link', { name: 'Ir con Google Maps' })).toBeVisible()
   await page.screenshot({ path: `test-results/route-map-${info.project.name}.png`, fullPage: true })
 
@@ -107,4 +107,61 @@ test('the route on a street map: numbered stops to tap, the path by streets, the
   await page.getByRole('button', { name: 'Recalcular' }).click()
   await expect(page.getByRole('region', { name: 'Mapa del recorrido' })).toHaveCount(0)
   await expect(page.getByRole('img', { name: /Croquis del recorrido/ })).toBeVisible()
+})
+
+test('the route calculated stays for the day, without the stretch from the phone', async ({ page, context }) => {
+  await page.route('https://tiles.openfreemap.org/**', (route) => route.fulfill({ json: PLAIN_STYLE }))
+  await context.grantPermissions(['geolocation'])
+  await context.setGeolocation({ latitude: -34.5455, longitude: -58.45 })
+  const line = [[-58.45, -34.5455], [-58.4501, -34.5466], [-58.45, -34.5475], [-58.45, -34.5565], [-58.45, -34.5655]]
+  const state: FakeState = { ...day(), route: { ids: ['v4', 'v1', 'v7', 'v2', 'v6'], km: 12.5, minutes: 41, line } }
+  await installFakeSupabase(page, state)
+  await page.goto('/s/route')
+  await page.getByRole('button', { name: /Empezar desde mi ubicación/ }).click()
+  await page.getByRole('button', { name: 'Calcular mejor orden' }).click()
+  await expect(page.getByText('por calles')).toBeVisible()
+
+  // Saved for the day, without the stretch from where the phone was.
+  await expect.poll(() => state.routePlan?.stop_ids).toEqual(['v4', 'v1', 'v7', 'v2', 'v6'])
+  expect(state.routePlan).toMatchObject({ km: 12.5, minutes: 41, by_street: true, from_origin: true, mode: 'driving' })
+  expect((state.routePlan?.line as number[][])[0]).toEqual([-58.45, -34.5475]) // Autoservicio Lili, not the phone
+
+  // Back on the page: the route is there as it was.
+  await page.goto('/s/route')
+  await expect(page.getByRole('region', { name: 'Orden sugerido' }).getByText(/calculado \d\d:\d\d/)).toBeVisible()
+})
+
+test('visited stops keep their place in the saved route, in the colors of their state', async ({ page }, info) => {
+  await page.route('https://tiles.openfreemap.org/**', (route) => route.fulfill({ json: PLAIN_STYLE }))
+  const state: FakeState = day()
+  Object.assign(state.visits.find((v) => v.id === 'v4') ?? {}, { work_status: 'done', review_status: 'approved' })
+  Object.assign(state.visits.find((v) => v.id === 'v1') ?? {}, { work_status: 'done' })
+  const line = [[-58.45, -34.5475], [-58.45, -34.5565], [-58.45, -34.5655]]
+  state.routePlan = { workday_id: 'w1', mode: 'driving', from_origin: true, stop_ids: ['v4', 'v1', 'v7', 'v2', 'v6'], km: 12.5, minutes: 41, by_street: true, line, updated_at: new Date().toISOString() }
+  await installFakeSupabase(page, state)
+  await page.goto('/s/route')
+  const result = page.getByRole('region', { name: 'Orden sugerido' })
+  await expect(result.getByText(/calculado \d\d:\d\d/)).toBeVisible()
+  await expect(result.getByText('12,5 km')).toBeVisible()
+  await expect(result.getByText('2/5')).toBeVisible()
+  const stops = result.getByRole('list', { name: 'Locales en el orden del recorrido' }).getByRole('listitem')
+  await expect(stops).toHaveCount(5)
+  await expect(stops.nth(0)).toContainText('Aprobada')
+  await expect(stops.nth(1)).toContainText('Terminada')
+  await expect(stops.nth(2).getByRole('link', { name: /Ir a/ })).toBeVisible()
+  const map = page.getByRole('region', { name: 'Mapa del recorrido' })
+  await expect(map.getByRole('button', { name: /^1\. Autoservicio Lili, aprobada$/ })).toBeVisible()
+  await expect(map.getByRole('button', { name: /^3\. Cabildo 2280, por hacer$/ })).toBeVisible()
+  await page.screenshot({ path: `test-results/route-kept-${info.project.name}.png`, fullPage: true })
+})
+
+test('with everything done the saved route is still there to look at, with nothing to recalculate', async ({ page }) => {
+  await page.route('https://tiles.openfreemap.org/**', (route) => route.fulfill({ json: PLAIN_STYLE }))
+  const state: FakeState = day()
+  for (const v of state.visits) if (v.store) Object.assign(v, { work_status: v.id === 'v5' ? 'refused' : 'done' })
+  state.routePlan = { workday_id: 'w1', mode: 'driving', from_origin: false, stop_ids: ['v4', 'v1', 'v7', 'v2', 'v6'], km: 12.5, minutes: 41, by_street: false, line: null, updated_at: new Date().toISOString() }
+  await installFakeSupabase(page, state)
+  await page.goto('/s/route')
+  await expect(page.getByRole('region', { name: 'Orden sugerido' }).getByText('todos hechos')).toBeVisible()
+  await expect(page.getByRole('button', { name: /Recalcular/ })).toHaveCount(0)
 })

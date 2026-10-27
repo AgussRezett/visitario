@@ -811,6 +811,28 @@ check('Ended: Lucía can join another one that day', (await as('lucia', `select 
   check('A stop taken off the day no longer counts', (await ask('lucia', wLucia, [{ store_id: s1 }])).length === 0)
 }
 
+// ---- The last route calculated stays with the day (route_plan)
+{
+  const wAgus = (await as('agus', `select open_workday($1, '2026-11-04') id`, [panda]))[0].id
+  const ids = [crypto.randomUUID(), crypto.randomUUID()]
+  const save = (who, km, line = null) => as(who, `select save_route_plan($1, 'walking', true, $2::uuid[], $3, true, 18, $4::jsonb)`, [wAgus, ids, km, line && JSON.stringify(line)])
+  await save('agus', 2.4, [[-58.45, -34.56], [-58.46, -34.57]])
+  const mine = await as('agus', `select * from route_plan where workday_id = $1`, [wAgus])
+  check('Agus saves the route of his day and finds it again', mine.length === 1 && Number(mine[0].km) === 2.4 && mine[0].minutes === 18 && mine[0].line.length === 2 && mine[0].company_id === panda)
+  await save('agus', 3.1)
+  const again = await as('agus', `select km, version, line from route_plan where workday_id = $1`, [wAgus])
+  check('Calculating again replaces it: one route per day', again.length === 1 && Number(again[0].km) === 3.1 && again[0].version === 2 && again[0].line === null)
+  check('His supervisor (Martín) sees it', (await as('martin', `select 1 from route_plan where workday_id = $1`, [wAgus])).length === 1)
+  check('The admin (Carla) sees it', (await as('carla', `select 1 from route_plan where workday_id = $1`, [wAgus])).length === 1)
+  check('Lucía (another team) does not', (await as('lucia', `select 1 from route_plan where workday_id = $1`, [wAgus])).length === 0)
+  check('Beto (another company) does not', (await as('beto', `select 1 from route_plan`)).length === 0)
+  await expectError('His supervisor cannot save a route on his day', () => save('martin', 1), /Only the activador/)
+  await expectError('Nor another company', () => save('beto', 1), /Only the activador/)
+  await expectError('No writing the table directly', () => as('agus', `insert into route_plan (workday_id, company_id, merchandiser_id, mode, stop_ids, km) values ($1, $2, $3, 'walking', $4::uuid[], 1)`, [wAgus, panda, agus, ids]), /permission/)
+  await expectError('No odd numbers', () => save('agus', -1), /check/)
+  await expectError('Anonymous cannot read routes', () => asAnon(`select * from route_plan`))
+}
+
 // ---- The admin who invited is told when the invitation is accepted (take_acceptance_notices)
 {
   const asService = async (sql, params = []) => {

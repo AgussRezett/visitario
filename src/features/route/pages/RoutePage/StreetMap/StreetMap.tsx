@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { directionsUrl, placeQuery, type Point, type TravelMode } from '@/domain/route'
-import { isVisited } from '@/domain/visit'
+import { STOP_TONE_LABEL, stopTone, type StopTone } from '@/domain/visit'
 import type { Visit } from '@/features/workday/api/queries'
 import { placeName } from '../stop'
 import { RouteSketch } from '../RouteSketch'
@@ -17,8 +17,18 @@ interface StreetMapProps {
   /** The path by streets as [lng, lat]; without it the stops are joined in straight lines. */
   line: [number, number][] | null
   mode: TravelMode
-  /** Show how the day is going (supervisor's view): done stops in green, the one in progress in blue. */
+  /** Show how each stop is going, in the colors of the status chips (done green, in progress blue...). */
   progress?: boolean
+}
+
+const TONE: Record<StopTone, string | undefined> = {
+  pending: undefined,
+  active: styles.current,
+  done: styles.done,
+  approved: styles.done,
+  fix: styles.fix,
+  closed: styles.closed,
+  refused: styles.refused,
 }
 
 /** The route on a real street map: numbered stops to tap, zoom, and the path between them. */
@@ -86,10 +96,11 @@ export default function StreetMap({ stops, origin, line, mode, progress = false 
       const n = stops.indexOf(v) + 1
       const pin = document.createElement('button')
       pin.type = 'button'
-      const state = progress ? (isVisited(v.workStatus) ? styles.done : v.workStatus === 'in_progress' ? styles.current : '') : n === 1 ? styles.first : ''
+      const tone = stopTone(v.workStatus, v.reviewStatus)
+      const state = progress ? TONE[tone] : n === 1 ? styles.first : ''
       pin.className = `${styles.pin ?? ''} ${state ?? ''}`.trim()
       pin.textContent = String(n)
-      const said = progress ? (isVisited(v.workStatus) ? ', hecho' : v.workStatus === 'in_progress' ? ', en curso' : ', por hacer') : ''
+      const said = progress ? `, ${STOP_TONE_LABEL[tone]}` : ''
       pin.setAttribute('aria-label', `${n}. ${placeName(v)}${said}`)
       const popup = new maplibregl.Popup({ offset: 18, closeButton: false, maxWidth: '260px' }).setDOMContent(card(n, v, mode))
       new maplibregl.Marker({ element: pin }).setLngLat([v.store.lng as number, v.store.lat as number]).setPopup(popup).addTo(map)
