@@ -272,3 +272,16 @@ test('a store shows where it is on a map, or says it is not located yet', async 
   await expect(page.getByRole('region', { name: 'Ubicación' })).toContainText('Todavía no sabemos dónde está')
   await expect(page.getByRole('region', { name: 'Ubicación' }).getByRole('button', { name: /Verificar dirección/ })).toBeVisible()
 })
+
+test('a store without a location is located by itself, without anyone tapping "Verificar"', async ({ page }) => {
+  const state: FakeState = {
+    ...directory(),
+    geocode: { 'Tres Arroyos 762 PB': { label: 'Tres Arroyos 762, La Paternal', address: 'Tres Arroyos 762', area: 'La Paternal', lat: -34.6, lng: -58.47, exact: true } },
+  }
+  await installFakeSupabase(page, state, 'supervisor')
+  await page.goto('/s/stores')
+  await expect.poll(() => state.verifyCalls).toEqual(['s2']) // only the one without a location
+  const desktop = (page.viewportSize()?.width ?? 0) >= 1024
+  if (desktop) await expect(page.getByRole('row', { name: /Tres Arroyos 762 PB/ })).toContainText('Verificada')
+  else await expect(page.getByRole('link', { name: /Tres Arroyos 762 PB/ })).not.toContainText('sin verificar')
+})

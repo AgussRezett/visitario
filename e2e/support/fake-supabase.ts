@@ -226,6 +226,18 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
       return state.route ? json(state.route) : json({ error: 'not_configured' }, 503)
     }
     if (path.endsWith('/functions/v1/geocode')) {
+      // A store located and saved on the server (whoever added it).
+      const storeId = body().storeId
+      if (typeof storeId === 'string') {
+        state.verifyCalls = [...(state.verifyCalls ?? []), storeId]
+        const stores = [...state.visits.map((v) => v.store as Row | null), ...(state.stores ?? [])].filter((x): x is Row => x?.id === storeId)
+        const hit = state.geocode?.[String(stores[0]?.address)]
+        if (!stores[0] || stores[0].location_status === 'verified') return json({ status: 'kept' })
+        if (!hit) return json({ status: 'not_found' })
+        const status = hit.exact ? 'verified' : 'approximate'
+        stores.forEach((x) => Object.assign(x, { lat: hit.lat, lng: hit.lng, location_status: status }))
+        return json({ status })
+      }
       const q = String(body().query)
       const hit = state.geocode?.[q]
       return json({ results: hit ? [hit] : [] })

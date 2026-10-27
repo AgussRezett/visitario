@@ -56,6 +56,8 @@ export interface FakeState {
   resumed?: string[]
   formats?: Row[]
   geocode?: Record<string, Row>
+  /** Stores the app asked the server to locate and save. */
+  verifyCalls?: string[]
   /** What the route function answers by streets (503 without it) and what it was asked. */
   route?: Row
   routeAsked?: Row[]
