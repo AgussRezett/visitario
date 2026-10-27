@@ -27,7 +27,16 @@ test('an activador starts an operativo with a teammate', async ({ page }, info) 
   const state: FakeState = { workday, visits: [visitRow('v1', 0, 'Moldes 1365')], uploads: [], teammates }
   await installFakeSupabase(page, state)
   await page.goto('/s/workday')
-  await expect(page.getByText('¿Salen juntos?')).toBeVisible()
+  const invite = page.getByRole('region', { name: 'Operativo' })
+  await expect(invite).toContainText('¿Salen juntos?')
+  // Visible, but after the day's stores (beside them on desktop): not the first thing on the screen.
+  const stops = await page.getByRole('link', { name: /Moldes 1365/ }).first().boundingBox()
+  const box = await invite.boundingBox()
+  if (!stops || !box) throw new Error('no boxes')
+  if (info.project.name === 'mobile') expect(box.y).toBeGreaterThan(stops.y)
+  else expect(box.x).toBeGreaterThan(stops.x + stops.width)
+  await invite.scrollIntoViewIfNeeded()
+  await page.screenshot({ path: `test-results/operation-invite-${info.project.name}.png` })
   await page.getByRole('button', { name: 'Armar operativo' }).click()
   const sheet = page.getByRole('dialog', { name: 'Armar operativo' })
   await expect(sheet.getByRole('checkbox', { name: /Agustín/ })).toHaveCount(0) // not myself

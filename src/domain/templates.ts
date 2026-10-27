@@ -62,11 +62,16 @@ const ALIASES: Record<string, string> = {
 }
 
 type Values = Record<string, string | number | null | undefined>
+
+/** What a missing piece of data says in a message: the line stays, so nobody wonders. */
+export const MISSING = '-'
+
 /** {canal} as stored, {CANAL} in capitals: the admin writes the data the way the message shows it. */
 const valueOf = (values: Values, token: string) => {
   const key = token.toLowerCase()
   const v = values[key] ?? values[ALIASES[key] ?? '']
-  const text = v === null || v === undefined ? '' : String(v)
+  const text = v === null || v === undefined ? '' : String(v).trim()
+  if (!text) return MISSING
   return token !== key && token === token.toUpperCase() ? text.toLocaleUpperCase('es-AR') : text
 }
 
@@ -74,18 +79,27 @@ const TOKEN = /\{([A-Za-z_]+)\}/g
 
 /**
  * Replaces {placeholders}, in Spanish ({fecha}) or as the code names them ({date});
- * in capitals ({CANAL}) the value comes out in capitals.
- * A line whose data are all empty is left out ("Zona: " with no zone does not show).
+ * in capitals ({CANAL}) the value comes out in capitals. Every line of the template stays:
+ * a piece of data that is missing shows as "-" ("RESPONSABLE: -").
  */
 export function fillTemplate(body: string, values: Values) {
   return body
-    .split('\n')
-    .flatMap((line) => {
-      const tokens = [...line.matchAll(TOKEN)].map((m) => m[1] ?? '')
-      if (tokens.length && tokens.every((t) => !valueOf(values, t))) return []
-      return [line.replace(TOKEN, (_, t: string) => valueOf(values, t))]
-    })
-    .join('\n')
+    .replace(TOKEN, (_, t: string) => valueOf(values, t))
     .replace(/\n{3,}/g, '\n\n')
     .trim()
+}
+
+/**
+ * Labels for one message per display: "Puntera", "Góndola 1", "Góndola 2"
+ * (a type that repeats is numbered, in the visit's order).
+ */
+export function displayLabels(names: readonly string[]): string[] {
+  const total = new Map<string, number>()
+  for (const n of names) total.set(n, (total.get(n) ?? 0) + 1)
+  const seen = new Map<string, number>()
+  return names.map((n) => {
+    const i = (seen.get(n) ?? 0) + 1
+    seen.set(n, i)
+    return (total.get(n) ?? 0) > 1 ? `${n} ${i}` : n
+  })
 }

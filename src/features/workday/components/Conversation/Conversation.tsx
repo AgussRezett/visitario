@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { Send } from 'lucide-react'
 import { formatTime } from '@/domain/dates'
-import { initials } from '@/lib/format'
-import { Avatar } from '@/ui/Avatar'
+import { PersonAvatar } from '@/features/people/PersonAvatar'
 import { Button } from '@/ui/Button'
 import { TextArea } from '@/ui/TextArea'
 import type { VisitComment } from '@/features/workday/api/comments'
@@ -36,7 +35,7 @@ export function Conversation({ comments, meId, displayLabel, onSend, placeholder
             const about = c.displayId ? displayLabel?.(c.displayId) : undefined
             return (
               <li key={c.id} className={styles.message} data-mine={c.authorId === meId || undefined} data-kind={c.kind}>
-                <Avatar name={initials(first, last)} size={32} />
+                <PersonAvatar personId={c.authorId} firstName={first} lastName={last} size={32} />
                 <div className={styles.bubble}>
                   <span className={styles.meta}>
                     <b>{c.authorId === meId ? 'Vos' : c.authorName}</b>

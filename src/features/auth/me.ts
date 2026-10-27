@@ -18,14 +18,25 @@ export interface Invitation {
 export interface Me {
   userId: string
   email: string | null
+  /** A new email waiting for its confirmation link to be opened. */
+  pendingEmail: string | null
   hasPassword: boolean
   providers: string[]
-  person: { id: string; firstName: string; lastName: string; dni: string; phone: string | null; birthDate: string | null } | null
+  person: { id: string; firstName: string; lastName: string; dni: string; phone: string | null; birthDate: string | null; avatarPath: string | null } | null
   memberships: ActiveMembership[]
   invitations: Invitation[]
   isPlatformAdmin: boolean
 }
 
+interface IdentityRow {
+  has_password: boolean
+  person: { id: string; first_name: string; last_name: string; dni: string; phone: string | null; birth_date: string | null; avatar_path?: string | null } | null
+  memberships: { id: string; company_id: string; roles: Enums<'role'>[]; status: Enums<'membership_status'>; starts_on: string; company: { name: string; kind: Enums<'company_kind'> } | null }[]
+  is_platform_admin: boolean
+  invitations: { id: string; company: string; roles: Enums<'role'>[]; starts_on: string; expires_at: string | null; inviter: string | null }[]
+}
+
+/** Two requests: the session's user (checked by the server) and everything else in one read. */
 async function fetchMe(): Promise<Me | null> {
   const { data: auth, error: authError } = await supabase.auth.getUser()
   // No signal is not "signed out": keep the copy on the phone instead of losing the day.
@@ -33,43 +44,31 @@ async function fetchMe(): Promise<Me | null> {
   const user = auth.user
   if (!user) return null
   const providers = (user.identities ?? []).map((i) => i.provider)
-  // A Google user who later sets a password gets no 'email' identity, so ask the server.
-  let hasPassword = providers.includes('email')
-  if (!hasPassword) {
-    const { data } = await supabase.rpc('has_password')
-    hasPassword = data === true
-  }
-  const base = { userId: user.id, email: user.email ?? null, providers, hasPassword }
-
-  const { data: person, error } = await supabase.from('person').select('id, first_name, last_name').eq('auth_user_id', user.id).maybeSingle()
+  const { data, error } = await supabase.rpc('my_identity')
   if (error) throw error
+  const id = data as unknown as IdentityRow
+  // A Google user who later sets a password gets no 'email' identity: the server knows.
+  const base = { userId: user.id, email: user.email ?? null, pendingEmail: user.new_email ?? null, providers, hasPassword: providers.includes('email') || id.has_password }
+  const person = id.person
   if (!person) return { ...base, person: null, memberships: [], invitations: [], isPlatformAdmin: false }
 
-  const [priv, memberships, admin, emailInvites] = await Promise.all([
-    supabase.from('person_private').select('dni, phone, birth_date').eq('person_id', person.id).single(),
-    supabase.from('membership').select('id, company_id, roles, status, starts_on, company:company_id (name, kind)').eq('person_id', person.id),
-    supabase.from('platform_admin').select('person_id').eq('person_id', person.id).maybeSingle(),
-    supabase.rpc('my_invitations'),
-  ])
-  if (priv.error) throw priv.error
-  if (memberships.error) throw memberships.error
-
-  const rows = memberships.data
+  const rows = id.memberships ?? []
   return {
     ...base,
-    person: { id: person.id, firstName: person.first_name, lastName: person.last_name, dni: priv.data.dni, phone: priv.data.phone, birthDate: priv.data.birth_date },
+    person: { id: person.id, firstName: person.first_name, lastName: person.last_name, dni: person.dni, phone: person.phone, birthDate: person.birth_date, avatarPath: person.avatar_path ?? null },
     memberships: rows.filter((m) => m.status === 'active').map((m) => ({ companyId: m.company_id, companyName: m.company?.name ?? '', personal: m.company?.kind === 'personal', roles: m.roles })),
     invitations: [
-      ...(emailInvites.data ?? []).map((i): Invitation => ({ kind: 'email', id: i.id, companyName: i.company, roles: i.roles, startsOn: i.starts_on, expiresAt: i.expires_at, inviter: i.inviter })),
+      ...(id.invitations ?? []).map((i): Invitation => ({ kind: 'email', id: i.id, companyName: i.company, roles: i.roles, startsOn: i.starts_on, expiresAt: i.expires_at, inviter: i.inviter })),
       ...rows
         .filter((m) => m.status === 'invited')
         .map((m): Invitation => ({ kind: 'membership', id: m.id, companyName: m.company?.name ?? 'Una empresa', roles: m.roles, startsOn: m.starts_on, expiresAt: null, inviter: null })),
     ],
-    isPlatformAdmin: Boolean(admin.data),
+    isPlatformAdmin: id.is_platform_admin === true,
   }
 }
 
-export const meQuery = queryOptions({ queryKey: ['me'], queryFn: fetchMe, staleTime: 60_000 })
+// Who I am changes rarely (a new role, an invitation): screens that need it fresh refresh it.
+export const meQuery = queryOptions({ queryKey: ['me'], queryFn: fetchMe, staleTime: 5 * 60_000 })
 
 /**
  * Fetches "me" again and waits for it. Use after anything that changes the session or the
@@ -80,6 +79,7 @@ export function refreshMe(queryClient: QueryClient) {
   return queryClient.fetchQuery({ ...meQuery, staleTime: 0 })
 }
 
-export function useMe() {
-  return useQuery(meQuery)
+/** `fresh`: the profile shows invitations and roles, so it asks again after a minute. */
+export function useMe(fresh = false) {
+  return useQuery(fresh ? { ...meQuery, staleTime: 60_000 } : meQuery)
 }

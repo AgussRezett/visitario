@@ -2,6 +2,8 @@ import { useEffect, useSyncExternalStore } from 'react'
 import type { QueryClient } from '@tanstack/react-query'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { sentRecently } from '@/features/sync/outbox'
+import { isMyEcho, type Change } from '@/domain/realtime'
 
 /**
  * Live updates over Realtime (websockets): the database tells the app when a visit, photo,
@@ -30,7 +32,7 @@ const subscribe = (l: () => void) => {
 export const useLiveConnected = () => useSyncExternalStore(subscribe, () => connected)
 
 /** Listens to the company's changes while mounted (the app shell, once per active company). */
-export function useLive(qc: QueryClient, companyId: string | null) {
+export function useLive(qc: QueryClient, companyId: string | null, personId: string | null) {
   useEffect(() => {
     if (!companyId) return
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -46,7 +48,10 @@ export function useLive(qc: QueryClient, companyId: string | null) {
     }
     let channel: RealtimeChannel = supabase.channel(`live:${companyId}`)
     for (const table of TABLES) {
-      channel = channel.on('postgres_changes', { event: '*', schema: 'public', table, filter: `company_id=eq.${companyId}` }, refresh)
+      channel = channel.on('postgres_changes', { event: '*', schema: 'public', table, filter: `company_id=eq.${companyId}` }, (change) => {
+        if (personId && sentRecently() && isMyEcho(change as unknown as Change, personId)) return
+        refresh()
+      })
     }
     channel.subscribe((status) => {
       if (status === 'SUBSCRIBED') {
@@ -64,5 +69,5 @@ export function useLive(qc: QueryClient, companyId: string | null) {
       setConnected(false)
       void supabase.removeChannel(channel)
     }
-  }, [qc, companyId])
+  }, [qc, companyId, personId])
 }

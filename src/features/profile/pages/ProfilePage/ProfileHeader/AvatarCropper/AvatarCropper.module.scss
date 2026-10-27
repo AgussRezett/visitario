@@ -1,0 +1,77 @@
+@use '@/styles/abstracts' as *;
+
+.cropper {
+  @include flex(column, $gap: space(4), $align: center);
+}
+
+// The square view: the picture moves under a round window
+.frame {
+  position: relative;
+  width: min(100%, 320px);
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: $radius-lg;
+  background: $color-muted;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-focus;
+    outline-offset: 3px;
+  }
+}
+
+.image {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  max-width: none;
+  pointer-events: none;
+}
+
+// Dims what stays out of the circle, and draws its edge
+.mask {
+  position: absolute;
+  inset: 0;
+  border-radius: $radius-full;
+  box-shadow: 0 0 0 999px rgb(0 0 0 / 0.55);
+  outline: 2px solid rgb(255 255 255 / 0.9);
+  outline-offset: -2px;
+  pointer-events: none;
+}
+
+.hint {
+  @include text(label);
+  margin: 0;
+  color: $color-ink-muted;
+  text-align: center;
+}
+
+.zoom {
+  @include flex(row, $gap: space(3), $align: center);
+  width: min(100%, 320px);
+  min-height: $touch-target;
+  color: $color-ink-muted;
+}
+
+.slider {
+  flex: 1;
+  min-width: 0;
+  height: $touch-target;
+  accent-color: $color-action;
+  cursor: pointer;
+}
+
+.buttons {
+  @include flex(column, $gap: space(2));
+  width: 100%;
+
+  > * {
+    width: 100%;
+  }
+}

@@ -64,7 +64,7 @@ export function WorkSection({ visit: v, catalogs, onNotes }: { visit: Visit; cat
           />
         </div>
       ) : null}
-      <TextArea label="Notas" value={notes} onChange={(e) => setNotes(e.target.value)} onBlur={() => notes !== (v.notes ?? '') && onNotes(notes)} maxLength={2000} placeholder="Lo que tu supervisor tiene que saber" />
+      <TextArea label="Observaciones" value={notes} onChange={(e) => setNotes(e.target.value)} onBlur={() => notes !== (v.notes ?? '') && onNotes(notes)} maxLength={2000} placeholder="Lo que tu supervisor tiene que saber" />
     </VisitSection>
   )
 }

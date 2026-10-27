@@ -377,6 +377,12 @@ await expectError('A supervisor cannot see usage', () => as('martin', `select * 
 await as('carla', `update company set geocoding_scope = 'argentina', photo_retention_months = 24, show_whatsapp = false where id = $1`, [panda])
 check('Admin changes address search, photo retention and WhatsApp', (await sys(`select geocoding_scope::text g, photo_retention_months m, show_whatsapp w from company where id = $1`, [panda]))[0].m === 24)
 await sys(`update company set geocoding_scope = 'caba', show_whatsapp = true where id = $1`, [panda])
+check('Messages per display are off by default', (await sys(`select messages_per_display m from company where id = $1`, [panda]))[0].m === false)
+await as('carla', `update company set messages_per_display = true where id = $1`, [panda])
+check('Admin turns on one ANTES / DESPUÉS per display', (await as('agus', `select messages_per_display m from company where id = $1`, [panda]))[0]?.m === true)
+await as('martin', `update company set messages_per_display = false where id = $1`, [panda])
+check('…a supervisor cannot turn it off', (await sys(`select messages_per_display m from company where id = $1`, [panda]))[0].m === true)
+await sys(`update company set messages_per_display = false where id = $1`, [panda])
 await expectError('The company kind is not editable by the admin', () => as('carla', `update company set kind = 'brand' where id = $1`, [panda]))
 check('Admin reads the plan; the subscription is not editable from the app', (await as('carla', `select plan::text p from subscription where company_id = $1`, [panda]))[0]?.p === 'pilot')
 await expectError('…not even by its admin', () => as('carla', `update subscription set plan = 'team' where company_id = $1`, [panda]))
@@ -708,6 +714,28 @@ const clients = await as('nora', `select * from seller_stores($1)`, [panda])
 check('A seller sees their clients', clients.length === 1 && clients[0].id === tagged && clients[0].channel_id === kiosco)
 check('…someone who is not a seller sees none', (await as('agus', `select count(*)::int n from seller_stores($1)`, [panda]))[0].n === 0)
 
+// ---- The points of sale map
+{
+  await sys(`update store set lat = -34.56, lng = -58.46 where id = $1`, [tagged])
+  const mine = await as('nora', `select * from store_map($1)`, [panda])
+  check('Map: a seller sees only their clients, with their place', mine.length === 1 && mine[0].id === tagged && mine[0].lat === -34.56 && mine[0].seller_id === noraSeller)
+  const all = await as('martin', `select * from store_map($1)`, [panda])
+  check('Map: a supervisor sees every point of the company', all.length === (await sys(`select count(*)::int n from store where company_id = $1 and deleted_at is null`, [panda]))[0].n)
+  check('Map: an activador sees nothing', (await as('agus', `select count(*)::int n from store_map($1)`, [panda]))[0].n === 0)
+  check('Map: another company sees nothing of Panda', (await as('beto', `select count(*)::int n from store_map($1)`, [panda]))[0].n === 0)
+  const vMap = (await sys(`insert into visit (company_id, workday_id, merchandiser_id, work_date, store_id, added_by) values ($1, $2, $3, current_date, $4, $3) returning id`, [panda, w2, agus, tagged]))[0].id
+  await sys(`update visit set work_status = 'in_progress', arrived_at = now(), consent = 'yes', rapport = 'welcoming' where id = $1`, [vMap])
+  await sys(`update workday set status = 'published' where id = $1`, [w2])
+  const point = (await as('nora', `select * from store_map($1)`, [panda]))[0]
+  check('Map: the last activation, its counts and the reputation', point.visits_30d >= 1 && point.last_merchandiser === 'Agustín' && Number(point.rapport) === 3)
+  const h = (await as('nora', `select client_history($1, $2) j`, [panda, tagged]))[0].j
+  check('Client history: the point and its activations, for its seller', h.store.id === tagged && h.visits.some((v) => v.id === vMap && v.merchandiser === 'Agustín Rezett'))
+  const other = (await as('nora', `select id from store where company_id = $1 and id <> $2 limit 1`, [panda, tagged]))[0]
+  check('Client history: nothing about someone else’s client', other ? (await as('nora', `select client_history($1, $2) j`, [panda, other.id]))[0].j === null : true)
+  check('Client history: the supervisor sees any point', (await as('martin', `select client_history($1, $2) j`, [panda, tagged]))[0].j?.store.id === tagged)
+  await expectError('Anonymous cannot read the map', () => asAnon(`select * from store_map('${panda}')`))
+}
+
 const tagDay = '2026-10-23'
 await as('martin', `select import_workdays($1, $2, $3)`, [panda, tagDay, JSON.stringify([{ merchandiser: agus, address: 'Cuba 2200', seller: flor, channel: autoservicio }])])
 check('An import row sets its store’s seller and channel', (await sys(`select seller_id, channel_id from store where address = 'Cuba 2200'`))[0].seller_id === flor)
@@ -803,6 +831,73 @@ check('Ended: Lucía can join another one that day', (await as('lucia', `select 
   await expectError('No writing the table directly', () => as('agus', `insert into route_plan (workday_id, company_id, merchandiser_id, mode, stop_ids, km) values ($1, $2, $3, 'walking', $4::uuid[], 1)`, [wAgus, panda, agus, ids]), /permission/)
   await expectError('No odd numbers', () => save('agus', -1), /check/)
   await expectError('Anonymous cannot read routes', () => asAnon(`select * from route_plan`))
+}
+
+// ---- A visit left in progress for 12 hours goes back to pending, without its record
+{
+  const wStale = (await sys(`insert into workday (company_id, merchandiser_id, work_date, status, created_by) values ($1, $2, '2026-09-22', 'published', $2) returning id`, [panda, agus]))[0].id
+  const sStale = (await sys(`insert into store (company_id, address) values ($1, 'Holmberg 2800') returning id`, [panda]))[0].id
+  const newVisit = async () => (await sys(`insert into visit (company_id, workday_id, merchandiser_id, work_date, store_id, added_by, task) values ($1, $2, $3, '2026-09-22', $4, $3, 'Armar puntera') returning id`, [panda, wStale, agus, sStale]))[0].id
+  const vStale = await newVisit(), vFresh = await newVisit()
+  const assigned = (await sys(`insert into display (company_id, visit_id, display_type_id, source) values ($1, $2, $3, 'assigned') returning id`, [panda, vStale, endcap]))[0].id
+  const found = (await sys(`insert into display (company_id, visit_id, display_type_id, source) values ($1, $2, $3, 'found') returning id`, [panda, vStale, endcap]))[0].id
+  for (const v of [vStale, vFresh]) {
+    await sys(`insert into photo (id, company_id, visit_id, kind, taken_at, uploaded_at, bytes, width, height, created_by) values (gen_random_uuid(), $1, $2, 'storefront', now(), null, 1, 1, 1, $3)`, [panda, v, agus])
+    await sys(`update photo set uploaded_at = now() where visit_id = $1`, [v]) // the arrival
+  }
+  await sys(`insert into photo (id, company_id, visit_id, display_id, kind, taken_at, uploaded_at, bytes, width, height, created_by) values (gen_random_uuid(), $1, $2, $3, 'before', now(), now(), 1, 1, 1, $4)`, [panda, vStale, assigned, agus])
+  await sys(`insert into visit_metric (company_id, visit_id, metric_id, quantity) values ($1, $2, $3, 4)`, [panda, vStale, kits])
+  await sys(`update visit set consent = 'yes', notes = 'Faltó SKYY', rapport = 'welcoming', arrived_at = now() - interval '13 hours' where id = $1`, [vStale])
+  await sys(`update visit set arrived_at = now() - interval '11 hours' where id = $1`, [vFresh])
+  await expectError('Nobody can expire visits from the app', () => as('carla', `select private.expire_stale_visits()`))
+  check('Only the visits in progress for 12 hours expire', (await sys(`select private.expire_stale_visits() n`))[0].n === 1)
+  const after = (await sys(`select work_status::text s, arrived_at, consent, notes, rapport, task, deleted_at from visit where id = $1`, [vStale]))[0]
+  check('It is pending again, as if nobody had arrived, and keeps its task', after.s === 'pending' && !after.arrived_at && !after.consent && !after.notes && !after.rapport && after.task === 'Armar puntera' && !after.deleted_at)
+  check('Its photos, work numbers and found displays are gone; the assigned display stays',
+    (await sys(`select count(*)::int n from photo where visit_id = $1 and deleted_at is null`, [vStale]))[0].n === 0
+    && (await sys(`select count(*)::int n from visit_metric where visit_id = $1`, [vStale]))[0].n === 0
+    && (await sys(`select deleted_at is null a from display where id = $1`, [assigned]))[0].a === true
+    && (await sys(`select deleted_at is not null f from display where id = $1`, [found]))[0].f === true)
+  check('The history says it went back to pending, with no one doing it',
+    (await sys(`select count(*)::int n from visit_event where visit_id = $1 and kind = 'work' and from_value = 'in_progress' and to_value = 'pending' and actor_id is null`, [vStale]))[0].n === 1)
+  check('The one started 11 hours ago stays in progress', (await sys(`select work_status::text s from visit where id = $1`, [vFresh]))[0].s === 'in_progress')
+  const offered = await as('agus', `select visit_id from resumable_visits($1, '2026-09-23')`, [panda])
+  check('The next day it is offered with the pending ones', offered.some((r) => r.visit_id === vStale))
+  check('Running again does nothing', (await sys(`select private.expire_stale_visits() n`))[0].n === 0)
+  await sys(`update visit set deleted_at = now() where workday_id = $1`, [wStale])
+}
+
+// ---- Bundled reads: who I am and a company's catalogs, one request each
+{
+  const id = (await as('agus', `select my_identity() j`))[0].j
+  const mine = await as('agus', `select id from membership where person_id = $1`, [agus])
+  check('my_identity: the person, private data and memberships, as the separate reads gave them',
+    id.person?.id === agus && id.person.dni === '34567890' && id.memberships.length === mine.length && id.memberships.every((m) => m.company?.name || m.company === null) && typeof id.has_password === 'boolean' && id.is_platform_admin === ((await as('agus', `select count(*)::int n from platform_admin`))[0].n > 0) && Array.isArray(id.invitations))
+  await expectError('Anonymous cannot ask who it is', () => asAnon(`select my_identity()`))
+  const cat = (await as('agus', `select company_catalogs($1) j`, [panda]))[0].j
+  const direct = await as('agus', `select id from display_type where company_id = $1 and active`, [panda])
+  check('company_catalogs: the same display types, channels, sellers and settings', cat.display_types.length === direct.length && Array.isArray(cat.channels) && Array.isArray(cat.sellers) && typeof cat.company?.show_whatsapp === 'boolean')
+  const other = (await as('beto', `select company_catalogs($1) j`, [panda]))[0].j
+  check('Another company gets nothing of Panda’s catalogs', other.brands.length === 0 && other.display_types.length === 0 && other.templates.length === 0 && other.sellers.length === 0 && other.company === null)
+  await expectError('Anonymous cannot read catalogs', () => asAnon(`select company_catalogs('${panda}')`))
+}
+
+// ---- Profile: photo and phone, by their owner only
+{
+  const uid = U.agus
+  await as('agus', `update person set avatar_path = $1 where id = $2`, [`${uid}/1792740000000.jpg`, agus])
+  check('I set my own profile photo, and my_identity returns it', (await as('agus', `select my_identity() j`))[0].j.person.avatar_path === `${uid}/1792740000000.jpg`)
+  check('A coworker sees it with my name', (await as('martin', `select avatar_path from person where id = $1`, [agus]))[0]?.avatar_path === `${uid}/1792740000000.jpg`)
+  await expectError('A photo from someone else’s folder is refused', () => as('agus', `update person set avatar_path = $1 where id = $2`, [`${U.martin}/1.jpg`, agus]), /avatar_own_folder/)
+  const r = await as('martin', `update person set avatar_path = null where id = $1 returning id`, [agus])
+  check('Nobody else changes my photo', r.length === 0)
+  await as('agus', `update person set avatar_path = null where id = $1`, [agus])
+  await sys(`update person_private set phone_verified_at = now() where person_id = $1`, [agus])
+  await as('agus', `update person_private set phone = '+5491144443333' where person_id = $1`, [agus])
+  const ph = (await sys(`select phone, phone_verified_at from person_private where person_id = $1`, [agus]))[0]
+  check('I change my phone; the new number is not verified', ph.phone === '+5491144443333' && ph.phone_verified_at === null)
+  await expectError('…and it must look like a phone', () => as('agus', `update person_private set phone = 'abc' where person_id = $1`, [agus]))
+  await expectError('The DNI is not editable', () => as('agus', `update person_private set dni = '11222333' where person_id = $1`, [agus]))
 }
 
 // Password detection (Google users who later set a password)

@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { Archive, ArchiveRestore, CalendarPlus, ChevronLeft, Copy, ExternalLink, Pencil, RotateCw, Trash2 } from 'lucide-react'
-import { mapsSearchUrl } from '@/domain/places'
+import { Archive, ArchiveRestore, CalendarPlus, ChevronLeft, Copy, Pencil, Trash2 } from 'lucide-react'
 import { formatDayMonth, formatTime, todayInArgentina } from '@/domain/dates'
-import { LOCATION_LABEL, originText, storeStats, usualDisplays } from '@/domain/stores'
+import { originText, storeStats, usualDisplays } from '@/domain/stores'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 import { useIsDesktop } from '@/lib/useMedia'
 import { Banner } from '@/ui/Banner'
@@ -15,27 +14,21 @@ import { Table } from '@/ui/Table'
 import { useCatalogs } from '@/features/workday/api/queries'
 import { useWorkContext } from '@/features/workday/context'
 import { companyQuery } from '@/features/admin/api/company'
-import { storeQuery, storeVisitsQuery, useStoreAdmin, type StoreHistoryVisit } from '@/features/stores/api/stores'
+import { storeQuery, storeVisitsQuery, type StoreHistoryVisit } from '@/features/stores/api/stores'
 import { useStoreArchive } from '@/features/stores/useStoreArchive'
+import { useAutoVerify } from '@/features/stores/useAutoVerify'
 import { effectiveRapport, RAPPORT_SHORT } from '@/domain/reputation'
 import { useStoreReputation } from '@/features/reputation/api'
 import { RapportLevel } from '@/features/reputation/components/RapportLevel'
 import { EditSheet } from './EditSheet'
-import { StoreTagsLine } from '@/features/workday/components/StoreTagsLine'
 import { storeTags } from '@/features/workday/store-tags'
 import { ReputationCard } from './ReputationCard'
 import { MergeSheet } from './MergeSheet'
+import { LocationCard } from './LocationCard'
 import styles from './StorePage.module.scss'
 
 const when = (v: StoreHistoryVisit) => `${v.workDate === todayInArgentina() ? 'Hoy' : formatDayMonth(v.workDate)}${v.arrivedAt ? ` · ${formatTime(v.arrivedAt)}` : ''}`
 const arranged = (v: StoreHistoryVisit) => v.displays.filter((d) => v.photos.some((p) => p.displayId === d.id && p.kind === 'after')).length
-
-const VERIFY_MESSAGE = {
-  verified: { tone: 'ok', text: 'Ubicación verificada: encontramos la dirección con su altura.' },
-  approximate: { tone: 'warn', text: 'Encontramos la calle pero no la altura, así que la ubicación es aproximada. Si no es ahí, cargala a mano en "Editar datos".' },
-  kept: { tone: 'info', text: 'No encontramos la altura exacta: dejamos la ubicación verificada que ya tenía.' },
-  not_found: { tone: 'warn', text: 'No encontramos esa dirección. Revisá cómo está escrita o cargá la ubicación a mano en "Editar datos".' },
-} as const
 
 /** A store: its data, location, usual displays and visit history (S07 / SM07). */
 export function StorePage({ storeId }: { storeId: string }) {
@@ -46,11 +39,11 @@ export function StorePage({ storeId }: { storeId: string }) {
   const visits = useQuery({ ...storeVisitsQuery(storeId, ctx?.personId ?? ''), enabled: Boolean(ctx) })
   const company = useQuery({ ...companyQuery(ctx?.companyId ?? ''), enabled: Boolean(ctx), retry: false })
   const catalogs = useCatalogs(ctx?.companyId ?? '')
-  const { verify } = useStoreAdmin(storeId)
   const reputation = useStoreReputation(ctx?.companyId ?? '', [storeId]).data?.get(storeId)
   const { askArchive, askRemove, restore, busy, error: archiveError, dialog } = useStoreArchive()
   const [sheet, setSheet] = useState<'edit' | 'merge' | null>(null)
   useDocumentTitle(store.data ? store.data.name ?? store.data.address : null)
+  useAutoVerify(store.data && !store.data.archivedAt ? [store.data] : [])
   if (!ctx) return null
   if (store.isPending) return <div className={styles.page}><Skeleton height={320} /></div>
   const s = store.data
@@ -61,8 +54,7 @@ export function StorePage({ storeId }: { storeId: string }) {
   const asStats = list.map((v) => ({ workDate: v.workDate, workStatus: v.workStatus, reviewStatus: v.reviewStatus, arrivedAt: v.arrivedAt, finishedAt: v.finishedAt, displayTypeIds: v.displays.map((d) => d.typeId) }))
   const stats = storeStats(asStats, todayInArgentina())
   const usual = usualDisplays(asStats, typeName)
-  const maps = mapsSearchUrl(s)
-  const recheck = () => verify.mutate({ address: s.address, area: s.area, scope: company.data?.geocodingScope ?? 'caba', current: s.locationStatus })
+  const tags = storeTags(catalogs.data, s)
   const active = !s.archivedAt && !s.mergedInto && !s.removedAt
   const target = { id: s.id, label: s.name ?? s.address }
 
@@ -73,7 +65,7 @@ export function StorePage({ storeId }: { storeId: string }) {
         <div className={styles.titles}>
           <span className={styles.eyebrow}>{s.customerNumber ? `Cliente ${s.customerNumber}` : 'Sin número de cliente'}</span>
           <h1 className={styles.title}>{s.name ?? s.address}</h1>
-          <StoreTagsLine tags={storeTags(catalogs.data, s)} showMissing />
+          {s.name ? <span className={styles.subtitle}>{s.address}</span> : null}
         </div>
         {active ? (
           <div className={styles.actions}>
@@ -101,21 +93,16 @@ export function StorePage({ storeId }: { storeId: string }) {
       ) : null}
       {archiveError ? <Banner tone="error">{archiveError.message}</Banner> : null}
 
-      <div className={styles.columns}>
-        <section className={styles.side} aria-label="Datos del comercio">
+      <div className={styles.layout}>
+        <LocationCard store={s} scope={company.data?.geocodingScope ?? 'caba'} canEdit={active} />
+
+        <section className={styles.details} aria-label="Datos del comercio">
           <dl className={styles.card}>
-            <div><dt>Dirección</dt><dd>{s.address}</dd></div>
-            <div><dt>Zona</dt><dd>{s.area ?? '—'}</dd></div>
-            <div><dt>Ubicación</dt><dd><span className={styles.location} data-status={s.locationStatus}>{LOCATION_LABEL[s.locationStatus]}</span></dd></div>
+            <div><dt>Nro. de cliente</dt><dd>{s.customerNumber ?? '—'}</dd></div>
+            <div><dt>Canal</dt><dd className={tags.channel ? undefined : styles.missing}>{tags.channel ?? 'Sin canal'}</dd></div>
+            <div><dt>Vendedor</dt><dd className={tags.seller ? undefined : styles.missing}>{tags.seller ?? 'Sin vendedor'}</dd></div>
             <div><dt>Alta</dt><dd>{originText(s.source, s.createdAt, s.createdByName)}</dd></div>
           </dl>
-          <div className={styles.row}>
-            <a className={styles.link} href={maps} target="_blank" rel="noreferrer"><ExternalLink size={16} aria-hidden />Abrir en Maps</a>
-            <Button variant="ghost" size="md" loading={verify.isPending} onClick={recheck}><RotateCw size={16} aria-hidden />{s.locationStatus === 'verified' ? 'Volver a verificar' : 'Verificar dirección'}</Button>
-          </div>
-          {verify.data ? <Banner tone={VERIFY_MESSAGE[verify.data].tone}>{VERIFY_MESSAGE[verify.data].text}</Banner> : null}
-          {verify.error ? <Banner tone="error">{verify.error.message}</Banner> : null}
-          {s.lat !== null && s.lng !== null ? <p className={styles.help}>{s.lat.toFixed(5)}, {s.lng.toFixed(5)}</p> : null}
           <ReputationCard reputation={reputation} visits={list} />
           {usual.length ? (
             <div className={styles.card}>
@@ -131,7 +118,7 @@ export function StorePage({ storeId }: { storeId: string }) {
           ) : null}
         </section>
 
-        <section className={styles.main} aria-label="Historial">
+        <section className={styles.activity} aria-label="Historial">
           <div className={styles.kpis}>
             <span className={styles.kpi}><b>{stats.last30}</b>visitas en 30 días</span>
             <span className={styles.kpi}><b>{stats.approved}</b>aprobadas</span>

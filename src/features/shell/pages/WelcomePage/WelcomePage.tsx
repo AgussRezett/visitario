@@ -10,8 +10,7 @@ import { Button } from '@/ui/Button'
 import { Card } from '@/ui/Card'
 import { Banner } from '@/ui/Banner'
 import { Logo } from '@/ui/Logo'
-import { Avatar } from '@/ui/Avatar'
-import { initials } from '@/lib/format'
+import { PersonAvatar } from '@/features/people/PersonAvatar'
 import styles from './WelcomePage.module.scss'
 
 /** Shown to a person with no active company: accept an invitation, wait for one, or work self-employed. */
@@ -45,7 +44,7 @@ export function WelcomePage() {
       <div className={styles.top}>
         <Logo />
         <Link to="/profile" aria-label="Mi perfil">
-          {me?.person ? <Avatar name={initials(me.person.firstName, me.person.lastName)} size={36} /> : null}
+          {me?.person ? <PersonAvatar personId={me.person.id} firstName={me.person.firstName} lastName={me.person.lastName} size={36} /> : null}
         </Link>
       </div>
 

@@ -14,6 +14,18 @@ export interface Catalogs {
   templates: Record<TemplateKind, string>
   /** The company still uses WhatsApp as the bridge: show the copy buttons on the visit. */
   showWhatsapp: boolean
+  /** One ANTES / DESPUÉS per display instead of one per visit. */
+  messagesPerDisplay: boolean
+}
+
+interface CatalogsRow {
+  brands: { id: number; name: string }[]
+  display_types: { id: number; name: string }[]
+  metrics: { id: number; name: string; report_label: string | null }[]
+  templates: { kind: TemplateKind; body: string }[]
+  company: { show_whatsapp: boolean; messages_per_display: boolean } | null
+  channels: { id: number; name: string; active: boolean; sort_order: number }[]
+  sellers: { id: number; name: string; person_id: string | null; active: boolean }[]
 }
 
 export const catalogsQuery = (companyId: string) =>
@@ -21,25 +33,20 @@ export const catalogsQuery = (companyId: string) =>
     queryKey: workdayKeys.catalogs(companyId),
     staleTime: 10 * 60_000,
     queryFn: async (): Promise<Catalogs> => {
-      const [brands, types, metrics, templates, company, channels, sellers] = await Promise.all([
-        supabase.from('brand').select('id, name').eq('company_id', companyId).eq('active', true).order('sort_order').order('name'),
-        supabase.from('display_type').select('id, name').eq('company_id', companyId).eq('active', true).order('sort_order').order('name'),
-        supabase.from('work_metric').select('id, name, report_label').eq('company_id', companyId).eq('active', true).order('sort_order'),
-        supabase.from('message_template').select('kind, body').eq('company_id', companyId),
-        supabase.from('company').select('show_whatsapp').eq('id', companyId).maybeSingle(),
-        supabase.from('channel').select('id, name, active, sort_order').eq('company_id', companyId).order('sort_order').order('name'),
-        supabase.from('seller').select('id, name, person_id, active').eq('company_id', companyId).order('name'),
-      ])
-      for (const r of [brands, types, metrics, templates, company, channels, sellers]) if (r.error) throw r.error
-      const own = Object.fromEntries((templates.data ?? []).map((t) => [t.kind, t.body])) as Partial<Record<TemplateKind, string>>
+      // One request for everything a company's screens need (company_catalogs).
+      const { data, error } = await supabase.rpc('company_catalogs', { p_company: companyId })
+      if (error) throw error
+      const c = data as unknown as CatalogsRow
+      const own = Object.fromEntries((c.templates ?? []).map((t) => [t.kind, t.body])) as Partial<Record<TemplateKind, string>>
       return {
-        brands: brands.data ?? [],
-        displayTypes: types.data ?? [],
-        channels: (channels.data ?? []).map((c) => ({ id: c.id, name: c.name, active: c.active, number: c.sort_order })),
-        sellers: (sellers.data ?? []).map((s) => ({ id: s.id, name: s.name, personId: s.person_id, active: s.active })),
-        metrics: (metrics.data ?? []).map((m) => ({ id: m.id, name: m.name, reportLabel: m.report_label })),
+        brands: c.brands ?? [],
+        displayTypes: c.display_types ?? [],
+        channels: (c.channels ?? []).map((x) => ({ id: x.id, name: x.name, active: x.active, number: x.sort_order })),
+        sellers: (c.sellers ?? []).map((x) => ({ id: x.id, name: x.name, personId: x.person_id, active: x.active })),
+        metrics: (c.metrics ?? []).map((m) => ({ id: m.id, name: m.name, reportLabel: m.report_label })),
         templates: { ...DEFAULT_TEMPLATES, ...own },
-        showWhatsapp: company.data?.show_whatsapp ?? true,
+        showWhatsapp: c.company?.show_whatsapp ?? true,
+        messagesPerDisplay: c.company?.messages_per_display ?? false,
       }
     },
   })

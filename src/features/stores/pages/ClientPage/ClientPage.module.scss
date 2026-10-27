@@ -1,0 +1,116 @@
+@use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(4));
+  padding: space(4) space(4) space(6);
+
+  @include up(lg) {
+    gap: space(5);
+    max-width: 880px;
+    padding: space(6) space(8);
+  }
+}
+
+.back {
+  @include text(label);
+  @include flex(row, $gap: space(1), $align: center);
+  align-self: flex-start;
+  min-height: $touch-target;
+  color: $color-ink-muted;
+  font-weight: $weight-semibold;
+  text-decoration: none;
+
+  @include hover {
+    color: $color-ink;
+  }
+}
+
+.header {
+  @include flex(column, $gap: space(1));
+}
+
+.title {
+  @include heading(title);
+  margin: 0;
+  overflow-wrap: anywhere;
+
+  @include up(lg) {
+    @include heading(display);
+  }
+}
+
+.meta {
+  @include text(small);
+  margin: 0;
+  color: $color-ink-muted;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: space(2.5);
+  margin: 0;
+}
+
+.stat {
+  @include surface;
+  @include flex(column-reverse, $gap: space(0.5));
+  padding: space(3);
+
+  dt {
+    @include text(tiny);
+    color: $color-ink-muted;
+  }
+
+  dd {
+    @include heading(heading);
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.actions {
+  @include flex(row, $gap: space(2));
+  flex-wrap: wrap;
+}
+
+.history {
+  @include flex(column, $gap: space(2));
+}
+
+.section-title {
+  @include eyebrow;
+  margin: 0;
+}
+
+.list {
+  @include surface;
+  @include flex(column);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.visit {
+  @include flex(column, $gap: space(1));
+  padding: space(3.5) space(4);
+
+  & + & {
+    border-top: 1px solid $color-line;
+  }
+}
+
+.visit-head {
+  @include flex(row, $gap: space(2), $align: center, $justify: space-between);
+}
+
+.date {
+  @include text(body);
+  font-weight: $weight-bold;
+}
+
+.detail {
+  @include text(label);
+  margin: 0;
+  color: $color-ink;
+}

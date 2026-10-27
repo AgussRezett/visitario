@@ -1,7 +1,7 @@
 import { useNavigate } from '@tanstack/react-router'
-import { AlertTriangle, Check, RefreshCw } from 'lucide-react'
+import { AlertTriangle, Check, Clock, RefreshCw } from 'lucide-react'
 import { formatTime } from '@/domain/dates'
-import { finishCheck, isLocked, isVisited, WORK_STATUS_LABEL } from '@/domain/visit'
+import { finishCheck, isLocked, isVisited, staleSoon, WORK_STATUS_LABEL } from '@/domain/visit'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
 import type { Visit } from '@/features/workday/api/queries'
@@ -24,6 +24,7 @@ export function FinishBar({ visit: v, actions, back }: { visit: Visit; actions: 
   })
   const finished = isVisited(v.workStatus)
   const closedChoice = v.consent === 'closed'
+  const resetsAt = staleSoon(v)
 
   const end = async () => {
     await actions.finish()
@@ -47,6 +48,12 @@ export function FinishBar({ visit: v, actions, back }: { visit: Visit; actions: 
         </>
       ) : (
         <>
+          {resetsAt ? (
+            <p className={styles.warn}>
+              <Clock size={16} aria-hidden />
+              Terminala antes de las {formatTime(resetsAt)}: si no, vuelve a pendiente y se borra lo cargado.
+            </p>
+          ) : null}
           {check.blockers.length ? <p className={styles.missing}>{check.blockers.map((b) => BLOCKER_TEXT[b]).join(' ')}</p> : null}
           {!check.blockers.length && check.unarranged ? (
             <p className={styles.warn}>

@@ -1,0 +1,228 @@
+@use '@/styles/abstracts' as *;
+
+@include keyframes-spin;
+
+.body {
+  @include flex(column, $gap: space(4));
+}
+
+.intro {
+  @include text(body);
+  margin: 0;
+  color: $color-ink-muted;
+}
+
+// "2 de 7 enviados" and a bar that fills as they go out
+.progress {
+  @include flex(column, $gap: space(1.5));
+}
+
+.count {
+  @include text(label);
+  font-weight: $weight-semibold;
+  color: $color-ink;
+}
+
+.track {
+  display: block;
+  height: space(1.5);
+  overflow: hidden;
+  border-radius: $radius-full;
+  background: $color-muted;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: $color-done;
+  transition: width 300ms $ease-standard;
+}
+
+.group {
+  @include flex(column, $gap: space(2));
+}
+
+.group-title {
+  @include eyebrow;
+  margin: 0;
+}
+
+.rows {
+  @include flex(column, $gap: space(2));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+// One message: its photo, its name and first lines, and where it stands
+.row {
+  @include surface;
+  @include transition-colors;
+  @include flex(row, $gap: space(3), $align: center);
+  width: 100%;
+  min-height: space(18);
+  padding: space(2.5);
+  border-radius: $radius-md;
+  color: $color-ink;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  @include hover {
+    border-color: $color-control;
+    background: $color-muted;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-focus;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: default;
+
+    .thumb,
+    .texts {
+      opacity: 0.55;
+    }
+
+    @include hover {
+      border-color: $color-line;
+      background: $color-card;
+    }
+  }
+}
+
+.row-next {
+  border-color: $color-lime;
+  box-shadow: inset 0 0 0 1px $color-lime;
+}
+
+.row-sent .preview {
+  color: $color-ink-subtle;
+}
+
+.thumb {
+  @include center;
+  @include square(space(14));
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: $radius-sm;
+  background: $color-muted;
+  color: $color-ink-subtle;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+// How many photos go in this message
+.more {
+  @include text(eyebrow);
+  position: absolute;
+  right: space(1);
+  bottom: space(1);
+  min-width: space(5);
+  padding: 0 space(1);
+  border-radius: $radius-full;
+  background: rgba(0, 0, 0, 0.62);
+  color: $color-white;
+  font-weight: $weight-bold;
+  text-align: center;
+}
+
+.texts {
+  @include flex(column, $gap: space(0.5));
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  @include text(body);
+  font-weight: $weight-bold;
+  overflow-wrap: anywhere;
+}
+
+.preview {
+  @include text(label);
+  display: -webkit-box;
+  overflow: hidden;
+  color: $color-ink-muted;
+  white-space: pre-line;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.status {
+  @include text(eyebrow);
+  @include flex(row, $gap: space(1), $align: center);
+  flex-shrink: 0;
+  padding: space(1) space(2);
+  border-radius: $radius-full;
+  background: $color-muted;
+  color: $color-ink-muted;
+  font-weight: $weight-bold;
+  white-space: nowrap;
+
+  &[data-tone='sent'] {
+    background: $color-done-soft;
+    color: $color-done-ink;
+  }
+
+  &[data-tone='next'] {
+    background: $color-lime-soft;
+    color: $color-lime-soft-ink;
+  }
+
+  &[data-tone='error'] {
+    background: $color-fix-soft;
+    color: $color-fix-ink;
+  }
+
+  &[data-tone='missing'] {
+    background: transparent;
+    color: $color-ink-subtle;
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+.hint {
+  @include text(label);
+  margin: 0;
+  color: $color-ink-subtle;
+}
+
+.live {
+  @include visually-hidden;
+}
+
+.footer {
+  @include flex(column, $gap: space(2));
+  width: 100%;
+}
+
+.main {
+  width: 100%;
+}
+
+.all-done {
+  @include text(body);
+  @include flex(row, $gap: space(2), $align: center, $justify: center);
+  margin: 0;
+  color: $color-done-ink;
+  font-weight: $weight-bold;
+}
+
+.note {
+  @include text(label);
+  margin: 0;
+  color: $color-ink-muted;
+  text-align: center;
+}

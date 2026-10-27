@@ -2,6 +2,17 @@
 export type Row = Record<string, unknown>
 
 export interface FakeState {
+  /** store_map rows, and client_history answers by store id. */
+  mapPoints?: Row[]
+  clientHistory?: Record<string, Row>
+  /** person rows with avatar_path, for the people photos read. */
+  photos?: Row[]
+  /** My own rows as the profile changed them (person, person_private, a pending new_email). */
+  profile?: Row
+  avatarsUploaded?: string[]
+  avatarsRemoved?: string[]
+  /** Signed photo links (https://photos.test/<id>.jpg); the spec serves them. */
+  photoUrls?: boolean
   workday: Row | null
   visits: Row[]
   uploads: { bytes: Buffer; meta: Row }[]
@@ -36,6 +47,8 @@ export interface FakeState {
   overlaps?: Row[]
   /** Import: the directory, saved formats and what the geocoder finds (by address). */
   stores?: Row[]
+  /** Bulk edits from the directory: which stores and what changed. */
+  bulkUpdates?: { ids: string[]; patch: Row }[]
   /** Pending stops from today on, per store (what archiving removes). */
   openStops?: Record<string, number>
   /** Assigning: the merchandiser's pending stops offered, and the ones added. */
@@ -43,6 +56,8 @@ export interface FakeState {
   resumed?: string[]
   formats?: Row[]
   geocode?: Record<string, Row>
+  /** Stores the app asked the server to locate and save. */
+  verifyCalls?: string[]
   /** What the route function answers by streets (503 without it) and what it was asked. */
   route?: Row
   routeAsked?: Row[]

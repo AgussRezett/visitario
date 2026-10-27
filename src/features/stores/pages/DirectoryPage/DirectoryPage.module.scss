@@ -237,3 +237,32 @@
   max-width: 220px;
   overflow-wrap: anywhere;
 }
+
+// ---- Selecting rows
+.select-line {
+  @include flex(row, $justify: flex-end);
+  margin-block: calc(-1 * space(2));
+}
+
+.check-cell {
+  width: 1%;
+  padding-inline: space(1) 0;
+}
+
+// A marked row, in the table or the list
+.page tr[data-selected],
+.item[data-selected] {
+  background: $color-lime-soft;
+}
+
+// On phones the checkbox sits beside the row's link
+.item {
+  @include flex(row, $align: center);
+  padding-left: space(1);
+
+  .row {
+    flex: 1;
+    min-width: 0;
+    padding-left: space(1);
+  }
+}

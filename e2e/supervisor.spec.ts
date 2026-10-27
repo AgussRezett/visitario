@@ -230,3 +230,15 @@ test('an empty review tab says why and points to where the work is', async ({ pa
   await expect(page).toHaveURL(/tab=to_review/)
   await expect(page.getByText('Juramento 2101').first()).toBeVisible()
 })
+
+test('the team shows each person’s profile photo, and the initials of who has none', async ({ page }) => {
+  const state = team()
+  state.photos = [{ id: 'p2', avatar_path: 'u2/1792740000000.jpg' }]
+  await installFakeSupabase(page, state, 'supervisor')
+  await page.goto('/s/today')
+  const lucia = page.getByRole('link', { name: /Lucía/ }).filter({ visible: true }).first()
+  await expect(lucia.locator('img')).toHaveAttribute('src', /avatars\/u2\/1792740000000\.jpg$/)
+  const diego = page.getByRole('link', { name: /Diego/ }).filter({ visible: true }).first()
+  await expect(diego.locator('img')).toHaveCount(0)
+  await expect(diego.getByText('DP', { exact: true })).toBeVisible()
+})

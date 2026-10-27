@@ -1,0 +1,25 @@
+@use '@/styles/abstracts' as *;
+
+// The box is small; the target around it is the full 44 px.
+.target {
+  @include center;
+  @include square(44px);
+  flex-shrink: 0;
+  border-radius: $radius-md;
+  cursor: pointer;
+
+  @include hover {
+    background: $color-muted;
+  }
+}
+
+.box {
+  @include square(20px);
+  margin: 0;
+  accent-color: $color-forest;
+  cursor: pointer;
+
+  @include dark {
+    accent-color: $color-lime;
+  }
+}
