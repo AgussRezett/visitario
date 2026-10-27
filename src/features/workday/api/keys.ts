@@ -6,6 +6,6 @@ export const workdayKeys = {
   visit: (visitId: string) => ['workday', 'visit', visitId] as const,
   history: (companyId: string) => ['workday', 'history', companyId] as const,
   resumable: (companyId: string, date: string) => ['workday', 'resumable', companyId, date] as const,
-  // 'tags': catalogs cached before channels and sellers existed are not reused
-  catalogs: (companyId: string) => ['catalogs', companyId, 'tags'] as const,
+  // Versioned: catalogs cached before a new field (channels and sellers, messages per display) are not reused
+  catalogs: (companyId: string) => ['catalogs', companyId, 'per-display'] as const,
 }

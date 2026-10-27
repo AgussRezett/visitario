@@ -9,57 +9,6 @@
   }
 }
 
-// ---- Header: avatar, name, DNI and phone, edit button
-.header {
-  @include flex(row, $gap: space(4), $align: center);
-}
-
-.identity {
-  @include flex(column);
-  flex: 1;
-  min-width: 0;
-}
-
-.eyebrow {
-  @include eyebrow;
-  display: none;
-
-  @include up(lg) {
-    display: block;
-  }
-}
-
-.name {
-  @include truncate;
-  @include text(title);
-  font-weight: $weight-extrabold;
-
-  @include up(lg) {
-    @include text(display);
-  }
-}
-
-.meta {
-  @include text(label);
-  color: $color-ink-subtle;
-}
-
-.desktop-only {
-  display: none;
-
-  @include up(lg) {
-    display: inline;
-  }
-}
-
-.edit-label {
-  display: none;
-
-  @include up(sm) {
-    display: inline;
-  }
-}
-
 // ---- Two columns on desktop
 .columns {
   display: grid;

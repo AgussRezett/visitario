@@ -195,6 +195,15 @@
   color: $color-ink-subtle;
 }
 
+// The person's photo in place of the profile icon; a ring when the tab is open
+.tab-avatar {
+  box-shadow: 0 0 0 1.5px $color-line;
+
+  .active & {
+    box-shadow: 0 0 0 2px $color-action;
+  }
+}
+
 // ---- Pages with their own bars on phones (visit sheet): the page manages its own scroll
 .phone-hidden {
   display: none;

@@ -29,6 +29,20 @@ test('opens an own workday, adds 5 addresses and sees them in order', async ({ p
   expect([...positions].sort((a, b) => a - b)).toEqual(positions)
 })
 
+test('addresses an activador adds are located by themselves, though only supervisors edit stores', async ({ page }) => {
+  const state: FakeState = { workday: null, visits: [], uploads: [] }
+  await installFakeSupabase(page, state)
+  await page.goto(`/s/workday?date=${DATE}`)
+  await page.getByRole('button', { name: /Abrir (mi )?jornada/ }).click()
+  await page.getByRole('button', { name: 'Agregar dirección' }).filter({ visible: true }).first().click()
+  await page.getByRole('radio', { name: 'Pegar varias' }).click()
+  await page.getByLabel('Direcciones').fill(ADDRESSES.slice(0, 2).join('\n'))
+  await page.getByRole('button', { name: 'Agregar 2 direcciones' }).click()
+  await expect(page.getByText('0 de 2 visitados')).toBeVisible()
+  // Each new store is asked to the server once, one after the other.
+  await expect.poll(() => state.verifyCalls).toEqual(['s-v1', 's-v2'])
+})
+
 test('a visit cannot end without the storefront photo and the store’s answer', async ({ page }) => {
   const state: FakeState = {
     workday: { id: 'w1', company_id: 'c1', work_date: DATE, status: 'published', created_by: 'p1' },

@@ -177,6 +177,7 @@ export type Database = {
           id: string
           kind: Database["public"]["Enums"]["company_kind"]
           logo_version: number | null
+          messages_per_display: boolean
           name: string
           owner_person_id: string | null
           photo_retention_months: number
@@ -195,6 +196,7 @@ export type Database = {
           id?: string
           kind: Database["public"]["Enums"]["company_kind"]
           logo_version?: number | null
+          messages_per_display?: boolean
           name: string
           owner_person_id?: string | null
           photo_retention_months?: number
@@ -213,6 +215,7 @@ export type Database = {
           id?: string
           kind?: Database["public"]["Enums"]["company_kind"]
           logo_version?: number | null
+          messages_per_display?: boolean
           name?: string
           owner_person_id?: string | null
           photo_retention_months?: number
@@ -643,6 +646,7 @@ export type Database = {
       }
       person: {
         Row: {
+          avatar_path: string | null
           auth_user_id: string | null
           created_at: string
           first_name: string
@@ -652,6 +656,7 @@ export type Database = {
           version: number
         }
         Insert: {
+          avatar_path?: string | null
           auth_user_id?: string | null
           created_at?: string
           first_name: string
@@ -661,6 +666,7 @@ export type Database = {
           version?: number
         }
         Update: {
+          avatar_path?: string | null
           auth_user_id?: string | null
           created_at?: string
           first_name?: string
@@ -1710,6 +1716,30 @@ export type Database = {
         }[]
       }
       has_password: { Args: never; Returns: boolean }
+      my_identity: { Args: never; Returns: Json }
+      client_history: { Args: { p_company: string; p_store: string }; Returns: Json }
+      store_map: {
+        Args: { p_company: string }
+        Returns: {
+          id: string
+          name: string | null
+          address: string
+          area: string | null
+          customer_number: string | null
+          lat: number | null
+          lng: number | null
+          location_status: Database["public"]["Enums"]["location_status"]
+          channel_id: number | null
+          seller_id: number | null
+          last_visit_date: string | null
+          last_visit_status: Database["public"]["Enums"]["work_status"] | null
+          last_merchandiser: string | null
+          visits_30d: number
+          visits_90d: number
+          rapport: number | null
+        }[]
+      }
+      company_catalogs: { Args: { p_company: string }; Returns: Json }
       import_mvp_backup: {
         Args: { p_company: string; p_data: Json }
         Returns: Json

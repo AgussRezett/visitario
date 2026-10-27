@@ -27,6 +27,7 @@ import { Route as AppSCatalogsRouteImport } from './../routes/_app/s.catalogs'
 import { Route as AppSClientsRouteImport } from './../routes/_app/s.clients'
 import { Route as AppSCompanyRouteImport } from './../routes/_app/s.company'
 import { Route as AppSImportRouteImport } from './../routes/_app/s.import'
+import { Route as AppSMapRouteImport } from './../routes/_app/s.map'
 import { Route as AppSReportRouteImport } from './../routes/_app/s.report'
 import { Route as AppSReportsRouteImport } from './../routes/_app/s.reports'
 import { Route as AppSReviewRouteImport } from './../routes/_app/s.review'
@@ -38,6 +39,7 @@ import { Route as AppSUsersRouteImport } from './../routes/_app/s.users'
 import { Route as AppSWorkdayRouteImport } from './../routes/_app/s.workday'
 import { Route as AppStoresStoreIdRouteImport } from './../routes/_app/stores.$storeId'
 import { Route as AppVisitVisitIdRouteImport } from './../routes/_app/visit.$visitId'
+import { Route as AppSClientsStoreIdRouteImport } from './../routes/_app/s.clients_.$storeId'
 import { Route as AppSTodayPersonIdRouteImport } from './../routes/_app/s.today_.$personId'
 import { Route as AppSUsersNewRouteImport } from './../routes/_app/s.users_.new'
 
@@ -130,6 +132,11 @@ const AppSImportRoute = AppSImportRouteImport.update({
   path: '/s/import',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSMapRoute = AppSMapRouteImport.update({
+  id: '/s/map',
+  path: '/s/map',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSReportRoute = AppSReportRouteImport.update({
   id: '/s/report',
   path: '/s/report',
@@ -185,6 +192,11 @@ const AppVisitVisitIdRoute = AppVisitVisitIdRouteImport.update({
   path: '/visit/$visitId',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSClientsStoreIdRoute = AppSClientsStoreIdRouteImport.update({
+  id: '/s/clients_/$storeId',
+  path: '/s/clients/$storeId',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSTodayPersonIdRoute = AppSTodayPersonIdRouteImport.update({
   id: '/s/today_/$personId',
   path: '/s/today/$personId',
@@ -213,6 +225,7 @@ export interface FileRoutesByFullPath {
   '/s/clients': typeof AppSClientsRoute
   '/s/company': typeof AppSCompanyRoute
   '/s/import': typeof AppSImportRoute
+  '/s/map': typeof AppSMapRoute
   '/s/report': typeof AppSReportRoute
   '/s/reports': typeof AppSReportsRoute
   '/s/review': typeof AppSReviewRoute
@@ -225,6 +238,7 @@ export interface FileRoutesByFullPath {
   '/stores/$storeId': typeof AppStoresStoreIdRoute
   '/visit/$visitId': typeof AppVisitVisitIdRoute
   '/platform/': typeof AppPlatformIndexRoute
+  '/s/clients/$storeId': typeof AppSClientsStoreIdRoute
   '/s/today/$personId': typeof AppSTodayPersonIdRoute
   '/s/users/new': typeof AppSUsersNewRoute
 }
@@ -244,6 +258,7 @@ export interface FileRoutesByTo {
   '/s/clients': typeof AppSClientsRoute
   '/s/company': typeof AppSCompanyRoute
   '/s/import': typeof AppSImportRoute
+  '/s/map': typeof AppSMapRoute
   '/s/report': typeof AppSReportRoute
   '/s/reports': typeof AppSReportsRoute
   '/s/review': typeof AppSReviewRoute
@@ -256,6 +271,7 @@ export interface FileRoutesByTo {
   '/stores/$storeId': typeof AppStoresStoreIdRoute
   '/visit/$visitId': typeof AppVisitVisitIdRoute
   '/platform': typeof AppPlatformIndexRoute
+  '/s/clients/$storeId': typeof AppSClientsStoreIdRoute
   '/s/today/$personId': typeof AppSTodayPersonIdRoute
   '/s/users/new': typeof AppSUsersNewRoute
 }
@@ -278,6 +294,7 @@ export interface FileRoutesById {
   '/_app/s/clients': typeof AppSClientsRoute
   '/_app/s/company': typeof AppSCompanyRoute
   '/_app/s/import': typeof AppSImportRoute
+  '/_app/s/map': typeof AppSMapRoute
   '/_app/s/report': typeof AppSReportRoute
   '/_app/s/reports': typeof AppSReportsRoute
   '/_app/s/review': typeof AppSReviewRoute
@@ -290,6 +307,7 @@ export interface FileRoutesById {
   '/_app/stores/$storeId': typeof AppStoresStoreIdRoute
   '/_app/visit/$visitId': typeof AppVisitVisitIdRoute
   '/_app/platform/': typeof AppPlatformIndexRoute
+  '/_app/s/clients_/$storeId': typeof AppSClientsStoreIdRoute
   '/_app/s/today_/$personId': typeof AppSTodayPersonIdRoute
   '/_app/s/users_/new': typeof AppSUsersNewRoute
 }
@@ -312,6 +330,7 @@ export interface FileRouteTypes {
     | '/s/clients'
     | '/s/company'
     | '/s/import'
+    | '/s/map'
     | '/s/report'
     | '/s/reports'
     | '/s/review'
@@ -324,6 +343,7 @@ export interface FileRouteTypes {
     | '/stores/$storeId'
     | '/visit/$visitId'
     | '/platform/'
+    | '/s/clients/$storeId'
     | '/s/today/$personId'
     | '/s/users/new'
   fileRoutesByTo: FileRoutesByTo
@@ -343,6 +363,7 @@ export interface FileRouteTypes {
     | '/s/clients'
     | '/s/company'
     | '/s/import'
+    | '/s/map'
     | '/s/report'
     | '/s/reports'
     | '/s/review'
@@ -355,6 +376,7 @@ export interface FileRouteTypes {
     | '/stores/$storeId'
     | '/visit/$visitId'
     | '/platform'
+    | '/s/clients/$storeId'
     | '/s/today/$personId'
     | '/s/users/new'
   id:
@@ -376,6 +398,7 @@ export interface FileRouteTypes {
     | '/_app/s/clients'
     | '/_app/s/company'
     | '/_app/s/import'
+    | '/_app/s/map'
     | '/_app/s/report'
     | '/_app/s/reports'
     | '/_app/s/review'
@@ -388,6 +411,7 @@ export interface FileRouteTypes {
     | '/_app/stores/$storeId'
     | '/_app/visit/$visitId'
     | '/_app/platform/'
+    | '/_app/s/clients_/$storeId'
     | '/_app/s/today_/$personId'
     | '/_app/s/users_/new'
   fileRoutesById: FileRoutesById
@@ -530,6 +554,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSImportRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/s/map': {
+      id: '/_app/s/map'
+      path: '/s/map'
+      fullPath: '/s/map'
+      preLoaderRoute: typeof AppSMapRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/s/report': {
       id: '/_app/s/report'
       path: '/s/report'
@@ -607,6 +638,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppVisitVisitIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/s/clients_/$storeId': {
+      id: '/_app/s/clients_/$storeId'
+      path: '/s/clients/$storeId'
+      fullPath: '/s/clients/$storeId'
+      preLoaderRoute: typeof AppSClientsStoreIdRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/s/today_/$personId': {
       id: '/_app/s/today_/$personId'
       path: '/s/today/$personId'
@@ -648,6 +686,7 @@ interface AppRouteChildren {
   AppSClientsRoute: typeof AppSClientsRoute
   AppSCompanyRoute: typeof AppSCompanyRoute
   AppSImportRoute: typeof AppSImportRoute
+  AppSMapRoute: typeof AppSMapRoute
   AppSReportRoute: typeof AppSReportRoute
   AppSReportsRoute: typeof AppSReportsRoute
   AppSReviewRoute: typeof AppSReviewRoute
@@ -659,6 +698,7 @@ interface AppRouteChildren {
   AppSWorkdayRoute: typeof AppSWorkdayRoute
   AppStoresStoreIdRoute: typeof AppStoresStoreIdRoute
   AppVisitVisitIdRoute: typeof AppVisitVisitIdRoute
+  AppSClientsStoreIdRoute: typeof AppSClientsStoreIdRoute
   AppSTodayPersonIdRoute: typeof AppSTodayPersonIdRoute
   AppSUsersNewRoute: typeof AppSUsersNewRoute
 }
@@ -673,6 +713,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSClientsRoute: AppSClientsRoute,
   AppSCompanyRoute: AppSCompanyRoute,
   AppSImportRoute: AppSImportRoute,
+  AppSMapRoute: AppSMapRoute,
   AppSReportRoute: AppSReportRoute,
   AppSReportsRoute: AppSReportsRoute,
   AppSReviewRoute: AppSReviewRoute,
@@ -684,6 +725,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSWorkdayRoute: AppSWorkdayRoute,
   AppStoresStoreIdRoute: AppStoresStoreIdRoute,
   AppVisitVisitIdRoute: AppVisitVisitIdRoute,
+  AppSClientsStoreIdRoute: AppSClientsStoreIdRoute,
   AppSTodayPersonIdRoute: AppSTodayPersonIdRoute,
   AppSUsersNewRoute: AppSUsersNewRoute,
 }

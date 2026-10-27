@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { ArrowDownToLine, DoorOpen, Flag, Map as MapIcon, UserPlus, Users } from 'lucide-react'
 import { formatTime, todayInArgentina } from '@/domain/dates'
 import { activeMembers, doingText, operationTitle, type Operation, type Presence } from '@/domain/operations'
-import { initials } from '@/lib/format'
-import { Avatar } from '@/ui/Avatar'
+import { PersonAvatar } from '@/features/people/PersonAvatar'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
 import { useConfirm } from '@/ui/ConfirmDialog'
@@ -43,10 +42,10 @@ export function OperationCard({ companyId, meId, date, op, works, isHost, stops,
     if (date < todayInArgentina()) return null
     return (
       <section className={styles.invite} aria-label="Operativo">
-        <span className={styles.icon} aria-hidden><Users size={20} /></span>
+        <span className={styles.inviteIcon} aria-hidden><Users size={18} /></span>
         <span className={styles.inviteText}>
-          <span className={styles.title}>¿Salen juntos?</span>
-          <span className={styles.meta}>Armá un operativo: trabajan los mismos locales y cada uno ve lo que hace el otro, en vivo.</span>
+          <span className={styles.inviteTitle}>¿Salen juntos?</span>
+          <span className={styles.meta}>Con un operativo trabajan los mismos locales y se ven en vivo.</span>
         </span>
         <Button variant="secondary" size="md" onClick={() => setOpen('create')}><Users size={18} aria-hidden />Armar operativo</Button>
         <CreateOperationSheet open={open === 'create'} onClose={() => setOpen(null)} companyId={companyId} date={date} meId={meId} />
@@ -92,7 +91,7 @@ export function OperationCard({ companyId, meId, date, op, works, isHost, stops,
           return (
             <li key={m.personId} className={styles.member}>
               <span className={styles.avatar}>
-                <Avatar name={initials(m.firstName, m.lastName)} size={32} />
+                <PersonAvatar personId={m.personId} firstName={m.firstName} lastName={m.lastName} size={32} />
                 {live ? <span className={styles.dot} data-on={Boolean(p) || undefined} aria-hidden /> : null}
               </span>
               <span className={styles.memberText}>

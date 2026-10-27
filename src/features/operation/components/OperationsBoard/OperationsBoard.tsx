@@ -3,8 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Flag, Map as MapIcon, Users } from 'lucide-react'
 import { formatTime } from '@/domain/dates'
 import { activeMembers, doingText, operationTitle, type Operation } from '@/domain/operations'
-import { initials } from '@/lib/format'
-import { Avatar } from '@/ui/Avatar'
+import { PersonAvatar } from '@/features/people/PersonAvatar'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
 import { useConfirm } from '@/ui/ConfirmDialog'
@@ -63,7 +62,7 @@ function OperationTeamCard({ op, companyId, meId }: { op: Operation; companyId: 
           return (
             <li key={m.personId} className={styles.member}>
               <span className={styles.avatar}>
-                <Avatar name={initials(m.firstName, m.lastName)} size={28} />
+                <PersonAvatar personId={m.personId} firstName={m.firstName} lastName={m.lastName} size={28} />
                 {live ? <span className={styles.dot} data-on={Boolean(p) || undefined} aria-hidden /> : null}
               </span>
               <span className={styles.memberText}>

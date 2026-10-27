@@ -9,7 +9,7 @@ import { Switch } from '@/ui/Switch'
 import { TextArea } from '@/ui/TextArea'
 import { useCatalogs } from '@/features/workday/api/queries'
 import { useWorkContext } from '@/features/workday/context'
-import { messageValues } from '@/features/workday/visit-text'
+import { displayMessageValues, messageValues } from '@/features/workday/visit-text'
 import { storeTags } from '@/features/workday/store-tags'
 import { companyQuery, useCompanyUpdate } from '@/features/admin/api/company'
 import { sampleMetricsQuery, sampleVisitsQuery, templatesQuery, useSaveTemplate } from '@/features/admin/api/templates'
@@ -48,6 +48,11 @@ export function TemplatesPage() {
   const metrics = useQuery(sampleMetricsQuery(kind === 'daily_report' ? sameDay.map((v) => v.id) : []))
   const typeName = (id: number) => catalogs.data?.displayTypes.find((t) => t.id === id)?.name ?? 'Exhibición'
 
+  // With one message per display, the preview shows the first display's.
+  const visitValues = (v: NonNullable<typeof visit>) => {
+    const args = [v, v.merchandiserName.split(' ')[0] ?? '', typeName, storeTags(catalogs.data, v.store)] as const
+    return (company.data?.messagesPerDisplay ? displayMessageValues(...args)[0]?.values : undefined) ?? messageValues(...args)
+  }
   const preview = !visit
     ? ''
     : kind === 'daily_report'
@@ -57,7 +62,7 @@ export function TemplatesPage() {
           metrics: (catalogs.data?.metrics ?? []).map((m) => ({ name: m.name, reportLabel: m.reportLabel, total: metrics.data?.[m.id] ?? 0 })),
           template: body,
         })
-      : fillTemplate(body, messageValues(visit, visit.merchandiserName.split(' ')[0] ?? '', typeName, storeTags(catalogs.data, visit.store)))
+      : fillTemplate(body, visitValues(visit))
 
   const insert = (token: string) => {
     const el = area.current
@@ -98,11 +103,17 @@ export function TemplatesPage() {
             </Switch>
             <p className={styles.help}>Desactivalos cuando todo el equipo revise en Visitario.</p>
           </div>
+          <div className={styles.whatsapp}>
+            <Switch checked={company.data?.messagesPerDisplay ?? false} disabled={!company.data || updateCompany.isPending} onChange={(on) => updateCompany.mutate({ messagesPerDisplay: on })}>
+              Un ANTES y un DESPUÉS por cada exhibición
+            </Switch>
+            <p className={styles.help}>El activador copia un mensaje por exhibición; {'{exhibiciones}'} muestra solo esa.</p>
+          </div>
         </section>
 
         <section className={styles.editor} aria-label="Editor">
           <TextArea ref={area} label="Texto" value={body} onChange={(e) => setBody(e.target.value)} rows={9} className={styles.text} maxLength={4000}
-            help="Si un dato está vacío, su línea no se muestra. Escrito en mayúsculas ({CANAL}), el dato sale en mayúsculas." />
+            help="Si falta un dato, la línea sale igual con un guion (RESPONSABLE: -). Escrito en mayúsculas ({CANAL}), el dato sale en mayúsculas." />
           <span className={styles.label}>Insertar dato</span>
           <div className={styles.tokens}>
             {TEMPLATE_FIELDS[kind].map((f) => (

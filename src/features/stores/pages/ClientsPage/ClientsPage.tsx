@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Search, Store } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
+import { ChevronRight, MapPinned, Search, Store } from 'lucide-react'
 import { formatDayMonth, todayInArgentina } from '@/domain/dates'
 import { normalize } from '@/domain/import'
 import { Banner } from '@/ui/Banner'
+import { buttonClass } from '@/ui/Button'
 import { Skeleton } from '@/ui/Skeleton'
 import { StatusChip } from '@/ui/StatusChip'
 import { useWorkContext } from '@/features/workday/context'
@@ -36,6 +38,7 @@ export function ClientsPage() {
         <span className={styles.eyebrow}>{ctx.companyName} · vendedor</span>
         <h1 className={styles.title}>Mis clientes{clients.data ? ` · ${all.length}` : ''}</h1>
         {all.length ? <p className={styles.lead}>{activated} de {all.length} con activaciones en los últimos 30 días.</p> : null}
+        {all.length ? <Link to="/s/map" className={buttonClass('secondary', 'md', styles.mapLink)}><MapPinned size={18} aria-hidden />Ver en el mapa</Link> : null}
       </header>
 
       {all.length > 6 ? (
@@ -60,7 +63,8 @@ export function ClientsPage() {
       ) : (
         <ul className={styles.list}>
           {shown.map((c) => (
-            <li key={c.id} className={styles.row}>
+            <li key={c.id}>
+              <Link to="/s/clients/$storeId" params={{ storeId: c.id }} className={styles.row} aria-label={`Ver ${c.name ?? c.address}: ficha e historial`}>
               <span className={styles.rowText}>
                 <span className={styles.name}>{c.name ?? c.address}</span>
                 <span className={styles.meta}>{[c.name ? c.address : null, c.customerNumber && `Cliente ${c.customerNumber}`, c.area].filter(Boolean).join(' · ')}</span>
@@ -76,6 +80,8 @@ export function ClientsPage() {
                   <span className={styles.meta}>Sin activaciones</span>
                 )}
               </span>
+              <ChevronRight size={18} className={styles.chevron} aria-hidden />
+              </Link>
             </li>
           ))}
         </ul>

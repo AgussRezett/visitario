@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { persistQueryClient } from '@tanstack/react-query-persist-client'
 import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { supabase } from '@/lib/supabase'
-import { meQuery, refreshMe } from '@/features/auth/me'
+import { meQuery, refreshMe, type Me } from '@/features/auth/me'
 import { dropSession, sessionUser } from '@/features/auth/session'
 import { applyTheme } from '@/features/profile/theme'
 import { FullScreenSpinner } from '@/ui/Spinner'
@@ -48,8 +48,15 @@ declare module '@tanstack/react-router' {
 // Any sign-in, sign-out or user change refreshes who "me" is and re-runs route guards.
 // Deferred with setTimeout: Supabase holds its auth lock while running this callback, so
 // calling Supabase from inside it (fetching "me") would wait forever and freeze sign-in.
-supabase.auth.onAuthStateChange((event) => {
+supabase.auth.onAuthStateChange((event, session) => {
   if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
+    // Supabase also says SIGNED_IN every time the app comes back to the screen (after the
+    // camera, WhatsApp, another app). Same person: nothing to refresh, only send what waits.
+    const known = queryClient.getQueryData<Me | null>(meQuery.queryKey)
+    if (event === 'SIGNED_IN' && known && session?.user.id === known.userId) {
+      syncNow()
+      return
+    }
     setTimeout(() => {
       void (event === 'SIGNED_OUT' ? dropSession(queryClient) : refreshMe(queryClient))
         .catch(() => null)

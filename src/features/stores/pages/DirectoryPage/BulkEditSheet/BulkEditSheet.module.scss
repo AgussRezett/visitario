@@ -1,0 +1,57 @@
+@use '@/styles/abstracts' as *;
+
+.cancel {
+  // Side by side on desktop; on phones the footer is a column and flex: 1 would squash it.
+  @include up(lg) {
+    flex: 1;
+  }
+}
+
+.lead {
+  @include text(small);
+  margin: 0;
+  color: $color-ink-muted;
+}
+
+.field {
+  @include flex(column, $gap: space(1));
+}
+
+.now {
+  @include text(label);
+  margin: 0;
+  color: $color-ink-subtle;
+}
+
+.changes {
+  @include surface;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.change {
+  @include flex(column, $gap: space(1));
+  padding: space(3) space(3.5);
+
+  & + & {
+    border-top: 1px solid $color-line;
+  }
+}
+
+.change-label {
+  @include eyebrow;
+}
+
+.change-values {
+  @include flex(row, $gap: space(2), $align: center);
+  @include text(base);
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+
+.from {
+  color: $color-ink-muted;
+  text-decoration: line-through;
+}

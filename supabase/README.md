@@ -31,6 +31,11 @@ URL: `https://mjpzawlyjjlmluozjwap.supabase.co`
 | `20261021200000_operations.sql` | applied | Operativos: `operation` (the host's workday shared) and `operation_member` (each with their own workday); `private.visible_operations/operation_workdays/works_operation`; `visit_role` gives members the merchandiser role on its visits and supervisors of any member the supervisor role; extra permissive policies on workday and visit; `visit_on_create` marks members' stops as added |
 | `20261021200100_operation_rpc.sql` | applied (in two parts) | `create_operation`, `add_operation_member`, `leave_operation`, `end_operation`, `bring_to_operation`, `day_operations`; `daily_progress`/`daily_metrics`/`team_day` count an operativo's visits for every member; Realtime: operation tables published, private channel `operation:<id>` policies on `realtime.messages` |
 | `20261021210000_day_operations_counts.sql` | applied | `day_operations` adds result, review and work counts (the team's sums count a shared visit once) |
+| `20261022140000_messages_per_display.sql` | applied | `company.messages_per_display`: one ANTES / DESPUÉS per display (admin decides; on for Panda) |
+| `20261023120000_expire_stale_visits.sql` | applied (by hand, with its cron) | `private.expire_stale_visits()`: a visit in progress for 12 hours goes back to pending without its record (photos soft-deleted, found displays, numbers, brands, notes, rating); hourly via `supabase/cron/expire.sql` |
+| `20261023140000_bundled_reads.sql` | applied | `my_identity()` (who I am: was 6 requests) and `company_catalogs(p_company)` (was 7), security invoker |
+| `20261023160000_profile.sql` | applied | `person.avatar_path` + public `avatars` bucket (own folder only), phone editable by its owner (a new number is unverified), `my_identity` returns the photo |
+| `20261025120000_store_map.sql` | applied | `store_map(p_company)` (points with place, seller, channel, last activation, 30/90-day counts, reputation: supervisors/admins all, a seller their clients) and `client_history(p_company, p_store)`; `private.map_scope` |
 
 Files with `delete`/`drop` statements are refused by the agent connector; apply those with the CLI (`supabase link --project-ref mjpzawlyjjlmluozjwap && supabase db push`) or the SQL Editor.
 

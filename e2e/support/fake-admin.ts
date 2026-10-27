@@ -61,6 +61,7 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
         .filter((x) => b.p_filter !== 'unverified' || x.location_status !== 'verified')
         .filter((x) => b.p_filter !== 'added' || x.source === 'merchandiser')
         .filter((x) => tag(x.channel_id, b.p_channel) && tag(x.seller_id, b.p_seller))
+        .filter((x) => !b.p_area || x.area === b.p_area)
       return done(json(rows.map((x) => ({
         channel_id: x.channel_id ?? null, seller_id: x.seller_id ?? null,
         id: x.id, name: x.name ?? null, address: x.address, area: x.area ?? null, customer_number: x.customer_number ?? null,
@@ -102,7 +103,16 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
         return done(route.fulfill({ status: 200, headers: { 'content-range': `*/${n}`, 'access-control-allow-origin': '*', 'access-control-expose-headers': 'content-range' } }))
       }
       if (req.method() === 'PATCH') {
-        Object.assign(found ?? {}, Object.fromEntries(Object.entries(body()).filter(([, v]) => v !== undefined)))
+        const patch = Object.fromEntries(Object.entries(body()).filter(([, v]) => v !== undefined))
+        // Many at once: id=in.(a,b), answering the rows changed.
+        const many = url.searchParams.get('id')?.match(/^in\.\((.*)\)$/)?.[1]?.split(',')
+        if (many) {
+          const changed = state.stores.filter((x) => many.includes(String(x.id)) && !x.removed_at)
+          changed.forEach((x) => Object.assign(x, patch))
+          state.bulkUpdates = [...(state.bulkUpdates ?? []), { ids: changed.map((x) => String(x.id)), patch }]
+          return done(json(changed.map((x) => ({ id: x.id }))))
+        }
+        Object.assign(found ?? {}, patch)
         return done(route.fulfill({ status: 204 }))
       }
       if (id) {

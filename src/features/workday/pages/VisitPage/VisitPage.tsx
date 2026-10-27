@@ -5,6 +5,8 @@ import { ChevronLeft } from 'lucide-react'
 import { canWork, isLocked } from '@/domain/visit'
 import { todayInArgentina } from '@/domain/dates'
 import { Banner } from '@/ui/Banner'
+import { Button } from '@/ui/Button'
+import { wasInterrupted } from '@/features/workday/photo-picking'
 import { StatusChip } from '@/ui/StatusChip'
 import { useWorkContext } from '@/features/workday/context'
 import { useCatalogs, visitFromLists, visitQuery, visitsQuery, type Catalogs, type Photo, type Visit } from '@/features/workday/api/queries'
@@ -90,6 +92,8 @@ function VisitBody(props: {
   const storefront = v.photos.filter((p) => p.kind === 'storefront')
   const closed = v.consent === 'closed'
   const tags = storeTags(catalogs, v.store)
+  // The phone closed Visitario while the camera or the gallery was open: say so, once.
+  const [interrupted, setInterrupted] = useState(() => wasInterrupted())
 
   return (
     <div className={styles.page}>
@@ -117,6 +121,14 @@ function VisitBody(props: {
         </div>
 
         <div className={styles.content}>
+          {interrupted ? (
+            <div className={styles.interrupted}>
+              <Banner tone="warn" title="La foto no llegó">
+                El celular cerró Visitario mientras elegías la foto, para liberar memoria. Probá de nuevo; si vuelve a pasar, cerrá otras apps abiertas.
+              </Banner>
+              <Button variant="ghost" size="sm" onClick={() => setInterrupted(false)}>Entendido</Button>
+            </div>
+          ) : null}
           <OperationHere visit={v} meId={meId} firstName={firstName} />
           <StoreInfo visit={v} tags={tags} />
           <CorrectionPanel
@@ -173,7 +185,7 @@ function VisitBody(props: {
               ) : null}
               {catalogs && catalogs.showWhatsapp !== false ? (
                 <div className={styles.messages}>
-                  <MessagesSection visit={v} templates={catalogs.templates} firstName={firstName} typeName={(id) => catalogs.displayTypes.find((t) => t.id === id)?.name ?? 'Exhibición'} tags={tags} />
+                  <MessagesSection visit={v} templates={catalogs.templates} firstName={firstName} typeName={(id) => catalogs.displayTypes.find((t) => t.id === id)?.name ?? 'Exhibición'} tags={tags} perDisplay={catalogs.messagesPerDisplay} urlFor={urlFor} />
                 </div>
               ) : null}
               <div className={styles.finish}>

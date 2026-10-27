@@ -67,14 +67,38 @@
 }
 
 // The client on the left, its last activation on the right; stacked when narrow
+.list > li + li {
+  border-top: 1px solid $color-line;
+}
+
+// The whole row opens the client
 .row {
   @include flex(row, $gap: space(3), $align: flex-start, $justify: space-between);
+  @include transition-colors;
   flex-wrap: wrap;
   padding: space(3.5) space(4);
+  color: inherit;
+  text-decoration: none;
 
-  & + & {
-    border-top: 1px solid $color-line;
+  @include hover {
+    background: $color-muted;
   }
+
+  &:focus-visible {
+    outline: 2px solid $color-focus;
+    outline-offset: -2px;
+  }
+}
+
+.chevron {
+  align-self: center;
+  flex-shrink: 0;
+  color: $color-ink-subtle;
+}
+
+.map-link {
+  align-self: flex-start;
+  margin-top: space(2);
 }
 
 .row-text {

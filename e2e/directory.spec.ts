@@ -163,3 +163,125 @@ test('archiving takes a store out of the open days; once archived it can be remo
   await page.getByRole('link', { name: 'Directorio' }).first().click()
   await expect(page).toHaveTitle('Visitario')
 })
+
+test('editing many stores at once: the marks survive the filters, and saving asks twice', async ({ page }, info) => {
+  const store = (id: string, name: string, area: string, seller: number | null) =>
+    ({ id, name, address: `Calle ${id}`, area, customer_number: null, location_status: 'verified', source: 'imported', seller_id: seller, channel_id: null })
+  const state: FakeState = {
+    ...directory(),
+    visits: [],
+    catalogs: { channel: [{ id: 10, name: 'Autoservicio', active: true, sort_order: 1 }], seller: [{ id: 1, name: 'Florencia', active: true, person_id: null }, { id: 2, name: 'Pedro', active: true, person_id: null }] },
+    stores: [store('s1', 'Coto', 'Palermo', 1), store('s2', 'Kiosco Ana', 'Palermo', null), store('s3', 'Almacén Rita', 'Belgrano', null), store('s4', 'Día', 'Belgrano', 2)],
+  }
+  await installFakeSupabase(page, state, 'supervisor')
+  await page.goto('/s/stores')
+  await expect(page.getByRole('heading', { name: 'Directorio · 4 comercios' })).toBeVisible()
+
+  await page.getByLabel('Zona', { exact: true }).selectOption('Palermo')
+  await page.getByRole('checkbox', { name: 'Seleccionar Kiosco Ana' }).check()
+  await page.getByLabel('Zona', { exact: true }).selectOption('Belgrano')
+  await expect(page.getByRole('checkbox', { name: 'Seleccionar Kiosco Ana' })).toHaveCount(0)
+  await page.getByRole('checkbox', { name: 'Seleccionar Almacén Rita' }).check()
+  const bar = page.getByRole('region', { name: 'Comercios seleccionados' })
+  await expect(bar).toContainText('2 seleccionados')
+  await expect(bar).toContainText('1 no se ve en esta vista')
+  await page.screenshot({ path: `test-results/directory-selected-${info.project.name}.png`, fullPage: true })
+
+  await bar.getByRole('button', { name: 'Editar en lote' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Editar en lote' })
+  await expect(sheet.getByLabel('Vendedor')).toHaveValue('keep')
+  await expect(sheet.getByRole('option', { name: 'Dejar como está (Sin vendedor)' })).toBeAttached()
+  await expect(sheet.getByRole('option', { name: 'Dejar como está (Varios)' })).toBeAttached() // the zones differ
+  await expect(sheet.getByText('Ahora: varios, 2 distintos')).toBeVisible()
+  await expect(sheet.getByRole('button', { name: /Revisar cambios/ })).toBeDisabled()
+  await sheet.getByLabel('Vendedor').selectOption({ label: 'Florencia' })
+  await page.screenshot({ path: `test-results/directory-bulk-${info.project.name}.png` })
+  await sheet.getByRole('button', { name: /Revisar cambios/ }).click()
+
+  const review = page.getByRole('dialog', { name: 'Revisá los cambios' })
+  await expect(review.getByRole('list', { name: 'Cambios' })).toContainText('Sin vendedor')
+  await expect(review.getByRole('list', { name: 'Cambios' })).toContainText('Florencia')
+  await review.getByRole('button', { name: /Aplicar a 2 comercios/ }).click()
+  const ask = page.getByRole('alertdialog', { name: '¿Guardar los cambios en 2 comercios?' })
+  await ask.getByRole('button', { name: 'Cancelar' }).click()
+  expect(state.bulkUpdates ?? []).toEqual([]) // nothing yet
+  await review.getByRole('button', { name: /Aplicar a 2 comercios/ }).click()
+  await ask.getByRole('button', { name: 'Sí, guardar' }).click()
+
+  await expect(page.getByText('Listo: se actualizaron 2 comercios.')).toBeVisible()
+  expect(state.bulkUpdates).toEqual([{ ids: ['s2', 's3'], patch: { seller_id: 1 } }])
+  await expect(bar).toHaveCount(0)
+
+  // All that match, at once; only the ones that really change are saved.
+  await page.getByLabel('Zona', { exact: true }).selectOption('')
+  await page.getByRole('button', { name: 'Seleccionar los 4' }).click()
+  await expect(bar).toContainText('4 seleccionados')
+  await bar.getByRole('button', { name: 'Editar en lote' }).click()
+  await sheet.getByLabel('Zona').selectOption('Palermo')
+  await sheet.getByRole('button', { name: /Revisar cambios/ }).click()
+  await expect(review).toContainText('Cambia 2 comercios de 4: 2 comercios ya lo tenían.')
+  await review.getByRole('button', { name: /Aplicar a 2 comercios/ }).click()
+  await ask.getByRole('button', { name: 'Sí, guardar' }).click()
+  await expect.poll(() => state.bulkUpdates?.[1]).toEqual({ ids: ['s3', 's4'], patch: { area: 'Palermo' } })
+})
+
+test('the filters and marks are still there after opening a store and coming back', async ({ page }, info) => {
+  const state = directory()
+  await installFakeSupabase(page, state, 'supervisor')
+  await page.goto('/s/stores')
+  await page.getByLabel('Zona', { exact: true }).selectOption('Belgrano')
+  await page.getByRole('checkbox', { name: 'Seleccionar Autoservicio Lili' }).check()
+  await expect(page.getByRole('link', { name: /Mas Ahorro/ })).toHaveCount(0)
+
+  // Back by the page's own link
+  await page.getByRole('link', { name: /Autoservicio Lili/ }).click()
+  await expect(page.getByRole('heading', { name: 'Autoservicio Lili', level: 1 })).toBeVisible()
+  await page.getByRole('link', { name: 'Directorio', exact: true }).first().click()
+  await expect(page.getByLabel('Zona', { exact: true })).toHaveValue('Belgrano')
+  await expect(page.getByRole('link', { name: /Mas Ahorro/ })).toHaveCount(0)
+  await expect(page.getByRole('checkbox', { name: 'Seleccionar Autoservicio Lili' })).toBeChecked()
+
+  // Back by the browser, and after a reload
+  await page.getByRole('link', { name: /Autoservicio Lili/ }).click()
+  await page.goBack()
+  await expect(page.getByLabel('Zona', { exact: true })).toHaveValue('Belgrano')
+  await page.reload()
+  await expect(page.getByLabel('Zona', { exact: true })).toHaveValue('Belgrano')
+
+  await page.getByRole('button', { name: 'Limpiar filtros' }).click()
+  await expect(page.getByLabel('Zona', { exact: true })).toHaveValue('')
+  await expect(page.getByRole('link', { name: /Mas Ahorro/ })).toBeVisible()
+  await page.screenshot({ path: `test-results/directory-kept-${info.project.name}.png` })
+})
+
+test('a store shows where it is on a map, or says it is not located yet', async ({ page }, info) => {
+  const style = { version: 8, sources: {}, layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#e8ebe4' } }] }
+  await page.route('https://tiles.openfreemap.org/**', (route) => route.fulfill({ json: style }))
+  const state = directory()
+  await installFakeSupabase(page, state, 'supervisor')
+  await page.goto('/stores/s1')
+  const where = page.getByRole('region', { name: 'Ubicación' })
+  await expect(where.getByRole('region', { name: 'Mapa: Mas Ahorro' })).toBeVisible()
+  await expect(where.getByRole('img', { name: 'Mas Ahorro' })).toBeVisible()
+  await expect(where).toContainText('Tres Arroyos 762')
+  await expect(where).toContainText('Verificada')
+  await expect(page.getByRole('region', { name: 'Datos del comercio' })).toContainText('Sin vendedor')
+  await page.screenshot({ path: `test-results/store-map-${info.project.name}.png`, fullPage: true })
+
+  await page.goto('/stores/s2')
+  await expect(page.getByRole('region', { name: 'Ubicación' })).toContainText('Todavía no sabemos dónde está')
+  await expect(page.getByRole('region', { name: 'Ubicación' }).getByRole('button', { name: /Verificar dirección/ })).toBeVisible()
+})
+
+test('a store without a location is located by itself, without anyone tapping "Verificar"', async ({ page }) => {
+  const state: FakeState = {
+    ...directory(),
+    geocode: { 'Tres Arroyos 762 PB': { label: 'Tres Arroyos 762, La Paternal', address: 'Tres Arroyos 762', area: 'La Paternal', lat: -34.6, lng: -58.47, exact: true } },
+  }
+  await installFakeSupabase(page, state, 'supervisor')
+  await page.goto('/s/stores')
+  await expect.poll(() => state.verifyCalls).toEqual(['s2']) // only the one without a location
+  const desktop = (page.viewportSize()?.width ?? 0) >= 1024
+  if (desktop) await expect(page.getByRole('row', { name: /Tres Arroyos 762 PB/ })).toContainText('Verificada')
+  else await expect(page.getByRole('link', { name: /Tres Arroyos 762 PB/ })).not.toContainText('sin verificar')
+})

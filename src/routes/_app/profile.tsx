@@ -4,7 +4,7 @@ import { ProfilePage } from '@/features/profile/pages/ProfilePage'
 
 export const Route = createFileRoute('/_app/profile')({
   component: function Profile() {
-    const { data: me } = useMe()
+    const { data: me } = useMe(true)
     return me?.person ? <ProfilePage me={{ ...me, person: me.person }} /> : null
   },
 })

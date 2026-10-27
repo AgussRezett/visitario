@@ -53,7 +53,10 @@ function matches(row: Row, params: URLSearchParams) {
   return true
 }
 
-export async function installFakeSupabase(page: Page, state: FakeState, role: 'merchandiser' | 'supervisor' | 'admin' = 'merchandiser') {
+export async function installFakeSupabase(page: Page, state: FakeState, role: 'merchandiser' | 'seller' | 'supervisor' | 'admin' = 'merchandiser') {
+  // Realtime's socket stays here: it never reaches the real project (it would knock with a
+  // fake token and retry forever). Screens work without live events, as with no signal.
+  await page.routeWebSocket(/\/realtime\/v1\/websocket/, () => undefined)
   await page.addInitScript(([token, r, offer]) => {
     localStorage.setItem('visitario.activeRole', JSON.stringify({ companyId: 'c1', role: r }))
     // The install guide opens by itself a few seconds in; only its own tests want it.
@@ -70,12 +73,52 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
     const body = () => (req.postDataJSON() ?? {}) as Row
 
     if (path.endsWith('/auth/v1/user')) {
-      return json({ id: 'u1', email: 'agus@example.com', identities: [{ provider: 'email' }], aud: 'authenticated', app_metadata: {}, user_metadata: {}, created_at: '2026-01-01' })
+      if (req.method() === 'PUT') {
+        const b = body()
+        if (b.email) (state.profile ??= {}).new_email = b.email
+      }
+      return json({ id: 'u1', email: 'agus@example.com', new_email: state.profile?.new_email, identities: [{ provider: 'email' }], aud: 'authenticated', app_metadata: {}, user_metadata: {}, created_at: '2026-01-01' })
+    }
+    // ---- Profile: my rows and the photo bucket
+    if (req.method() === 'PATCH' && (path.endsWith('/person') || path.endsWith('/person_private'))) {
+      Object.assign((state.profile ??= {}), body())
+      return route.fulfill({ status: 204 })
+    }
+    if (path.includes('/storage/v1/object/public/avatars/')) return route.fulfill({ contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64') })
+    if (path.includes('/storage/v1/object/avatars')) {
+      if (req.method() === 'DELETE') {
+        ;(state.avatarsRemoved ??= []).push(...((body() as { prefixes?: string[] }).prefixes ?? []))
+        return json([])
+      }
+      const name = path.split('/storage/v1/object/avatars/')[1] ?? ''
+      ;(state.avatarsUploaded ??= []).push(name)
+      return json({ Key: `avatars/${name}`, Id: name })
     }
     if (path.endsWith('/rpc/has_password')) return json(true)
+    // Who has a profile photo (people photos for avatars across the app)
+    if (path.endsWith('/person') && (url.searchParams.get('select') ?? '').includes('avatar_path')) return json(state.photos ?? [])
     if (path.endsWith('/person')) return json(state.invite?.noPerson ? [] : [{ id: ME, first_name: 'Agustín', last_name: 'Rezett' }])
     if (path.endsWith('/person_private')) return json({ dni: '35111222', phone: null, birth_date: null })
     if (path.endsWith('/platform_admin')) return json(state.platform ? { person_id: ME } : null)
+    // The bundled reads, built from the same fake rows the separate reads use.
+    if (path.endsWith('/rpc/my_identity')) {
+      const person = state.invite?.noPerson ? null : { id: ME, first_name: 'Agustín', last_name: 'Rezett', dni: '35111222', phone: null, birth_date: null, avatar_path: null, ...Object.fromEntries(Object.entries(state.profile ?? {}).filter(([k]) => k !== 'new_email')) }
+      return json({
+        has_password: true, person, is_platform_admin: Boolean(state.platform),
+        memberships: person ? (state.memberships ?? [{ id: 'm1', company_id: COMPANY, roles: ['merchandiser'], status: 'active', starts_on: '2026-10-01', company: { name: 'Panda' } }]) : [],
+        invitations: person ? (state.invite?.mine ?? []) : [],
+      })
+    }
+    if (path.endsWith('/rpc/company_catalogs')) {
+      const c = state.catalogs
+      const active = (rows: Row[] | undefined) => (rows ?? []).filter((r) => r.active !== false)
+      return json({
+        brands: active(c?.brand), metrics: active(c?.work_metric), channels: c?.channel ?? [], sellers: c?.seller ?? [],
+        display_types: c ? active(c.display_type) : [{ id: 1, name: 'Puntera' }, { id: 3, name: 'Góndola' }],
+        templates: state.templates ?? [],
+        company: state.company ? { show_whatsapp: state.company.show_whatsapp ?? true, messages_per_display: state.company.messages_per_display ?? false } : null,
+      })
+    }
     const platform = await handlePlatform({ path, state, json, body })
     if (platform) return platform
     const handled = await handleAdmin({ path, url, req, route, state, json, body })
@@ -87,6 +130,12 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
     }
 
     // ---- Supervisor side
+    // ---- Points of sale map
+    if (path.endsWith('/rpc/store_map')) return json(state.mapPoints ?? [])
+    if (path.endsWith('/rpc/client_history')) {
+      const id = String(body().p_store)
+      return json(state.clientHistory?.[id] ?? null)
+    }
     if (path.endsWith('/rpc/report_sync')) {
       ;(state.reports ??= []).push(body())
       return json(null)
@@ -177,6 +226,18 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
       return state.route ? json(state.route) : json({ error: 'not_configured' }, 503)
     }
     if (path.endsWith('/functions/v1/geocode')) {
+      // A store located and saved on the server (whoever added it).
+      const storeId = body().storeId
+      if (typeof storeId === 'string') {
+        state.verifyCalls = [...(state.verifyCalls ?? []), storeId]
+        const stores = [...state.visits.map((v) => v.store as Row | null), ...(state.stores ?? [])].filter((x): x is Row => x?.id === storeId)
+        const hit = state.geocode?.[String(stores[0]?.address)]
+        if (!stores[0] || stores[0].location_status === 'verified') return json({ status: 'kept' })
+        if (!hit) return json({ status: 'not_found' })
+        const status = hit.exact ? 'verified' : 'approximate'
+        stores.forEach((x) => Object.assign(x, { lat: hit.lat, lng: hit.lng, location_status: status }))
+        return json({ status })
+      }
       const q = String(body().query)
       const hit = state.geocode?.[q]
       return json({ results: hit ? [hit] : [] })
@@ -256,7 +317,10 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
       if (v && meta.kind === 'storefront' && v.work_status === 'pending') Object.assign(v, { work_status: 'in_progress', arrived_at: now }) // like the sync_arrival trigger
       return json({ id: meta.id, uploaded: true })
     }
-    if (path.endsWith('/functions/v1/photos/urls')) return json({ urls: {} })
+    if (path.endsWith('/functions/v1/photos/urls')) {
+      const ids = state.photoUrls ? ((body() as { ids?: string[] }).ids ?? []) : []
+      return json({ urls: Object.fromEntries(ids.map((id) => [id, `https://photos.test/${id}.jpg`])) })
+    }
     if (path.endsWith('/display_type')) return json([{ id: 1, name: 'Puntera' }, { id: 3, name: 'Góndola' }])
     if (path.endsWith('/message_template')) return json([])
     return json([])

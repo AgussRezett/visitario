@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import maplibregl from 'maplibre-gl'
+import { useQuery } from '@tanstack/react-query'
+import { avatarUrl } from '@/lib/avatars'
+import { peoplePhotosQuery } from '@/features/people/photos'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { isVisited } from '@/domain/visit'
 import type { Presence } from '@/domain/operations'
@@ -19,6 +22,14 @@ interface TeamMapProps {
 const place = (v: Visit) => v.store.name ?? v.store.address
 
 /** The operativo on a street map: its stops (done in green) and where each member is. */
+/** The marker shows the person's photo, or their initial when they have none. */
+function paint(dot: HTMLElement, firstName: string, photo: string | null) {
+  if (dot.dataset.photo === (photo ?? '')) return
+  dot.dataset.photo = photo ?? ''
+  dot.textContent = photo ? '' : firstName.slice(0, 1).toUpperCase()
+  dot.style.backgroundImage = photo ? `url("${photo}")` : ''
+}
+
 export default function TeamMap({ stops, people, meId }: TeamMapProps) {
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<maplibregl.Map | null>(null)
@@ -78,6 +89,9 @@ export default function TeamMap({ stops, people, meId }: TeamMapProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [failed])
 
+  // Each person's photo on their dot, or their initial.
+  const photos = useQuery(peoplePhotosQuery).data
+
   // People move without redrawing the map.
   useEffect(() => {
     const m = map.current
@@ -89,11 +103,12 @@ export default function TeamMap({ stops, people, meId }: TeamMapProps) {
       const found = markers.current.get(p.personId)
       if (found) {
         found.setLngLat(at)
+        paint(found.getElement(), p.firstName, avatarUrl(photos?.[p.personId]))
         continue
       }
       const dot = document.createElement('span')
       dot.className = `${styles.person ?? ''} ${p.personId === meId ? styles.me ?? '' : ''}`
-      dot.textContent = p.firstName.slice(0, 1).toUpperCase()
+      paint(dot, p.firstName, avatarUrl(photos?.[p.personId]))
       dot.setAttribute('aria-label', p.personId === meId ? 'Vos' : p.firstName)
       dot.title = p.personId === meId ? 'Vos' : p.firstName
       markers.current.set(p.personId, new maplibregl.Marker({ element: dot }).setLngLat(at).addTo(m))
@@ -104,7 +119,7 @@ export default function TeamMap({ stops, people, meId }: TeamMapProps) {
         markers.current.delete(id)
       }
     }
-  }, [sharing, meId])
+  }, [sharing, meId, photos])
 
   if (failed) return <p className={styles.note}>No pudimos mostrar el mapa en este celular.</p>
   return (

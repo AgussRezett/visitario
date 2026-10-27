@@ -130,7 +130,7 @@ export function describe(op: Op): string {
       if (p.review_status) return 'Reenviada al supervisor'
       if (p.work_status) return 'Estado de la visita'
       if ('consent' in p) return 'Autorización del local'
-      if ('notes' in p) return 'Notas'
+      if ('notes' in p) return 'Observaciones'
       if ('objection' in p) return 'Oposición'
       if ('retry_after' in p) return 'Volver más tarde'
       return 'Cambio en la visita'
