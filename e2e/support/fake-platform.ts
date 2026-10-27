@@ -32,6 +32,10 @@ export async function handlePlatform({ path, state, json, body }: Ctx): Promise<
       ;(inv.signups ??= []).push(b)
       return send({ email: inv.preview?.email ?? 'nora@example.com' })
     }
+    if (b.action === 'accepted') {
+      inv.toldInviter = (inv.toldInviter ?? 0) + 1
+      return send({ sent: 1 })
+    }
     if (b.action === 'resend') (inv.resent ??= []).push(String(b.invitationId))
     else (inv.created ??= []).push(b)
     const n = (inv.created?.length ?? 0) + (inv.resent?.length ?? 0)

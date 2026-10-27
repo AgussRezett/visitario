@@ -833,6 +833,31 @@ check('Ended: Lucía can join another one that day', (await as('lucia', `select 
   await expectError('Anonymous cannot read routes', () => asAnon(`select * from route_plan`))
 }
 
+// ---- The admin who invited is told when the invitation is accepted (take_acceptance_notices)
+{
+  const asService = async (sql, params = []) => {
+    await db.exec('set role service_role;')
+    try { return (await db.query(sql, params)).rows } finally { await db.exec('reset role;') }
+  }
+  const take = who => asService(`select * from take_acceptance_notices($1)`, [U[who]])
+  await expectError('An activador cannot take notices (the admin\'s email is not for them)', () => as('nora', `select * from take_acceptance_notices($1)`, [U.nora]))
+  await expectError('Anonymous cannot take notices', () => asAnon(`select * from take_acceptance_notices('${U.nora}')`))
+  await sys(`update auth.users set email = 'carla@example.com' where id = $1`, [U.carla])
+  const nora = await take('nora')
+  check('Nora accepted: Carla, who invited her, is the one told', nora.length === 1 && nora[0].company === 'Panda' && nora[0].person_first === 'Nora'
+    && nora[0].inviter_first === 'Carla' && nora[0].to_inviter && nora[0].recipients.join() === 'carla@example.com' && nora[0].team === 'Norte')
+  check('Only once: taking again gives nothing', (await take('nora')).length === 0)
+  const agus = await take('agus')
+  check('Agus declined one and accepted another: only the accepted one is told', agus.length === 1 && agus[0].company === 'Distribuidora Sur')
+  // Carla without an email: the company's other active admins are told instead.
+  await sys(`update auth.users set email = null where id = $1`, [U.carla])
+  await sys(`update membership set roles = '{merchandiser,admin}' where company_id = $1 and person_id = $2`, [panda, await pid('agus')])
+  const omar = await take('omar')
+  check('Inviter without email: the other admins with email are told', omar.length === 1 && !omar[0].to_inviter && omar[0].recipients.join() === 'agus@example.com')
+  await sys(`update membership set roles = '{merchandiser}' where company_id = $1 and person_id = $2`, [panda, await pid('agus')])
+  await sys(`update auth.users set email = null where id = $1`, [U.carla])
+}
+
 // ---- A visit left in progress for 12 hours goes back to pending, without its record
 {
   const wStale = (await sys(`insert into workday (company_id, merchandiser_id, work_date, status, created_by) values ($1, $2, '2026-09-22', 'published', $2) returning id`, [panda, agus]))[0].id

@@ -428,6 +428,7 @@ export type Database = {
       }
       invitation: {
         Row: {
+          accept_notified_at: string | null
           accepted_by: string | null
           answered_at: string | null
           company_id: string
@@ -2097,6 +2098,22 @@ export type Database = {
           recent: number
           score: number
           store_id: string
+        }[]
+      }
+      take_acceptance_notices: {
+        Args: { p_auth_user: string }
+        Returns: {
+          company: string
+          invitation_id: string
+          inviter_first: string
+          person_email: string
+          person_first: string
+          person_last: string
+          recipients: string[]
+          roles: Database["public"]["Enums"]["role"][]
+          starts_on: string
+          team: string
+          to_inviter: boolean
         }[]
       }
       team_day: {
