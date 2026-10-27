@@ -15,6 +15,7 @@ import { OperationCard } from '@/features/operation/components/OperationCard'
 import { useVisitList } from '@/features/sync/hooks'
 import { useStoreReputation } from '@/features/reputation/api'
 import { useIsDesktop } from '@/lib/useMedia'
+import { useAutoVerify } from '@/features/stores/useAutoVerify'
 import { AddAddressSheet } from '../AddAddressSheet'
 import { ResumeSheet } from '../ResumeSheet'
 import { DayHero } from '../DayHero'
@@ -51,6 +52,8 @@ export function DayView({ ctx, workday, sheet, onSheet }: DayViewProps) {
   const desktop = useIsDesktop()
 
   const list = useVisitList(day.visits) ?? []
+  // Addresses added without a location (offline, too fast, by anyone) get located by themselves.
+  useAutoVerify(list.map((v) => v.store))
   const myPending = list.filter((v) => !day.operationStops.has(v.id) && v.workStatus === 'pending')
   // A live operativo is the day's work: up front. The invite to start one waits below the
   // stores (beside them on desktop), visible but not the first thing the activador sees.

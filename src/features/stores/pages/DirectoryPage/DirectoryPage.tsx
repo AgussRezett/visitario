@@ -25,6 +25,7 @@ import { PAGE_SIZE, directoryCountsQuery, directoryQuery, type DirectoryFilter, 
 import { fetchAllMatching } from '@/features/stores/api/bulk'
 import { useSelection } from '@/features/stores/useSelection'
 import { useDirectoryFilters } from '@/features/stores/useDirectoryFilters'
+import { useAutoVerify } from '@/features/stores/useAutoVerify'
 import { NO_DIRECTORY_FILTERS } from '@/domain/directory-filters'
 import { useStoreArchive } from '@/features/stores/useStoreArchive'
 import { BulkEditSheet } from './BulkEditSheet'
@@ -49,6 +50,7 @@ export function DirectoryPage() {
   const { askArchive, askRemove, restore, busy, error: archiveError, dialog } = useStoreArchive()
   // Marked rows stay marked across filters and pages.
   const selection = useSelection(companyId)
+  useAutoVerify(list.data?.rows ?? [])
   const [editing, setEditing] = useState(false)
   const [saved, setSaved] = useState<number | null>(null)
   const [matching, setMatching] = useState(false)

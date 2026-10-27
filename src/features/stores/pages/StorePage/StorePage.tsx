@@ -16,6 +16,7 @@ import { useWorkContext } from '@/features/workday/context'
 import { companyQuery } from '@/features/admin/api/company'
 import { storeQuery, storeVisitsQuery, type StoreHistoryVisit } from '@/features/stores/api/stores'
 import { useStoreArchive } from '@/features/stores/useStoreArchive'
+import { useAutoVerify } from '@/features/stores/useAutoVerify'
 import { effectiveRapport, RAPPORT_SHORT } from '@/domain/reputation'
 import { useStoreReputation } from '@/features/reputation/api'
 import { RapportLevel } from '@/features/reputation/components/RapportLevel'
@@ -42,6 +43,7 @@ export function StorePage({ storeId }: { storeId: string }) {
   const { askArchive, askRemove, restore, busy, error: archiveError, dialog } = useStoreArchive()
   const [sheet, setSheet] = useState<'edit' | 'merge' | null>(null)
   useDocumentTitle(store.data ? store.data.name ?? store.data.address : null)
+  useAutoVerify(store.data && !store.data.archivedAt ? [store.data] : [])
   if (!ctx) return null
   if (store.isPending) return <div className={styles.page}><Skeleton height={320} /></div>
   const s = store.data

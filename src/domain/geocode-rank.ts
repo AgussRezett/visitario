@@ -25,7 +25,7 @@ export const CABA_BARRIOS = [
   'Villa Ortúzar', 'Villa Pueyrredón', 'Villa Real', 'Villa Riachuelo', 'Villa Santa Rita', 'Villa Soldati', 'Villa Urquiza',
 ]
 
-export const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+export const fold = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
 
 /** The official barrio a zone names ("almagro", "Paternal" → "La Paternal"), or null. */
 export function barrioOf(area: string | null | undefined): string | null {
