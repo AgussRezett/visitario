@@ -85,5 +85,7 @@ export interface FakeState {
   invite?: {
     list?: Row[]; sent?: boolean; created?: Row[]; resent?: string[]; canceled?: string[]
     preview?: Row; accepted?: Row[]; acceptError?: string; mine?: Row[]; signups?: Row[]; emailTaken?: boolean; noPerson?: boolean
+    /** Times the app asked to email the inviting admin after accepting. */
+    toldInviter?: number
   }
 }
