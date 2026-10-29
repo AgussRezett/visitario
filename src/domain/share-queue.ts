@@ -21,10 +21,10 @@ export interface Send {
   textOnly?: boolean
 }
 
-/** The observations as the supervisor reads them: Observaciones: "…". */
+/** The observations as the supervisor reads them: Observaciones: …. */
 export function observationText(notes: string | null | undefined): string | null {
   const text = notes?.trim()
-  return text ? `Observaciones: "${text}"` : null
+  return text ? `Observaciones: ${text}` : null
 }
 
 export interface SendInput {

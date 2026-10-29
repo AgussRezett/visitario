@@ -96,14 +96,14 @@ test('the observations are copied and sent too, as text, after the photos', asyn
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
   await page.goto('/visit/v1')
   await page.getByRole('button', { name: 'Copiar Observaciones' }).click()
-  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe('Observaciones: "Faltó SKYY en la góndola"')
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe('Observaciones: Faltó SKYY en la góndola')
   await page.screenshot({ path: `test-results/whatsapp-notes-${info.project.name}.png`, fullPage: true })
 
   await page.getByRole('button', { name: /Enviar a WhatsApp/ }).click()
   const sheet = page.getByRole('dialog', { name: 'Enviar a WhatsApp' })
   await expect(sheet.getByText('0 de 6 enviados')).toBeVisible()
   await sheet.getByRole('region', { name: 'Observaciones' }).getByRole('button', { name: /Enviar Observaciones/ }).click()
-  await expect.poll(() => shares(page)).toEqual([{ text: 'Observaciones: "Faltó SKYY en la góndola"', files: [] }])
+  await expect.poll(() => shares(page)).toEqual([{ text: 'Observaciones: Faltó SKYY en la góndola', files: [] }])
   await expect(sheet.getByText('1 de 6 enviados')).toBeVisible()
 })
 

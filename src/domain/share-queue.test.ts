@@ -36,7 +36,7 @@ describe('share queue', () => {
 
   it('the observations go last, text only, and only when there are any', () => {
     const sends = buildSends({ address: 'x', photos, displays: null, general: { before: '', after: '' }, notes: '  Faltó Campari en la góndola  ' })
-    expect(sends.at(-1)).toMatchObject({ key: 'notes', label: 'Observaciones', photoIds: [], textOnly: true, text: 'Observaciones: "Faltó Campari en la góndola"' })
+    expect(sends.at(-1)).toMatchObject({ key: 'notes', label: 'Observaciones', photoIds: [], textOnly: true, text: 'Observaciones: Faltó Campari en la góndola' })
     expect(nextSend(sends, new Set(['storefront', 'before', 'after']))?.key).toBe('notes')
     expect(buildSends({ address: 'x', photos, displays: null, general: { before: '', after: '' }, notes: '  ' }).some((s) => s.key === 'notes')).toBe(false)
     expect(observationText(null)).toBeNull()
