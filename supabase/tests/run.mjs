@@ -726,6 +726,10 @@ check('…someone who is not a seller sees none', (await as('agus', `select coun
   const vMap = (await sys(`insert into visit (company_id, workday_id, merchandiser_id, work_date, store_id, added_by) values ($1, $2, $3, current_date, $4, $3) returning id`, [panda, w2, agus, tagged]))[0].id
   await sys(`update visit set work_status = 'in_progress', arrived_at = now(), consent = 'yes', rapport = 'welcoming' where id = $1`, [vMap])
   await sys(`update workday set status = 'published' where id = $1`, [w2])
+  const going = (await as('nora', `select * from store_map($1)`, [panda]))[0]
+  check('Map: a visit in progress is the last one, but not an activation yet', going.last_visit_status === 'in_progress' && going.visits_30d === 0)
+  await sys(`insert into photo (id, company_id, visit_id, kind, taken_at, uploaded_at, bytes, width, height, created_by) values (gen_random_uuid(), $1, $2, 'storefront', now(), now(), 1, 1, 1, $3)`, [panda, vMap, agus])
+  await sys(`update visit set work_status = 'done', finished_at = now() where id = $1`, [vMap])
   const point = (await as('nora', `select * from store_map($1)`, [panda]))[0]
   check('Map: the last activation, its counts and the reputation', point.visits_30d >= 1 && point.last_merchandiser === 'Agustín' && Number(point.rapport) === 3)
   const h = (await as('nora', `select client_history($1, $2) j`, [panda, tagged]))[0].j
@@ -734,6 +738,26 @@ check('…someone who is not a seller sees none', (await as('agus', `select coun
   check('Client history: nothing about someone else’s client', other ? (await as('nora', `select client_history($1, $2) j`, [panda, other.id]))[0].j === null : true)
   check('Client history: the supervisor sees any point', (await as('martin', `select client_history($1, $2) j`, [panda, tagged]))[0].j?.store.id === tagged)
   await expectError('Anonymous cannot read the map', () => asAnon(`select * from store_map('${panda}')`))
+
+  // A day the activador built for themself and never published: what was done there counts.
+  const sDraft = (await sys(`insert into store (company_id, address, seller_id) values ($1, 'Av. Brasil 3076', $2) returning id`, [panda, noraSeller]))[0].id
+  const wDraft = (await sys(`insert into workday (company_id, merchandiser_id, work_date, status, created_by) values ($1, $2, current_date - 2, 'draft', $2) returning id`, [panda, agus]))[0].id
+  const vDraft = (await sys(`insert into visit (company_id, workday_id, merchandiser_id, work_date, store_id, added_by) values ($1, $2, $3, current_date - 2, $4, $3) returning id`, [panda, wDraft, agus, sDraft]))[0].id
+  await sys(`insert into photo (id, company_id, visit_id, kind, taken_at, uploaded_at, bytes, width, height, created_by) values (gen_random_uuid(), $1, $2, 'storefront', now(), now(), 1, 1, 1, $3)`, [panda, vDraft, agus])
+  await sys(`update visit set work_status = 'in_progress', arrived_at = now(), consent = 'yes' where id = $1`, [vDraft])
+  await sys(`update visit set work_status = 'done', review_status = 'approved', finished_at = now() where id = $1`, [vDraft])
+  const worked = (await as('martin', `select * from store_map($1)`, [panda])).find((r) => r.id === sDraft)
+  check('Map: a visit done on a day left as a draft counts as an activation', worked?.last_visit_status === 'done' && worked.visits_30d === 1 && worked.visits_90d === 1)
+  check('Seller’s clients: it counts there too', (await as('nora', `select * from seller_stores($1)`, [panda])).find((r) => r.id === sDraft)?.visits_30d === 1)
+  check('Client history: and it is in the store’s history', (await as('martin', `select client_history($1, $2) j`, [panda, sDraft]))[0].j.visits.some((v) => v.id === vDraft))
+  // Only planned: not an activation, even on a published day.
+  const sPlanned = (await sys(`insert into store (company_id, address) values ($1, 'Av. La Plata 1200') returning id`, [panda]))[0].id
+  const vPlanned = (await sys(`insert into visit (company_id, workday_id, merchandiser_id, work_date, store_id, added_by) values ($1, $2, $3, current_date, $4, $3) returning id`, [panda, w2, agus, sPlanned]))[0].id
+  const planned = (await as('martin', `select * from store_map($1)`, [panda])).find((r) => r.id === sPlanned)
+  check('Map: a store only planned for today is not activated', planned?.last_visit_date === null && planned.visits_30d === 0)
+  check('Client history: the planned visit of a published day shows', (await as('martin', `select client_history($1, $2) j`, [panda, sPlanned]))[0].j.visits.some((v) => v.id === vPlanned))
+  await sys(`update visit set deleted_at = now() where id = any($1::uuid[])`, [[vDraft, vPlanned]])
+  await sys(`update store set deleted_at = now() where id = any($1::uuid[])`, [[sDraft, sPlanned]])
 }
 
 const tagDay = '2026-10-23'
