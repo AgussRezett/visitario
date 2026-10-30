@@ -61,20 +61,20 @@ test('everyone sees their data, edits it and adds a profile photo', async ({ pag
     await page.mouse.up()
   }
   await page.screenshot({ path: `test-results/profile-crop-${info.project.name}.png` })
-  expect(state.avatarsUploaded ?? []).toHaveLength(0)
+  expect(state.storage?.avatars?.uploaded ?? []).toHaveLength(0)
   await crop.getByRole('button', { name: 'Elegir otra' }).click()
   await expect(page.getByRole('dialog', { name: 'Foto de perfil' })).toBeVisible()
   await page.locator('input[type=file]').nth(1).setInputFiles(await photo(page))
   await page.getByRole('dialog', { name: 'Encuadrá tu foto' }).getByRole('button', { name: 'Usar esta foto' }).click()
-  await expect.poll(() => state.avatarsUploaded?.length).toBe(1)
-  expect(state.avatarsUploaded?.[0]).toMatch(/^u1\/\d+\.jpg$/)
-  await expect.poll(() => state.profile?.avatar_path).toBe(state.avatarsUploaded?.[0])
+  await expect.poll(() => state.storage?.avatars?.uploaded?.length).toBe(1)
+  expect(state.storage?.avatars?.uploaded?.[0]).toMatch(/^u1\/\d+\.jpg$/)
+  await expect.poll(() => state.profile?.avatar_path).toBe(state.storage?.avatars?.uploaded?.[0])
   await expect(page.getByRole('button', { name: 'Cambiar mi foto de perfil' })).toBeVisible()
 
   await page.getByRole('button', { name: 'Cambiar mi foto de perfil' }).click()
   await page.getByRole('dialog', { name: 'Foto de perfil' }).getByRole('button', { name: 'Quitar la foto' }).click()
   await expect.poll(() => state.profile?.avatar_path).toBeNull()
-  await expect.poll(() => state.avatarsRemoved ?? []).toContain(state.avatarsUploaded?.[0])
+  await expect.poll(() => state.storage?.avatars?.removed ?? []).toContain(state.storage?.avatars?.uploaded?.[0])
 })
 
 test('changing the email sends a link and says so until it is opened', async ({ page }) => {
