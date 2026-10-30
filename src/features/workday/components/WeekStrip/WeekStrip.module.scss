@@ -78,29 +78,16 @@
 }
 
 .selected {
-  border-color: $color-forest;
-  background: $color-forest;
-  color: $color-white;
+  border-color: $color-action;
+  background: $color-action;
+  color: $color-action-ink;
 
   .initial {
-    color: #c9dbd1;
-  }
-
-  @include dark {
-    border-color: $color-lime;
-    background: $color-lime;
-    color: $color-forest;
-
-    .initial {
-      color: $color-forest;
-    }
+    color: $color-action-ink;
+    opacity: 0.8;
   }
 
   @include hover {
-    background: $color-forest;
-
-    @include dark {
-      background: $color-lime;
-    }
+    background: $color-action;
   }
 }
