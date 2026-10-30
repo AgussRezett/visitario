@@ -45,12 +45,8 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
     }
     if (path.endsWith('/company') && state.company) {
       if (req.method() === 'PATCH') {
-        const patch = Object.fromEntries(Object.entries(body()).filter(([, v]) => v !== undefined))
-        Object.assign(state.company, patch)
-        // The company's look also reaches who I am, as my_identity returns it.
-        const look = Object.fromEntries(Object.entries(patch).filter(([k]) => k === 'brand_color' || k === 'logo_path'))
-        for (const m of state.memberships ?? []) if (m.company_id === COMPANY && m.company) Object.assign(m.company as Row, look)
-        return done(json([{ id: state.company.id ?? COMPANY }]))
+        Object.assign(state.company, Object.fromEntries(Object.entries(body()).filter(([, v]) => v !== undefined)))
+        return done(route.fulfill({ status: 204 }))
       }
       const one = (req.headers().accept ?? '').includes('vnd.pgrst.object')
       return done(json(one ? state.company : [state.company]))

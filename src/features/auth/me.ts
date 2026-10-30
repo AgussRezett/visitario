@@ -31,7 +31,7 @@ export interface Me {
 interface IdentityRow {
   has_password: boolean
   person: { id: string; first_name: string; last_name: string; dni: string; phone: string | null; birth_date: string | null; avatar_path?: string | null } | null
-  memberships: { id: string; company_id: string; roles: Enums<'role'>[]; status: Enums<'membership_status'>; starts_on: string; company: { name: string; kind: Enums<'company_kind'>; brand_color?: string | null; logo_path?: string | null } | null }[]
+  memberships: { id: string; company_id: string; roles: Enums<'role'>[]; status: Enums<'membership_status'>; starts_on: string; company: { name: string; kind: Enums<'company_kind'> } | null }[]
   is_platform_admin: boolean
   invitations: { id: string; company: string; roles: Enums<'role'>[]; starts_on: string; expires_at: string | null; inviter: string | null }[]
 }
@@ -56,7 +56,7 @@ async function fetchMe(): Promise<Me | null> {
   return {
     ...base,
     person: { id: person.id, firstName: person.first_name, lastName: person.last_name, dni: person.dni, phone: person.phone, birthDate: person.birth_date, avatarPath: person.avatar_path ?? null },
-    memberships: rows.filter((m) => m.status === 'active').map((m) => ({ companyId: m.company_id, companyName: m.company?.name ?? '', personal: m.company?.kind === 'personal', roles: m.roles, brandColor: m.company?.brand_color ?? null, logoPath: m.company?.logo_path ?? null })),
+    memberships: rows.filter((m) => m.status === 'active').map((m) => ({ companyId: m.company_id, companyName: m.company?.name ?? '', personal: m.company?.kind === 'personal', roles: m.roles })),
     invitations: [
       ...(id.invitations ?? []).map((i): Invitation => ({ kind: 'email', id: i.id, companyName: i.company, roles: i.roles, startsOn: i.starts_on, expiresAt: i.expires_at, inviter: i.inviter })),
       ...rows

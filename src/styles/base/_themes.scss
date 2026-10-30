@@ -21,10 +21,6 @@
   --action-hover: #0f2b22;
   --action-ink: #ffffff;
   --focus: #2f5bd3;
-  // What is picked: the current menu item, the chosen option. With action, the company's
-  // color replaces these (see src/domain/brand.ts); nothing else follows the brand.
-  --selected: #eef5d6;
-  --selected-ink: #173b30;
 
   --pending: #5c6661;
   --pending-soft: #eceee9;
@@ -74,8 +70,6 @@
   --action-hover: #c9e65f;
   --action-ink: #0f1a16;
   --focus: #8fb0ff;
-  --selected: #2e3e25;
-  --selected-ink: #b8d941;
 
   --pending-soft: #26332e;
   --pending-ink: #c4cdc8;

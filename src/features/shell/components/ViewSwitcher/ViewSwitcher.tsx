@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { BadgeDollarSign, Check, ChevronDown, ClipboardCheck, MapPin, Settings } from 'lucide-react'
 import { ROLE_LABEL, viewGroups, type ActiveMembership, type Role, type ViewOption } from '@/domain/roles'
 import { Sheet } from '@/ui/Sheet'
-import { CompanyLogo } from '@/features/shell/components/CompanyLogo'
 import { useSwitchView } from './useSwitchView'
 import styles from './ViewSwitcher.module.scss'
 
@@ -28,18 +27,13 @@ export function ViewSwitcher({ memberships, active }: ViewSwitcherProps) {
   const label = `${current?.label ?? ''} · ${ROLE_LABEL[active.role]}`
   const several = groups.reduce((n, g) => n + g.roles.length, 0) > 1
 
-  const logo = memberships.find((m) => m.companyId === active.companyId)?.logoPath
-  if (!several) {
-    return logo ? (
-      <span className={styles.current}><CompanyLogo path={logo} name={current?.label ?? ''} height={22} /><span className={styles.role}>{ROLE_LABEL[active.role]}</span></span>
-    ) : <span className={styles.current}>{label}</span>
-  }
+  if (!several) return <span className={styles.current}>{label}</span>
 
   return (
     <>
       <button type="button" className={styles.pill} onClick={() => setOpen(true)} aria-haspopup="dialog" aria-label={`Vista: ${label}. Cambiar de vista`}>
         <span className={styles.pillText}>
-          {logo ? <CompanyLogo path={logo} name={current?.label ?? ''} height={20} className={styles.pillLogo} /> : <span className={styles.company}>{current?.label}</span>}
+          <span className={styles.company}>{current?.label}</span>
           <span className={styles.role}>{ROLE_LABEL[active.role]}</span>
         </span>
         <ChevronDown size={18} aria-hidden />

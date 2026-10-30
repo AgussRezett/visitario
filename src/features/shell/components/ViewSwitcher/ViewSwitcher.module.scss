@@ -39,12 +39,6 @@
   font-weight: $weight-semibold;
 }
 
-// The company's logo in place of its name
-.pill-logo {
-  max-width: 120px;
-  margin-bottom: 2px;
-}
-
 // Only one view: the same information, not tappable
 .current {
   @include truncate;
@@ -52,11 +46,6 @@
   max-width: 200px;
   font-weight: $weight-bold;
   color: $color-ink-muted;
-
-  // With the company's logo: the logo, and the role under it
-  &:has(img) {
-    @include flex(column, $align: flex-end);
-  }
 }
 
 // ---- Sheet
@@ -101,8 +90,13 @@
 
 .option-selected {
   @extend .option;
-  border-color: $color-selected-ink;
-  background: $color-selected;
+  border-color: $color-forest;
+  background: $color-lime-soft;
+
+  @include dark {
+    border-color: $color-lime;
+    background: $color-muted;
+  }
 }
 
 .option-icon {

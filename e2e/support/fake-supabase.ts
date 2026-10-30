@@ -1,7 +1,6 @@
 import type { Page, Request } from '@playwright/test'
 import { handleAdmin } from './fake-admin'
 import { handlePlatform } from './fake-platform'
-import { handleStorage } from './fake-storage'
 import { handleOperation } from './fake-operation'
 import { dayOverlaps } from './fake-overlaps'
 import type { FakeState, Row } from './fake-state'
@@ -85,8 +84,16 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
       Object.assign((state.profile ??= {}), body())
       return route.fulfill({ status: 204 })
     }
-    const stored = await handleStorage({ path, req, route, state, json, body })
-    if (stored) return stored
+    if (path.includes('/storage/v1/object/public/avatars/')) return route.fulfill({ contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64') })
+    if (path.includes('/storage/v1/object/avatars')) {
+      if (req.method() === 'DELETE') {
+        ;(state.avatarsRemoved ??= []).push(...((body() as { prefixes?: string[] }).prefixes ?? []))
+        return json([])
+      }
+      const name = path.split('/storage/v1/object/avatars/')[1] ?? ''
+      ;(state.avatarsUploaded ??= []).push(name)
+      return json({ Key: `avatars/${name}`, Id: name })
+    }
     if (path.endsWith('/rpc/has_password')) return json(true)
     // Who has a profile photo (people photos for avatars across the app)
     if (path.endsWith('/person') && (url.searchParams.get('select') ?? '').includes('avatar_path')) return json(state.photos ?? [])

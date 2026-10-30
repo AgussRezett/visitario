@@ -949,20 +949,6 @@ check('Ended: Lucía can join another one that day', (await as('lucia', `select 
   await expectError('The DNI is not editable', () => as('agus', `update person_private set dni = '11222333' where person_id = $1`, [agus]))
 }
 
-// ---- A company's look: color and logo, by its admins, for all its members
-{
-  await as('carla', `update company set brand_color = '#d6336c', logo_path = $1 where id = $2`, [`${panda}/1792900000000.png`, panda])
-  const seen = (await as('agus', `select my_identity() j`))[0].j.memberships.find((m) => m.company_id === panda)
-  check('The admin sets the color and logo; every member gets them with who they are', seen?.company.brand_color === '#d6336c' && seen.company.logo_path === `${panda}/1792900000000.png`)
-  const r = await as('martin', `update company set brand_color = '#000000' where id = $1 returning id`, [panda])
-  check('A supervisor does not change the look', r.length === 0)
-  await expectError('Only a color like #rrggbb', () => as('carla', `update company set brand_color = 'red' where id = $1`, [panda]), /check/)
-  await expectError('A logo from another company’s folder is refused', () => as('carla', `update company set logo_path = $1 where id = $2`, [`${other}/1.png`, panda]), /check/)
-  check('Another company does not see Panda’s look', (await as('beto', `select my_identity() j`))[0].j.memberships.every((m) => m.company_id !== panda))
-  await as('carla', `update company set brand_color = null, logo_path = null where id = $1`, [panda])
-  check('Back to Visitario’s own look', (await sys(`select brand_color, logo_path from company where id = $1`, [panda]))[0].brand_color === null)
-}
-
 // Password detection (Google users who later set a password)
 await sys(`update auth.users set encrypted_password = '$2a$10$hash' where id = $1`, [U.agus]);
 check('has_password is true for a user with a password', (await as('agus', `select has_password() v`))[0].v === true);
