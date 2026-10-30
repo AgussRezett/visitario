@@ -9,8 +9,8 @@ export interface FakeState {
   photos?: Row[]
   /** My own rows as the profile changed them (person, person_private, a pending new_email). */
   profile?: Row
-  avatarsUploaded?: string[]
-  avatarsRemoved?: string[]
+  /** Public buckets: what the app uploaded and removed. */
+  storage?: Partial<Record<'avatars' | 'logos', { uploaded: string[]; removed: string[] }>>
   /** Signed photo links (https://photos.test/<id>.jpg); the spec serves them. */
   photoUrls?: boolean
   workday: Row | null

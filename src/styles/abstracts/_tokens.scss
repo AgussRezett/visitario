@@ -28,6 +28,9 @@ $color-ink-subtle: var(--ink-subtle);
 $color-action: var(--action);
 $color-action-hover: var(--action-hover);
 $color-action-ink: var(--action-ink);
+// What is picked (current menu item, chosen option): follows the company's color too.
+$color-selected: var(--selected);
+$color-selected-ink: var(--selected-ink);
 $color-focus: var(--focus);
 
 // ---- Work and review states: base, soft background, ink on soft

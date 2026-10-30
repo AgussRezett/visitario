@@ -18,6 +18,9 @@ export interface ActiveMembership {
   /** Self-employed space: nobody assigns work, so the copy changes. */
   personal?: boolean
   roles: Role[]
+  /** The company's color (#rrggbb) and logo (path in the "logos" bucket), when it set them. */
+  brandColor?: string | null
+  logoPath?: string | null
 }
 
 /** How a company is named in the view picker: the self-employed space reads as such. */

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useMatches } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { Building2, UserRound } from 'lucide-react'
@@ -6,12 +6,14 @@ import clsx from 'clsx'
 import { Logo } from '@/ui/Logo'
 import { Avatar } from '@/ui/Avatar'
 import { avatarUrl } from '@/lib/avatars'
+import { applyBrand } from '@/lib/brand-style'
 import { initials } from '@/lib/format'
 import type { Me } from '@/features/auth/me'
 import type { Role } from '@/domain/roles'
 import { SECTIONS } from '@/features/shell/sections'
 import { RoleSwitcher } from '@/features/shell/components/RoleSwitcher'
 import { ViewSwitcher } from '@/features/shell/components/ViewSwitcher'
+import { CompanyLogo } from '@/features/shell/components/CompanyLogo'
 import { UpdateBanner } from '@/features/shell/components/UpdateBanner'
 import { InstallOffer } from '@/features/install/components/InstallOffer'
 import { useLive } from '@/features/live/live'
@@ -44,11 +46,19 @@ export function AppShell({ me, active, children }: Props) {
   const short = initials(me.person.firstName, me.person.lastName)
   const mobileItems = active?.role === 'merchandiser' ? [...sections, null] : sections
   const immersive = useMatches({ select: (matches) => matches.some((m) => m.staticData.immersive) })
+  // The company in use paints the app with its color and shows its logo.
+  const company = me.memberships.find((m) => m.companyId === active?.companyId)
+  const brand = company?.brandColor ?? null
+  useEffect(() => {
+    applyBrand(brand)
+  }, [brand])
+  useEffect(() => () => applyBrand(null), [])
 
   return (
     <div className={styles.shell}>
       <aside className={styles.sidebar} data-scroll>
         <Link to="/" aria-label="Inicio" className={styles.sidebarLogo}><Logo /></Link>
+        {company?.logoPath ? <CompanyLogo path={company.logoPath} name={company.companyName} height={36} className={styles.sidebarCompany} /> : null}
         {active ? <RoleSwitcher memberships={me.memberships} active={active} /> : null}
         <SyncStatus variant="full" className={styles.sidebarSync} />
         <nav aria-label="Secciones" className={styles.sidebarNav}>

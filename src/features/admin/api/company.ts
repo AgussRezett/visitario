@@ -15,6 +15,9 @@ export interface CompanySettings {
   messagesPerDisplay: boolean
   photoRetentionMonths: number
   logoVersion: number | null
+  /** The company's look: #rrggbb and the logo's path in the "logos" bucket. */
+  brandColor: string | null
+  logoPath: string | null
   shiftStart: string
   shiftEnd: string
 }
@@ -25,7 +28,7 @@ export const companyQuery = (companyId: string) =>
     queryFn: async (): Promise<CompanySettings> => {
       const { data, error } = await supabase
         .from('company')
-        .select('id, name, kind, geocoding_scope, show_whatsapp, messages_per_display, photo_retention_months, logo_version, shift_start, shift_end')
+        .select('id, name, kind, geocoding_scope, show_whatsapp, messages_per_display, photo_retention_months, logo_version, brand_color, logo_path, shift_start, shift_end')
         .eq('id', companyId)
         .single()
       if (error) throw error
@@ -38,6 +41,8 @@ export const companyQuery = (companyId: string) =>
         messagesPerDisplay: data.messages_per_display,
         photoRetentionMonths: data.photo_retention_months,
         logoVersion: data.logo_version,
+        brandColor: data.brand_color,
+        logoPath: data.logo_path,
         shiftStart: data.shift_start.slice(0, 5),
         shiftEnd: data.shift_end.slice(0, 5),
       }

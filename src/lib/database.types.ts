@@ -173,10 +173,12 @@ export type Database = {
       company: {
         Row: {
           created_at: string
+          brand_color: string | null
           geocoding_scope: Database["public"]["Enums"]["geocoding_scope"]
           id: string
           kind: Database["public"]["Enums"]["company_kind"]
           logo_version: number | null
+          logo_path: string | null
           messages_per_display: boolean
           name: string
           owner_person_id: string | null
@@ -192,10 +194,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          brand_color?: string | null
           geocoding_scope?: Database["public"]["Enums"]["geocoding_scope"]
           id?: string
           kind: Database["public"]["Enums"]["company_kind"]
           logo_version?: number | null
+          logo_path?: string | null
           messages_per_display?: boolean
           name: string
           owner_person_id?: string | null
@@ -211,10 +215,12 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          brand_color?: string | null
           geocoding_scope?: Database["public"]["Enums"]["geocoding_scope"]
           id?: string
           kind?: Database["public"]["Enums"]["company_kind"]
           logo_version?: number | null
+          logo_path?: string | null
           messages_per_display?: boolean
           name?: string
           owner_person_id?: string | null

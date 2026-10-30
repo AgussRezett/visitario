@@ -38,18 +38,14 @@
 
   .ghost {
     background: transparent;
-    color: $color-forest;
-
-    @include dark {
-      color: $color-lime;
-    }
+    color: $color-selected-ink;
 
     @include hover {
       background: $color-muted;
 
-      // On a dark card the gray hardly changes: the lime tint shows the hover.
+      // On a dark card the gray hardly changes: the selection tint shows the hover.
       @include dark {
-        background: $color-lime-soft;
+        background: $color-selected;
       }
     }
   }
