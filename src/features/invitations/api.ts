@@ -60,6 +60,8 @@ export interface NewInvitation {
   roles: Role[]
   teamId: string | null
   startsOn: string
+  /** The catalog seller this person is (loaded by name before they joined); linked on accepting. */
+  sellerId?: number | null
 }
 
 export function useInvitations(companyId: string) {
@@ -67,7 +69,7 @@ export function useInvitations(companyId: string) {
   const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: keys.list(companyId) }), qc.invalidateQueries({ queryKey: ['admin', 'people', companyId] })])
 
   const create = useMutation({
-    mutationFn: (i: NewInvitation) => invoke({ action: 'create', companyId, dni: i.dni, email: i.email, roles: i.roles, teamId: i.teamId, startsOn: i.startsOn }),
+    mutationFn: (i: NewInvitation) => invoke({ action: 'create', companyId, dni: i.dni, email: i.email, roles: i.roles, teamId: i.teamId, startsOn: i.startsOn, sellerId: i.sellerId ?? null }),
     onSettled: refresh,
   })
   const resend = useMutation({

@@ -101,5 +101,14 @@ export function useCatalogAdmin(companyId: string) {
     },
     onSettled: () => Promise.all([refresh(), qc.invalidateQueries({ queryKey: ['import', 'formats'] })]),
   })
-  return { save, saveFormat }
+  /** The same person loaded twice: `drop`'s stores go to `keep`, and `drop` goes inactive. */
+  const mergeSellers = useMutation({
+    mutationFn: async ({ keep, drop }: { keep: number; drop: number }) => {
+      const { data, error } = await supabase.rpc('merge_sellers', { p_keep: keep, p_drop: drop })
+      if (error) throw new Error(/Both sellers/.test(error.message) ? 'Los dos tienen usuario en Visitario: no se pueden unir.' : message(error.message))
+      return data
+    },
+    onSettled: () => Promise.all([refresh(), qc.invalidateQueries({ queryKey: ['stores'] })]),
+  })
+  return { save, saveFormat, mergeSellers }
 }

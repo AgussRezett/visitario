@@ -102,7 +102,7 @@ export function CatalogsPage() {
           </section>
         </div>
       )}
-      <ItemSheet editing={editing} companyId={ctx.companyId} onClose={() => setEditing(null)} />
+      <ItemSheet editing={editing} companyId={ctx.companyId} sellers={catalogs.data?.seller} onClose={() => setEditing(null)} />
       <FormatSheet format={format} companyId={ctx.companyId} onClose={() => setFormat(null)} />
     </div>
   )

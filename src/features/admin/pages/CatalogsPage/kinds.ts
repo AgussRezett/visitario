@@ -35,7 +35,7 @@ export const KINDS: Record<
     title: 'Vendedores',
     one: 'vendedor',
     fresh: 'Nuevo vendedor',
-    intro: 'Quién le vende a cada comercio: el responsable de los mensajes ({vendedor}). Al invitarlo con el rol Vendedor, se le une su usuario.',
+    intro: 'Quién le vende a cada comercio: el responsable de los mensajes ({vendedor}). Al invitarlo con el rol Vendedor, elegí cuál es y se le une su usuario.',
     max: 80,
     extra: { label: 'Usuario', placeholder: '', help: '', empty: 'Sin usuario', readOnly: true },
   },

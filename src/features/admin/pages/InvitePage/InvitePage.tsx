@@ -6,11 +6,13 @@ import { todayInArgentina } from '@/domain/dates'
 import { formatDni, isValidDni, normalizeDni } from '@/domain/identity'
 import { ROLE_HELP } from '@/domain/people'
 import { ROLE_PRIORITY, type Role } from '@/domain/roles'
+import { freeSellers, sellerFor } from '@/domain/sellers'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
 import { Field } from '@/ui/Field'
 import { Select } from '@/ui/Select'
 import { useWorkContext } from '@/features/workday/context'
+import { useCatalogs } from '@/features/workday/api/queries'
 import { adminErrorMessage, findByDni, peopleQuery, teamsQuery, type FoundPerson } from '@/features/admin/api/people'
 import { useInvitations, type SentInvitation } from '@/features/invitations/api'
 import { InviteLink } from '@/features/invitations/components/InviteLink'
@@ -34,7 +36,13 @@ export function InvitePage() {
   const [teamId, setTeamId] = useState('')
   const [startsOn, setStartsOn] = useState(todayInArgentina())
   const [sent, setSent] = useState<{ result: SentInvitation; email: string } | null>(null)
+  // Who they are in the catalog, if activadores already loaded them by name. null: not chosen yet.
+  const [sellerPick, setSellerPick] = useState<string | null>(null)
+  const sellers = useCatalogs(ctx?.companyId ?? '').data?.sellers ?? []
   if (!ctx) return null
+  const free = freeSellers(sellers)
+  const suggested = found ? sellerFor(found.firstName, found.lastName, sellers) : null
+  const sellerValue = sellerPick ?? (suggested ? String(suggested.id) : '')
 
   const search = async () => {
     setSearchError(null)
@@ -55,7 +63,10 @@ export function InvitePage() {
   const firstName = found?.firstName ?? ''
 
   const send = async () => {
-    const result = await create.mutateAsync({ dni: normalizeDni(dni), email: cleanEmail, roles: [role], teamId: role === 'seller' ? null : teamId || null, startsOn })
+    const result = await create.mutateAsync({
+      dni: normalizeDni(dni), email: cleanEmail, roles: [role], teamId: role === 'seller' ? null : teamId || null, startsOn,
+      sellerId: role === 'seller' && sellerValue ? Number(sellerValue) : null,
+    })
     setSent({ result, email: cleanEmail })
   }
   const restart = () => {
@@ -63,6 +74,7 @@ export function InvitePage() {
     setDni('')
     setEmail('')
     setFound(undefined)
+    setSellerPick(null)
     create.reset()
   }
 
@@ -136,12 +148,22 @@ export function InvitePage() {
               ))}
             </div>
             <div className={styles.pair}>
+              {role === 'seller' ? (
+                <Select label="¿Ya está cargado como vendedor?" value={sellerValue} onChange={(e) => setSellerPick(e.target.value)}
+                  options={[{ value: '', label: 'No, es nuevo' }, ...free.map((s) => ({ value: String(s.id), label: s.name }))]} />
+              ) : null}
               {role === 'seller' ? null : (
                 <Select label={role === 'supervisor' ? 'Equipo que supervisa' : 'Equipo'} value={teamId} onChange={(e) => setTeamId(e.target.value)}
                   options={[{ value: '', label: 'Sin equipo' }, ...(teams.data ?? []).map((t) => ({ value: t.id, label: t.name }))]} />
               )}
               <Field label="Desde" type="date" value={startsOn} onChange={(e) => setStartsOn(e.target.value)} />
             </div>
+            {role === 'seller' ? (
+              <p className={styles.help}>
+                {sellerValue && sellerPick === null && suggested ? `Lo sugerimos por el nombre: ${suggested.name}. ` : ''}
+                Si los activadores ya le asignaron comercios con otro nombre, elegilo: al aceptar queda vinculado, con todos sus clientes, sin duplicarse.
+              </p>
+            ) : null}
           </section>
           {create.error ? <Banner tone="error">{create.error.message}</Banner> : null}
         </div>
