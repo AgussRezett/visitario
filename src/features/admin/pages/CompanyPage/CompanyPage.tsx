@@ -13,7 +13,6 @@ import { Switch } from '@/ui/Switch'
 import { useWorkContext } from '@/features/workday/context'
 import { companyQuery, exportCsv, saveFile, subscriptionQuery, usageQuery, useCompanyUpdate } from '@/features/admin/api/company'
 import { SupportLog } from './SupportLog'
-import { BrandCard } from './BrandCard'
 import styles from './CompanyPage.module.scss'
 
 const PLAN_TEXT: Record<string, string> = {
@@ -103,8 +102,6 @@ export function CompanyPage() {
             </>
           ) : <Skeleton height={160} />}
         </section>
-
-        {c ? <BrandCard company={c} /> : null}
 
         <section className={styles.card} aria-label="Horario de trabajo">
           <h2 className={styles.heading}>Horario de trabajo</h2>

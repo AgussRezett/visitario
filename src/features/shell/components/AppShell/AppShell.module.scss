@@ -42,12 +42,6 @@
   padding: 0 space(2) space(4);
 }
 
-// The company's logo, under Visitario's
-.sidebar-company {
-  max-width: calc(100% - #{space(4)});
-  margin: 0 space(2) space(3);
-}
-
 .sidebar-sync {
   align-self: flex-start;
   margin: space(2) space(1) 0;
@@ -104,11 +98,16 @@
   @include truncate;
 }
 
-// Current page, shared by the sidebar and the bottom navigation (the company's color if it has one)
+// Current page, shared by the sidebar and the bottom navigation
 .active {
-  background: $color-selected;
+  background: $color-lime-soft;
   font-weight: $weight-extrabold;
-  color: $color-selected-ink;
+  color: $color-forest;
+
+  @include dark {
+    background: $color-muted;
+    color: $color-lime;
+  }
 }
 
 // ---- Phone header
