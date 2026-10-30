@@ -88,6 +88,7 @@ export function toLinkPreview(json: unknown): LinkPreview {
 /** Database and function messages, in the words people read. */
 export function inviteError(message: string): string {
   if (/Already a member/.test(message)) return 'Esa persona ya es parte de la empresa.'
+  if (/not free to link/.test(message)) return 'Ese vendedor ya tiene usuario. Elegí otro o invitalo como vendedor nuevo.'
   if (/another email/.test(message)) return 'Esta invitación es para otro email.'
   if (/expired/.test(message)) return 'La invitación venció. Pedile a quien te invitó que te la reenvíe.'
   if (/already answered/.test(message)) return 'Esta invitación ya se usó.'

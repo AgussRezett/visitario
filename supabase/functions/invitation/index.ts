@@ -1,5 +1,5 @@
 // Invitations by email.
-//   POST { action: 'create', companyId, dni, email, roles, teamId?, startsOn?, origin } (an admin)
+//   POST { action: 'create', companyId, dni, email, roles, teamId?, startsOn?, sellerId?, origin } (an admin)
 //   POST { action: 'resend', invitationId, origin }                                    (an admin)
 //     → { id, link, sent, error? }: the link goes back to the admin too, to share it by WhatsApp
 //       if the email could not go out.
@@ -124,6 +124,8 @@ Deno.serve(async (req) => {
     const { data, error } = await user.rpc('create_invitation', {
       p_company: body?.companyId, p_dni: dni, p_email: email, p_roles: roles,
       p_team: body?.teamId ?? null, p_starts_on: body?.startsOn ?? null, p_token: token,
+      // The catalog seller this person is, if the admin said so (linked on accepting).
+      p_seller: typeof body?.sellerId === 'number' ? body.sellerId : null,
     })
     if (error) return json({ error: error.message }, error.code === '42501' ? 403 : 409)
     mail = data as Mail

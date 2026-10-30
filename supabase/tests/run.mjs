@@ -18,8 +18,9 @@ const U = {
   agus: '00000000-0000-7000-8000-000000000003', lucia: '00000000-0000-7000-8000-000000000004',
   beto: '00000000-0000-7000-8000-000000000005', intruder: '00000000-0000-7000-8000-000000000006',
   nora: '00000000-0000-7000-8000-000000000007', omar: '00000000-0000-7000-8000-000000000008',
+  sara: '00000000-0000-7000-8000-000000000009',
 };
-const email = { nora: 'nora@example.com', omar: 'omar@example.com', agus: 'agus@example.com' };
+const email = { nora: 'nora@example.com', omar: 'omar@example.com', agus: 'agus@example.com', sara: 'sara@example.com' };
 const phone = { agus: '+5491155554521', martin: '+5491144441020', lucia: '+5491133330000', beto: '+5491122220000' };
 for (const [k, id] of Object.entries(U)) await db.query('insert into auth.users (id, phone, email) values ($1, $2, $3)', [id, phone[k] ?? null, email[k] ?? null]);
 
@@ -947,6 +948,53 @@ check('Ended: Lucía can join another one that day', (await as('lucia', `select 
   check('I change my phone; the new number is not verified', ph.phone === '+5491144443333' && ph.phone_verified_at === null)
   await expectError('…and it must look like a phone', () => as('agus', `update person_private set phone = 'abc' where person_id = $1`, [agus]))
   await expectError('The DNI is not editable', () => as('agus', `update person_private set dni = '11222333' where person_id = $1`, [agus]))
+}
+
+// ---- A seller loaded by name is the same seller when that person joins
+{
+  const loaded = async (name) => (await as('carla', `insert into seller (company_id, name) values ($1, $2) returning id`, [panda, name]))[0].id
+  const membershipIn = async (who) => (await sys(`select m.id from membership m join person p on p.id = m.person_id where p.auth_user_id = $1 and m.company_id = $2`, [U[who], panda]))[0].id
+  const personOf = async (id) => (await sys(`select person_id from seller where id = $1`, [id]))[0].person_id
+
+  // 1. The admin says who they are when inviting
+  const belgrano = await loaded('La de Belgrano')
+  const sStore = (await sys(`insert into store (company_id, address, seller_id) values ($1, 'Cabildo 2000', $2) returning id`, [panda, belgrano]))[0].id
+  await expectError('Only a seller free to link, and with the seller role', () => as('carla', `select create_invitation($1, '46000111', 'sara@example.com', '{merchandiser}', null, null, $2, $3)`, [panda, tok('sara0'), belgrano]), /not free/)
+  await as('carla', `select create_invitation($1, '46000111', 'sara@example.com', '{seller}', null, null, $2, $3)`, [panda, tok('sara'), belgrano])
+  await as('sara', `select complete_identity('46000111', 'Sara', 'Ibáñez', null, '+5491166660000')`)
+  await as('sara', `select accept_invitation($1)`, [tok('sara')])
+  const sara = await pid('sara')
+  check('Accepting links the seller the admin chose, with its stores', (await personOf(belgrano)) === sara)
+  check('…and no second seller with her name', (await sys(`select count(*)::int n from seller where company_id = $1 and (person_id = $2 or name = 'Sara Ibáñez')`, [panda, sara]))[0].n === 1)
+  check('She sees those stores as her clients', (await as('sara', `select id from seller_stores($1)`, [panda])).some((r) => r.id === sStore))
+
+  // 2. Automatic: first name + start of the surname, only when one fits
+  const omarSeller = await loaded('Omar Pa')
+  const omarM = await membershipIn('omar')
+  await as('carla', `update membership set roles = '{merchandiser,seller}' where id = $1`, [omarM])
+  check('"Omar Pa" is Omar Paz', (await personOf(omarSeller)) === (await pid('omar')))
+  const luciaA = await loaded('Lucía Gó'), luciaB = await loaded('Lucia G')
+  const luciaM = await membershipIn('lucia')
+  await as('carla', `update membership set roles = '{merchandiser,seller}' where id = $1`, [luciaM])
+  const lucia = await pid('lucia')
+  const luciaNew = (await sys(`select id from seller where company_id = $1 and person_id = $2`, [panda, lucia]))[0]?.id
+  check('With two that could be her, none is guessed: one with her name', (await personOf(luciaA)) === null && (await personOf(luciaB)) === null
+    && (await sys(`select name from seller where id = $1`, [luciaNew]))[0]?.name === 'Lucía Gómez')
+
+  // 3. Merging duplicates
+  const s2 = (await sys(`insert into store (company_id, address, seller_id) values ($1, 'Juramento 2101', $2) returning id`, [panda, luciaA]))[0].id
+  await expectError('A supervisor cannot merge sellers', () => as('martin', `select merge_sellers($1, $2)`, [luciaNew, luciaA]), /admin/)
+  await expectError('Another company cannot merge Panda’s', () => as('beto', `select merge_sellers($1, $2)`, [luciaNew, luciaA]), /admin/)
+  check('Merging moves the stores to the one kept', (await as('carla', `select merge_sellers($1, $2) n`, [luciaNew, luciaA]))[0].n === 1
+    && (await sys(`select seller_id from store where id = $1`, [s2]))[0].seller_id === luciaNew)
+  check('…and the other one goes inactive', (await sys(`select active from seller where id = $1`, [luciaA]))[0].active === false)
+  await expectError('Two sellers with a user are not merged', () => as('carla', `select merge_sellers($1, $2)`, [luciaNew, belgrano]), /Both/)
+  await as('carla', `select merge_sellers($1, $2)`, [luciaB, luciaNew])
+  check('Keeping the one by name: the user comes with the stores', (await personOf(luciaB)) === lucia && (await personOf(luciaNew)) === null
+    && (await sys(`select seller_id from store where id = $1`, [s2]))[0].seller_id === luciaB)
+
+  await as('carla', `update membership set roles = '{merchandiser}' where id = any($1::uuid[])`, [[omarM, luciaM]])
+  await sys(`update store set deleted_at = now() where id = any($1::uuid[])`, [[sStore, s2]])
 }
 
 // Password detection (Google users who later set a password)

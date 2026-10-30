@@ -131,6 +131,18 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
       }
       return done(json(state.templates ?? []))
     }
+    if (path.endsWith('/rpc/merge_sellers')) {
+      const b = body()
+      const list = state.catalogs?.seller ?? []
+      const [keep, drop] = [list.find((x) => x.id === b.p_keep), list.find((x) => x.id === b.p_drop)]
+      if (keep?.person_id && drop?.person_id) return done(json({ code: '23514', message: 'Both sellers have a Visitario user' }, 400))
+      if (keep && drop) {
+        if (drop.person_id) [keep.person_id, drop.person_id] = [drop.person_id, null]
+        drop.active = false
+      }
+      ;(state.sellerMerges ??= []).push({ keep: Number(b.p_keep), drop: Number(b.p_drop) })
+      return done(json(2))
+    }
     const table = (['brand', 'display_type', 'work_metric', 'channel', 'seller'] as const).find((t) => path.endsWith(`/${t}`))
     if (table && state.catalogs) {
       const list = (state.catalogs[table] ??= [])

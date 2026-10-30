@@ -439,6 +439,7 @@ export type Database = {
           id: string
           invited_by: string | null
           roles: Database["public"]["Enums"]["role"][]
+          seller_id: number | null
           send_error: string | null
           sends: number
           sent_at: string | null
@@ -1784,6 +1785,7 @@ export type Database = {
           p_dni: string
           p_email: string
           p_roles: Database["public"]["Enums"]["role"][]
+          p_seller?: number | null
           p_starts_on: string | null
           p_team: string | null
           p_token: string
@@ -1850,6 +1852,10 @@ export type Database = {
           work_date: string
           work_status: Database["public"]["Enums"]["work_status"]
         }[]
+      }
+      merge_sellers: {
+        Args: { p_drop: number; p_keep: number }
+        Returns: number
       }
       merge_stores: {
         Args: { p_drop: string; p_keep: string }

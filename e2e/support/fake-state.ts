@@ -47,6 +47,8 @@ export interface FakeState {
   overlaps?: Row[]
   /** Import: the directory, saved formats and what the geocoder finds (by address). */
   stores?: Row[]
+  /** Sellers merged from the catalog (the same person loaded twice). */
+  sellerMerges?: { keep: number; drop: number }[]
   /** Bulk edits from the directory: which stores and what changed. */
   bulkUpdates?: { ids: string[]; patch: Row }[]
   /** Pending stops from today on, per store (what archiving removes). */
