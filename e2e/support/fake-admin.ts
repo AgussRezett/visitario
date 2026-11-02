@@ -1,3 +1,4 @@
+import { directorySort } from './fake-sort'
 import type { Request, Route } from '@playwright/test'
 import { COMPANY, type FakeState, type Row } from './fake-supabase'
 
@@ -62,6 +63,7 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
         .filter((x) => b.p_filter !== 'added' || x.source === 'merchandiser')
         .filter((x) => tag(x.channel_id, b.p_channel) && tag(x.seller_id, b.p_seller))
         .filter((x) => !b.p_area || x.area === b.p_area)
+        .sort(directorySort(String(b.p_sort ?? 'name')))
       return done(json(rows.map((x) => ({
         channel_id: x.channel_id ?? null, seller_id: x.seller_id ?? null,
         id: x.id, name: x.name ?? null, address: x.address, area: x.area ?? null, customer_number: x.customer_number ?? null,

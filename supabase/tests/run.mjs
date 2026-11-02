@@ -1052,6 +1052,27 @@ check('Ended: Lucía can join another one that day', (await as('lucia', `select 
   await sys(`update visit set deleted_at = now() where workday_id = any($1::uuid[])`, [[day, future]])
 }
 
+// ---- The directory in the order picked
+{
+  const sorted = async (sort) => (await as('martin', `select id, name, address, customer_number, area, last_visit_date, visits_30d from store_directory_v2($1, p_sort => $2, p_limit => 200)`, [panda, sort]))
+  const isSorted = (xs, cmp) => xs.every((x, i) => i === 0 || cmp(xs[i - 1], x) <= 0)
+  const byName = await sorted('name')
+  check('Sorting keeps every store, whatever the order', (await sorted('newest')).length === byName.length && byName.length > 3)
+  const nums = (await sorted('customer')).map((r) => r.customer_number)
+  const withNum = nums.filter((n) => n !== null)
+  check('By customer number: as numbers (9 before 10), the ones without last', nums.slice(withNum.length).every((n) => n === null)
+    && isSorted(withNum, (a, b) => a.length - b.length || a.localeCompare(b)))
+  const recent = (await sorted('recent_visit')).map((r) => r.last_visit_date && new Date(r.last_visit_date).toISOString())
+  const visited = recent.filter(Boolean)
+  check('Visited most recently first, never visited last', isSorted(visited, (a, b) => (a < b ? 1 : a > b ? -1 : 0)) && recent.slice(visited.length).every((d) => d === null))
+  const oldest = (await sorted('oldest_visit')).map((r) => r.last_visit_date)
+  check('Longest without a visit first: never visited at the top', oldest[0] === null)
+  check('Most visited in 30 days first', isSorted((await sorted('most_visits')).map((r) => r.visits_30d), (a, b) => b - a))
+  const areas = (await sorted('area')).map((r) => r.area).filter(Boolean)
+  check('By area: each area together', areas.every((a, i) => i === 0 || a === areas[i - 1] || !areas.slice(0, i).includes(a)))
+  check('An unknown order falls back to the name', (await sorted('whatever')).map((r) => r.id).join() === byName.map((r) => r.id).join())
+}
+
 // Password detection (Google users who later set a password)
 await sys(`update auth.users set encrypted_password = '$2a$10$hash' where id = $1`, [U.agus]);
 check('has_password is true for a user with a password', (await as('agus', `select has_password() v`))[0].v === true);

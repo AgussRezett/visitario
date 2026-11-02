@@ -26,11 +26,13 @@ import { fetchAllMatching } from '@/features/stores/api/bulk'
 import { useSelection } from '@/features/stores/useSelection'
 import { useDirectoryFilters } from '@/features/stores/useDirectoryFilters'
 import { useAutoVerify } from '@/features/stores/useAutoVerify'
-import { NO_DIRECTORY_FILTERS } from '@/domain/directory-filters'
+import { NO_DIRECTORY_FILTERS, type DirectorySort } from '@/domain/directory-filters'
 import { useStoreArchive } from '@/features/stores/useStoreArchive'
 import { BulkEditSheet } from './BulkEditSheet'
 import { PageCheckbox, RowCheckbox } from './RowCheckbox'
 import { SelectionBar } from './SelectionBar'
+import { SortHeader } from './SortHeader'
+import { SortSelect } from './SortSelect'
 import styles from './DirectoryPage.module.scss'
 
 const when = (date: string) => (date === todayInArgentina() ? 'Hoy' : formatDayMonth(date))
@@ -41,9 +43,9 @@ export function DirectoryPage() {
   const desktop = useIsDesktop()
   const companyId = ctx?.companyId ?? ''
   // Kept for this tab: coming back from a store finds them as they were.
-  const [{ query, filter, area, channel, seller, page }, setFilters] = useDirectoryFilters(companyId)
+  const [{ query, filter, area, channel, seller, sort, page }, setFilters] = useDirectoryFilters(companyId)
   const q = useDebounced(query.trim(), 300)
-  const list = useQuery({ ...directoryQuery(companyId, { query: q, filter, area, channel, seller, page }), enabled: Boolean(ctx), placeholderData: keepPreviousData })
+  const list = useQuery({ ...directoryQuery(companyId, { query: q, filter, area, channel, seller, sort, page }), enabled: Boolean(ctx), placeholderData: keepPreviousData })
   const counts = useQuery({ ...directoryCountsQuery(companyId), enabled: Boolean(ctx) })
   const catalogs = useCatalogs(companyId).data
   const reputation = useStoreReputation(companyId, (list.data?.rows ?? []).map((r) => r.id)).data
@@ -63,6 +65,7 @@ export function DirectoryPage() {
 
   const toggle = (f: DirectoryFilter) => setFilters({ filter: filter === f ? 'all' : f })
   const setPage = (n: number) => setFilters({ page: n })
+  const sortBy = (s: DirectorySort) => setFilters({ sort: s })
   const rows = list.data?.rows ?? []
   const total = list.data?.total ?? 0
   const name = (r: DirectoryRow) => r.name ?? r.address
@@ -81,7 +84,7 @@ export function DirectoryPage() {
     setSaved(null)
     if (total <= rows.length) return selection.toggleAll(rows)
     setMatching(true)
-    const all = await fetchAllMatching(companyId, { query: q, filter, area, channel, seller }).catch(() => null)
+    const all = await fetchAllMatching(companyId, { query: q, filter, area, channel, seller, sort }).catch(() => null)
     setMatching(false)
     if (all) selection.add(all)
   }
@@ -123,7 +126,7 @@ export function DirectoryPage() {
               <Archive size={16} aria-hidden />Archivados · {counts.data?.archived ?? 0}
             </button>
           ) : null}
-          {filtered ? <Button variant="ghost" size="sm" onClick={() => setFilters(NO_DIRECTORY_FILTERS)}><X size={16} aria-hidden />Limpiar filtros</Button> : null}
+          {filtered ? <Button variant="ghost" size="sm" onClick={() => setFilters({ ...NO_DIRECTORY_FILTERS, sort })}><X size={16} aria-hidden />Limpiar filtros</Button> : null}
         </div>
       </div>
 
@@ -131,6 +134,7 @@ export function DirectoryPage() {
       {saved !== null ? <Banner tone="ok">Listo: {saved === 1 ? 'se actualizó 1 comercio' : `se actualizaron ${many(saved)} comercios`}.</Banner> : null}
       {rows.length ? (
         <div className={styles.selectLine}>
+          <SortSelect value={sort} onChange={(s) => setFilters({ sort: s })} />
           <Button variant="ghost" size="sm" loading={matching} onClick={() => void selectMatching()}>
             <CheckCheck size={16} aria-hidden />
             {total <= rows.length ? (allHere ? `Quitar los ${many(total)} de la selección` : `Seleccionar los ${many(total)}`) : `Seleccionar los ${many(total)} que coinciden`}
@@ -147,7 +151,7 @@ export function DirectoryPage() {
         <Refreshing active={list.isPlaceholderData}>
           {desktop ? (
             <Table label="Comercios">
-              <thead><tr><th className={styles.checkCell}><PageCheckbox rows={rows} selection={selection} /></th><th>Comercio</th><th>Cliente</th><th>Canal y vendedor</th><th>Zona</th><th>Ubicación</th><th>Trato</th><th>Última visita</th><th>Visitas 30 días</th><th><span className={styles.srOnly}>Acciones</span></th></tr></thead>
+              <thead><tr><th className={styles.checkCell}><PageCheckbox rows={rows} selection={selection} /></th><SortHeader column="name" label="Comercio" sort={sort} onSort={sortBy} /><SortHeader column="customer" label="Cliente" sort={sort} onSort={sortBy} /><th>Canal y vendedor</th><SortHeader column="area" label="Zona" sort={sort} onSort={sortBy} /><th>Ubicación</th><th>Trato</th><SortHeader column="last_visit" label="Última visita" sort={sort} onSort={sortBy} /><SortHeader column="visits" label="Visitas 30 días" sort={sort} onSort={sortBy} /><th><span className={styles.srOnly}>Acciones</span></th></tr></thead>
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.id} data-selected={selection.has(r.id) || undefined}>
