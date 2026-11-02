@@ -38,7 +38,7 @@ export function StopRow({ v, n, typeName, tags, assign, copied, onCopy }: StopRo
       <span className={styles.stopBody}>
         <span className={styles.stopName}>{label}</span>
         <span className={styles.stopMeta}>
-          {[v.store.name ? v.store.address : null, v.store.area, v.store.customerNumber && `Cliente ${v.store.customerNumber}`, tags.channel, tags.seller && `vend. ${tags.seller}`, v.resumedFrom ? 'retomada' : null, v.source === 'added' ? 'agregada por el activador' : null].filter(Boolean).join(' · ')}
+          {[v.store.name ? v.store.address : null, v.store.area, v.store.customerNumber && `Cliente ${v.store.customerNumber}`, tags.channel, tags.seller && `vend. ${tags.seller}`, v.resumedFrom ? 'retomada' : null, v.source === 'added' ? 'extra' : null].filter(Boolean).join(' · ')}
         </span>
         {v.displays.length ? (
           <span className={styles.tags}>{v.displays.map((d) => <span key={d.id} className={styles.tag}>{typeName(d.typeId)}</span>)}</span>

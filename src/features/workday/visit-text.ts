@@ -5,10 +5,10 @@ import { displayLabels } from '@/domain/templates'
 import type { Visit } from './api/queries'
 import type { StoreTags } from './store-tags'
 
-/** Who added the visit, as the wireframes say it. */
+/** Who added the visit, and if it is an extra (added once the shift had started). */
 export function originLabel(v: Visit) {
-  if (v.addedByMe) return v.source === 'added' ? 'agregada por vos' : 'asignada por vos'
-  return `${v.source === 'added' ? 'agregada' : 'asignada'} por ${v.addedByName ?? 'tu supervisor'}`
+  const by = v.addedByMe ? 'agregada por vos' : `asignada por ${v.addedByName ?? 'tu supervisor'}`
+  return v.source === 'added' ? `extra · ${by}` : by
 }
 
 /** Google Maps, searching the store's address (see domain/places). */

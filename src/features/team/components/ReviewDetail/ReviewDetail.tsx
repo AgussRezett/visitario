@@ -45,7 +45,8 @@ export function ReviewDetail({ visit: v, meId, draft }: { visit: TeamVisit; meId
     return d ? `${i + 1} ${typeName(d.typeId)}${d.reference ? ` · ${d.reference}` : ''}` : undefined
   }
   const arranged = v.displays.filter((d) => v.photos.some((p) => p.displayId === d.id && p.kind === 'after')).length
-  const origin = v.source === 'added' ? 'dirección agregada por el activador' : `asignada${v.addedByName ? ` por ${v.addedByName}` : ''}`
+  const by = v.addedByName ? `agregada por ${v.addedByName}` : 'asignada'
+  const origin = v.source === 'added' ? `extra del día · ${by}` : by
   const metrics = useMemo(
     () => (catalogs.data?.metrics ?? []).map((m) => ({ name: m.name, qty: work.data?.metrics[m.id] ?? 0 })).filter((m) => m.qty > 0),
     [catalogs.data, work.data],

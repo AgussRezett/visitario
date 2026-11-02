@@ -16,7 +16,7 @@ export function DayStats({ visits }: { visits: Visit[] }) {
     { value: closed, label: 'cerrados o sin autorizar' },
     { value: displays.length ? `${arranged}/${displays.length}` : '0', label: 'exhibiciones acomodadas' },
     { value: photos, label: photos === 1 ? 'foto' : 'fotos' },
-    { value: extras, label: extras === 1 ? 'agregada por vos' : 'agregadas por vos', desktop: true },
+    { value: extras, label: extras === 1 ? 'extra' : 'extras', desktop: true },
   ]
   return (
     <dl className={styles.stats}>

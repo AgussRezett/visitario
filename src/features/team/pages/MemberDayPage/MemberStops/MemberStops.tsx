@@ -1,4 +1,4 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useRouterState } from '@tanstack/react-router'
 import { ChevronRight, Clock, Users } from 'lucide-react'
 import clsx from 'clsx'
 import { dayFocus, stopOrigin, stopTiming } from '@/domain/member-day'
@@ -30,6 +30,7 @@ interface MemberStopsProps {
 
 /** An activador's stores in their own order, read-only: where they are, what is next, what is done. */
 export function MemberStops({ stops, filter, onFilter, member, operationStops }: MemberStopsProps) {
+  const here = useRouterState({ select: (r) => r.location.href })
   const todo = stops.filter((v) => !isVisited(v.workStatus)).length
   const focus = dayFocus(stops)
   const shown = filter === 'all' ? stops : stops.filter((v) => (filter === 'done' ? isVisited(v.workStatus) : !isVisited(v.workStatus)))
@@ -75,17 +76,17 @@ export function MemberStops({ stops, filter, onFilter, member, operationStops }:
                 </span>
                 <span className={styles.end}>
                   <StatusChip work={v.workStatus} review={v.reviewStatus} />
-                  {isVisited(v.workStatus) ? <ChevronRight size={18} aria-hidden className={styles.go} /> : null}
+                  <ChevronRight size={18} aria-hidden className={styles.go} />
                 </span>
               </>
             )
             return (
               <li key={v.id}>
-                {/* Finished visits open in Revisión; the rest are still the activador's to do. */}
+                {/* Finished visits open in Revisión; the rest open the store in the directory. */}
                 {isVisited(v.workStatus) ? (
                   <Link to="/review/$visitId" params={{ visitId: v.id }} className={clsx(styles.item, styles.link)}>{body}</Link>
                 ) : (
-                  <div className={clsx(styles.item, v.id === focus.currentId && styles.itemNow)}>{body}</div>
+                  <Link to="/stores/$storeId" params={{ storeId: v.store.id }} search={{ from: here }} className={clsx(styles.item, styles.link, v.id === focus.currentId && styles.itemNow)}>{body}</Link>
                 )}
               </li>
             )
