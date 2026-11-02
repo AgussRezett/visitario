@@ -1,3 +1,4 @@
+import { pick } from './support/select'
 import { expect, test } from '@playwright/test'
 import { atFakeToday, installFakeSupabase, visitRow, type FakeState } from './support/fake-supabase'
 
@@ -82,7 +83,7 @@ test('the directory shows and filters by channel and seller; the store edits the
   await installFakeSupabase(page, state, 'supervisor')
   await page.goto('/s/stores')
   await expect(page.getByText('Vendedor: Florencia').or(page.getByRole('cell', { name: /Florencia/ })).first()).toBeVisible()
-  await page.getByLabel('Vendedor', { exact: true }).selectOption({ label: 'Sin vendedor' })
+  await pick(page.getByLabel('Vendedor', { exact: true }), 'Sin vendedor')
   await expect(page.getByRole('link', { name: /Lo de Flor/ })).toHaveCount(0)
   await expect(page.getByRole('link', { name: /Moldes 1365/ })).toBeVisible()
   const scroll = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
@@ -94,7 +95,7 @@ test('the directory shows and filters by channel and seller; the store edits the
   await expect(page.getByText('Sin canal')).toBeVisible()
   await page.getByRole('button', { name: 'Editar datos' }).click()
   const sheet = page.getByRole('dialog', { name: 'Editar datos' })
-  await sheet.getByLabel('Canal').selectOption({ label: 'Autoservicio' })
+  await pick(sheet.getByLabel('Canal'), 'Autoservicio')
   await sheet.getByLabel('Vendedor').fill('mar')
   await sheet.getByRole('option', { name: 'Martín Sosa' }).click()
   await sheet.getByRole('button', { name: 'Guardar' }).click()

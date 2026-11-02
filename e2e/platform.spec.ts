@@ -1,3 +1,4 @@
+import { pick } from './support/select'
 import { expect, test } from '@playwright/test'
 import { installFakeSupabase, type FakeState, type Row } from './support/fake-supabase'
 
@@ -56,7 +57,7 @@ test('the super admin sees every company, creates one and changes a plan', async
   // The new company opens: plan to Equipo
   const created = page.getByRole('dialog', { name: 'Distribuidora Sur' })
   await expect(created.getByText('0 usuarios')).toBeVisible()
-  await created.getByRole('combobox', { name: 'Plan', exact: true }).selectOption('team')
+  await pick(created.getByRole('combobox', { name: 'Plan', exact: true }), 'Equipo')
   await created.getByRole('button', { name: 'Guardar plan' }).click()
   await expect.poll(() => state.platform?.companies.find((c) => c.name === 'Distribuidora Sur')?.plan).toBe('team')
 })

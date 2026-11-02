@@ -1,3 +1,4 @@
+import { pick } from './support/select'
 import { expect, test } from '@playwright/test'
 import { FAKE_TODAY, ME, atFakeToday, installFakeSupabase, visitRow, type FakeState, type Row } from './support/fake-supabase'
 
@@ -141,7 +142,7 @@ test('Asignar prepares an operativo for others', async ({ page }) => {
   const sheet = page.getByRole('dialog', { name: 'Armar operativo' })
   await sheet.getByRole('checkbox', { name: /Lucía Gómez/ }).click()
   await sheet.getByRole('checkbox', { name: /Diego Paz/ }).click()
-  await sheet.getByLabel('Encabeza').selectOption({ label: 'Diego Paz' })
+  await pick(sheet.getByLabel('Encabeza'), 'Diego Paz')
   await sheet.getByRole('button', { name: 'Armar con 1 compañero' }).click()
   await expect.poll(() => state.operationCalls?.[0]).toMatchObject({ fn: 'create', p_host: 'p3', p_date: '2026-10-16' })
 })

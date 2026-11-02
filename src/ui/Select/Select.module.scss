@@ -3,6 +3,7 @@
 @layer ui {
   .field {
     @include flex(column, $gap: space(1.5));
+    position: relative;
     min-width: 0;
   }
 
@@ -12,14 +13,287 @@
     color: $color-ink;
   }
 
-  .select {
-    @include text(base);
+  .sr-only {
+    @include visually-hidden;
+  }
+
+  // ---- The button
+  .trigger {
+    @include flex(row, $gap: space(2), $align: center);
+    @include transition-colors;
     width: 100%;
-    height: $control-height;
-    padding-inline: space(3.5);
+    min-width: 0;
+    padding-inline: space(3.5) space(3);
     border: 1.5px solid $color-control;
     border-radius: $radius-md;
     background: $color-card;
     color: $color-ink;
+    text-align: left;
+    cursor: pointer;
+
+    @include hover {
+      border-color: $color-forest;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $color-focus;
+      outline-offset: 2px;
+    }
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+  }
+
+  .md {
+    @include text(base);
+    height: $control-height;
+  }
+
+  .sm {
+    @include text(label);
+    height: 40px;
+    font-weight: $weight-bold;
+  }
+
+  .open {
+    border-color: $color-forest;
+    box-shadow: 0 0 0 3px $color-lime-soft;
+  }
+
+  .icon {
+    @include flex(row, $align: center);
+    flex: none;
+    color: $color-ink-subtle;
+  }
+
+  .value {
+    @include truncate;
+    flex: 1;
+  }
+
+  .prefix,
+  .placeholder {
+    color: $color-ink-subtle;
+    font-weight: $weight-semibold;
+  }
+
+  .chevron {
+    flex: none;
+    color: $color-ink-subtle;
+    transition: transform $duration-fast $ease-standard;
+
+    .open > & {
+      transform: rotate(180deg);
+    }
+  }
+
+  // ---- The list, in the top layer (a popover): over the page and over open sheets
+  .layer {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    color: $color-ink;
+    z-index: 1000; // only used where popovers are not supported
+  }
+
+  .backdrop {
+    position: absolute;
+    inset: 0;
+
+    .layer[data-sheet] & {
+      background: rgb(0 0 0 / 0.4);
+      animation: fade $duration-fast $ease-standard;
+    }
+  }
+
+  .panel {
+    position: absolute;
+    @include flex(column);
+    overflow: hidden;
+    border: 1px solid $color-line;
+    border-radius: $radius-md;
+    background: $color-card;
+    box-shadow: $shadow-sheet;
+    animation: drop 120ms $ease-standard;
+
+    // Phones: a bottom sheet with big rows.
+    .layer[data-sheet] & {
+      inset: auto 0 0;
+      max-height: min(75dvh, 560px);
+      padding-bottom: env(safe-area-inset-bottom);
+      border-width: 1px 0 0;
+      border-radius: $radius-xl $radius-xl 0 0;
+      animation: rise 200ms $ease-standard;
+    }
+  }
+
+  .sheet-head {
+    @include flex(row, $gap: space(2), $align: center, $justify: space-between);
+    padding: space(4) space(3) space(2) space(5);
+  }
+
+  .sheet-title {
+    @include text(heading);
+    font-weight: $weight-extrabold;
+  }
+
+  .close-button {
+    @include center;
+    @include square($touch-target);
+    border-radius: $radius-full;
+    color: $color-ink-muted;
+
+    @include hover {
+      background: $color-muted;
+    }
+  }
+
+  .search {
+    @include flex(row, $gap: space(2), $align: center);
+    flex: none;
+    height: $touch-target;
+    margin: space(2) space(2) space(1);
+    padding-inline: space(3);
+    border: 1.5px solid $color-control;
+    border-radius: $radius-sm;
+    color: $color-ink-subtle;
+
+    &:focus-within {
+      border-color: $color-forest;
+    }
+
+    input {
+      @include text(base);
+      flex: 1;
+      min-width: 0;
+      height: 100%;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: $color-ink;
+    }
+  }
+
+  .list {
+    flex: 1;
+    min-height: 0;
+    margin: 0;
+    padding: space(1);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    list-style: none;
+    outline: 0;
+
+    .layer[data-sheet] & {
+      padding: space(1) space(2) space(3);
+    }
+  }
+
+  .group {
+    @include eyebrow;
+    padding: space(3) space(3) space(1);
+    color: $color-ink-subtle;
+  }
+
+  .option {
+    @include flex(row, $gap: space(3), $align: center);
+    min-height: $touch-target;
+    padding: space(2) space(3);
+    border-radius: $radius-sm;
+    color: $color-ink;
+    cursor: pointer;
+    scroll-margin: space(1);
+
+    .layer[data-sheet] & {
+      min-height: 52px;
+    }
+
+    &[data-active] {
+      background: $color-muted;
+    }
+
+    &[aria-selected='true'] {
+      background: $color-lime-soft;
+      color: $color-lime-soft-ink;
+      font-weight: $weight-bold;
+    }
+
+    &[aria-selected='true'][data-active] {
+      box-shadow: inset 0 0 0 1.5px $color-lime-soft-ink;
+    }
+
+    &[aria-disabled] {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
+
+  .option-text {
+    @include flex(column);
+    flex: 1;
+    min-width: 0;
+  }
+
+  .option-label {
+    @include text(base);
+    overflow-wrap: anywhere;
+
+    .layer:not([data-sheet]) & {
+      @include text(label);
+    }
+  }
+
+  .hint {
+    @include text(tiny);
+    color: $color-ink-subtle;
+    font-weight: $weight-medium;
+  }
+
+  .check {
+    flex: none;
+    color: $color-lime-soft-ink; // forest on light, lime on dark
+  }
+
+  .empty {
+    @include text(label);
+    padding: space(4);
+    color: $color-ink-subtle;
+    text-align: center;
+  }
+
+  @keyframes drop {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+
+  @keyframes rise {
+    from {
+      transform: translateY(100%);
+    }
+  }
+
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .panel,
+    .backdrop {
+      animation: none !important;
+    }
   }
 }

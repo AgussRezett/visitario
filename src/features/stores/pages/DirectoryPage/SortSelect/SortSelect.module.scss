@@ -1,53 +1,12 @@
 @use '@/styles/abstracts' as *;
 
+// The Select's button as a pill, like the filter chips next to it.
 .sort {
-  @include flex(row, $gap: space(1.5), $align: center);
-  @include text(label);
-  @include transition-colors;
-  position: relative;
-  min-width: 0;
-  height: 44px;
-  padding-inline: space(3);
-  border: 1.5px solid $color-line;
+  width: auto;
+  height: $touch-target;
   border-radius: $radius-full;
-  background: $color-card;
-  font-weight: $weight-bold;
-  cursor: pointer;
-
-  @include hover {
-    border-color: $color-forest;
-  }
-
-  &:focus-within {
-    outline: 2px solid $color-forest;
-    outline-offset: 2px;
-  }
 
   &[data-active] {
     border-color: $color-forest;
   }
-}
-
-.icon,
-.chevron {
-  flex: none;
-  color: $color-ink-subtle;
-}
-
-.text {
-  @include truncate;
-}
-
-.prefix {
-  color: $color-ink-subtle;
-  font-weight: $weight-semibold;
-}
-
-// The native picker covers the pill: the phone opens its own list.
-.select {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  opacity: 0;
-  cursor: pointer;
 }

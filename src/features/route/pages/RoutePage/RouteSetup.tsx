@@ -75,13 +75,13 @@ export function RouteSetup({ options, onChange, candidates, selected, missing, b
         <Select
           label="Primer local"
           value={options.firstId}
-          onChange={(e) => onChange({ firstId: e.target.value })}
+          onChange={(v) => onChange({ firstId: v })}
           options={[{ value: 'auto', label: 'Automático' }, ...storeOptions]}
         />
         <Select
           label="Último local"
           value={options.lastId}
-          onChange={(e) => onChange({ lastId: e.target.value })}
+          onChange={(v) => onChange({ lastId: v })}
           options={[{ value: 'auto', label: 'El que convenga' }, ...storeOptions.filter((o) => o.value !== options.firstId)]}
         />
       </div>

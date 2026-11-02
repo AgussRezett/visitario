@@ -149,11 +149,11 @@ export function InvitePage() {
             </div>
             <div className={styles.pair}>
               {role === 'seller' ? (
-                <Select label="¿Ya está cargado como vendedor?" value={sellerValue} onChange={(e) => setSellerPick(e.target.value)}
+                <Select label="¿Ya está cargado como vendedor?" value={sellerValue} onChange={(v) => setSellerPick(v)}
                   options={[{ value: '', label: 'No, es nuevo' }, ...free.map((s) => ({ value: String(s.id), label: s.name }))]} />
               ) : null}
               {role === 'seller' ? null : (
-                <Select label={role === 'supervisor' ? 'Equipo que supervisa' : 'Equipo'} value={teamId} onChange={(e) => setTeamId(e.target.value)}
+                <Select label={role === 'supervisor' ? 'Equipo que supervisa' : 'Equipo'} value={teamId} onChange={(v) => setTeamId(v)}
                   options={[{ value: '', label: 'Sin equipo' }, ...(teams.data ?? []).map((t) => ({ value: t.id, label: t.name }))]} />
               )}
               <Field label="Desde" type="date" value={startsOn} onChange={(e) => setStartsOn(e.target.value)} />

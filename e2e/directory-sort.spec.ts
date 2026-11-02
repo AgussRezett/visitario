@@ -1,3 +1,4 @@
+import { pick } from './support/select'
 import { expect, test, type Page } from '@playwright/test'
 import { atFakeToday, installFakeSupabase, type FakeState } from './support/fake-supabase'
 
@@ -26,17 +27,17 @@ test('the directory sorts by what is useful, and keeps the order coming back fro
   await expect.poll(() => order(page, desktop)).toEqual(['Autoservicio Lili', 'Kiosco Don Tito', 'Mas Ahorro'])
 
   const sort = page.getByLabel('Ordenar comercios por')
-  await sort.selectOption('customer')
+  await pick(sort, 'Nro. de cliente')
   // 975 before 1362: as numbers; the store without one last.
   await expect.poll(() => order(page, desktop)).toEqual(['Autoservicio Lili', 'Mas Ahorro', 'Kiosco Don Tito'])
-  await sort.selectOption('oldest_visit')
+  await pick(sort, 'Más tiempo sin visitar')
   await expect.poll(() => order(page, desktop)).toEqual(['Kiosco Don Tito', 'Autoservicio Lili', 'Mas Ahorro'])
   await expect(page.getByText('Más tiempo sin visitar').first()).toBeVisible()
   await page.screenshot({ path: `test-results/directory-sort-${info.project.name}.png` })
 
   await page.getByRole('link', { name: /Mas Ahorro/ }).first().click()
   await page.getByRole('link', { name: 'Directorio' }).first().click()
-  await expect(sort).toHaveValue('oldest_visit')
+  await expect(sort).toHaveAttribute('data-value', 'oldest_visit')
 
   if (desktop) {
     // The table's headers sort too, and say which way.
@@ -45,7 +46,7 @@ test('the directory sorts by what is useful, and keeps the order coming back fro
     await header.getByRole('button').click()
     await expect(header).toHaveAttribute('aria-sort', 'descending')
     await expect.poll(() => order(page, desktop)).toEqual(['Autoservicio Lili', 'Mas Ahorro', 'Kiosco Don Tito'])
-    await expect(sort).toHaveValue('most_visits')
+    await expect(sort).toHaveAttribute('data-value', 'most_visits')
     const last = th('Última visita')
     await last.getByRole('button').click()
     await expect(last).toHaveAttribute('aria-sort', 'descending')

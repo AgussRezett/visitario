@@ -42,7 +42,7 @@ export function PeopleBox({ names, people, onConfirm }: PeopleBoxProps) {
             {n.match.kind === 'guess' ? (
               <Button size="sm" variant="secondary" onClick={() => n.match.kind === 'guess' && onConfirm(n.name, n.match.person.id)}>Confirmar</Button>
             ) : null}
-            <Select label={`Quién es "${n.name}"`} options={options} value="" onChange={(e) => e.target.value && onConfirm(n.name, e.target.value)} className={styles.select} />
+            <Select label={`Quién es "${n.name}"`} options={options} value="" onChange={(v) => v && onConfirm(n.name, v)} className={styles.select} />
           </div>
         </div>
       ))}

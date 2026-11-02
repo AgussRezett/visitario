@@ -1,3 +1,4 @@
+import { pick } from './support/select'
 import { expect, test } from '@playwright/test'
 import { installFakeSupabase, visitRow, type FakeState } from './support/fake-supabase'
 
@@ -86,7 +87,7 @@ test('inviting someone Visitario already knows: DNI and email, and the email goe
   await expect(send).toBeDisabled() // the email is needed
   await page.getByLabel('Email').fill('Lucas@Mendez.com ')
   await page.getByRole('radio', { name: /Supervisor/ }).click()
-  await page.getByLabel('Equipo que supervisa').selectOption({ label: 'Equipo Norte' })
+  await pick(page.getByLabel('Equipo que supervisa'), 'Equipo Norte')
   await page.screenshot({ path: `test-results/invite-${info.project.name}.png`, fullPage: true })
   await send.click()
 
@@ -240,7 +241,7 @@ test('company and plan: billing shows, settings save, data exports', async ({ pa
   await expect.poll(() => state.company?.name).toBe('Panda Distribuidora')
   await page.getByRole('radio', { name: 'Toda Argentina' }).click()
   await expect.poll(() => state.company?.geocoding_scope).toBe('argentina')
-  await page.getByLabel('Guardar fotos durante').selectOption('24')
+  await pick(page.getByLabel('Guardar fotos durante'), '24 meses')
   await expect.poll(() => state.company?.photo_retention_months).toBe(24)
 
   const download = page.waitForEvent('download')

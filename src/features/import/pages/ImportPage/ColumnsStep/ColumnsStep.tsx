@@ -42,7 +42,7 @@ export function ColumnsStep({ draft, formats, people, names, rows, update, setCo
       label={`Qué hay en ${title(i)}`}
       options={FIELD_OPTIONS}
       value={columns[i] ?? 'ignore'}
-      onChange={(e) => setColumn(i, e.target.value as ImportField)}
+      onChange={(v) => setColumn(i, v as ImportField)}
       className={styles.select}
       data-field={columns[i]}
     />
@@ -75,7 +75,7 @@ export function ColumnsStep({ draft, formats, people, names, rows, update, setCo
             label="Hoja"
             options={draft.sheets.map((s, i) => ({ value: i, label: s.name }))}
             value={draft.sheet}
-            onChange={(e) => update(withSheets(draft, draft.fileName, draft.sheets, Number(e.target.value), formats))}
+            onChange={(v) => update(withSheets(draft, draft.fileName, draft.sheets, Number(v), formats))}
           />
         ) : null}
         <label className={styles.check}>

@@ -1,3 +1,4 @@
+import { pick } from './support/select'
 import { expect, test } from '@playwright/test'
 import { installFakeSupabase, visitRow, type FakeState } from './support/fake-supabase'
 
@@ -35,7 +36,7 @@ test('the supervisor reviews: a fix needs a comment, approving moves to the next
   const fix = page.getByRole('button', { name: 'Pedir corrección' })
   await expect(fix).toBeDisabled() // a fix request needs words
   await page.getByLabel('Comentario para Lucía').fill('Falta el después de la puntera')
-  await page.getByLabel('Sobre').selectOption({ label: '1 Puntera' })
+  await pick(page.getByLabel('Sobre'), '1 Puntera')
   await page.screenshot({ path: `test-results/review-${info.project.name}.png`, fullPage: !desktop })
   await fix.click()
   await expect.poll(() => state.visits.find((v) => v.id === 'v1')?.review_status).toBe('needs_fix')

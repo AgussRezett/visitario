@@ -72,7 +72,7 @@
 .select {
   @include text(label);
   height: 40px;
-  padding-inline: space(2.5) space(7);
+  padding-inline: space(2.5) space(2);
   font-weight: $weight-bold;
 
   &[data-field='ignore'] {

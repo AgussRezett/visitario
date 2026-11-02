@@ -104,15 +104,15 @@ export function DirectoryPage() {
         </label>
         <div className={styles.chips}>
           {counts.data?.areas.length ? (
-            <Select label="Zona" value={area ?? ''} onChange={(e) => setFilters({ area: e.target.value || null })} className={styles.area}
+            <Select label="Zona" value={area ?? ''} onChange={(v) => setFilters({ area: v || null })} hideLabel size="sm"
               options={[{ value: '', label: 'Zona: todas' }, ...counts.data.areas.map((a) => ({ value: a, label: a }))]} />
           ) : null}
           {channels.length ? (
-            <Select label="Canal" value={channel === null ? '' : String(channel)} onChange={(e) => setFilters({ channel: pick(e.target.value) })} className={styles.area}
+            <Select label="Canal" value={channel === null ? '' : String(channel)} onChange={(v) => setFilters({ channel: pick(v) })} hideLabel size="sm"
               options={[{ value: '', label: 'Canal: todos' }, { value: '0', label: 'Sin canal' }, ...channels.map((c) => ({ value: String(c.id), label: c.name }))]} />
           ) : null}
           {sellers.length ? (
-            <Select label="Vendedor" value={seller === null ? '' : String(seller)} onChange={(e) => setFilters({ seller: pick(e.target.value) })} className={styles.area}
+            <Select label="Vendedor" value={seller === null ? '' : String(seller)} onChange={(v) => setFilters({ seller: pick(v) })} hideLabel size="sm"
               options={[{ value: '', label: 'Vendedor: todos' }, { value: '0', label: 'Sin vendedor' }, ...sellers.map((s) => ({ value: String(s.id), label: s.name }))]} />
           ) : null}
           <button type="button" className={styles.chip} aria-pressed={filter === 'unverified'} data-tone="warn" onClick={() => toggle('unverified')}>

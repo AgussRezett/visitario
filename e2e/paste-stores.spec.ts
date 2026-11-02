@@ -23,7 +23,7 @@ test('pasting many stores: all at once, the ones left out stay with why, and a r
   await page.getByRole('button', { name: 'Agregar dirección' }).filter({ visible: true }).first().click()
   const sheet = page.getByRole('dialog', { name: 'Agregar a mi jornada' })
   await sheet.getByRole('radio', { name: 'Pegar varias' }).click()
-  await expect(sheet.getByLabel('Canal de los que no lo indican')).toHaveValue('10')
+  await expect(sheet.getByLabel('Canal de los que no lo indican')).toHaveAttribute('data-value', '10')
   await sheet.getByLabel('Direcciones').fill([
     '1362; José Cubas 2770',
     '1353; Ladines 2774 #Kiosco',

@@ -1,3 +1,4 @@
+import { pick } from './support/select'
 import { expect, test } from '@playwright/test'
 import { installFakeSupabase, type FakeState } from './support/fake-supabase'
 
@@ -34,10 +35,10 @@ test('Martín imports the spreadsheet: columns, names, review, into five drafts'
   await page.getByLabel('Subir planilla').setInputFiles(FILE)
 
   await expect(page.getByRole('heading', { name: '¿Qué hay en cada columna?' })).toBeVisible()
-  await expect(page.getByLabel('Qué hay en CLIENTE')).toHaveValue('customer_number')
-  await expect(page.getByLabel('Qué hay en DOMICILIO')).toHaveValue('address')
-  await expect(page.getByLabel('Qué hay en REPOSITOR')).toHaveValue('merchandiser')
-  await expect(page.getByLabel('Qué hay en VENDEDOR')).toHaveValue('seller')
+  await expect(page.getByLabel('Qué hay en CLIENTE')).toHaveAttribute('data-value', 'customer_number')
+  await expect(page.getByLabel('Qué hay en DOMICILIO')).toHaveAttribute('data-value', 'address')
+  await expect(page.getByLabel('Qué hay en REPOSITOR')).toHaveAttribute('data-value', 'merchandiser')
+  await expect(page.getByLabel('Qué hay en VENDEDOR')).toHaveAttribute('data-value', 'seller')
   await expect(page.getByText('¿Es Nicolás Ferrari?')).toBeVisible()
   await page.getByRole('button', { name: 'Confirmar' }).click()
   await expect(page.getByText('¿Es Nicolás Ferrari?')).toHaveCount(0)
@@ -90,7 +91,7 @@ test('pasted addresses go to the chosen merchandiser, located when found', async
   await page.getByRole('button', { name: 'Continuar con el texto' }).click()
 
   await expect(page.getByRole('heading', { name: 'Revisá antes de guardar' })).toBeVisible()
-  await page.getByLabel('Para').selectOption({ label: 'Lucía Gómez' })
+  await pick(page.getByLabel('Para'), 'Lucía Gómez')
   await expect(page.getByText('Comercio nuevo · ubicado')).toBeVisible()
   await expect(page.getByText('Comercio nuevo · sin ubicación exacta')).toBeVisible()
   await expect(page.getByText('Misma dirección en el directorio')).toBeVisible()
@@ -112,8 +113,8 @@ test('a supervisor who is also a merchandiser imports for themselves; every row 
 
   await expect(page.getByRole('heading', { name: 'Revisá antes de guardar' })).toBeVisible()
   const para = page.getByLabel('Para')
-  await expect(para.locator('option', { hasText: 'Agustin Rezett (vos)' })).toHaveCount(1)
-  await para.selectOption({ label: 'Elegir activador…' })
+  await expect(para).toContainText('Agustin Rezett (vos)') // themselves, already chosen
+  await pick(para, 'Elegir activador…')
   await expect(page.getByText('Falta elegir el activador')).toHaveCount(2)
   await expect(page.getByText('Manuela Pedraza 3526', { exact: true })).toBeVisible()
   await expect(page.getByText('Dirección nueva: se suma al directorio')).toBeVisible()
@@ -121,7 +122,7 @@ test('a supervisor who is also a merchandiser imports for themselves; every row 
   await expect(page.getByRole('button', { name: 'Quitar la fila 1' })).toContainText('Quitar')
   await page.screenshot({ path: `test-results/import-self-${info.project.name}.png`, fullPage: true })
 
-  await para.selectOption({ label: 'Agustin Rezett (vos)' })
+  await pick(para, 'Agustin Rezett (vos)')
   await page.getByRole('button', { name: 'Agregar 2 a la jornada de Agustin' }).click()
   await expect(page.getByText(/Se agregaron 2 locales/)).toBeVisible()
   expect(state.visits.map((v) => v.merchandiser_id)).toEqual(['p1', 'p1'])

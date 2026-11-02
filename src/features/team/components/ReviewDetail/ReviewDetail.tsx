@@ -162,7 +162,7 @@ function ReviewForm({ visit: v, meId, draft, displayLabel }: { visit: TeamVisit;
         <Select
           label="Sobre"
           value={draft.displayId ?? ''}
-          onChange={(e) => draft.setDisplayId(e.target.value || null)}
+          onChange={(v) => draft.setDisplayId(v || null)}
           options={[{ value: '', label: 'Toda la visita' }, ...v.displays.map((d) => ({ value: d.id, label: displayLabel(d.id) ?? 'Exhibición' }))]}
         />
       ) : null}
