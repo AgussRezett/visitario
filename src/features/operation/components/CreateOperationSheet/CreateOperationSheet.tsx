@@ -75,7 +75,7 @@ export function CreateOperationSheet({ open, onClose, companyId, date, meId, onC
       </p>
       <PeoplePicker label={meId ? 'Compañeros' : 'Activadores'} people={meId ? others : people.data ?? []} selected={selected} onToggle={toggle} />
       {!meId && selected.length >= 2 ? (
-        <Select label="Encabeza" value={chosenHost} onChange={(e) => setHost(e.target.value)}
+        <Select label="Encabeza" value={chosenHost} onChange={(v) => setHost(v)}
           options={selected.map((id) => ({ value: id, label: nameOf(id) }))} />
       ) : null}
       <Field label="Nombre" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} placeholder="Opcional: Ej. Coto Cabildo" />

@@ -61,9 +61,9 @@ export function CreateCompanySheet({ open, onClose, onCreated }: { open: boolean
       <div className={styles.form}>
         <Field label="Nombre" value={form.name} onChange={(e) => set({ name: e.target.value })} placeholder="Ej. Distribuidora Sur" maxLength={80} />
         <div className={styles.pair}>
-          <Select label="Tipo" value={form.kind} onChange={(e) => set({ kind: e.target.value as CompanyKind })}
+          <Select label="Tipo" value={form.kind} onChange={(v) => set({ kind: v as CompanyKind })}
             options={CREATABLE_KINDS.map((k) => ({ value: k, label: KIND_LABEL[k] }))} />
-          <Select label="Plan" value={form.plan} onChange={(e) => set({ plan: e.target.value as PlanKind })}
+          <Select label="Plan" value={form.plan} onChange={(v) => set({ plan: v as PlanKind })}
             options={(['pilot', 'team', 'free', 'internal'] as const).map((p) => ({ value: p, label: PLAN_SHORT[p] }))} />
         </div>
         {form.plan === 'pilot' || form.plan === 'team' ? (

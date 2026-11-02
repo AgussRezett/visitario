@@ -59,7 +59,7 @@ export function EditSheet({ store, open, onClose }: { store: StoreDetail; open: 
         <Field label="Zona" value={form.area} onChange={set('area')} maxLength={60} />
       </div>
       <div className={styles.pair}>
-        <Select label="Canal" value={form.channel} onChange={set('channel')}
+        <Select label="Canal" value={form.channel} onChange={(v) => setForm((f) => ({ ...f, channel: v }))}
           options={[{ value: '', label: 'Sin canal' }, ...pickable(catalogs?.channels, store.channelId).map((c) => ({ value: String(c.id), label: c.name }))]} />
         <SellerPicker sellers={pickable(catalogs?.sellers, store.sellerId)} value={form.seller ? Number(form.seller) : null}
           onChange={(id) => setForm((f) => ({ ...f, seller: id ? String(id) : '' }))} onAddSeller={canAdd ? (name) => newSeller.mutateAsync(name) : undefined} />

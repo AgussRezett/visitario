@@ -30,7 +30,7 @@ test('without my location: starts at the first store, the closed one last, and t
 
   await expect(page.getByText('1 local sin ubicación')).toBeVisible()
   await expect(page.getByText('Locales a visitar · 5 de 5')).toBeVisible()
-  await expect(page.getByLabel('Último local')).toHaveValue('v6') // closed: back after 17 h
+  await expect(page.getByLabel('Último local')).toHaveAttribute('data-value', 'v6') // closed: back after 17 h
   await expect(page.getByText('Moldes 1365')).toHaveCount(0) // finished: out of the route
   await page.screenshot({ path: `test-results/route-setup-${info.project.name}.png`, fullPage: true })
 

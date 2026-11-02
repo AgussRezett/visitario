@@ -104,17 +104,17 @@ export function BulkEditSheet({ open, onClose, onSaved, companyId, rows, catalog
           <>
             <p className={styles.lead}>Elegí solo lo que quieras cambiar. Lo que dejes como está no se toca.</p>
             <div className={styles.field}>
-              <Select label="Vendedor" value={form.seller} onChange={set('seller')}
+              <Select label="Vendedor" value={form.seller} onChange={(v) => setForm((f) => ({ ...f, seller: v }))}
                 options={[{ value: KEEP, label: keepLabel(now.seller, sellerName) }, { value: NONE, label: 'Sin vendedor' }, ...sellers.map((s) => ({ value: String(s.id), label: s.name }))]} />
               <p className={styles.now}>{help(now.seller, sellerName)}</p>
             </div>
             <div className={styles.field}>
-              <Select label="Canal" value={form.channel} onChange={set('channel')}
+              <Select label="Canal" value={form.channel} onChange={(v) => setForm((f) => ({ ...f, channel: v }))}
                 options={[{ value: KEEP, label: keepLabel(now.channel, channelName) }, { value: NONE, label: 'Sin canal' }, ...channels.map((c) => ({ value: String(c.id), label: c.name }))]} />
               <p className={styles.now}>{help(now.channel, channelName)}</p>
             </div>
             <div className={styles.field}>
-              <Select label="Zona" value={form.area} onChange={set('area')}
+              <Select label="Zona" value={form.area} onChange={(v) => setForm((f) => ({ ...f, area: v }))}
                 options={[{ value: KEEP, label: keepLabel(now.area, areaName) }, { value: NONE, label: 'Sin zona' }, ...areas.map((a) => ({ value: a, label: a })), { value: OTHER, label: 'Otra zona…' }]} />
               <p className={styles.now}>{help(now.area, areaName)}</p>
             </div>

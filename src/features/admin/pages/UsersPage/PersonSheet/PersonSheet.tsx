@@ -97,7 +97,7 @@ export function PersonSheet({ person, teams, companyId, companyName, companyShif
           label={roles.includes('supervisor') && !roles.includes('merchandiser') ? 'Equipo que supervisa' : 'Equipo'}
           options={[{ value: '', label: 'Sin equipo' }, ...teams.map((t) => ({ value: t.id, label: t.name }))]}
           value={teamId ?? ''}
-          onChange={(e) => setTeamId(e.target.value || null)}
+          onChange={(v) => setTeamId(v || null)}
         />
         <Field label="Desde" type="date" value={startsOn} onChange={(e) => setStartsOn(e.target.value)} />
       </div>

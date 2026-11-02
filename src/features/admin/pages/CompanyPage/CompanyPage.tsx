@@ -127,7 +127,7 @@ export function CompanyPage() {
           <h2 className={styles.heading}>Tus datos</h2>
           <p className={styles.help}>Las fotos, comercios y visitas son de {c?.name ?? ctx.companyName}. Ninguna otra empresa puede verlos.</p>
           <Select label="Guardar fotos durante" value={c?.photoRetentionMonths ?? 12} disabled={!c}
-            onChange={(e) => update.mutate({ photoRetentionMonths: Number(e.target.value) })}
+            onChange={(v) => update.mutate({ photoRetentionMonths: Number(v) })}
             options={RETENTION_MONTHS.map((m) => ({ value: m, label: `${m} meses` }))} />
           <div className={styles.exports}>
             <Button variant="secondary" size="md" loading={exporting === 'visits'} disabled={Boolean(exporting)} onClick={() => void download('visits')}><Download size={18} aria-hidden />Exportar visitas</Button>

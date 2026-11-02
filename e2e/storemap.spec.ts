@@ -1,3 +1,4 @@
+import { pick } from './support/select'
 import { expect, test } from '@playwright/test'
 import { installFakeSupabase, type FakeState, type Row } from './support/fake-supabase'
 
@@ -36,9 +37,9 @@ test('the supervisor sees every point, by seller, with insights that filter the 
   // Phones fold the filters away, and say how many are on.
   if (info.project.name === 'mobile') await page.getByRole('button', { name: 'Filtros · 1' }).click()
   await page.getByRole('button', { name: 'Limpiar filtros' }).click()
-  await page.getByLabel('Zona', { exact: true }).selectOption('Palermo')
+  await pick(page.getByLabel('Zona', { exact: true }), 'Palermo')
   await expect(page.getByText('2 de 4 puntos')).toBeVisible()
-  await page.getByLabel('Zona', { exact: true }).selectOption('')
+  await pick(page.getByLabel('Zona', { exact: true }), 'Todas')
   await page.getByRole('switch', { name: /Solo sin visitar/ }).click()
   await expect(page.getByText('2 de 4 puntos')).toBeVisible() // 45 days and never
 

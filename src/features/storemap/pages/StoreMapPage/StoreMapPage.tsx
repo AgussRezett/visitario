@@ -101,12 +101,12 @@ export function StoreMapPage({ point }: { point?: string }) {
         ) : null}
         {desktop || open ? (<>
         <div className={styles.filters}>
-          <Select label="Zona" value={f.area ?? ''} onChange={(e) => set({ area: e.target.value || null })} options={[{ value: '', label: 'Todas' }, ...areas.map((a) => ({ value: a, label: a }))]} />
+          <Select label="Zona" value={f.area ?? ''} onChange={(v) => set({ area: v || null })} options={[{ value: '', label: 'Todas' }, ...areas.map((a) => ({ value: a, label: a }))]} />
           {!asSeller ? (
-            <Select label="Vendedor" value={f.sellerId ?? ''} onChange={(e) => set({ sellerId: e.target.value === '' ? null : Number(e.target.value) })}
+            <Select label="Vendedor" value={f.sellerId ?? ''} onChange={(v) => set({ sellerId: v === '' ? null : Number(v) })}
               options={[{ value: '', label: 'Todos' }, ...sellers.map((s) => ({ value: s.id, label: s.name })), { value: 0, label: 'Sin vendedor' }]} />
           ) : null}
-          <Select label="Canal" value={f.channelId ?? ''} onChange={(e) => set({ channelId: e.target.value === '' ? null : Number(e.target.value) })}
+          <Select label="Canal" value={f.channelId ?? ''} onChange={(v) => set({ channelId: v === '' ? null : Number(v) })}
             options={[{ value: '', label: 'Todos' }, ...channels.map((c) => ({ value: c.id, label: c.name })), { value: 0, label: 'Sin canal' }]} />
           <label className={styles.search}>
             <Search size={18} aria-hidden />

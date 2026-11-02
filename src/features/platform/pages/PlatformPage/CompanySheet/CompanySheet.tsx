@@ -63,8 +63,8 @@ export function CompanySheet({ company, onClose }: { company: PlatformCompany | 
         ) : (
           <>
             <div className={styles.grid}>
-              <Select label="Plan" value={plan} onChange={(e) => setPlanKind(e.target.value as PlanKind)} options={PLANS} />
-              <Select label="Estado" value={status} onChange={(e) => setStatus(e.target.value as SubscriptionStatus)} options={STATES} />
+              <Select label="Plan" value={plan} onChange={(v) => setPlanKind(v as PlanKind)} options={PLANS} />
+              <Select label="Estado" value={status} onChange={(v) => setStatus(v as SubscriptionStatus)} options={STATES} />
             </div>
             <Field label="Vence el" type="date" value={endsOn} onChange={(e) => setEndsOn(e.target.value)} help="Opcional. Para un piloto, el día que termina." />
             {setPlan.error ? <Banner tone="error">{setPlan.error.message}</Banner> : null}

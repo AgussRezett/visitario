@@ -90,7 +90,7 @@ export function ItemSheet({ editing, companyId, sellers = [], onClose }: { editi
             <span className={styles.mergeTitle}>¿Está repetido?</span>
             <p className={styles.help}>Si {current.name} es la misma persona que otro vendedor (por ejemplo, uno cargado con el nombre completo al crear su usuario), unilos: sus comercios pasan al que elijas.</p>
             <div className={styles.mergeRow}>
-              <Select label="Unir con" value={into} onChange={(e) => setInto(e.target.value)}
+              <Select label="Unir con" value={into} onChange={(v) => setInto(v)}
                 options={[{ value: '', label: 'Elegí el vendedor' }, ...others.map((s) => ({ value: String(s.id), label: `${s.name}${s.extra ? ' · con usuario' : ''}${s.active ? '' : ' · inactivo'}` }))]} />
               <Button variant="secondary" size="md" disabled={!target} loading={mergeSellers.isPending} onClick={() => void merge().catch(() => null)}><Merge size={18} aria-hidden />Unir</Button>
             </div>

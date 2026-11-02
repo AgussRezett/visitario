@@ -1,3 +1,4 @@
+import { pick } from './support/select'
 import { expect, test } from '@playwright/test'
 import { atFakeToday, installFakeSupabase, visitRow, type FakeState } from './support/fake-supabase'
 
@@ -177,9 +178,9 @@ test('editing many stores at once: the marks survive the filters, and saving ask
   await page.goto('/s/stores')
   await expect(page.getByRole('heading', { name: 'Directorio · 4 comercios' })).toBeVisible()
 
-  await page.getByLabel('Zona', { exact: true }).selectOption('Palermo')
+  await pick(page.getByLabel('Zona', { exact: true }), 'Palermo')
   await page.getByRole('checkbox', { name: 'Seleccionar Kiosco Ana' }).check()
-  await page.getByLabel('Zona', { exact: true }).selectOption('Belgrano')
+  await pick(page.getByLabel('Zona', { exact: true }), 'Belgrano')
   await expect(page.getByRole('checkbox', { name: 'Seleccionar Kiosco Ana' })).toHaveCount(0)
   await page.getByRole('checkbox', { name: 'Seleccionar Almacén Rita' }).check()
   const bar = page.getByRole('region', { name: 'Comercios seleccionados' })
@@ -189,12 +190,12 @@ test('editing many stores at once: the marks survive the filters, and saving ask
 
   await bar.getByRole('button', { name: 'Editar en lote' }).click()
   const sheet = page.getByRole('dialog', { name: 'Editar en lote' })
-  await expect(sheet.getByLabel('Vendedor')).toHaveValue('keep')
-  await expect(sheet.getByRole('option', { name: 'Dejar como está (Sin vendedor)' })).toBeAttached()
-  await expect(sheet.getByRole('option', { name: 'Dejar como está (Varios)' })).toBeAttached() // the zones differ
+  await expect(sheet.getByLabel('Vendedor')).toHaveAttribute('data-value', 'keep')
+  await expect(sheet.getByLabel('Vendedor')).toContainText('Dejar como está (Sin vendedor)')
+  await expect(sheet.getByLabel('Zona')).toContainText('Dejar como está (Varios)') // the zones differ
   await expect(sheet.getByText('Ahora: varios, 2 distintos')).toBeVisible()
   await expect(sheet.getByRole('button', { name: /Revisar cambios/ })).toBeDisabled()
-  await sheet.getByLabel('Vendedor').selectOption({ label: 'Florencia' })
+  await pick(sheet.getByLabel('Vendedor'), 'Florencia')
   await page.screenshot({ path: `test-results/directory-bulk-${info.project.name}.png` })
   await sheet.getByRole('button', { name: /Revisar cambios/ }).click()
 
@@ -213,11 +214,11 @@ test('editing many stores at once: the marks survive the filters, and saving ask
   await expect(bar).toHaveCount(0)
 
   // All that match, at once; only the ones that really change are saved.
-  await page.getByLabel('Zona', { exact: true }).selectOption('')
+  await pick(page.getByLabel('Zona', { exact: true }), 'Zona: todas')
   await page.getByRole('button', { name: 'Seleccionar los 4' }).click()
   await expect(bar).toContainText('4 seleccionados')
   await bar.getByRole('button', { name: 'Editar en lote' }).click()
-  await sheet.getByLabel('Zona').selectOption('Palermo')
+  await pick(sheet.getByLabel('Zona'), 'Palermo')
   await sheet.getByRole('button', { name: /Revisar cambios/ }).click()
   await expect(review).toContainText('Cambia 2 comercios de 4: 2 comercios ya lo tenían.')
   await review.getByRole('button', { name: /Aplicar a 2 comercios/ }).click()
@@ -229,7 +230,7 @@ test('the filters and marks are still there after opening a store and coming bac
   const state = directory()
   await installFakeSupabase(page, state, 'supervisor')
   await page.goto('/s/stores')
-  await page.getByLabel('Zona', { exact: true }).selectOption('Belgrano')
+  await pick(page.getByLabel('Zona', { exact: true }), 'Belgrano')
   await page.getByRole('checkbox', { name: 'Seleccionar Autoservicio Lili' }).check()
   await expect(page.getByRole('link', { name: /Mas Ahorro/ })).toHaveCount(0)
 
@@ -237,19 +238,19 @@ test('the filters and marks are still there after opening a store and coming bac
   await page.getByRole('link', { name: /Autoservicio Lili/ }).click()
   await expect(page.getByRole('heading', { name: 'Autoservicio Lili', level: 1 })).toBeVisible()
   await page.getByRole('link', { name: 'Directorio', exact: true }).first().click()
-  await expect(page.getByLabel('Zona', { exact: true })).toHaveValue('Belgrano')
+  await expect(page.getByLabel('Zona', { exact: true })).toHaveAttribute('data-value', 'Belgrano')
   await expect(page.getByRole('link', { name: /Mas Ahorro/ })).toHaveCount(0)
   await expect(page.getByRole('checkbox', { name: 'Seleccionar Autoservicio Lili' })).toBeChecked()
 
   // Back by the browser, and after a reload
   await page.getByRole('link', { name: /Autoservicio Lili/ }).click()
   await page.goBack()
-  await expect(page.getByLabel('Zona', { exact: true })).toHaveValue('Belgrano')
+  await expect(page.getByLabel('Zona', { exact: true })).toHaveAttribute('data-value', 'Belgrano')
   await page.reload()
-  await expect(page.getByLabel('Zona', { exact: true })).toHaveValue('Belgrano')
+  await expect(page.getByLabel('Zona', { exact: true })).toHaveAttribute('data-value', 'Belgrano')
 
   await page.getByRole('button', { name: 'Limpiar filtros' }).click()
-  await expect(page.getByLabel('Zona', { exact: true })).toHaveValue('')
+  await expect(page.getByLabel('Zona', { exact: true })).toHaveAttribute('data-value', '')
   await expect(page.getByRole('link', { name: /Mas Ahorro/ })).toBeVisible()
   await page.screenshot({ path: `test-results/directory-kept-${info.project.name}.png` })
 })

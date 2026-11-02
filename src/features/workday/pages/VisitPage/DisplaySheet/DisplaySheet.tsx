@@ -64,7 +64,7 @@ export function DisplaySheet({ visit: v, display: d, index, catalogs, urlFor, ac
           label="Tipo"
           value={d.typeId}
           options={catalogs.displayTypes.map((t) => ({ value: t.id, label: t.name }))}
-          onChange={(e) => void actions.changes.patchDisplay(d.id, { typeId: Number(e.target.value) })}
+          onChange={(v) => void actions.changes.patchDisplay(d.id, { typeId: Number(v) })}
         />
         <Field
           label="Referencia"

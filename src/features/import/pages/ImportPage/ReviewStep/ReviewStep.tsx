@@ -108,7 +108,7 @@ export function ReviewStep({ companyId, draft, rows, people, names, tags, date, 
         label="Para"
         options={[{ value: '', label: 'Elegir activador…' }, ...people.map((p) => ({ value: p.id, label: `${p.firstName} ${p.lastName}${p.me ? ' (vos)' : ''}` }))]}
         value={draft.fallback ?? ''}
-        onChange={(e) => update({ fallback: e.target.value || null })}
+        onChange={(v) => update({ fallback: v || null })}
       />
       <Field label="Fecha" type="date" value={date} onChange={(e) => e.target.value && onDate(e.target.value)} />
     </div>

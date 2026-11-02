@@ -225,7 +225,7 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
             </div>
             <div className={styles.pair}>
               {channels.length ? (
-                <Select label="Canal" value={formChannel} onChange={set('channel')}
+                <Select label="Canal" value={formChannel} onChange={(v) => setForm((f) => ({ ...f, channel: v }))}
                   options={[{ value: '', label: 'Sin canal' }, ...channels.map((c) => ({ value: String(c.id), label: c.name }))]} />
               ) : null}
               <SellerPicker sellers={sellers} value={form.seller} onChange={(seller) => setForm((f) => ({ ...f, seller }))} onAddSeller={addSeller} />
@@ -277,7 +277,7 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
             </Banner>
           ) : null}
           {channels.length ? (
-            <Select label="Canal de los que no lo indican" value={pastedChannel} onChange={(e) => setDefaultChannel(e.target.value)}
+            <Select label="Canal de los que no lo indican" value={pastedChannel} onChange={(v) => setDefaultChannel(v)}
               options={[{ value: '', label: 'Sin canal' }, ...channels.map((c) => ({ value: String(c.id), label: c.name }))]} />
           ) : null}
         </>
