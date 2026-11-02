@@ -23,8 +23,10 @@ export function dayFocus(stops: Pick<DayStop, 'id' | 'workStatus'>[]): { current
 
 /** Who put the stop in the day, in the supervisor's words. */
 export function stopOrigin(s: Pick<DayStop, 'source' | 'addedByName' | 'addedByMe'>, member: string): string {
-  if (s.source === 'added') return `Agregada por ${s.addedByMe ? member : (s.addedByName ?? member)}`
-  return s.addedByName ? `Asignada por ${s.addedByName}` : 'Asignada'
+  // Extra: it went into the day once the shift had started (by anyone). "Me" is the activador.
+  const who = s.addedByMe ? member : s.addedByName
+  const by = who ? `Agregada por ${who}` : 'Asignada'
+  return s.source === 'added' ? `Extra · ${by}` : by
 }
 
 /** When something happened at the store, in a few words. */

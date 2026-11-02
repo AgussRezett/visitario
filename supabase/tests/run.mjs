@@ -106,7 +106,7 @@ check('Beto (other company) cannot see the visit', (await as('beto', `select * f
 const [{ id: s2 }] = await as('agus', `insert into store (company_id, address, created_by, source) values ($1, 'Cabildo 2280', $2, 'merchandiser') returning id`, [panda, agus]);
 const v2 = '01926f00-0000-7000-8000-00000000a002';
 await as('agus', `insert into visit (id, company_id, workday_id, merchandiser_id, work_date, store_id, added_by) values ($1, $2, $3, $4, current_date, $5, $4)`, [v2, panda, w1, agus, s2]);
-check('A visit Agus adds is marked as added by him', (await sys(`select source::text s from visit where id = $1`, [v2]))[0].s === 'added');
+check('A visit Agus adds is marked as added by him', (await sys(`select added_by = $2 mine from visit where id = $1`, [v2, agus]))[0].mine === true);
 await as('agus', `insert into visit (id, company_id, workday_id, merchandiser_id, work_date, store_id, added_by) values ($1, $2, $3, $4, current_date, $5, $4) on conflict (id) do nothing`, [v2, panda, w1, agus, s2]);
 check('Re-sending the same insert does not duplicate', (await sys(`select count(*)::int n from visit`))[0].n === 2);
 
@@ -153,8 +153,8 @@ check(`Automatic history (${ev.map(e => e.to_value ?? e.kind).join(' → ')})`, 
 // Resume: v2 is still pending; Agus moves it to a new workday of his own
 const [{ id: w2 }] = await as('agus', `insert into workday (company_id, merchandiser_id, work_date, status) values ($1, $2, '2026-10-10', 'published') returning id`, [panda, agus]);
 const [{ resume_visit: v3 }] = await as('agus', `select resume_visit($1, $2)`, [v2, w2]);
-const r = (await sys(`select work_date::text d, source::text s, resumed_from = $2 r from visit where id = $1`, [v3, v2]))[0];
-check('Resumed: new visit in the new workday, original source kept', r.r === true && r.d === '2026-10-10' && r.s === 'added');
+const r = (await sys(`select v.work_date::text d, v.added_by = o.added_by same_author, v.resumed_from = $2 r from visit v join visit o on o.id = v.resumed_from where v.id = $1`, [v3, v2]))[0];
+check('Resumed: new visit in the new workday, original author kept', r.r === true && r.d === '2026-10-10' && r.same_author === true);
 
 // Views and search
 const prog = await as('martin', `select * from daily_progress where work_date = '2026-10-09'`);
@@ -259,7 +259,7 @@ check('Assigned stop: source, author, task and indicated displays', (await sys(`
 await as('martin', `update workday set status = 'published' where id = $1`, [wFri])
 check('Published: Agus sees the day and its 2 stops', (await as('agus', `select id from visit where workday_id = $1`, [wFri])).length === 2)
 const vExtra = (await as('agus', `select add_visit($1, p_address => 'Moldes 1365') id`, [wFri]))[0].id
-check('A stop Agus adds to an assigned day shows as his', (await as('martin', `select source::text s, added_by = $2 mine from visit where id = $1`, [vExtra, agus]))[0].s === 'added')
+check('A stop Agus adds to an assigned day shows as his', (await as('martin', `select source::text s, added_by = $2 mine from visit where id = $1`, [vExtra, agus]))[0].mine === true)
 
 const wSat = (await as('martin', `select plan_workday($1, $2, '2026-10-17') id`, [panda, agus]))[0].id
 check('Copy a day: all its stops', (await as('martin', `select copy_workday($1, $2) n`, [wFri, wSat]))[0].n === 3)
@@ -1027,6 +1027,25 @@ check('Ended: Lucía can join another one that day', (await as('lucia', `select 
     && (await sys(`select count(*)::int n from visit where workday_id = $1 and deleted_at is null`, [day]))[0].n === 3)
   await expectError('Beto cannot paste into Agus’s day', () => as('beto', `select * from add_visits($1, $2)`, [day, '[]']), /not found/)
   await sys(`update visit set deleted_at = now() where workday_id = $1`, [day])
+}
+
+// ---- Extra means added once the shift started, whoever added it
+{
+  const today = (await sys(`select (now() at time zone 'America/Argentina/Buenos_Aires')::date::text d`))[0].d
+  const member = (await sys(`select m.id from membership m join person p on p.id = m.person_id where p.auth_user_id = $1 and m.company_id = $2`, [U.agus, panda]))[0].id
+  const day = (await as('agus', `select open_workday($1, $2) id`, [panda, today]))[0].id
+  const sourceOf = async (address) => (await sys(`select v.source::text s from visit v join store s on s.id = v.store_id where v.workday_id = $1 and lower(s.address) = lower($2)`, [day, address]))[0]?.s
+  await sys(`update membership set shift_start = '23:59', shift_end = '23:59:59' where id = $1`, [member])
+  await as('agus', `select add_visit($1, p_address => 'Antes del turno 100')`, [day])
+  check('Added before the shift starts: part of the day, even by the merchandiser', (await sourceOf('Antes del turno 100')) === 'assigned')
+  await sys(`update membership set shift_start = '00:00', shift_end = '23:59:59' where id = $1`, [member])
+  await as('agus', `select add_visit($1, p_address => 'Ya empezó 200')`, [day])
+  check('Added once the shift started: an extra', (await sourceOf('Ya empezó 200')) === 'added')
+  const future = (await as('agus', `select open_workday($1, '2099-01-05') id`, [panda]))[0].id
+  await as('agus', `select add_visit($1, p_address => 'Mañana 300')`, [future])
+  check('A day planned ahead is not extra', (await sys(`select source::text s from visit where workday_id = $1`, [future]))[0].s === 'assigned')
+  await sys(`update membership set shift_start = null, shift_end = null where id = $1`, [member])
+  await sys(`update visit set deleted_at = now() where workday_id = any($1::uuid[])`, [[day, future]])
 }
 
 // Password detection (Google users who later set a password)

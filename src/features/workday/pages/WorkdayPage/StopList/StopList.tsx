@@ -102,7 +102,7 @@ export function StopList({ visits, all, filter, onFilter, reputation, operationS
                         <StatusChip work={v.workStatus} review={v.reviewStatus} />
                       </span>
                       <span className={styles.address}>
-                        {[v.store.name ? v.store.address : null, v.store.area].filter(Boolean).join(' · ') || (v.source === 'added' ? 'Agregada por vos' : '')}
+                        {[v.store.name ? v.store.address : null, v.store.area].filter(Boolean).join(' · ') || (v.source === 'added' ? 'Extra' : '')}
                       </span>
                       {team(v)}
                       <StoreTagsLine tags={tagsOf(v)} />
@@ -135,7 +135,7 @@ export function StopList({ visits, all, filter, onFilter, reputation, operationS
                       <span className={styles.cellName}>{v.store.name ?? v.store.address}</span>
                       {team(v)}
                       <span className={styles.cellSub}>
-                        {[v.store.name ? v.store.address : null, v.store.area, tagsOf(v).channel, tagsOf(v).seller && `vend. ${tagsOf(v).seller}`, v.source === 'added' ? 'agregada por vos' : null].filter(Boolean).join(' · ')}
+                        {[v.store.name ? v.store.address : null, v.store.area, tagsOf(v).channel, tagsOf(v).seller && `vend. ${tagsOf(v).seller}`, v.source === 'added' ? 'extra' : null].filter(Boolean).join(' · ')}
                       </span>
                     </Link>
                   </td>

@@ -14,9 +14,9 @@ describe('an activador’s day seen by the supervisor', () => {
   })
 
   it('says who put each stop in the day', () => {
-    expect(stopOrigin({ source: 'assigned', addedByName: 'Martín', addedByMe: false }, 'Lucía')).toBe('Asignada por Martín')
-    expect(stopOrigin({ source: 'added', addedByName: 'Lucía', addedByMe: true }, 'Lucía')).toBe('Agregada por Lucía')
-    expect(stopOrigin({ source: 'added', addedByName: null, addedByMe: false }, 'Lucía')).toBe('Agregada por Lucía')
+    expect(stopOrigin({ source: 'assigned', addedByName: 'Martín', addedByMe: false }, 'Lucía')).toBe('Agregada por Martín')
+    expect(stopOrigin({ source: 'added', addedByName: 'Lucía', addedByMe: false }, 'Lucía')).toBe('Extra · Agregada por Lucía')
+    expect(stopOrigin({ source: 'added', addedByName: null, addedByMe: true }, 'Lucía')).toBe('Extra · Agregada por Lucía')
     expect(stopOrigin({ source: 'assigned', addedByName: null, addedByMe: false }, 'Lucía')).toBe('Asignada')
   })
 
