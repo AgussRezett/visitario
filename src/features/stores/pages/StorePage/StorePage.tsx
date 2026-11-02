@@ -31,7 +31,7 @@ const when = (v: StoreHistoryVisit) => `${v.workDate === todayInArgentina() ? 'H
 const arranged = (v: StoreHistoryVisit) => v.displays.filter((d) => v.photos.some((p) => p.displayId === d.id && p.kind === 'after')).length
 
 /** A store: its data, location, usual displays and visit history (S07 / SM07). */
-export function StorePage({ storeId }: { storeId: string }) {
+export function StorePage({ storeId, from }: { storeId: string; from?: string }) {
   const ctx = useWorkContext()
   const navigate = useNavigate()
   const desktop = useIsDesktop()
@@ -60,7 +60,11 @@ export function StorePage({ storeId }: { storeId: string }) {
 
   return (
     <div className={styles.page}>
-      <Link to="/s/stores" className={styles.back}><ChevronLeft size={16} aria-hidden />Directorio</Link>
+      {from ? (
+        <a href={from} className={styles.back} onClick={(e) => { e.preventDefault(); void navigate({ href: from }) }}><ChevronLeft size={16} aria-hidden />Volver</a>
+      ) : (
+        <Link to="/s/stores" className={styles.back}><ChevronLeft size={16} aria-hidden />Directorio</Link>
+      )}
       <header className={styles.top}>
         <div className={styles.titles}>
           <span className={styles.eyebrow}>{s.customerNumber ? `Cliente ${s.customerNumber}` : 'Sin número de cliente'}</span>

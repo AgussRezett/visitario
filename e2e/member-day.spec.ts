@@ -14,6 +14,7 @@ const luciaDay = (): FakeState => ({
   memberships: supervisor,
   people: [lucia],
   workdays: [{ id: 'w-p2', company_id: 'c1', merchandiser_id: 'p2', work_date: TODAY, status: 'published' }],
+  stores: [{ id: 's-v3', company_id: 'c1', address: 'Cuba 1940', name: null, area: 'Belgrano', customer_number: null, lat: null, lng: null, location_status: 'verified', source: 'imported' }],
   visits: [
     visitRow('v1', 0, 'Tres Arroyos 762', { ...ofLucia, work_status: 'done', arrived_at: `${TODAY}T10:02:00-03:00`, finished_at: `${TODAY}T10:40:00-03:00` }),
     visitRow('v2', 1, 'Juramento 2101', { ...ofLucia, work_status: 'in_progress', arrived_at: `${TODAY}T11:05:00-03:00` }),
@@ -38,11 +39,18 @@ test('the supervisor follows an activador’s day, read only, in the activador�
   expect([...order].sort((a, b) => a - b)).toEqual(order)
   await expect(list.getByText('Ahora acá')).toBeVisible()
   await expect(list.getByText('Sigue')).toBeVisible()
-  await expect(list.getByText('Agregada por Lucía')).toBeVisible()
+  await expect(list.getByText('Extra · Agregada por Lucía')).toBeVisible()
 
-  // Nothing to start or change from here: only a finished visit opens, to review it.
+  // Nothing to start or change from here: a finished visit opens to review it, the rest open
+  // the store in the directory (and come back here).
   await expect(page.getByRole('button', { name: /Llegué|Empezar|Agregar/ })).toHaveCount(0)
-  await expect(list.getByRole('link')).toHaveCount(1)
+  await expect(list.getByRole('link')).toHaveCount(4)
+  await expect(list.getByRole('link', { name: /Tres Arroyos 762/ })).toHaveAttribute('href', '/review/v1')
+  await list.getByRole('link', { name: /Cuba 1940/ }).click()
+  await expect(page).toHaveURL(/\/stores\/s-v3\?from=/)
+  await expect(page.getByRole('heading', { name: 'Cuba 1940' })).toBeVisible()
+  await page.getByRole('link', { name: 'Volver' }).click()
+  await expect(page.getByRole('heading', { name: 'Jornada de Lucía Gómez' })).toBeVisible()
 
   await page.getByRole('radio', { name: /Por hacer/ }).click()
   await expect(list.getByText('Tres Arroyos 762')).toHaveCount(0)
