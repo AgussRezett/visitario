@@ -15,7 +15,7 @@ import { Select } from '@/ui/Select'
 import { ToggleTags } from '@/ui/ToggleTag'
 import type { WorkContext } from '@/features/workday/context'
 import { useCatalogs } from '@/features/workday/api/queries'
-import { useAddVisit } from '@/features/workday/api/mutations'
+import { useAddVisit, useAddVisits } from '@/features/workday/api/mutations'
 import { geocode, type GeocodeResult } from '@/features/workday/api/geocode'
 import styles from './AddAddressSheet.module.scss'
 import { useOnline } from '@/lib/online'
@@ -27,6 +27,7 @@ import { useDayOverlaps } from '@/features/workday/api/overlaps'
 import { OverlapNote } from '@/features/workday/components/OverlapNote'
 import { pastedHelp, readLines } from './paste-lines'
 import { DirectoryResults } from './DirectoryResults'
+import { outcomeText, pasteOutcome, repeatedLines, type PasteOutcome } from './paste-results'
 
 interface AddAddressSheetProps {
   open: boolean
@@ -38,7 +39,7 @@ interface AddAddressSheetProps {
   forName?: string
 }
 
-const EMPTY = { address: '', name: '', customerNumber: '', task: '', displayTypes: [] as number[], channel: '', seller: null as number | null }
+const EMPTY = { address: '', name: '', customerNumber: '', task: '', displayTypes: [] as number[], channel: null as string | null, seller: null as number | null }
 
 /** Add a store from the directory, a new one, or several pasted addresses (wireframes A05 / AD06). */
 export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }: AddAddressSheetProps) {
@@ -49,20 +50,22 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
   const [picked, setPicked] = useState<string | null>(null)
   const [form, setForm] = useState(EMPTY)
   const [pasted, setPasted] = useState('')
-  const [progress, setProgress] = useState<string | null>(null)
-  const [leftOut, setLeftOut] = useState<string | null>(null)
-  const [pasting, setPasting] = useState(false)
+  const [outcome, setOutcome] = useState<PasteOutcome | null>(null)
+  /** For the pasted lines without #canal: the company's first channel, unless changed. */
+  const [defaultChannel, setDefaultChannel] = useState<string | null>(null)
   const catalogs = useCatalogs(ctx.companyId)
   const add = useAddVisit(workdayId)
+  const addMany = useAddVisits(workdayId)
 
   useEffect(() => {
     if (open) {
       setQuery('')
       setForm(EMPTY)
       setPasted('')
-      setProgress(null)
-      setLeftOut(null)
+      setOutcome(null)
+      setDefaultChannel(null)
       add.reset()
+      addMany.reset()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when the sheet opens
   }, [open])
@@ -91,6 +94,12 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
   const sellers = pickable(catalogs.data?.sellers, null)
   const channels = pickable(catalogs.data?.channels, null)
   const lines = readLines(pasted, sellers, channels)
+  // New stores go to the company's first channel (Autoservicio) unless told otherwise.
+  const firstChannel = channels[0] ? String(channels[0].id) : ''
+  const pastedChannel = defaultChannel ?? firstChannel
+  const formChannel = form.channel ?? firstChannel
+  // The same store twice in the list goes in once; say so before adding.
+  const twice = [...repeatedLines(lines)].map(([i, first]) => `Línea ${i + 1} repite la ${first + 1}: ${lines[i]?.customerNumber || lines[i]?.address}`)
   // The mention still being typed at the end is not flagged yet.
   const canAdd = useCanAddSellers(ctx.companyId)
   const newSeller = useAddSeller(ctx.companyId)
@@ -124,7 +133,7 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
       customerNumber: form.customerNumber.trim() || undefined,
       task: form.task.trim() || undefined,
       displayTypes: form.displayTypes,
-      channelId: form.channel ? Number(form.channel) : null,
+      channelId: formChannel ? Number(formChannel) : null,
       sellerId: form.seller,
       area: place?.area ?? null,
       lat: place?.lat ?? null,
@@ -135,36 +144,14 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
   }
 
   const addPasted = async () => {
-    setPasting(true)
-    try {
-      await addLines()
-    } finally {
-      setPasting(false)
-    }
-  }
-
-  const addLines = async () => {
-    setLeftOut(null)
-    setProgress('Buscando en el directorio…')
-    // Stores already in the directory are reused (by customer number, then address).
-    const { data: found } = await supabase.rpc('match_stores', {
-      p_company: ctx.companyId,
-      p_rows: lines.map((l) => ({ customer_number: l.customerNumber, address: l.address })),
-    })
-    const known = new Map((found ?? []).map((m) => [m.idx, m.store_id]))
-    const missing: string[] = []
-    for (const [i, l] of lines.entries()) {
-      setProgress(`Agregando ${i + 1} de ${lines.length}…`)
-      const storeId = known.get(i)
-      const tags = { channelId: l.channelId, sellerId: l.sellerId }
-      if (storeId) await add.mutateAsync({ storeId, ...tags })
-      else if (l.address.length >= 3) await add.mutateAsync({ address: l.address, customerNumber: l.customerNumber || undefined, area: l.area || null, ...tags })
-      else missing.push(l.text)
-    }
-    if (!missing.length) return onClose()
-    // Only a customer number nobody knows: keep those lines for the merchandiser to complete.
-    setPasted(missing.join('\n'))
-    setLeftOut(`${missing.length === 1 ? 'Este cliente no está' : 'Estos clientes no están'} en el directorio: sumá la dirección en la misma línea.`)
+    setOutcome(null)
+    const sent = lines
+    const rows = sent.map((l) => ({ customerNumber: l.customerNumber, address: l.address, area: l.area, sellerId: l.sellerId, channelId: l.channelId ?? (pastedChannel ? Number(pastedChannel) : null) }))
+    const result = pasteOutcome(sent.map((l) => l.text), await addMany.mutateAsync(rows), repeatedLines(sent))
+    if (!result.failed.length) return onClose()
+    // The lines that did not go in stay, to fix them and try again.
+    setPasted(result.failed.map((f) => f.text).join('\n'))
+    setOutcome(result)
   }
 
   const canAddNew = form.address.trim().length >= 3
@@ -182,7 +169,7 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
           {mode === 'one' ? (
             <Button size="md" disabled={!canAddNew || !online} loading={add.isPending} onClick={addNew}>{forName ? 'Agregar a la jornada' : 'Agregar a mi jornada'}</Button>
           ) : (
-            <Button size="md" disabled={!lines.length || !online} loading={pasting} onClick={addPasted}>
+            <Button size="md" disabled={!lines.length || !online} loading={addMany.isPending} onClick={() => void addPasted().catch(() => undefined)}>
               Agregar {lines.length || ''} {lines.length === 1 ? 'dirección' : 'direcciones'}
             </Button>
           )}
@@ -238,7 +225,7 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
             </div>
             <div className={styles.pair}>
               {channels.length ? (
-                <Select label="Canal" value={form.channel} onChange={set('channel')}
+                <Select label="Canal" value={formChannel} onChange={set('channel')}
                   options={[{ value: '', label: 'Sin canal' }, ...channels.map((c) => ({ value: String(c.id), label: c.name }))]} />
               ) : null}
               <SellerPicker sellers={sellers} value={form.seller} onChange={(seller) => setForm((f) => ({ ...f, seller }))} onAddSeller={addSeller} />
@@ -261,6 +248,12 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
         </>
       ) : (
         <>
+          {outcome ? (
+            <Banner tone="warn" title={`${outcomeText(outcome)}. ${outcome.failed.length === 1 ? 'Falta 1' : `Faltan ${outcome.failed.length}`}:`}>
+              <p>Te dejamos {outcome.failed.length === 1 ? 'esa línea' : 'esas líneas'} arriba: corregilas y tocá Agregar de nuevo.</p>
+              <ul className={styles.repeated}>{outcome.failed.map((f, i) => <li key={i}><b>{f.text}</b> — {f.reason}</li>)}</ul>
+            </Banner>
+          ) : null}
           <MentionTextArea
             label="Direcciones"
             value={pasted}
@@ -273,17 +266,25 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
             help={pastedHelp(lines, true)}
           />
           {unknown.length ? <Banner tone="warn">No encontramos {unknown.join(', ')}. Elegilos de la lista que aparece al escribir @ o #; si no están, se cargan en Catálogos.</Banner> : null}
+          {twice.length ? (
+            <Banner tone="info" title={twice.length === 1 ? 'Hay una línea repetida: se agrega una vez' : `Hay ${twice.length} líneas repetidas: se agregan una vez`}>
+              <ul className={styles.repeated}>{twice.map((r) => <li key={r}>{r}</li>)}</ul>
+            </Banner>
+          ) : null}
           {repeated.length ? (
             <Banner tone="warn" title={repeated.length === 1 ? 'Una dirección ya está en otra jornada' : `${repeated.length} direcciones ya están en otras jornadas`}>
               <ul className={styles.repeated}>{repeated.map((r) => <li key={r}>{r}</li>)}</ul>
             </Banner>
           ) : null}
-          {leftOut ? <Banner tone="warn">{leftOut}</Banner> : null}
+          {channels.length ? (
+            <Select label="Canal de los que no lo indican" value={pastedChannel} onChange={(e) => setDefaultChannel(e.target.value)}
+              options={[{ value: '', label: 'Sin canal' }, ...channels.map((c) => ({ value: String(c.id), label: c.name }))]} />
+          ) : null}
         </>
       )}
 
-      {progress && pasting ? <p className={styles.help}>{progress}</p> : null}
-      {add.error ? <Banner tone="error">{add.error.message}</Banner> : null}
+      {addMany.isPending ? <p className={styles.help}>Agregando {lines.length} {lines.length === 1 ? 'local' : 'locales'}…</p> : null}
+      {(add.error ?? addMany.error) ? <Banner tone="error">{(add.error ?? addMany.error)?.message}</Banner> : null}
       <p className={styles.help}>
         Queda registrada como agregada por vos y tu supervisor la ve en tu jornada. Si no encontramos la altura exacta, la guardás sin ubicación y la verificás después.
       </p>

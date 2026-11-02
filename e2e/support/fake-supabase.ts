@@ -4,6 +4,7 @@ import { handlePlatform } from './fake-platform'
 import { handleStorage } from './fake-storage'
 import { handleOperation } from './fake-operation'
 import { dayOverlaps } from './fake-overlaps'
+import { addVisits } from './fake-paste'
 import type { FakeState, Row } from './fake-state'
 
 export type { FakeState, Row } from './fake-state'
@@ -246,14 +247,15 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
       state.workday = { id: 'w1', company_id: COMPANY, work_date: body().p_date, status: 'published', created_by: ME }
       return json('w1')
     }
-    if (path.endsWith('/rpc/add_visit')) {
-      const b = body()
+    const addVisit = (b: Row) => {
       const id = `v${state.visits.length + 1}`
       const planned = (state.workdays ?? []).find((w) => w.id === b.p_workday)
       const store = { store_id: b.p_store ?? `s-${id}` }
       state.visits.push(visitRow(id, state.visits.length, String(b.p_address), planned ? { ...store, workday_id: planned.id, work_date: planned.work_date, merchandiser_id: planned.merchandiser_id, source: 'assigned', task: b.p_task ?? null } : store))
-      return json(id)
+      return id
     }
+    if (path.endsWith('/rpc/add_visit')) return json(addVisit(body()))
+    if (path.endsWith('/rpc/add_visits')) return json(addVisits(state, body(), addVisit))
     if (path.endsWith('/rpc/tag_store')) {
       ;(state.tagged ??= []).push(body())
       return route.fulfill({ status: 204 })

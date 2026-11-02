@@ -34,7 +34,7 @@ test('pasting stores: @ offers the sellers and # the channels, and the store kee
   await page.keyboard.press('Enter')
   await expect(text).toHaveValue('1462; Altolaguirre 1952 @Florencia ')
   await text.pressSequentially('#kio')
-  await sheet.getByRole('option', { name: 'Drugstore / Kiosco / Kiosco ventana' }).click()
+  await sheet.getByRole('listbox', { name: 'Canales' }).getByRole('option', { name: 'Drugstore / Kiosco / Kiosco ventana' }).click()
   await expect(text).toHaveValue('1462; Altolaguirre 1952 @Florencia #Drugstore / Kiosco / Kiosco ventana ')
   await expect(sheet.getByText(/1 local · 1 con nro\. de cliente · 1 con vendedor · 1 con canal/)).toBeVisible()
 

@@ -124,7 +124,7 @@ test('assigning: copy a task to other stops, and add only the pending stops chos
   await sheet.getByRole('radio', { name: 'Pegar varias' }).click()
   await sheet.getByLabel('Direcciones').fill('Moldes 1365\nVidal 2044\nCuba 2100')
   await sheet.getByRole('button', { name: 'Agregar 3 direcciones' }).click()
-  await expect.poll(() => state.visits.length).toBe(3)
+  await expect.poll(() => state.visits.filter((v) => v.workday_id === `w-p2-${friday}`).length).toBe(3)
   await page.keyboard.press('Escape')
 
   await page.getByLabel('Tarea en Moldes 1365', { exact: true }).fill('Activar grupo Campari')
