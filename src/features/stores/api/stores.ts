@@ -1,6 +1,7 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { Enums } from '@/lib/supabase'
+import type { DirectorySort } from '@/domain/directory-filters'
 import { collapseResumed, type LocationStatus, type StoreSource } from '@/domain/stores'
 import { geocode } from '@/features/workday/api/geocode'
 import { STORE_SELECT, TEAM_VISIT_SELECT } from '@/features/workday/api/selects'
@@ -30,6 +31,7 @@ export interface DirectorySearch {
   area: string | null
   channel: number | null
   seller: number | null
+  sort?: DirectorySort
 }
 
 /** One page of the directory, or (with `limit`) every store that matches. */
@@ -43,6 +45,7 @@ export async function fetchDirectory(companyId: string, q: DirectorySearch, limi
     p_seller: q.seller ?? undefined,
     p_limit: limit,
     p_offset: offset,
+    p_sort: q.sort ?? 'name',
   })
   if (error) throw error
   const rows = (data ?? []).map((r) => ({

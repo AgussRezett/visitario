@@ -2052,6 +2052,7 @@ export type Database = {
           p_offset?: number
           p_query?: string
           p_seller?: number
+          p_sort?: string
         }
         Returns: {
           address: string
