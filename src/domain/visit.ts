@@ -25,7 +25,7 @@ const TRANSITIONS: Record<WorkStatus, readonly WorkStatus[]> = {
   in_progress: ['done', 'refused', 'closed', 'pending'],
   closed: ['in_progress'],
   done: ['in_progress'],
-  refused: [],
+  refused: ['in_progress'],
 }
 
 export function canTransition(from: WorkStatus, to: WorkStatus) {
@@ -44,6 +44,14 @@ export const isLocked = (v: { reviewStatus: ReviewStatus; autoApproved?: boolean
  */
 export function canRemoveVisit(v: { addedByMe: boolean; resumedFrom: string | null; reviewStatus: ReviewStatus; autoApproved?: boolean }) {
   return !isLocked(v) && (v.addedByMe || v.resumedFrom !== null)
+}
+
+/**
+ * The merchandiser undoes "finished" (done or not authorized) to fix the visit and finish
+ * it again; closed has its own "Volví: probar de nuevo". Not once a supervisor approved it.
+ */
+export function canReopen(v: { workStatus: WorkStatus; reviewStatus: ReviewStatus; autoApproved?: boolean }) {
+  return (v.workStatus === 'done' || v.workStatus === 'refused') && !isLocked(v)
 }
 
 /** Every visit with a result counts as visited: done, not authorized or closed. */

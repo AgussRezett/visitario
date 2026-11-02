@@ -114,8 +114,30 @@ test('a visit cannot end without the storefront photo and the store’s answer',
   await page.getByRole('radio', { name: 'Sí' }).click()
   await expect(finish).toBeEnabled()
   await finish.click()
+  // It asks first; cancelling leaves the visit as it was.
+  await expect(page.getByRole('alertdialog', { name: '¿Terminar la visita?' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('alertdialog', { name: '¿Terminar la visita?' })).toBeHidden()
+  expect(state.visits[0]?.work_status).toBe('in_progress')
+  await finish.click()
+  await page.getByRole('button', { name: 'Sí, terminar' }).click()
   await expect(page).toHaveURL(/\/s\/workday/)
   await expect.poll(() => state.visits[0]?.work_status).toBe('done')
+
+  // Finished by mistake (and approved on its own): undone, back to in progress, after asking.
+  Object.assign(state.visits[0] ?? {}, { review_status: 'approved', auto_approved: true })
+  // In the app, from the day (a reload would bring back the phone's cached copy for a few seconds).
+  await page.getByRole('link', { name: /Tres Arroyos 762/ }).filter({ visible: true }).first().click()
+  const undo = page.getByRole('button', { name: 'Deshacer terminada' }).filter({ visible: true }).first()
+  await undo.click()
+  await expect(page.getByRole('alertdialog', { name: '¿Deshacer terminada?' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('alertdialog', { name: '¿Deshacer terminada?' })).toBeHidden()
+  expect(state.visits[0]?.work_status).toBe('done')
+  await undo.click()
+  await page.getByRole('button', { name: 'Sí, deshacer' }).click()
+  await expect.poll(() => state.visits[0]?.work_status).toBe('in_progress')
+  await expect(page.getByRole('button', { name: 'Terminar visita' }).filter({ visible: true }).first()).toBeVisible()
 })
 
 test('photos never make the merchandiser wait: the visit goes on while they upload', async ({ page }) => {
@@ -149,6 +171,7 @@ test('photos never make the merchandiser wait: the visit goes on while they uplo
   // The merchandiser keeps working; ending the visit waits for the photo by itself.
   await page.getByRole('radio', { name: 'Sí' }).click()
   await page.getByRole('button', { name: 'Terminar visita' }).click()
+  await page.getByRole('button', { name: 'Sí, terminar' }).click()
   await expect(page).toHaveURL(/\/s\/workday/, { timeout: 10_000 })
   // Sent in order in the background: the photo first, then the finished visit.
   await expect.poll(() => state.uploads.length, { timeout: 10_000 }).toBe(1)

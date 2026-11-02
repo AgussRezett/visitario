@@ -1,9 +1,10 @@
 import { useNavigate } from '@tanstack/react-router'
-import { AlertTriangle, Check, Clock, RefreshCw } from 'lucide-react'
+import { AlertTriangle, Check, Clock, RefreshCw, Undo2 } from 'lucide-react'
 import { formatTime } from '@/domain/dates'
-import { finishCheck, isLocked, isVisited, staleSoon, WORK_STATUS_LABEL } from '@/domain/visit'
+import { canReopen, finishCheck, isLocked, isVisited, staleSoon, WORK_STATUS_LABEL } from '@/domain/visit'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
+import { useConfirm } from '@/ui/ConfirmDialog'
 import type { Visit } from '@/features/workday/api/queries'
 import type { VisitActions } from '../useVisitActions'
 import styles from './FinishBar.module.scss'
@@ -25,14 +26,34 @@ export function FinishBar({ visit: v, actions, back }: { visit: Visit; actions: 
   const finished = isVisited(v.workStatus)
   const closedChoice = v.consent === 'closed'
   const resetsAt = staleSoon(v)
+  const { confirm, dialog } = useConfirm()
 
+  // Ending a visit asks first: a tap by mistake should not close it.
   const end = async () => {
+    const as = check.target ? WORK_STATUS_LABEL[check.target].toLowerCase() : ''
+    const left = check.unarranged ? ` ${check.unarranged === 1 ? 'Queda 1 exhibición sin acomodar para retomar.' : `Quedan ${check.unarranged} exhibiciones sin acomodar para retomar.`}` : ''
+    const ok = await confirm({
+      title: closedChoice ? '¿Confirmás que estaba cerrado?' : '¿Terminar la visita?',
+      description: `Queda como ${as}.${left} Si te equivocás, la podés deshacer.`,
+      confirmLabel: closedChoice ? 'Sí, estaba cerrado' : 'Sí, terminar',
+    })
+    if (!ok) return
     await actions.finish()
     await navigate(back)
   }
 
+  const reopen = async () => {
+    const ok = await confirm({
+      title: '¿Deshacer terminada?',
+      description: 'La visita vuelve a En curso para que la corrijas. Lo cargado se mantiene; terminala de nuevo cuando esté lista.',
+      confirmLabel: 'Sí, deshacer',
+    })
+    if (ok) await actions.reopen()
+  }
+
   return (
     <div className={styles.bar}>
+      {dialog}
       {actions.error ? <Banner tone="error">{actions.error.message}</Banner> : null}
       {finished ? (
         <>
@@ -43,6 +64,11 @@ export function FinishBar({ visit: v, actions, back }: { visit: Visit; actions: 
           {v.workStatus === 'closed' && !isLocked(v) ? (
             <Button variant="secondary" size="md" onClick={actions.retry} loading={actions.saving}>
               <RefreshCw size={18} aria-hidden />Volví: probar de nuevo
+            </Button>
+          ) : null}
+          {canReopen(v) ? (
+            <Button variant="secondary" size="md" onClick={() => void reopen()} loading={actions.saving}>
+              <Undo2 size={18} aria-hidden />Deshacer terminada
             </Button>
           ) : null}
         </>
