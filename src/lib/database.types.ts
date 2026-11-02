@@ -1670,6 +1670,18 @@ export type Database = {
         }
         Returns: string
       }
+      add_visits: {
+        Args: { p_rows: Json; p_workday: string }
+        Returns: {
+          created: boolean
+          detail: string
+          error: string
+          idx: number
+          matched_by: string
+          store_id: string
+          visit_id: string
+        }[]
+      }
       company_people: {
         Args: { p_company: string }
         Returns: {

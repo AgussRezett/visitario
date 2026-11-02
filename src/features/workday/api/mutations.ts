@@ -75,6 +75,35 @@ export function useAddVisit(workdayId: string) {
   })
 }
 
+export interface PastedRow {
+  customerNumber?: string
+  address?: string
+  area?: string | null
+  channelId?: number | null
+  sellerId?: number | null
+}
+
+/** Several pasted stores in one call: each line on its own, with the reason when one fails. */
+export function useAddVisits(workdayId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (rows: PastedRow[]) =>
+      rpc<{ idx: number; created: boolean; error: string | null; detail: string | null; matched_by: string | null }[]>(
+        supabase.rpc('add_visits', {
+          p_workday: workdayId,
+          p_rows: rows.map((r) => ({
+            customer_number: r.customerNumber || null,
+            address: r.address || null,
+            area: r.area || null,
+            channel: r.channelId ?? null,
+            seller: r.sellerId ?? null,
+          })),
+        }),
+      ),
+    onSettled: () => Promise.all([qc.invalidateQueries({ queryKey: workdayKeys.all }), qc.invalidateQueries({ queryKey: ['team'] })]),
+  })
+}
+
 /**
  * Not resuming some pending visits: they are not offered again and stay in their day
  * as not visited (the supervisor still sees them there).

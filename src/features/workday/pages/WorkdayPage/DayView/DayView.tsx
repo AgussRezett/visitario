@@ -87,66 +87,72 @@ export function DayView({ ctx, workday, sheet, onSheet }: DayViewProps) {
     )
   }
 
+  // The sheets stay in the same place in both layouts: adding the first stores does not
+  // reopen the sheet empty (it keeps what was left to fix).
   if (list.length === 0) {
     return (
       <>
-        {day.op ? operation : null}
-        <section className={styles.empty}>
-          <span className={styles.emptyIcon}><MapPinPlus size={28} aria-hidden /></span>
-          <h2 className={styles.emptyTitle}>Tu jornada está abierta y vacía</h2>
-          <p className={styles.emptyLead}>
-            Agregá los locales que vas a visitar: buscalos en el directorio, cargá uno nuevo o pegá varias direcciones de una.
-          </p>
-          <div className={styles.emptyActions}>
-            <Button size="md" onClick={() => setAdding(true)}><Plus size={18} aria-hidden />Agregar dirección</Button>
-            {pending.length ? (
-              <Button variant="secondary" size="md" onClick={() => setResuming(true)}>
-                <History size={18} aria-hidden />Retomar {pending.length} {pending.length === 1 ? 'pendiente' : 'pendientes'}
-              </Button>
-            ) : null}
-          </div>
-        </section>
-        {!day.op ? operation : null}
+        <>
+          {day.op ? operation : null}
+          <section className={styles.empty}>
+            <span className={styles.emptyIcon}><MapPinPlus size={28} aria-hidden /></span>
+            <h2 className={styles.emptyTitle}>Tu jornada está abierta y vacía</h2>
+            <p className={styles.emptyLead}>
+              Agregá los locales que vas a visitar: buscalos en el directorio, cargá uno nuevo o pegá varias direcciones de una.
+            </p>
+            <div className={styles.emptyActions}>
+              <Button size="md" onClick={() => setAdding(true)}><Plus size={18} aria-hidden />Agregar dirección</Button>
+              {pending.length ? (
+                <Button variant="secondary" size="md" onClick={() => setResuming(true)}>
+                  <History size={18} aria-hidden />Retomar {pending.length} {pending.length === 1 ? 'pendiente' : 'pendientes'}
+                </Button>
+              ) : null}
+            </div>
+          </section>
+          {!day.op ? operation : null}
+        </>
         {sheets}
       </>
     )
   }
 
   return (
-    <Refreshing active={day.isPlaceholderData}>
-      <div className={styles.layout}>
-        <div className={styles.main}>
-          {fixes.length ? (
-            <Banner tone="warn" icon={<MessageSquareWarning size={18} aria-hidden />} title={fixes.length === 1 ? 'Te pidieron una corrección' : `Te pidieron ${fixes.length} correcciones`}>
-              <span className={styles.fixLinks}>
-                {fixes.map((v) => (
-                  <Link key={v.id} to="/visit/$visitId" params={{ visitId: v.id }} className={styles.fixLink}>{v.store.name ?? v.store.address}</Link>
-                ))}
-              </span>
-            </Banner>
-          ) : null}
-          {day.op ? operation : null}
-          <DayHero progress={progress} next={next} stop={next ? list.indexOf(next) + 1 : 0} date={workday.workDate} />
-          <DayStats visits={list} />
-          <StopList visits={shown} all={list} filter={filter} onFilter={setFilter} reputation={reputation.data} operationStops={day.operationStops} presence={presence} meId={ctx.personId} />
-          <div className={styles.phoneOnly}>
-            <ResumePanel items={pending} onResume={() => setResuming(true)} />
+    <>
+      <Refreshing active={day.isPlaceholderData}>
+        <div className={styles.layout}>
+          <div className={styles.main}>
+            {fixes.length ? (
+              <Banner tone="warn" icon={<MessageSquareWarning size={18} aria-hidden />} title={fixes.length === 1 ? 'Te pidieron una corrección' : `Te pidieron ${fixes.length} correcciones`}>
+                <span className={styles.fixLinks}>
+                  {fixes.map((v) => (
+                    <Link key={v.id} to="/visit/$visitId" params={{ visitId: v.id }} className={styles.fixLink}>{v.store.name ?? v.store.address}</Link>
+                  ))}
+                </span>
+              </Banner>
+            ) : null}
+            {day.op ? operation : null}
+            <DayHero progress={progress} next={next} stop={next ? list.indexOf(next) + 1 : 0} date={workday.workDate} />
+            <DayStats visits={list} />
+            <StopList visits={shown} all={list} filter={filter} onFilter={setFilter} reputation={reputation.data} operationStops={day.operationStops} presence={presence} meId={ctx.personId} />
+            <div className={styles.phoneOnly}>
+              <ResumePanel items={pending} onResume={() => setResuming(true)} />
+            </div>
+            {!day.op && !desktop ? operation : null}
           </div>
-          {!day.op && !desktop ? operation : null}
+          <aside className={styles.aside}>
+            <ReportPanel date={workday.workDate} visited={progress.visited} catalogs={catalogs.data} totals={totals.data ?? {}} />
+            <ResumePanel items={pending} onResume={() => setResuming(true)} />
+            {!day.op && desktop ? operation : null}
+          </aside>
         </div>
-        <aside className={styles.aside}>
-          <ReportPanel date={workday.workDate} visited={progress.visited} catalogs={catalogs.data} totals={totals.data ?? {}} />
-          <ResumePanel items={pending} onResume={() => setResuming(true)} />
-          {!day.op && desktop ? operation : null}
-        </aside>
-      </div>
 
-      <MainOverlay>
-        <Button size="md" className={styles.fabButton} onClick={() => setAdding(true)}>
-          <Plus size={20} aria-hidden />Agregar dirección
-        </Button>
-      </MainOverlay>
+        <MainOverlay>
+          <Button size="md" className={styles.fabButton} onClick={() => setAdding(true)}>
+            <Plus size={20} aria-hidden />Agregar dirección
+          </Button>
+        </MainOverlay>
+      </Refreshing>
       {sheets}
-    </Refreshing>
+    </>
   )
 }

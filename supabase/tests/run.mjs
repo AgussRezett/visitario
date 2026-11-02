@@ -997,6 +997,38 @@ check('Ended: Lucía can join another one that day', (await as('lucia', `select 
   await sys(`update store set deleted_at = now() where id = any($1::uuid[])`, [[sStore, s2]])
 }
 
+// ---- Pasting several stores: each line on its own, with the reason when it fails
+{
+  const day = (await as('agus', `select open_workday($1, '2026-11-02') id`, [panda]))[0].id
+  const known = (await sys(`insert into store (company_id, address, customer_number) values ($1, 'Mosconi 3235', '91355') returning id`, [panda]))[0].id
+  await sys(`insert into store (company_id, address, customer_number, deleted_at) values ($1, 'Congreso 3576', '90525', now())`, [panda])
+  const rows = [
+    { customer_number: '91362', address: 'José Cubas 2770', channel: autoservicio, seller: flor },
+    { customer_number: '91355', address: 'Otra dirección 1', channel: autoservicio },
+    { customer_number: '90525', address: 'Congreso 3576' },
+    { customer_number: '91362', address: 'José Cubas 2770 (repetida)' },
+    { customer_number: '99999' },
+    { address: 'Vallejos 3136', channel: kiosco },
+  ]
+  const res = await as('agus', `select * from add_visits($1, $2) order by idx`, [day, JSON.stringify(rows)])
+  const by = (i) => res.find((x) => x.idx === i)
+  check('add_visits: one result per line', res.length === rows.length)
+  check('A new store is created with its channel and seller', by(0).created && by(0).error === null
+    && (await sys(`select channel_id, seller_id from store where id = $1`, [by(0).store_id]))[0].seller_id === flor)
+  check('A known customer number reuses its store', by(1).store_id === known && by(1).matched_by === 'customer'
+    && (await sys(`select channel_id from store where id = $1`, [known]))[0].channel_id === autoservicio)
+  check('An archived customer number is reported with its address, not reused', by(2).error === 'archived_customer' && by(2).detail === 'Congreso 3576' && by(2).visit_id === null)
+  check('The same number twice in the paste is one store, already in the day', by(3).store_id === by(0).store_id && by(3).created === false && by(3).error === null)
+  check('Only a number nobody knows: asks for the address', by(4).error === 'no_address')
+  check('…and the lines after a failure are still added', by(5).created && by(5).error === null)
+  check('The day has the three stores once each', (await sys(`select count(*)::int n from visit where workday_id = $1 and deleted_at is null`, [day]))[0].n === 3)
+  const again = await as('agus', `select * from add_visits($1, $2) order by idx`, [day, JSON.stringify(rows)])
+  check('Pasting again adds nothing twice', again.filter((x) => x.created).length === 0
+    && (await sys(`select count(*)::int n from visit where workday_id = $1 and deleted_at is null`, [day]))[0].n === 3)
+  await expectError('Beto cannot paste into Agus’s day', () => as('beto', `select * from add_visits($1, $2)`, [day, '[]']), /not found/)
+  await sys(`update visit set deleted_at = now() where workday_id = $1`, [day])
+}
+
 // Password detection (Google users who later set a password)
 await sys(`update auth.users set encrypted_password = '$2a$10$hash' where id = $1`, [U.agus]);
 check('has_password is true for a user with a password', (await as('agus', `select has_password() v`))[0].v === true);
