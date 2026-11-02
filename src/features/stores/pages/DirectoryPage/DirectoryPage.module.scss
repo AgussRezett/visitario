@@ -240,8 +240,13 @@
 
 // ---- Selecting rows
 .select-line {
-  @include flex(row, $justify: flex-end);
-  margin-block: calc(-1 * space(2));
+  @include flex(row, $gap: space(2), $align: center, $justify: space-between);
+  flex-wrap: wrap;
+  margin-block: calc(-1 * space(1));
+
+  > label {
+    flex: 0 1 auto;
+  }
 }
 
 .check-cell {

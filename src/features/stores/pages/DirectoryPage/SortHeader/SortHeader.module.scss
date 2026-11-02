@@ -1,0 +1,36 @@
+@use '@/styles/abstracts' as *;
+
+.button {
+  @include flex(row, $gap: space(1), $align: center);
+  @include transition-colors;
+  min-height: 32px;
+  margin-inline: calc(-1 * space(1));
+  padding-inline: space(1);
+  border-radius: $radius-sm;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  white-space: nowrap;
+
+  @include hover {
+    background: $color-muted;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-forest;
+    outline-offset: 1px;
+  }
+
+  &[data-on] {
+    color: $color-ink;
+  }
+}
+
+.icon {
+  opacity: 0.45;
+
+  [data-on] > & {
+    opacity: 1;
+  }
+}
