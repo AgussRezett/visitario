@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { canRecord, canRemoveVisit, canTransition, finishCheck, isVisited, staleSoon, stopTone, workdayProgress } from './visit'
+import { canRecord, canReopen, canRemoveVisit, canTransition, finishCheck, isVisited, staleSoon, stopTone, workdayProgress } from './visit'
 
 describe('visit rules', () => {
   it('mirrors the database transitions', () => {
     expect(canTransition('pending', 'in_progress')).toBe(true)
     expect(canTransition('pending', 'done')).toBe(false)
     expect(canTransition('closed', 'in_progress')).toBe(true)
-    expect(canTransition('refused', 'in_progress')).toBe(false)
+    expect(canTransition('refused', 'in_progress')).toBe(true) // undoing a not-authorized visit
+    expect(canTransition('refused', 'done')).toBe(false)
   })
 
   it('closed and not authorized count as visited', () => {
@@ -86,5 +87,15 @@ describe('canRecord', () => {
   it('a refused visit still finishes without displays left to resume', () => {
     const c = finishCheck({ workStatus: 'in_progress', consent: 'refused', hasStorefront: true, displays: [{ arranged: false }] })
     expect(c).toMatchObject({ ok: true, unarranged: 0, target: 'refused' })
+  })
+})
+
+describe('canReopen', () => {
+  it('undoes done or not authorized, also when approved on its own; never once a supervisor approved it', () => {
+    expect(canReopen({ workStatus: 'done', reviewStatus: 'unreviewed' })).toBe(true)
+    expect(canReopen({ workStatus: 'refused', reviewStatus: 'approved', autoApproved: true })).toBe(true)
+    expect(canReopen({ workStatus: 'done', reviewStatus: 'approved', autoApproved: false })).toBe(false)
+    expect(canReopen({ workStatus: 'closed', reviewStatus: 'unreviewed' })).toBe(false)
+    expect(canReopen({ workStatus: 'in_progress', reviewStatus: 'unreviewed' })).toBe(false)
   })
 })

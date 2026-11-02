@@ -46,6 +46,9 @@ export function useVisitActions(visit: Visit) {
       rapport: consent === 'yes' || consent === 'with_objection' ? visit.rapport : null,
     })
 
+  /** Undo "finished": back to in progress, unreviewed again until it is finished again. */
+  const reopen = () => changes.patch({ work_status: 'in_progress' })
+
   const setObjection = (objection: string) => changes.patch({ objection: objection.trim() || null })
   const setRetry = (later: boolean) => changes.patch({ retry_after: later ? argentinaTime(visit.workDate, 17) : null })
   const setRapport = (rapport: Rapport | null) => changes.patch({ rapport })
@@ -76,6 +79,7 @@ export function useVisitActions(visit: Visit) {
     setRapport,
     setNotes,
     finish,
+    reopen,
     retry: retryStore,
     replacePhoto,
     deletePhoto: (id: string) => changes.removePhoto(id),

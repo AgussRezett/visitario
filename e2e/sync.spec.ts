@@ -41,6 +41,7 @@ test('without signal the visit is worked and finished; it reaches the server whe
   await expect(page.getByText(/con la foto de fachada/)).toBeVisible()
   await page.getByRole('radio', { name: 'Sí' }).click()
   await page.getByRole('button', { name: 'Terminar visita' }).click()
+  await page.getByRole('button', { name: 'Sí, terminar' }).click()
   await expect(page).toHaveURL(/\/s\/workday/)
 
   // The day already counts it; the pill says it is waiting on the phone.

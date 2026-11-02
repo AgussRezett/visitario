@@ -231,6 +231,10 @@ check('Deleting the last storefront photo of a finished visit: back to pending, 
 const sf3 = await storefront();
 await sys(`update photo set uploaded_at = now() where id = $1`, [sf3]);
 await as('agus', `update visit set consent = 'refused', work_status = 'refused' where id = $1`, [vs]);
+await as('agus', `update visit set work_status = 'in_progress' where id = $1`, [vs]);
+st = await visitState();
+check('A not-authorized visit can be undone: back to in progress, not finished', st.s === 'in_progress' && !st.f);
+await as('agus', `update visit set work_status = 'refused' where id = $1`, [vs]);
 await as('agus', `update photo set deleted_at = now() where id = $1`, [sf3]);
 check('Also from refused', (await visitState()).s === 'pending');
 
