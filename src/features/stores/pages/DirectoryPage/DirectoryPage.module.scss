@@ -70,7 +70,7 @@
   @include flex(row, $gap: space(2), $align: center);
   flex-wrap: wrap;
 
-  > :has(select) {
+  > :has([role='combobox']) {
     flex: 1 1 140px;
     min-width: 0;
 
