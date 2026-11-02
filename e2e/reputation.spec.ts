@@ -34,6 +34,16 @@ test('the merchandiser marks how they were received, and sees how each store usu
 
   await page.getByRole('radio', { name: 'No autorizó' }).click()
   await expect(page.getByRole('radiogroup', { name: /¿Cómo te recibieron?/ })).toHaveCount(0)
+  // Even when the store said no, the visit records the same: displays, work, notes.
+  await expect(page.getByRole('region', { name: 'Exhibiciones' }).filter({ visible: true }).first()).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Trabajo realizado' }).filter({ visible: true }).first()).toBeVisible()
+  const notes = page.getByLabel('Observaciones').filter({ visible: true }).first()
+  await notes.fill('El encargado no estaba; volver el jueves')
+  await notes.blur()
+  await expect.poll(() => state.visits[0]?.notes).toBe('El encargado no estaba; volver el jueves')
+  await page.screenshot({ path: `test-results/refused-visit-${info.project.name}.png`, fullPage: true })
+  // A long meta ("extra · agregada por vos") truncates: nothing goes past the screen's edge.
+  expect(await page.evaluate(() => Array.from(document.querySelectorAll('header, [data-scroll] > *')).every((e) => e.getBoundingClientRect().right <= document.documentElement.clientWidth + 1))).toBe(true)
 })
 
 const people = { agus: ['p2', 'Agus', 'Rezett'], lucia: ['p3', 'Lucía', 'Gómez'] } as const

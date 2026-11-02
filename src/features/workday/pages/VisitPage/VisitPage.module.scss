@@ -4,6 +4,8 @@
   // Phones: top bar / content that scrolls / finish bar, as grid rows.
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
+  // A long title or meta truncates instead of widening the page past the screen.
+  grid-template-columns: minmax(0, 1fr);
   height: 100%;
 
   @include up(lg) {

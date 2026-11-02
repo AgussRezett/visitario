@@ -58,9 +58,14 @@ export function finishStatus(consent: Consent): WorkStatus {
   return 'done'
 }
 
-/** The store let the merchandiser work (displays and work are enabled). */
+/** The store let the merchandiser work (its displays count as arranged or to resume). */
 export function canWork(consent: Consent | null) {
   return consent === 'yes' || consent === 'with_objection'
+}
+
+/** What the visit records (photos, displays, work, notes): also when the store said no. Only closed has nothing. */
+export function canRecord(consent: Consent | null) {
+  return canWork(consent) || consent === 'refused'
 }
 
 export interface FinishCheck {

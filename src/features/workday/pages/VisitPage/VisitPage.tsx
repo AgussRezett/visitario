@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ChevronLeft } from 'lucide-react'
-import { canWork, isLocked } from '@/domain/visit'
+import { canRecord, isLocked } from '@/domain/visit'
 import { todayInArgentina } from '@/domain/dates'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
@@ -63,7 +63,8 @@ export function VisitPage({ visitId }: { visitId: string }) {
   const back = { to: '/s/workday' as const, search: v.workDate === todayInArgentina() ? {} : { date: v.workDate } }
   const meta = [stop ? `Parada ${stop}` : null, originLabel(v)].filter(Boolean).join(' · ')
   const title = v.store.name ?? v.store.address
-  const working = canWork(v.consent)
+  // A store that said no still gets its photos, displays and notes recorded.
+  const working = canRecord(v.consent)
 
   return (
     <VisitBody key={v.id} visit={v} title={title} meta={meta} back={back} catalogs={catalogs.data} urlFor={urlFor} working={working} onView={setViewer} displayToOpen={displayToOpen} setDisplayToOpen={setDisplayToOpen} viewer={viewer} firstName={ctx.firstName} meId={ctx.personId} />

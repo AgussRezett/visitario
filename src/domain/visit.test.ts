@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canRemoveVisit, canTransition, finishCheck, isVisited, staleSoon, stopTone, workdayProgress } from './visit'
+import { canRecord, canRemoveVisit, canTransition, finishCheck, isVisited, staleSoon, stopTone, workdayProgress } from './visit'
 
 describe('visit rules', () => {
   it('mirrors the database transitions', () => {
@@ -71,5 +71,20 @@ describe('staleSoon', () => {
   it('only for visits in progress', () => {
     expect(staleSoon({ workStatus: 'done', arrivedAt: arrived }, at('2026-10-23T23:00:00Z'))).toBeNull()
     expect(staleSoon({ workStatus: 'in_progress', arrivedAt: null })).toBeNull()
+  })
+})
+
+describe('canRecord', () => {
+  it('records photos, displays and notes when the store said yes or no; a closed store has nothing to record', () => {
+    expect(canRecord('yes')).toBe(true)
+    expect(canRecord('with_objection')).toBe(true)
+    expect(canRecord('refused')).toBe(true)
+    expect(canRecord('closed')).toBe(false)
+    expect(canRecord(null)).toBe(false)
+  })
+
+  it('a refused visit still finishes without displays left to resume', () => {
+    const c = finishCheck({ workStatus: 'in_progress', consent: 'refused', hasStorefront: true, displays: [{ arranged: false }] })
+    expect(c).toMatchObject({ ok: true, unarranged: 0, target: 'refused' })
   })
 })
