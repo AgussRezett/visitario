@@ -29,6 +29,28 @@ test('on the phone the storefront photo is taken inside Visitario, without leavi
   await expect.poll(() => s.uploads.map((u) => u.meta.kind)).toEqual(['storefront'])
 })
 
+test('held sideways it says the photo goes out lying down; a tap focuses where the phone allows it', async ({ page, context }, info) => {
+  test.skip(info.project.name !== 'mobile', 'phones only')
+  await context.grantPermissions(['camera'])
+  await installFakeSupabase(page, state())
+  await page.goto('/visit/v1')
+  await page.getByRole('button', { name: 'Sacar la foto de la fachada' }).click()
+  const camera = page.getByRole('dialog', { name: 'Cámara' })
+  await expect(camera.getByRole('button', { name: 'Sacar la foto' })).toBeEnabled()
+  const tilt = (x: number, y: number) => page.evaluate(([gx, gy]) => {
+    window.dispatchEvent(new DeviceMotionEvent('devicemotion', { accelerationIncludingGravity: { x: gx, y: gy, z: 0 } }))
+  }, [x, y] as const)
+  await tilt(-9.6, 0.5)
+  await expect(camera.getByText('Foto horizontal')).toBeVisible()
+  await page.screenshot({ path: 'test-results/camera-sideways-mobile.png' })
+  await tilt(0.2, 9.7)
+  await expect(camera.getByText('Foto horizontal')).toHaveCount(0)
+  // The test camera cannot focus: the phone's own camera is one tap away.
+  const chooser = page.waitForEvent('filechooser')
+  await camera.getByRole('button', { name: 'Cámara del celular' }).click()
+  expect(await (await chooser).element().getAttribute('capture')).toBe('environment')
+})
+
 test('closing the camera takes nothing', async ({ page, context }, info) => {
   test.skip(info.project.name !== 'mobile', 'phones only')
   await context.grantPermissions(['camera'])

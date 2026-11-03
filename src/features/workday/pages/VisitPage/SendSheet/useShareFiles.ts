@@ -1,44 +1,61 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { localPhotoBlob } from '@/features/workday/api/photos'
 
 type Entry = Blob | 'error'
 
 /** How long to wait for a photo's link before offering to retry (no signal, for example). */
 const GIVE_UP_MS = 10_000
+/** A photo that failed is tried again by itself a few times (its upload may be finishing). */
+const AUTO_RETRY_MS = 3_000
+const AUTO_RETRIES = 3
 
 /**
  * The photos' bytes, loaded before the person taps: the phone only opens the share sheet
  * right after a tap, so there is no time to download them then. Photos still on the phone
- * are used as they are; the others are downloaded once through their signed link.
+ * are used as they are; the others are downloaded through their signed link.
+ *
+ * What used to get stuck on "Reintentar": a link that failed (expired, or the photo not
+ * uploaded yet) was asked again with the same link forever. Now each try looks for the
+ * photo on the phone first, a new link is fetched again, and asks for fresh links.
  */
 export function useShareFiles(ids: readonly string[], urlFor: (id: string) => string | undefined, active: boolean) {
+  const qc = useQueryClient()
   const [files, setFiles] = useState<Record<string, Entry>>({})
   const [attempt, setAttempt] = useState(0)
-  const requested = useRef(new Set<string>())
+  const current = useRef(files)
+  current.current = files
+  /** What was already asked for each photo in this attempt: its link, or "local". */
+  const asked = useRef(new Map<string, string>())
+  const autoRetries = useRef(0)
   const urls = ids.map((id) => urlFor(id) ?? '')
   const signature = ids.map((id, i) => `${id}=${urls[i]}`).join('|')
 
   useEffect(() => {
     if (!active) return
     let alive = true
-    const set = (id: string, entry: Entry) => alive && setFiles((m) => ({ ...m, [id]: entry }))
+    const set = (id: string, entry: Entry) => alive && setFiles((m) => (m[id] instanceof Blob ? m : { ...m, [id]: entry }))
     ids.forEach((id, i) => {
-      if (requested.current.has(id)) return
+      if (current.current[id] instanceof Blob) return
       const local = localPhotoBlob(id)
       if (local) {
-        requested.current.add(id)
-        set(id, local)
+        setFiles((m) => ({ ...m, [id]: local }))
         return
       }
       const url = urls[i]
-      if (!url) return
-      requested.current.add(id)
-      fetch(url)
+      const key = `${attempt}|${url}`
+      if (!url || asked.current.get(id) === key) return
+      asked.current.set(id, key)
+      fetch(url, { cache: 'no-store' })
         .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(String(r.status)))))
         .then((blob) => set(id, blob), () => set(id, 'error'))
     })
     const timer = setTimeout(() => {
-      if (alive) setFiles((m) => Object.fromEntries([...Object.entries(m), ...ids.filter((id) => !(id in m) && !requested.current.has(id)).map((id) => [id, 'error' as const])]))
+      if (!alive) return
+      setFiles((m) => {
+        const late = ids.filter((id) => !(id in m) && !asked.current.has(id))
+        return late.length ? { ...m, ...Object.fromEntries(late.map((id) => [id, 'error' as const])) } : m
+      })
     }, GIVE_UP_MS)
     return () => {
       alive = false
@@ -48,16 +65,26 @@ export function useShareFiles(ids: readonly string[], urlFor: (id: string) => st
   }, [active, signature, attempt])
 
   const retry = useCallback(() => {
-    setFiles((m) => {
-      const keep = Object.entries(m).filter(([id, e]) => {
-        if (e !== 'error') return true
-        requested.current.delete(id)
-        return false
-      })
-      return Object.fromEntries(keep)
-    })
+    setFiles((m) => Object.fromEntries(Object.entries(m).filter(([, e]) => e !== 'error')))
+    asked.current.clear()
+    // Fresh links: an expired one never comes back to life.
+    void qc.invalidateQueries({ queryKey: ['photo-urls'] })
     setAttempt((a) => a + 1)
-  }, [])
+  }, [qc])
+
+  // A failed photo is tried again by itself, a few times, while the sheet is open.
+  const failed = active && Object.values(files).some((e) => e === 'error')
+  useEffect(() => {
+    if (!failed || autoRetries.current >= AUTO_RETRIES) return
+    const t = setTimeout(() => {
+      autoRetries.current += 1
+      retry()
+    }, AUTO_RETRY_MS)
+    return () => clearTimeout(t)
+  }, [failed, retry])
+  useEffect(() => {
+    if (!active) autoRetries.current = 0
+  }, [active])
 
   return { files, retry }
 }
