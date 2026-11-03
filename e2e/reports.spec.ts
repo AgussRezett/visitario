@@ -37,7 +37,7 @@ const team = (): FakeState => ({
 test("the team's day: numbers per merchandiser, each one's report and the team's to copy", async ({ page, context }, info) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write'])
   await installFakeSupabase(page, team(), 'supervisor')
-  await page.goto('/s/reports')
+  await page.goto('/s/reports?view=daily')
   const desktop = info.project.name === 'desktop'
 
   if (desktop) {

@@ -1,4 +1,5 @@
 import { directorySort } from './fake-sort'
+import { reportFacts } from './fake-reports'
 import type { Request, Route } from '@playwright/test'
 import { COMPANY, type FakeState, type Row } from './fake-supabase'
 
@@ -53,6 +54,7 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
       return done(json(one ? state.company : [state.company]))
     }
     // ---- Directory
+    if (path.endsWith('/rpc/report_facts')) return done(json(reportFacts(state, body())))
     if (path.endsWith('/rpc/store_directory') || path.endsWith('/rpc/store_directory_v2')) {
       const b = body()
       const tag = (value: unknown, wanted: unknown) => wanted === undefined || wanted === null || (wanted === 0 ? !value : value === wanted)

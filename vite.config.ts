@@ -5,6 +5,11 @@ import react from '@vitejs/plugin-react'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import { VitePWA, type VitePWAOptions } from 'vite-plugin-pwa'
 import type { Plugin } from 'vite'
+import { readFileSync } from 'node:fs'
+
+// The version people see (major.minor.patch, see docs/versioning.md) and the commit it was built from.
+const VERSION = (JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string }).version
+const COMMIT = (process.env.VERCEL_GIT_COMMIT_SHA ?? '').slice(0, 7)
 
 type PwaApi = { extendManifestEntries: (fn: (entries: NonNullable<NonNullable<VitePWAOptions['workbox']>['additionalManifestEntries']>) => typeof entries) => void }
 
@@ -25,6 +30,10 @@ function manifestFromNetwork(): Plugin {
 }
 
 export default defineConfig(({ mode }) => ({
+  define: {
+    __APP_VERSION__: JSON.stringify(VERSION),
+    __APP_COMMIT__: JSON.stringify(COMMIT),
+  },
   plugins: [
     tanstackRouter({ target: 'react', autoCodeSplitting: true, routesDirectory: './src/routes', generatedRouteTree: './src/app/routeTree.gen.ts' }),
     react(),

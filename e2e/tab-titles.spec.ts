@@ -16,7 +16,7 @@ test('each browser tab says what it shows', async ({ page }) => {
   await page.goto('/s/stores')
   await expect(page).toHaveTitle('Directorio · Visitario')
   await page.goto('/s/reports')
-  await expect(page).toHaveTitle('Informes · Visitario')
+  await expect(page).toHaveTitle('Reportes · Visitario')
   // A page with something more precise says it; leaving it goes back to the section.
   await page.goto('/stores/s1')
   await expect(page).toHaveTitle('Mas Ahorro · Visitario')

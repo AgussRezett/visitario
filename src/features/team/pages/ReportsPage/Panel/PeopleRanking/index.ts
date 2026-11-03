@@ -1,0 +1,1 @@
+export { PeopleRanking } from './PeopleRanking'

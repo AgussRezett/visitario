@@ -18,6 +18,7 @@ import { ProfileHeader } from './ProfileHeader'
 import { SecurityCard } from './SecurityCard'
 import { InstallRow } from '@/features/install/components/InstallRow'
 import styles from './ProfilePage.module.scss'
+import { AppVersion } from '@/ui/AppVersion'
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -119,6 +120,7 @@ export function ProfilePage({ me }: { me: Me & { person: NonNullable<Me['person'
             </Button>
             {dialog}
           </div>
+          <AppVersion className={styles.version} />
         </div>
       </div>
     </div>

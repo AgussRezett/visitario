@@ -29,7 +29,7 @@ export const SECTIONS: Record<Role, Section[]> = {
     { slug: 'assign', label: 'Asignar', title: 'Asignar jornadas', icon: CalendarDays, stage: 3, summary: 'Armar y publicar la jornada de cada activador.' },
     { slug: 'stores', label: 'Directorio', title: 'Directorio', icon: Store, stage: 5, summary: 'Los comercios de la empresa con su historial de visitas.' },
     { slug: 'map', label: 'Mapa', title: 'Mapa de puntos', icon: MapPinned, stage: 7, summary: 'Los puntos de venta en el mapa, por vendedor, última visita, canal o trato.', more: true },
-    { slug: 'reports', label: 'Informes', title: 'Informes', icon: BarChart3, stage: 6, summary: 'Los números del día por activador y sus informes para copiar.', more: true },
+    { slug: 'reports', label: 'Reportes', title: 'Reportes', icon: BarChart3, stage: 6, summary: 'El período en números: tendencias, activadores, cobertura y estimados; y los informes del día.', more: true },
   ],
   admin: [
     { slug: 'users', label: 'Usuarios', title: 'Usuarios y equipos', icon: Users, stage: 5, summary: 'Altas por DNI, roles y equipos.' },
@@ -38,6 +38,7 @@ export const SECTIONS: Record<Role, Section[]> = {
     { slug: 'company', label: 'Empresa', title: 'Empresa y plan', icon: Building2, stage: 5, summary: 'Datos de la empresa, plan y facturación.', more: true },
     { slug: 'stores', label: 'Directorio', title: 'Directorio', icon: Store, stage: 5, summary: 'Los comercios de la empresa con su historial de visitas.' },
     { slug: 'map', label: 'Mapa', title: 'Mapa de puntos', icon: MapPinned, stage: 7, summary: 'Los puntos de venta en el mapa, por vendedor, última visita, canal o trato.' },
+    { slug: 'reports', label: 'Reportes', title: 'Reportes', icon: BarChart3, stage: 6, summary: 'El período en números: tendencias, activadores, cobertura y estimados.', more: true },
   ],
 }
 
