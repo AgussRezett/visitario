@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { ArrowLeft, KeyRound } from 'lucide-react'
+import { KeyRound } from 'lucide-react'
 import { formatDayMonth, formatShortWeekday, formatTime, todayInArgentina } from '@/domain/dates'
 import { STATUS_LABEL, lastSeen, rolesLabel } from '@/domain/people'
 import type { SupportMember } from '@/domain/platform'
+import { BackLink } from '@/ui/BackLink'
 import { Banner } from '@/ui/Banner'
 import { buttonClass } from '@/ui/Button'
 import { Skeleton } from '@/ui/Skeleton'
@@ -27,7 +28,7 @@ export function SupportPage({ companyId }: { companyId: string }) {
 
   return (
     <div className={styles.page}>
-      <Link to="/platform" className={styles.back}><ArrowLeft size={18} aria-hidden />Empresas</Link>
+      <BackLink href="/platform" label="Empresas" />
       <header className={styles.titles}>
         <span className={styles.eyebrow}>Soporte · solo lectura</span>
         <h1 className={styles.title}>{s?.name ?? 'Empresa'}</h1>

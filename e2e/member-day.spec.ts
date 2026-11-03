@@ -45,11 +45,17 @@ test('the supervisor follows an activador’s day, read only, in the activador�
   // the store in the directory (and come back here).
   await expect(page.getByRole('button', { name: /Llegué|Empezar|Agregar/ })).toHaveCount(0)
   await expect(list.getByRole('link')).toHaveCount(4)
-  await expect(list.getByRole('link', { name: /Tres Arroyos 762/ })).toHaveAttribute('href', '/review/v1')
+  await expect(list.getByRole('link', { name: /Tres Arroyos 762/ })).toHaveAttribute('href', /^\/review\/v1\?from=/)
   await list.getByRole('link', { name: /Cuba 1940/ }).click()
   await expect(page).toHaveURL(/\/stores\/s-v3\?from=/)
   await expect(page.getByRole('heading', { name: 'Cuba 1940' })).toBeVisible()
-  await page.getByRole('link', { name: 'Volver' }).click()
+  await page.getByRole('link', { name: 'La jornada' }).click()
+  await expect(page.getByRole('heading', { name: 'Jornada de Lucía Gómez' })).toBeVisible()
+
+  // A finished visit opens its review; going back returns to the day, not to the inbox.
+  await list.getByRole('link', { name: /Tres Arroyos 762/ }).click()
+  await expect(page).toHaveURL(/\/review\/v1\?from=/)
+  await page.getByRole('link', { name: /La jornada/ }).filter({ visible: true }).first().click()
   await expect(page.getByRole('heading', { name: 'Jornada de Lucía Gómez' })).toBeVisible()
 
   await page.getByRole('radio', { name: /Por hacer/ }).click()

@@ -1,11 +1,12 @@
 import { Suspense, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, CalendarPlus, ChevronLeft, ChevronRight, Eye, Map as MapIcon, Users } from 'lucide-react'
+import { CalendarPlus, ChevronLeft, ChevronRight, Eye, Map as MapIcon, Users } from 'lucide-react'
 import { addDays, formatLongDate, todayInArgentina } from '@/domain/dates'
 import { lastActivityText } from '@/domain/team'
 import { workdayProgress } from '@/domain/visit'
 import { PersonAvatar } from '@/features/people/PersonAvatar'
+import { BackLink } from '@/ui/BackLink'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
 import { Refreshing } from '@/ui/Refreshing'
@@ -42,7 +43,7 @@ export function MemberDayPage({ personId, date: requested }: { personId: string;
   return (
     <div className={styles.page}>
       <header className={styles.top}>
-        <Link to="/s/today" search={back} className={styles.back}><ArrowLeft size={18} aria-hidden />Hoy en el equipo</Link>
+        <BackLink href={back.date ? `/s/today?date=${back.date}` : '/s/today'} label="Hoy en el equipo" />
         <div className={styles.titles}>
           {member ? <PersonAvatar personId={personId} firstName={member.firstName} lastName={member.lastName} size={48} /> : null}
           <div>

@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { Check, ChevronLeft, Search, UserCheck, UserPlus } from 'lucide-react'
+import { Check, Search, UserCheck, UserPlus } from 'lucide-react'
 import { todayInArgentina } from '@/domain/dates'
 import { formatDni, isValidDni, normalizeDni } from '@/domain/identity'
 import { ROLE_HELP } from '@/domain/people'
 import { ROLE_PRIORITY, type Role } from '@/domain/roles'
 import { freeSellers, sellerFor } from '@/domain/sellers'
+import { BackLink } from '@/ui/BackLink'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
 import { Field } from '@/ui/Field'
@@ -80,7 +81,7 @@ export function InvitePage() {
 
   const header = (
     <>
-      <Link to="/s/users" className={styles.back}><ChevronLeft size={16} aria-hidden />Usuarios y equipos</Link>
+      <BackLink href="/s/users" label="Usuarios y equipos" />
       <div className={styles.titles}>
         <span className={styles.eyebrow}>{ctx.companyName} · admin</span>
         <h1 className={styles.title}>Dar de alta</h1>

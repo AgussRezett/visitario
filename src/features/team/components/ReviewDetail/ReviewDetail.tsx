@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
 import { reviewBlock, type ReviewDraft } from './review-draft'
 import { useQuery } from '@tanstack/react-query'
-import { Check, MessageSquareWarning } from 'lucide-react'
+import { Link, useRouterState } from '@tanstack/react-router'
+import { Check, MessageSquareWarning, Store } from 'lucide-react'
 import { CONSENT_LABEL, WORK_STATUS_LABEL } from '@/domain/visit'
 import { canRequestFix } from '@/domain/team'
 import { formatTime } from '@/domain/dates'
 import { Banner } from '@/ui/Banner'
-import { Button } from '@/ui/Button'
+import { Button, buttonClass } from '@/ui/Button'
 import { Select } from '@/ui/Select'
 import { StatusChip } from '@/ui/StatusChip'
 import { TextArea } from '@/ui/TextArea'
@@ -59,6 +60,7 @@ export function ReviewDetail({ visit: v, meId, draft }: { visit: TeamVisit; meId
       v.photos.filter((p) => p.displayId === d.id).map((p) => ({ p, caption: `${displayLabel(d.id)?.split(' · ')[0]} · ${p.kind === 'before' ? 'antes' : 'después'}` })),
     ),
   ]
+  const here = useRouterState({ select: (r) => r.location.href })
   const withoutPhotos = v.displays.filter((d) => !v.photos.some((p) => p.displayId === d.id))
 
   return (
@@ -69,6 +71,10 @@ export function ReviewDetail({ visit: v, meId, draft }: { visit: TeamVisit; meId
             <h2 className={styles.title}>{v.store.name ?? v.store.address}</h2>
             <span className={styles.muted}>{[v.store.name ? v.store.address : null, v.store.area, v.store.customerNumber && `Cliente ${v.store.customerNumber}`].filter(Boolean).join(' · ')}</span>
             <StoreTagsLine tags={storeTags(catalogs.data, v.store)} showMissing={Boolean(catalogs.data?.channels?.length || catalogs.data?.sellers?.length)} />
+            {/* The store's page in the directory (its history, data, map); its back link returns here. */}
+            <Link to="/stores/$storeId" params={{ storeId: v.store.id }} search={{ from: here }} className={buttonClass('secondary', 'sm', styles.storeLink)}>
+              <Store size={16} aria-hidden />Ver ficha del local
+            </Link>
           </div>
           <StatusChip work={v.workStatus} review={v.reviewStatus} />
         </div>
