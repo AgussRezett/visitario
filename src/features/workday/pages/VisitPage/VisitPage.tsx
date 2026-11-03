@@ -31,6 +31,7 @@ import { FinishBar } from './FinishBar'
 import { RemoveStop } from './RemoveStop'
 import { CorrectionPanel } from './CorrectionPanel'
 import styles from './VisitPage.module.scss'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 export interface ViewerState {
   photos: Photo[]
@@ -91,6 +92,7 @@ function VisitBody(props: {
 }) {
   const { visit: v, title, meta, back, catalogs, urlFor, working, viewer, onView, firstName, meId } = props
   const actions = useVisitActions(v)
+  useDocumentTitle(title)
   const storefront = v.photos.filter((p) => p.kind === 'storefront')
   const closed = v.consent === 'closed'
   const tags = storeTags(catalogs, v.store)

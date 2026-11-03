@@ -162,7 +162,7 @@ test('archiving takes a store out of the open days; once archived it can be remo
   await expect(page.getByRole('button', { name: 'Archivar comercio' })).toHaveCount(0)
   await page.screenshot({ path: 'test-results/store-removed-mobile.png', fullPage: true })
   await page.getByRole('link', { name: 'Directorio' }).first().click()
-  await expect(page).toHaveTitle('Visitario')
+  await expect(page).toHaveTitle('Directorio · Visitario')
 })
 
 test('editing many stores at once: the marks survive the filters, and saving asks twice', async ({ page }, info) => {
