@@ -1,0 +1,70 @@
+@use '@/styles/abstracts' as *;
+
+// The reputation ramp from the theme: welcoming to unwilling.
+@mixin ramp {
+  &[data-rapport='welcoming'] { background: $color-rapport-welcoming; }
+  &[data-rapport='restricted'] { background: $color-rapport-restricted; }
+  &[data-rapport='indifferent'] { background: $color-rapport-indifferent; }
+  &[data-rapport='unwilling'] { background: $color-rapport-unwilling; }
+}
+
+.box {
+  @include flex(column, $gap: space(3));
+}
+
+.bar {
+  display: flex;
+  gap: 2px;
+  height: 14px;
+  overflow: hidden;
+  border-radius: 4px;
+
+  span {
+    @include ramp;
+    flex-basis: 0;
+    min-width: 4px;
+  }
+}
+
+.list {
+  @include flex(column, $gap: space(1.5));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: grid;
+    grid-template-columns: 10px minmax(0, 1fr) auto 2.5rem;
+    gap: space(2);
+    align-items: center;
+    @include text(label);
+  }
+
+  i {
+    @include ramp;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+  }
+
+  b {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.label {
+  @include truncate;
+  color: $color-ink-muted;
+}
+
+.count {
+  color: $color-ink-subtle;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.empty {
+  @include text(label);
+  margin: 0;
+  color: $color-ink-subtle;
+}

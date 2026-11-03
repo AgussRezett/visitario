@@ -1,0 +1,67 @@
+@use '@/styles/abstracts' as *;
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(2.5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  @include up(sm) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  @include up(lg) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: space(3);
+  }
+}
+
+.tile {
+  @include surface;
+  @include flex(column, $gap: space(1));
+  min-width: 0;
+  padding: space(3.5) space(4);
+}
+
+.label {
+  @include text(label);
+  font-weight: $weight-semibold;
+  color: $color-ink-muted;
+}
+
+.value {
+  @include heading(title);
+  font-variant-numeric: tabular-nums;
+
+  @include up(lg) {
+    @include heading(display);
+  }
+}
+
+.delta {
+  @include flex(row, $gap: space(1), $align: center);
+  @include text(tiny);
+  flex-wrap: wrap;
+  font-weight: $weight-bold;
+  color: $color-ink-subtle;
+
+  &[data-tone='good'] {
+    color: $color-done-ink;
+  }
+
+  &[data-tone='bad'] {
+    color: $color-refused-ink;
+  }
+}
+
+.vs {
+  font-weight: $weight-medium;
+  color: $color-ink-subtle;
+}
+
+.note {
+  @include text(tiny);
+  color: $color-ink-subtle;
+}

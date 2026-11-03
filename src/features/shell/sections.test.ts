@@ -12,6 +12,6 @@ describe('phone tabs', () => {
     expect(more.map((s) => s.slug)).toEqual(['map', 'reports'])
     const admin = splitTabs(SECTIONS.admin)
     expect(admin.tabs.map((s) => s.slug)).toEqual(['users', 'catalogs', 'stores', 'map'])
-    expect(admin.more.map((s) => s.slug)).toEqual(['templates', 'company'])
+    expect(admin.more.map((s) => s.slug)).toEqual(['templates', 'company', 'reports'])
   })
 })

@@ -1975,6 +1975,10 @@ export type Database = {
         Args: { p_accept: boolean; p_membership: string }
         Returns: undefined
       }
+      report_facts: {
+        Args: { p_company: string; p_from: string; p_to: string }
+        Returns: Json
+      }
       resumable_visits: {
         Args: { p_before: string; p_company: string }
         Returns: {

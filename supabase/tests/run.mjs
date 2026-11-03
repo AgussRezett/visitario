@@ -1073,6 +1073,22 @@ check('Ended: Lucía can join another one that day', (await as('lucia', `select 
   check('An unknown order falls back to the name', (await sorted('whatever')).map((r) => r.id).join() === byName.map((r) => r.id).join())
 }
 
+// ---- Reports: the raw facts of a period
+{
+  const facts = async (who) => (await as(who, `select report_facts($1, '2026-01-01', '2026-12-31') f`, [panda]))[0].f
+  const sup = await facts('martin')
+  const all = await facts('carla')
+  check('report_facts: visits, work totals, brands, people and stores', Array.isArray(sup.visits) && Array.isArray(sup.metrics) && Array.isArray(sup.brands) && sup.stores.length > 0
+    && sup.visits.every((v) => sup.people.some((p) => p.id === v.m && p.first)))
+  check('…an admin sees the company, a supervisor their team', all.visits.length >= sup.visits.length && sup.visits.length > 0)
+  check('…each visit once, with its status, store and timing', sup.visits.every((v) => v.id && v.d && v.ws && v.s && typeof v.dt === 'number'))
+  check('…a visit moved to another day counts once', new Set(all.visits.map((v) => v.id)).size === all.visits.length
+    && !all.visits.some((v) => all.visits.some((w) => w.res && v.id !== w.id && v.s === w.s && v.d === w.d)))
+  check('…another company gets nothing of Panda', (await facts('beto')).visits.length === 0 && (await facts('beto')).stores.length === 0)
+  const narrow = (await as('carla', `select report_facts($1, '2026-10-12', '2026-10-12') f`, [panda]))[0].f
+  check('…only the days asked', narrow.visits.every((v) => String(v.d) === '2026-10-12'))
+}
+
 // Password detection (Google users who later set a password)
 await sys(`update auth.users set encrypted_password = '$2a$10$hash' where id = $1`, [U.agus]);
 check('has_password is true for a user with a password', (await as('agus', `select has_password() v`))[0].v === true);

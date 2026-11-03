@@ -1,0 +1,14 @@
+@use '@/styles/abstracts' as *;
+
+@layer ui {
+  .version {
+    @include text(tiny);
+    margin: 0;
+    color: $color-ink-subtle;
+  }
+
+  .number {
+    font-weight: $weight-bold;
+    font-variant-numeric: tabular-nums;
+  }
+}

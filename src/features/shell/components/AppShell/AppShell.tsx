@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Building2, UserRound } from 'lucide-react'
 import clsx from 'clsx'
 import { Logo } from '@/ui/Logo'
+import { AppVersion } from '@/ui/AppVersion'
 import { Avatar } from '@/ui/Avatar'
 import { avatarUrl } from '@/lib/avatars'
 import { initials } from '@/lib/format'
@@ -82,6 +83,7 @@ export function AppShell({ me, active, children }: Props) {
           <Avatar name={short} src={photo} size={24} />
           <span className={styles.accountName}>{name}</span>
         </Link>
+        <AppVersion className={styles.sidebarVersion} />
       </aside>
 
       <header className={clsx(styles.mobileHeader, immersive && styles.phoneHidden)}>

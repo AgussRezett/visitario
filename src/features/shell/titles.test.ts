@@ -6,7 +6,7 @@ describe('tab titles', () => {
     expect(titleFor('/s/map', 'supervisor')).toBe('Mapa de puntos')
     expect(titleFor('/s/map', 'seller')).toBe('Mapa de clientes')
     expect(titleFor('/s/stores')).toBe('Directorio')
-    expect(titleFor('/s/reports')).toBe('Informes')
+    expect(titleFor('/s/reports')).toBe('Reportes')
     expect(titleFor('/s/workday')).toBe('Mi jornada')
     expect(titleFor('/s/today/p2')).toBe('Jornada del activador')
     expect(titleFor('/s/users/new')).toBe('Invitar a alguien')

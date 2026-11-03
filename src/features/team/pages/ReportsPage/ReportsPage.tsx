@@ -30,8 +30,8 @@ function standout(r: MemberDay, firstMetric: { id: number; name: string } | unde
   return parts.filter(Boolean).join(' · ')
 }
 
-/** The team's day in numbers and each one's report, ready to copy (wireframes S08, SM08). */
-export function ReportsPage({ date: requested }: { date?: string }) {
+/** The team's day in numbers and each one's report, ready to copy (wireframes S08, SM08). Inside the reports hub. */
+export function DailyReports({ date: requested }: { date?: string }) {
   const ctx = useWorkContext()
   const navigate = useNavigate()
   const date = requested ?? todayInArgentina()
@@ -83,16 +83,16 @@ export function ReportsPage({ date: requested }: { date?: string }) {
   const copyTeam = () => copy('team', teamReport(date, rows.map((r) => ({ name: r.name, text: reportOf(r.personId) }))))
 
   return (
-    <div className={styles.page}>
+    <div className={styles.embedded}>
       <header className={styles.top}>
         <div className={styles.titles}>
-          <span className={styles.eyebrow}>Informes</span>
-          <h1 className={styles.title}>{formatLongDate(date)}</h1>
+          <span className={styles.eyebrow}>Informe del día</span>
+          <h2 className={styles.title}>{formatLongDate(date)}</h2>
         </div>
         <div className={styles.actions}>
           <label className={styles.date}>
             <span className={styles.srOnly}>Fecha</span>
-            <input type="date" value={date} max={todayInArgentina()} onChange={(e) => e.target.value && navigate({ to: '/s/reports', search: e.target.value === todayInArgentina() ? {} : { date: e.target.value } })} />
+            <input type="date" value={date} max={todayInArgentina()} onChange={(e) => e.target.value && navigate({ to: '/s/reports', search: (s) => ({ ...s, view: 'daily' as const, date: e.target.value === todayInArgentina() ? undefined : e.target.value }) })} />
           </label>
           <Button variant="secondary" size="sm" className={styles.desktopOnly} onClick={copyTeam} disabled={!rows.length}>
             {copied === 'team' ? <Check size={18} aria-hidden /> : <Copy size={18} aria-hidden />}{copied === 'team' ? 'Copiado' : 'Copiar informe del equipo'}

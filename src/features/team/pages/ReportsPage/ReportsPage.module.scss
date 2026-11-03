@@ -1,5 +1,13 @@
 @use '@/styles/abstracts' as *;
 
+.embedded {
+  @include flex(column, $gap: space(3.5));
+
+  @include up(lg) {
+    gap: space(5);
+  }
+}
+
 .page {
   @include flex(column, $gap: space(3.5));
   padding: space(4) space(5) space(6);

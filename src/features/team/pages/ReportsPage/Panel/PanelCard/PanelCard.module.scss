@@ -1,0 +1,44 @@
+@use '@/styles/abstracts' as *;
+
+.card {
+  @include surface;
+  @include flex(column, $gap: space(4));
+  min-width: 0;
+  padding: space(4);
+
+  @include up(lg) {
+    padding: space(5);
+  }
+}
+
+.wide {
+  @include up(lg) {
+    grid-column: 1 / -1;
+  }
+}
+
+.head {
+  @include flex(row, $gap: space(3), $align: flex-start, $justify: space-between);
+  flex-wrap: wrap;
+}
+
+.titles {
+  @include flex(column, $gap: space(1));
+  min-width: 0;
+}
+
+.title {
+  @include heading(heading);
+  margin: 0;
+}
+
+.hint {
+  @include text(label);
+  margin: 0;
+  color: $color-ink-subtle;
+}
+
+.aside {
+  @include flex(row, $gap: space(2), $align: center);
+  flex-wrap: wrap;
+}

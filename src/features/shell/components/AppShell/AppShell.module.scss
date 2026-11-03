@@ -218,3 +218,9 @@
     padding-bottom: space(10);
   }
 }
+
+// Which version is open, quiet at the bottom of the sidebar
+.sidebar-version {
+  margin-top: auto;
+  padding: space(4) space(3) 0;
+}
