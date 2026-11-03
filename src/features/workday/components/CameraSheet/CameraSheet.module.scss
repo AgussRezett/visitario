@@ -22,10 +22,17 @@
   }
 }
 
-.video {
+.view {
+  position: relative;
   flex: 1;
-  width: 100%;
   min-height: 0;
+  overflow: hidden;
+}
+
+.video {
+  display: block;
+  width: 100%;
+  height: 100%;
   // The whole frame, as it is saved: what you see is the photo
   object-fit: contain;
   background: #000;
@@ -129,4 +136,76 @@
   border-radius: $radius-full;
   background: $color-white;
   transition: transform 120ms $ease-standard;
+}
+
+// ---- Focus and orientation
+.ring {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  margin: -36px 0 0 -36px;
+  border: 2px solid $color-lime;
+  border-radius: $radius-md;
+  pointer-events: none;
+  animation: focus 900ms $ease-standard forwards;
+}
+
+@keyframes focus {
+  0% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+  25% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.tip {
+  @include flex(row, $gap: space(1.5), $align: center);
+  @include text(label);
+  position: absolute;
+  bottom: space(3);
+  left: 50%;
+  margin: 0;
+  padding: space(1.5) space(3);
+  border-radius: $radius-full;
+  background: rgb(0 0 0 / 0.55);
+  font-weight: $weight-bold;
+  color: $color-white;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  pointer-events: none;
+
+  &[data-turn] {
+    background: rgb(184 217 65 / 0.9);
+    color: #173b30;
+  }
+}
+
+.native {
+  @include flex(row, $gap: space(1.5), $align: center);
+  @include text(label);
+  position: absolute;
+  top: calc(space(3) + env(safe-area-inset-top));
+  right: space(3);
+  min-height: $touch-target;
+  padding-inline: space(3.5);
+  border: 0;
+  border-radius: $radius-full;
+  background: rgb(0 0 0 / 0.55);
+  font-weight: $weight-bold;
+  color: $color-white;
+  cursor: pointer;
+}
+
+// Held sideways: the shutter's ring says so, turned like the picture
+.shutter[data-turn] {
+  border-color: $color-lime;
 }
