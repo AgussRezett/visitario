@@ -320,7 +320,8 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
     }
     if (path.endsWith('/functions/v1/photos/urls')) {
       const ids = state.photoUrls ? ((body() as { ids?: string[] }).ids ?? []) : []
-      return json({ urls: Object.fromEntries(ids.map((id) => [id, `https://photos.test/${id}.jpg`])) })
+      state.urlCalls = (state.urlCalls ?? 0) + 1 // each answer signs anew, like the real links
+      return json({ urls: Object.fromEntries(ids.map((id) => [id, `https://photos.test/${id}.jpg?sig=${state.urlCalls}`])) })
     }
     if (path.endsWith('/display_type')) return json([{ id: 1, name: 'Puntera' }, { id: 3, name: 'Góndola' }])
     if (path.endsWith('/message_template')) return json([])

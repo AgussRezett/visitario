@@ -114,3 +114,17 @@ test('without observations there is nothing extra to send', async ({ page }) => 
   await expect(page.getByRole('button', { name: 'Copiar Observaciones' })).toHaveCount(0)
   await expect(page.getByText('Si escribís observaciones en la visita')).toBeVisible()
 })
+
+test('a photo whose link failed (expired, or still uploading) is fetched again with a fresh link', async ({ page }) => {
+  await fakeShare(page)
+  // The first link of the storefront photo is dead; the next one works.
+  await page.route('https://photos.test/f1.jpg?sig=1', (r) => r.fulfill({ status: 403, body: 'expired' }))
+  await installFakeSupabase(page, state())
+  await page.goto('/visit/v1')
+  await page.getByRole('button', { name: /Enviar a WhatsApp/ }).click()
+  const sheet = page.getByRole('dialog', { name: 'Enviar a WhatsApp' })
+  // It does not stay on "Reintentar": it asks for new links by itself and gets ready.
+  await expect(sheet.getByRole('button', { name: 'Enviar Fachada · Siguiente', exact: true })).toBeVisible({ timeout: 10_000 })
+  await sheet.getByRole('button', { name: 'Enviar Fachada · Siguiente', exact: true }).click()
+  await expect.poll(() => shares(page)).toEqual([{ text: 'Altolaguirre 1952', files: ['Fachada.jpg'] }])
+})

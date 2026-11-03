@@ -2,6 +2,7 @@ import { useRef, useState, type ReactNode } from 'react'
 import clsx from 'clsx'
 import { markPicking, pickingDone } from '@/features/workday/photo-picking'
 import { CameraSheet } from '@/features/workday/components/CameraSheet'
+import { askMotion } from '@/features/workday/components/CameraSheet/useMotion'
 import styles from './PhotoPicker.module.scss'
 
 const isPhone = () => typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches
@@ -40,7 +41,12 @@ export function PhotoPicker({ onPick, source = 'camera', facing = 'environment',
         className={clsx(className, dragging && styles.dragging)}
         aria-label={label}
         disabled={disabled}
-        onClick={() => (source === 'camera' && isPhone() && hasCamera() ? setCamera(true) : openPicker())}
+        onClick={() => {
+          if (source === 'camera' && isPhone() && hasCamera()) {
+            askMotion() // iPhone: to save sideways photos lying down
+            setCamera(true)
+          } else openPicker()
+        }}
         onDragOver={(e) => {
           e.preventDefault()
           setDragging(true)

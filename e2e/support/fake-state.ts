@@ -13,6 +13,8 @@ export interface FakeState {
   avatarsRemoved?: string[]
   /** Signed photo links (https://photos.test/<id>.jpg); the spec serves them. */
   photoUrls?: boolean
+  /** How many times the links were signed. */
+  urlCalls?: number
   workday: Row | null
   visits: Row[]
   uploads: { bytes: Buffer; meta: Row }[]
