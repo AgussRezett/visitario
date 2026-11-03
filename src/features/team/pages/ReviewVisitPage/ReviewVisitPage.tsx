@@ -1,9 +1,11 @@
 import { useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import { ChevronLeft } from 'lucide-react'
 import { formatTime } from '@/domain/dates'
+import { BackLink } from '@/ui/BackLink'
 import { Banner } from '@/ui/Banner'
+import { backLabel } from '@/features/shell/back'
 import { StatusChip } from '@/ui/StatusChip'
 import { VisitSkeleton } from '@/features/workday/components/Skeletons'
 import { useWorkContext } from '@/features/workday/context'
@@ -12,7 +14,7 @@ import { ReviewButtons, ReviewDetail, useReviewDraft } from '@/features/team/com
 import styles from './ReviewVisitPage.module.scss'
 
 /** On phones: one visit to review, with approve / fix always at hand at the bottom (SM02). */
-export function ReviewVisitPage({ visitId }: { visitId: string }) {
+export function ReviewVisitPage({ visitId, from }: { visitId: string; from?: string }) {
   const ctx = useWorkContext()
   const qc = useQueryClient()
   const navigate = useNavigate()
@@ -31,8 +33,14 @@ export function ReviewVisitPage({ visitId }: { visitId: string }) {
   const v = visit.data
   if (!v) return <div className={styles.page}><Banner tone="error">Esa visita no existe o no es de tu equipo.</Banner></div>
 
-  /** After a decision: the next one waiting, or back to the list. */
+  // Back where it was opened from (an activador's day, a store), or to the review list.
+  const backTo = from ?? '/s/review'
+  const label = backLabel(backTo)
+  const goBack = () => void navigate({ href: backTo })
+
+  /** After a decision: back where it came from, or the next one waiting, or the list. */
   const next = () => {
+    if (from) return goBack()
     const queue = qc.getQueriesData<TeamVisit[]>({ queryKey: ['team', 'review'] }).flatMap(([, l]) => l ?? [])
     const following = queue.find((x) => x.id !== v.id && x.reviewStatus === 'unreviewed')
     void navigate(following ? { to: '/review/$visitId', params: { visitId: following.id }, replace: true } : { to: '/s/review' })
@@ -41,7 +49,7 @@ export function ReviewVisitPage({ visitId }: { visitId: string }) {
   return (
     <div className={styles.page}>
       <header className={styles.appbar}>
-        <Link to="/s/review" className={styles.back} aria-label="Volver a la revisión"><ChevronLeft size={24} aria-hidden /></Link>
+        <a href={backTo} className={styles.back} aria-label={`Volver: ${label}`} onClick={(e) => { e.preventDefault(); goBack() }}><ChevronLeft size={24} aria-hidden /></a>
         <span className={styles.titles}>
           <span className={styles.title}>{v.store.name ?? v.store.address}</span>
           <span className={styles.meta}>{v.merchandiserName.split(' ')[0]}{v.finishedAt ? ` · ${formatTime(v.finishedAt)}` : ''}</span>
@@ -49,6 +57,7 @@ export function ReviewVisitPage({ visitId }: { visitId: string }) {
         <StatusChip work={v.workStatus} review={v.reviewStatus} />
       </header>
       <div className={styles.scroll} data-scroll>
+        <BackLink href={backTo} label={label} className={styles.desktopBack} />
         <ReviewDetail key={v.id} visit={v} meId={ctx.personId} draft={draft} />
       </div>
       <div className={styles.footer}>

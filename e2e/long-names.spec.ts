@@ -48,6 +48,12 @@ test('long names and addresses stay inside the screen, for the supervisor', asyn
   await check(page, '/s/today/p2', 'Locales en su orden')
   await check(page, '/review/v1', 'Notas del activador')
   await page.screenshot({ path: `test-results/long-review-${info.project.name}.png` })
+  // From the review, the store's page in the directory, and back to the review.
+  await page.getByRole('link', { name: 'Ver ficha del local' }).filter({ visible: true }).first().click()
+  await expect(page).toHaveURL(/\/stores\/s-v1\?from=/)
+  await expect(page.getByText(/Cliente 422/).filter({ visible: true }).first()).toBeVisible()
+  await page.getByRole('main').getByRole('link', { name: 'Revisión' }).click()
+  await expect(page).toHaveURL(/review/) // desktop shows it inside the inbox
   await check(page, '/s/stores', /Directorio/)
   await check(page, '/stores/s-v1', /Cliente 422/)
   await page.screenshot({ path: `test-results/long-store-${info.project.name}.png` })

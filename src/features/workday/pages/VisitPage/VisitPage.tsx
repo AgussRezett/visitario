@@ -4,6 +4,7 @@ import { Link } from '@tanstack/react-router'
 import { ChevronLeft } from 'lucide-react'
 import { canRecord, isLocked } from '@/domain/visit'
 import { todayInArgentina } from '@/domain/dates'
+import { BackLink } from '@/ui/BackLink'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
 import { wasInterrupted } from '@/features/workday/photo-picking'
@@ -113,7 +114,7 @@ function VisitBody(props: {
       {/* Phones: the only part that scrolls, between the top bar and the finish bar */}
       <div className={styles.scroll} data-scroll>
         <div className={styles.desktopTop}>
-          <Link {...back} className={styles.crumb}>Mi jornada</Link>
+          <BackLink href={back.search.date ? `/s/workday?date=${back.search.date}` : '/s/workday'} label="Mi jornada" />
           <div className={styles.desktopTitleRow}>
             <h1 className={styles.desktopTitle}>{title}</h1>
             <StatusChip work={v.workStatus} review={v.reviewStatus} />

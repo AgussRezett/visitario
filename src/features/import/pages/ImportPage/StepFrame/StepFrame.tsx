@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import styles from './StepFrame.module.scss'
+import { BackLink } from '@/ui/BackLink'
 
 interface StepFrameProps {
   step: 1 | 2 | 3
@@ -32,9 +33,7 @@ export function StepFrame({ step, kind, title, onBack, backLabel, aside, footer,
         </span>
       </header>
       <div className={styles.scroll} data-scroll>
-        <button type="button" className={styles.backLink} onClick={onBack}>
-          <ChevronLeft size={16} aria-hidden />{backLabel}
-        </button>
+        <BackLink onClick={onBack} label={backLabel} className={styles.backLink} />
         <div className={styles.top}>
           <div className={styles.titles}>
             <span className={styles.eyebrow}>{kind} · paso {step} de 3</span>

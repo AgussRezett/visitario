@@ -84,7 +84,7 @@ export function MemberStops({ stops, filter, onFilter, member, operationStops }:
               <li key={v.id}>
                 {/* Finished visits open in Revisión; the rest open the store in the directory. */}
                 {isVisited(v.workStatus) ? (
-                  <Link to="/review/$visitId" params={{ visitId: v.id }} className={clsx(styles.item, styles.link)}>{body}</Link>
+                  <Link to="/review/$visitId" params={{ visitId: v.id }} search={{ from: here }} className={clsx(styles.item, styles.link)}>{body}</Link>
                 ) : (
                   <Link to="/stores/$storeId" params={{ storeId: v.store.id }} search={{ from: here }} className={clsx(styles.item, styles.link, v.id === focus.currentId && styles.itemNow)}>{body}</Link>
                 )}

@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link, useNavigate } from '@tanstack/react-router'
-import { Archive, ArchiveRestore, CalendarPlus, ChevronLeft, Copy, Pencil, Trash2 } from 'lucide-react'
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
+import { Archive, ArchiveRestore, CalendarPlus, Copy, Pencil, Trash2 } from 'lucide-react'
 import { formatDayMonth, formatTime, todayInArgentina } from '@/domain/dates'
 import { originText, storeStats, usualDisplays } from '@/domain/stores'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 import { useIsDesktop } from '@/lib/useMedia'
+import { BackLink } from '@/ui/BackLink'
 import { Banner } from '@/ui/Banner'
+import { backLabel } from '@/features/shell/back'
 import { Button } from '@/ui/Button'
 import { Skeleton } from '@/ui/Skeleton'
 import { StatusChip } from '@/ui/StatusChip'
@@ -34,6 +36,7 @@ const arranged = (v: StoreHistoryVisit) => v.displays.filter((d) => v.photos.som
 export function StorePage({ storeId, from }: { storeId: string; from?: string }) {
   const ctx = useWorkContext()
   const navigate = useNavigate()
+  const here = useRouterState({ select: (r) => r.location.href })
   const desktop = useIsDesktop()
   const store = useQuery(storeQuery(storeId))
   const visits = useQuery({ ...storeVisitsQuery(storeId, ctx?.personId ?? ''), enabled: Boolean(ctx) })
@@ -60,11 +63,7 @@ export function StorePage({ storeId, from }: { storeId: string; from?: string })
 
   return (
     <div className={styles.page}>
-      {from ? (
-        <a href={from} className={styles.back} onClick={(e) => { e.preventDefault(); void navigate({ href: from }) }}><ChevronLeft size={16} aria-hidden />Volver</a>
-      ) : (
-        <Link to="/s/stores" className={styles.back}><ChevronLeft size={16} aria-hidden />Directorio</Link>
-      )}
+      <BackLink href={from ?? '/s/stores'} label={from ? backLabel(from) : 'Directorio'} />
       <header className={styles.top}>
         <div className={styles.titles}>
           <span className={styles.eyebrow}>{s.customerNumber ? `Cliente ${s.customerNumber}` : 'Sin número de cliente'}</span>
@@ -138,7 +137,7 @@ export function StorePage({ storeId, from }: { storeId: string; from?: string })
               <tbody>
                 {list.map((v) => (
                   <tr key={v.id}>
-                    <td><Link to="/review/$visitId" params={{ visitId: v.id }} className={styles.visitLink}>{when(v)}</Link></td>
+                    <td><Link to="/review/$visitId" params={{ visitId: v.id }} search={{ from: here }} className={styles.visitLink}>{when(v)}</Link></td>
                     <td>{v.merchandiserName.split(' ')[0]}</td>
                     <td><span className={styles.result}><StatusChip work={v.workStatus} review={v.reviewStatus} />{v.resumedOn ? <span className={styles.help}>retomada del {formatDayMonth(v.resumedOn)}</span> : null}</span></td>
                     <td>{effectiveRapport(v) ? <RapportLevel level={effectiveRapport(v) ?? 'welcoming'} /> : <span className={styles.help}>—</span>}</td>
@@ -152,7 +151,7 @@ export function StorePage({ storeId, from }: { storeId: string; from?: string })
             <ul className={styles.visits}>
               {list.map((v) => (
                 <li key={v.id}>
-                  <Link to="/review/$visitId" params={{ visitId: v.id }} className={styles.visit}>
+                  <Link to="/review/$visitId" params={{ visitId: v.id }} search={{ from: here }} className={styles.visit}>
                     <span className={styles.visitText}>
                       <span className={styles.visitWhen}>{when(v)}</span>
                       <span className={styles.help}>{v.merchandiserName.split(' ')[0]}{v.displays.length ? ` · ${arranged(v)} de ${v.displays.length} exhib.` : ''}{v.resumedOn ? ` · retomada del ${formatDayMonth(v.resumedOn)}` : ''}{effectiveRapport(v) ? ` · ${RAPPORT_SHORT[effectiveRapport(v) ?? 'welcoming']}` : ''}</span>

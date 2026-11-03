@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { ChevronLeft, MapPinned, Navigation } from 'lucide-react'
+import { MapPinned, Navigation } from 'lucide-react'
 import { daysBetween, formatDayMonth, todayInArgentina } from '@/domain/dates'
 import { mapsSearchUrl } from '@/domain/places'
 import { CONSENT_LABEL } from '@/domain/visit'
+import { BackLink } from '@/ui/BackLink'
 import { Banner } from '@/ui/Banner'
 import { buttonClass } from '@/ui/Button'
 import { Skeleton } from '@/ui/Skeleton'
@@ -22,7 +23,7 @@ export function ClientPage({ storeId }: { storeId: string }) {
   const history = useQuery({ ...clientHistoryQuery(companyId, storeId), enabled: Boolean(ctx) })
   const catalogs = useCatalogs(companyId).data
   if (!ctx) return null
-  const back = <Link to="/s/clients" className={styles.back}><ChevronLeft size={18} aria-hidden />Mis clientes</Link>
+  const back = <BackLink href="/s/clients" label="Mis clientes" />
 
   if (history.isPending) return <div className={styles.page}>{back}<Skeleton height={320} /></div>
   if (history.error) return <div className={styles.page}>{back}<Banner tone="error">No pudimos cargar el cliente. Revisá la conexión.</Banner></div>
