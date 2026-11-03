@@ -1,0 +1,153 @@
+@use '@/styles/abstracts' as *;
+
+.chart {
+  @include flex(column, $gap: space(3));
+  min-width: 0;
+}
+
+.legend {
+  @include flex(row, $gap: space(4), $align: center);
+  @include text(label);
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  color: $color-ink-muted;
+  list-style: none;
+
+  li {
+    @include flex(row, $gap: space(1.5), $align: center);
+  }
+}
+
+.swatch {
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  margin-right: space(1);
+  border-radius: 3px;
+
+  &[data-series='done'] { background: $color-done; }
+  &[data-series='refused'] { background: $color-refused; }
+  &[data-series='closed'] { background: $color-ink-subtle; }
+}
+
+.ghost-swatch {
+  border: 1.5px dashed $color-ink-subtle;
+}
+
+.plot {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: space(2);
+  height: 220px;
+
+  @include up(lg) {
+    height: 260px;
+  }
+}
+
+.axis {
+  @include flex(column, $justify: space-between);
+  @include text(tiny);
+  padding-bottom: 22px;
+  color: $color-ink-subtle;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.bars {
+  display: flex;
+  justify-content: space-around;
+  gap: 2px;
+  min-width: 0;
+  // Recessive guides at the bottom, middle and top
+  background:
+    linear-gradient($color-line, $color-line) bottom 22px left 0 / 100% 1px no-repeat,
+    linear-gradient($color-line, $color-line) top calc((100% - 22px) / 2) left 0 / 100% 1px no-repeat,
+    linear-gradient($color-line, $color-line) top 0 left 0 / 100% 1px no-repeat;
+}
+
+.col {
+  @include flex(column);
+  flex: 1;
+  min-width: 0;
+  max-width: 56px; // a short period keeps slim bars, spread over the width
+  border-radius: 4px;
+  outline: none;
+  cursor: default;
+
+  &:focus-visible {
+    box-shadow: 0 0 0 2px $color-focus;
+  }
+}
+
+.on .stack {
+  background: $color-muted;
+}
+
+.stack {
+  @include flex(column-reverse, $gap: 2px);
+  flex: 1;
+  min-height: 0;
+  border-radius: 4px 4px 0 0;
+}
+
+.seg {
+  display: block;
+  min-height: 2px;
+
+  &[data-series='done'] { background: $color-done; }
+  &[data-series='refused'] { background: $color-refused; }
+  &[data-series='closed'] { background: $color-ink-subtle; }
+
+  // Rounded only where the data ends
+  &:last-child {
+    border-radius: 4px 4px 0 0;
+  }
+}
+
+.ghost {
+  display: block;
+  border: 1.5px dashed $color-ink-subtle;
+  border-bottom: 0;
+  border-radius: 4px 4px 0 0;
+}
+
+.tick {
+  @include text(tiny);
+  height: 22px;
+  padding-top: space(1);
+  overflow: hidden;
+  color: $color-ink-subtle;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.tip {
+  @include flex(column, $gap: space(0.5));
+  @include text(label);
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+  min-width: 190px;
+  padding: space(2.5) space(3);
+  border: 1px solid $color-line;
+  border-radius: $radius-md;
+  background: $color-card;
+  box-shadow: $shadow-raised;
+  color: $color-ink;
+  pointer-events: none;
+
+  b {
+    font-weight: $weight-bold;
+    text-transform: capitalize;
+  }
+
+  span {
+    @include flex(row, $align: center);
+    color: $color-ink-muted;
+  }
+}

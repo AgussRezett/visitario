@@ -1,0 +1,99 @@
+@use '@/styles/abstracts' as *;
+
+.panel {
+  @include flex(column, $gap: space(3.5));
+  min-width: 0;
+
+  @include up(lg) {
+    gap: space(4);
+  }
+}
+
+.bar {
+  @include flex(row, $gap: space(2), $align: center, $justify: space-between);
+  flex-wrap: wrap;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(2);
+
+  @include up(lg) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+
+    > :has([role='combobox']) {
+      flex: 0 1 220px;
+    }
+  }
+}
+
+.body {
+  @include flex(column, $gap: space(3.5));
+
+  @include up(lg) {
+    gap: space(4);
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: space(3.5);
+
+  @include up(lg) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: space(4);
+  }
+}
+
+.reading {
+  @include flex(column, $gap: space(2.5));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    @include flex(row, $gap: space(2.5), $align: flex-start);
+    @include text(body);
+    color: $color-ink;
+
+    svg {
+      flex: none;
+      margin-top: 2px;
+      color: $color-ink-subtle;
+    }
+
+    &[data-tone='good'] svg {
+      color: $color-done;
+    }
+
+    &[data-tone='bad'] svg {
+      color: $color-refused;
+    }
+  }
+}
+
+.estimate {
+  @include flex(column);
+  @include text(label);
+  margin: 0;
+  color: $color-ink-muted;
+
+  @include up(sm) {
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  b {
+    @include heading(title);
+    color: $color-ink;
+  }
+
+  span {
+    @include text(tiny);
+    color: $color-ink-subtle;
+  }
+}

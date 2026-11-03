@@ -1,0 +1,125 @@
+@use '@/styles/abstracts' as *;
+
+.box {
+  @include flex(column, $gap: space(3));
+  min-width: 0;
+}
+
+.big {
+  @include text(body);
+  margin: 0;
+  color: $color-ink-muted;
+
+  b {
+    @include heading(title);
+    margin-right: space(1);
+    color: $color-ink;
+  }
+
+  span {
+    @include text(label);
+    color: $color-ink-subtle;
+  }
+}
+
+// Fresh to waiting: a single hue getting lighter, then the ones never visited apart.
+@mixin tone {
+  &[data-tone='fresh'] { background: $color-done; }
+  &[data-tone='ok'] { background: color-mix(in srgb, $color-done 65%, $color-muted); }
+  &[data-tone='warn'] { background: color-mix(in srgb, $color-done 35%, $color-muted); }
+  &[data-tone='late'] { background: $color-closed; }
+  &[data-tone='never'] { background: $color-refused; }
+}
+
+.bar {
+  display: flex;
+  gap: 2px;
+  height: 14px;
+  overflow: hidden;
+  border-radius: 4px;
+
+  span {
+    @include tone;
+    flex-basis: 0;
+    min-width: 4px;
+  }
+}
+
+.legend {
+  @include flex(row, $gap: space(2) space(4));
+  @include text(tiny);
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  color: $color-ink-muted;
+  list-style: none;
+
+  li {
+    @include flex(row, $gap: space(1.5), $align: center);
+  }
+
+  i {
+    @include tone;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+  }
+
+  b {
+    color: $color-ink;
+  }
+}
+
+.subtitle {
+  @include text(label);
+  margin: space(2) 0 0;
+  font-weight: $weight-bold;
+}
+
+.stale {
+  @include flex(column);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.store {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'name days' 'meta days';
+  align-items: center;
+  min-height: $touch-target;
+  padding: space(1.5) 0;
+  border-bottom: 1px solid $color-line;
+  color: $color-ink;
+
+  @include hover {
+    .store-name {
+      text-decoration: underline;
+    }
+  }
+}
+
+.store-name {
+  @include text(label);
+  @include truncate;
+  grid-area: name;
+  font-weight: $weight-bold;
+}
+
+.store-meta {
+  @include text(tiny);
+  grid-area: meta;
+  color: $color-ink-subtle;
+}
+
+.days {
+  @include text(label);
+  grid-area: days;
+  font-weight: $weight-bold;
+  color: $color-closed-ink;
+
+  &[data-never] {
+    color: $color-refused-ink;
+  }
+}

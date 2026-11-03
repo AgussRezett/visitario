@@ -1,0 +1,82 @@
+@use '@/styles/abstracts' as *;
+
+.box {
+  @include flex(column, $gap: space(3));
+}
+
+.list {
+  @include flex(column, $gap: space(2.5));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'name value'
+    'track track'
+    'meta meta';
+  gap: space(1) space(2);
+
+  @include up(sm) {
+    grid-template-columns: minmax(0, 9rem) minmax(0, 1fr) 3rem;
+    grid-template-areas:
+      'name track value'
+      '. meta meta';
+    align-items: center;
+  }
+}
+
+.name {
+  @include truncate;
+  @include text(label);
+  grid-area: name;
+  font-weight: $weight-bold;
+}
+
+.track {
+  display: flex;
+  grid-area: track;
+  gap: 2px;
+  height: 12px;
+
+  > span:first-child {
+    border-radius: 4px 0 0 4px;
+  }
+}
+
+.done,
+.refused,
+.other {
+  display: block;
+  height: 100%;
+}
+
+.done { background: $color-done; }
+.refused { background: $color-refused; }
+.other {
+  border-radius: 0 4px 4px 0;
+  background: $color-ink-subtle;
+}
+
+.value {
+  @include text(label);
+  grid-area: value;
+  font-weight: $weight-extrabold;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.meta {
+  @include text(tiny);
+  grid-area: meta;
+  color: $color-ink-subtle;
+}
+
+.empty {
+  @include text(label);
+  margin: 0;
+  color: $color-ink-subtle;
+}

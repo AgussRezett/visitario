@@ -1,0 +1,64 @@
+@use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(4));
+  min-width: 0;
+  padding: space(4) space(5) space(6);
+
+  @include up(lg) {
+    gap: space(5);
+    padding: space(6) space(8) space(10);
+  }
+}
+
+.top {
+  @include flex(column, $gap: space(3));
+
+  @include up(lg) {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+}
+
+.titles {
+  @include flex(column, $gap: space(1));
+  min-width: 0;
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+.title {
+  @include heading(title);
+  margin: 0;
+
+  @include up(lg) {
+    @include heading(display);
+  }
+}
+
+.controls {
+  @include flex(row, $gap: space(2) space(3), $align: center);
+  flex-wrap: wrap;
+  min-width: 0;
+
+  > :has([role='combobox']) {
+    flex: 0 1 220px;
+    min-width: 180px;
+  }
+}
+
+.dates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(2);
+  align-items: end;
+}
+
+.compare {
+  flex: none;
+  width: auto;
+  gap: space(3);
+}
