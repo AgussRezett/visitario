@@ -5,6 +5,7 @@
 .frame {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr); // long titles truncate instead of widening the page
   height: 100%;
 
   @include up(lg) {
