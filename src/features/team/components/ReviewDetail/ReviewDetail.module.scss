@@ -28,6 +28,11 @@
   @include heading(title);
 }
 
+.store-link {
+  align-self: flex-start;
+  margin-top: space(2);
+}
+
 .muted {
   @include text(label);
   color: $color-ink-muted;

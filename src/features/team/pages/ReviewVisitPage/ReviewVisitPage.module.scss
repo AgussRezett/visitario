@@ -18,6 +18,7 @@
 
 .appbar {
   @include flex(row, $gap: space(1), $align: center);
+
   min-height: 60px;
   padding: max(#{space(2)}, env(safe-area-inset-top)) space(4) space(2) space(2);
   border-bottom: 1px solid $color-line;
@@ -73,5 +74,21 @@
     padding: 0;
     border: 0;
     background: transparent;
+  }
+}
+
+.desktop-back {
+  display: none;
+
+  @include up(lg) {
+    display: flex;
+    margin-bottom: space(2);
+  }
+}
+
+// Desktop: the standard way back above the visit instead of a phone's top bar.
+.appbar {
+  @include up(lg) {
+    display: none;
   }
 }
