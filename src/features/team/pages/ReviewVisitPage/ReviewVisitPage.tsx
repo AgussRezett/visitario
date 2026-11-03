@@ -12,6 +12,7 @@ import { useWorkContext } from '@/features/workday/context'
 import { teamVisitQuery, type TeamVisit } from '@/features/team/api/queries'
 import { ReviewButtons, ReviewDetail, useReviewDraft } from '@/features/team/components/ReviewDetail'
 import styles from './ReviewVisitPage.module.scss'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 /** On phones: one visit to review, with approve / fix always at hand at the bottom (SM02). */
 export function ReviewVisitPage({ visitId, from }: { visitId: string; from?: string }) {
@@ -27,6 +28,7 @@ export function ReviewVisitPage({ visitId, from }: { visitId: string; from?: str
   }
   const visit = useQuery({ ...teamVisitQuery(visitId, ctx?.personId ?? ''), enabled: Boolean(ctx), initialData: fromList })
   const draft = useReviewDraft()
+  useDocumentTitle(visit.data ? `Revisión: ${visit.data.store.name ?? visit.data.store.address}` : null)
   useEffect(() => draft.reset(), [visitId]) // eslint-disable-line react-hooks/exhaustive-deps -- a new visit starts a new draft
   if (!ctx) return null
   if (visit.isPending) return <VisitSkeleton />

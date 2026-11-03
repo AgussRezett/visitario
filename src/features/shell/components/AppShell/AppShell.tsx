@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react'
-import { Link, useMatches } from '@tanstack/react-router'
+import { Link, useMatches, useRouterState } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { Building2, UserRound } from 'lucide-react'
 import clsx from 'clsx'
@@ -10,6 +10,8 @@ import { initials } from '@/lib/format'
 import type { Me } from '@/features/auth/me'
 import type { Role } from '@/domain/roles'
 import { SECTIONS, splitTabs } from '@/features/shell/sections'
+import { titleFor } from '@/features/shell/titles'
+import { useBaseTitle } from '@/lib/useDocumentTitle'
 import { MoreMenu } from '@/features/shell/components/MoreMenu'
 import { RoleSwitcher } from '@/features/shell/components/RoleSwitcher'
 import { ViewSwitcher } from '@/features/shell/components/ViewSwitcher'
@@ -47,6 +49,8 @@ export function AppShell({ me, active, children }: Props) {
   const { tabs, more } = splitTabs(sections)
   const mobileItems = active?.role === 'merchandiser' ? [...tabs, null] : tabs
   const columns = mobileItems.length + (more.length ? 1 : 0)
+  // The tab names the section as this role sees it ("Mapa de puntos", "Mis clientes").
+  useBaseTitle(titleFor(useRouterState({ select: (r) => r.location.pathname }), active?.role ?? null), 'shell')
   const immersive = useMatches({ select: (matches) => matches.some((m) => m.staticData.immersive) })
 
   return (

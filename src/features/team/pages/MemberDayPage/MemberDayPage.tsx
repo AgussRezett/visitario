@@ -19,6 +19,7 @@ import { RouteSketch } from '@/features/route/pages/RoutePage/RouteSketch'
 import { StreetMap } from '@/features/route/pages/RoutePage/StreetMap'
 import { MemberStops, type MemberFilter } from './MemberStops'
 import styles from './MemberDayPage.module.scss'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 /**
  * An activador's day as their supervisor sees it: read-only, in the activador's own order,
@@ -33,6 +34,8 @@ export function MemberDayPage({ personId, date: requested }: { personId: string;
   const on = Boolean(ctx)
   const team = useQuery({ ...teamDayQuery(companyId, date), enabled: on, placeholderData: keepPreviousData })
   const workday = useQuery({ ...memberWorkdayQuery(companyId, personId, date), enabled: on, placeholderData: keepPreviousData })
+  const who = team.data?.find((m) => m.personId === personId)
+  useDocumentTitle(who ? `Jornada de ${who.firstName}` : null)
   if (!ctx) return null
 
   const member = team.data?.find((m) => m.personId === personId)

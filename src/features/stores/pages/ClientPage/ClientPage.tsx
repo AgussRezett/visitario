@@ -15,12 +15,14 @@ import { StoreTagsLine } from '@/features/workday/components/StoreTagsLine'
 import { storeTags } from '@/features/workday/store-tags'
 import { clientHistoryQuery } from '@/features/storemap/api'
 import styles from './ClientPage.module.scss'
+import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
 /** A seller's client: its profile and every activation, with what was done in each. */
 export function ClientPage({ storeId }: { storeId: string }) {
   const ctx = useWorkContext()
   const companyId = ctx?.companyId ?? ''
   const history = useQuery({ ...clientHistoryQuery(companyId, storeId), enabled: Boolean(ctx) })
+  useDocumentTitle(history.data ? history.data.store.name ?? history.data.store.address : null)
   const catalogs = useCatalogs(companyId).data
   if (!ctx) return null
   const back = <BackLink href="/s/clients" label="Mis clientes" />
