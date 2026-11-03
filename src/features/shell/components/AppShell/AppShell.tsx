@@ -9,7 +9,8 @@ import { avatarUrl } from '@/lib/avatars'
 import { initials } from '@/lib/format'
 import type { Me } from '@/features/auth/me'
 import type { Role } from '@/domain/roles'
-import { SECTIONS } from '@/features/shell/sections'
+import { SECTIONS, splitTabs } from '@/features/shell/sections'
+import { MoreMenu } from '@/features/shell/components/MoreMenu'
 import { RoleSwitcher } from '@/features/shell/components/RoleSwitcher'
 import { ViewSwitcher } from '@/features/shell/components/ViewSwitcher'
 import { UpdateBanner } from '@/features/shell/components/UpdateBanner'
@@ -42,7 +43,10 @@ export function AppShell({ me, active, children }: Props) {
   const sections = active ? SECTIONS[active.role] : []
   const name = `${me.person.firstName} ${me.person.lastName}`
   const short = initials(me.person.firstName, me.person.lastName)
-  const mobileItems = active?.role === 'merchandiser' ? [...sections, null] : sections
+  // Phones: at most 5 tabs; past that, the rest go under "Más".
+  const { tabs, more } = splitTabs(sections)
+  const mobileItems = active?.role === 'merchandiser' ? [...tabs, null] : tabs
+  const columns = mobileItems.length + (more.length ? 1 : 0)
   const immersive = useMatches({ select: (matches) => matches.some((m) => m.staticData.immersive) })
 
   return (
@@ -100,7 +104,7 @@ export function AppShell({ me, active, children }: Props) {
       <div ref={setOverlay} className={clsx(styles.overlay, immersive && styles.phoneHidden)} />
 
       {mobileItems.length > 1 ? (
-        <nav aria-label="Secciones" className={clsx(styles.bottomNav, immersive && styles.phoneHidden)} style={{ gridTemplateColumns: `repeat(${mobileItems.length}, minmax(0, 1fr))` }}>
+        <nav aria-label="Secciones" className={clsx(styles.bottomNav, immersive && styles.phoneHidden)} style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
           {mobileItems.map((s) =>
             s ? (
               <Link key={s.slug} to="/s/$section" params={{ section: s.slug }} className={styles.tab} activeProps={activeProps}>
@@ -117,6 +121,10 @@ export function AppShell({ me, active, children }: Props) {
               </Link>
             ),
           )}
+          {more.length ? (
+            <MoreMenu sections={more} badges={badges} platform={me.isPlatformAdmin} badge={badge}
+              tabClassName={styles.tab} activeClassName={styles.active} iconClassName={styles.tabIcon} />
+          ) : null}
         </nav>
       ) : null}
     </div>

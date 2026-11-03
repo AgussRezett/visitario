@@ -3,6 +3,7 @@
 @layer ui {
   .field {
     @include flex(column, $gap: space(1.5));
+    min-width: 0;
   }
 
   .label {
@@ -39,6 +40,27 @@
 
     &:read-only {
       background: $color-muted;
+    }
+
+    // iPhone draws dates and times its own way: wider than the field and taller. Same box
+    // as the other inputs, the value on the left.
+    &[type='date'],
+    &[type='time'],
+    &[type='datetime-local'],
+    &[type='month'] {
+      display: block;
+      appearance: none;
+      text-align: left;
+      line-height: $control-height - 4px;
+
+      &::-webkit-date-and-time-value {
+        min-height: 1lh;
+        text-align: left;
+      }
+
+      &::-webkit-calendar-picker-indicator {
+        opacity: 0.6;
+      }
     }
   }
 
