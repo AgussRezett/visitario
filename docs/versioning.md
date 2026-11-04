@@ -7,4 +7,4 @@ sidebar and of "Mi perfil"; its tooltip adds the commit Vercel built.
 - **minor**: a release with new features (`feat:` commits).
 - **patch**: a release with fixes only (`fix:`, `style:`).
 
-Bump `package.json` in the release PR. 2.1.0 is the first numbered release (reports panel).
+Bump `package.json` in the release PR. 2.1.0 is the first numbered release (reports panel); 2.2.0 brings filters of several values at once.

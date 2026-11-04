@@ -3,8 +3,12 @@ import { NO_DIRECTORY_FILTERS, headerSort, readDirectoryFilters } from './direct
 
 describe('directory filters kept in the tab', () => {
   it('come back as they were saved', () => {
-    const f = { query: 'coto', filter: 'unverified', area: 'Palermo', channel: 0, seller: 3, sort: 'oldest_visit', page: 2 }
+    const f = { query: 'coto', filter: 'unverified', areas: ['Palermo', 'Almagro'], channels: [0, 2], sellers: [3], sort: 'oldest_visit', page: 2 }
     expect(readDirectoryFilters(JSON.stringify(f))).toEqual(f)
+  })
+
+  it('read the single values an older version saved', () => {
+    expect(readDirectoryFilters(JSON.stringify({ area: 'Palermo', channel: 0, seller: 3 }))).toMatchObject({ areas: ['Palermo'], channels: [0], sellers: [3] })
   })
 
   it('start empty when there is nothing, or it is broken', () => {

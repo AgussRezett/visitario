@@ -180,6 +180,7 @@ test('editing many stores at once: the marks survive the filters, and saving ask
 
   await pick(page.getByLabel('Zona', { exact: true }), 'Palermo')
   await page.getByRole('checkbox', { name: 'Seleccionar Kiosco Ana' }).check()
+  await pick(page.getByLabel('Zona', { exact: true }), 'Zona: todas')
   await pick(page.getByLabel('Zona', { exact: true }), 'Belgrano')
   await expect(page.getByRole('checkbox', { name: 'Seleccionar Kiosco Ana' })).toHaveCount(0)
   await page.getByRole('checkbox', { name: 'Seleccionar Almacén Rita' }).check()

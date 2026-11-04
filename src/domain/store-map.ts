@@ -1,5 +1,6 @@
 import { daysBetween } from './dates'
 import { levelOf, RAPPORT_SHORT, type Rapport } from './reputation'
+import { matchesAny } from './filters'
 
 /** A point of sale on the map, with what the map colors and counts. */
 export interface MapPoint {
@@ -102,27 +103,25 @@ export function painter(by: ColorBy, today: string, sellers: readonly Named[], c
 }
 
 export interface MapFilters {
-  area: string | null
-  /** A seller's id, 0 for "without seller", null for all. */
-  sellerId: number | null
-  /** A channel's id, 0 for "without channel", null for all. */
-  channelId: number | null
+  /** Several at once; none means all; 0 means "without" a seller or channel. */
+  areas: string[]
+  sellerIds: number[]
+  channelIds: number[]
   /** Only the points with no activation in 30 days (or never). */
   staleOnly: boolean
   query: string
 }
 
-export const NO_FILTERS: MapFilters = { area: null, sellerId: null, channelId: null, staleOnly: false, query: '' }
+export const NO_FILTERS: MapFilters = { areas: [], sellerIds: [], channelIds: [], staleOnly: false, query: '' }
 
 const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
-const pick = (value: number | null, wanted: number | null) => wanted === null || (wanted === 0 ? value === null : value === wanted)
 
 export function applyFilters(points: readonly MapPoint[], f: MapFilters, today: string): MapPoint[] {
   const q = fold(f.query.trim())
   return points.filter((p) =>
-    (f.area === null || p.area === f.area)
-    && pick(p.sellerId, f.sellerId)
-    && pick(p.channelId, f.channelId)
+    matchesAny(p.area, f.areas, '')
+    && matchesAny(p.sellerId, f.sellerIds, 0)
+    && matchesAny(p.channelId, f.channelIds, 0)
     && (!f.staleOnly || ['stale', 'never'].includes(recencyOf(p, today).band))
     && (q.length < 2 || fold(`${p.name ?? ''} ${p.address} ${p.customerNumber ?? ''}`).includes(q)))
 }

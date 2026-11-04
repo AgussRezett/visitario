@@ -28,18 +28,20 @@ export function headerSort(column: 'name' | 'customer' | 'area' | 'last_visit' |
 export interface DirectoryFilters {
   query: string
   filter: DirectoryFilterKind
-  area: string | null
-  /** An id, 0 for "without", null for all. */
-  channel: number | null
-  seller: number | null
+  /** Several at once; none means all (and 0, for channels and sellers, means "without"). */
+  areas: string[]
+  channels: number[]
+  sellers: number[]
   sort: DirectorySort
   page: number
 }
 
-export const NO_DIRECTORY_FILTERS: DirectoryFilters = { query: '', filter: 'all', area: null, channel: null, seller: null, sort: 'name', page: 0 }
+export const NO_DIRECTORY_FILTERS: DirectoryFilters = { query: '', filter: 'all', areas: [], channels: [], sellers: [], sort: 'name', page: 0 }
 
 const KINDS: readonly DirectoryFilterKind[] = ['all', 'unverified', 'added', 'archived']
 const id = (v: unknown) => (typeof v === 'number' && Number.isInteger(v) && v >= 0 ? v : null)
+/** A list of ids, or one id saved by an older version (the filters held one value). */
+const ids = (list: unknown, one: unknown) => (Array.isArray(list) ? list.map(id).filter((n): n is number => n !== null) : id(one) === null ? [] : [id(one) as number])
 
 /** Saved filters back, ignoring anything that does not fit (an old or edited value). */
 export function readDirectoryFilters(raw: string | null): DirectoryFilters {
@@ -55,9 +57,9 @@ export function readDirectoryFilters(raw: string | null): DirectoryFilters {
   return {
     query: typeof v.query === 'string' ? v.query.slice(0, 100) : '',
     filter: KINDS.find((k) => k === v.filter) ?? 'all',
-    area: typeof v.area === 'string' && v.area ? v.area : null,
-    channel: id(v.channel),
-    seller: id(v.seller),
+    areas: Array.isArray(v.areas) ? v.areas.filter((a): a is string => typeof a === 'string' && a !== '') : typeof v.area === 'string' && v.area ? [v.area] : [],
+    channels: ids(v.channels, v.channel),
+    sellers: ids(v.sellers, v.seller),
     sort: DIRECTORY_SORTS.find((s) => s.value === v.sort)?.value ?? 'name',
     page: id(v.page) ?? 0,
   }

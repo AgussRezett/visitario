@@ -2,6 +2,7 @@ import { Check, Users } from 'lucide-react'
 import { normalize, type Person } from '@/domain/import'
 import { Button } from '@/ui/Button'
 import { Select } from '@/ui/Select'
+import { personOption } from '@/features/people/person-options'
 import type { NameCheck } from '@/features/import/draft'
 import styles from './PeopleBox.module.scss'
 
@@ -19,7 +20,7 @@ const shown = (name: string, p: Person) => (normalize(name) === normalize(p.firs
 export function PeopleBox({ names, people, onConfirm }: PeopleBoxProps) {
   const sure = names.filter((n) => n.match.kind === 'sure')
   const unsure = names.filter((n) => n.match.kind !== 'sure')
-  const options = [{ value: '', label: 'Elegir activador…' }, ...people.map((p) => ({ value: p.id, label: full(p) }))]
+  const options = [{ value: '', label: 'Elegir activador…' }, ...people.map((p) => ({ ...personOption(p.id, p.firstName, p.lastName), label: full(p) }))]
 
   return (
     <section className={styles.box} aria-label="Repartir por activador">

@@ -35,7 +35,27 @@ export interface SelectProps {
  * sheet on phones. Keyboard like a native select (arrows, Home/End, Enter, Escape, typing
  * a letter); long lists get a search box. Shown in the top layer, so it works inside sheets.
  */
-export function Select({ label, value, options, onChange, hideLabel, placeholder = 'Elegí una opción', disabled, className, icon, prefix, size = 'md', searchable, id, ...data }: SelectProps) {
+export function Select({ value, onChange, ...props }: SelectProps) {
+  return <ListboxField {...props} chosen={[String(value ?? '')]} onPick={(v) => v !== String(value ?? '') && onChange(v)} />
+}
+
+type FieldProps = Omit<SelectProps, 'value' | 'onChange'> & {
+  /** The values chosen: one for a Select, any for a MultiSelect. */
+  chosen: string[]
+  onPick: (value: string) => void
+  /** Several at once: picking toggles and the list stays open. */
+  multiple?: boolean
+  /** What the button says (a MultiSelect counts what is chosen). */
+  text?: ReactNode
+  /** A first row that clears every choice ("Todas las zonas"). */
+  allLabel?: string
+  onClear?: () => void
+}
+
+/** The button, the list and its keyboard; shared by Select and MultiSelect. */
+export function ListboxField({ label, chosen, onPick, multiple, text, allLabel, onClear, options: own, hideLabel, placeholder = 'Elegí una opción', disabled, className, icon, prefix, size = 'md', searchable, id, ...data }: FieldProps) {
+  const ALL = '\u0000all'
+  const options: SelectOption[] = allLabel ? [{ value: ALL, label: allLabel }, ...own] : own
   const desktop = useIsDesktop()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -52,7 +72,8 @@ export function Select({ label, value, options, onChange, hideLabel, placeholder
   const listId = `${auto}-list`
   const optionId = (i: number) => `${auto}-option-${i}`
 
-  const selected = options.find((o) => String(o.value) === String(value ?? ''))
+  const isChosen = (o: SelectOption) => (o.value === ALL ? chosen.length === 0 : chosen.includes(String(o.value)))
+  const selected = options.find(isChosen)
   const canSearch = searchable ?? options.length > 8
   const shown = canSearch ? filterOptions(options, query) : options
 
@@ -69,8 +90,9 @@ export function Select({ label, value, options, onChange, hideLabel, placeholder
   }
   const choose = (o: SelectOption | undefined) => {
     if (!o || o.disabled) return
-    if (String(o.value) !== String(value ?? '')) onChange(String(o.value))
-    close()
+    if (o.value === ALL) onClear?.()
+    else onPick(String(o.value))
+    if (!multiple) close()
   }
 
   // Into the top layer (above an open sheet), placed under the trigger on desktop.
@@ -135,7 +157,7 @@ export function Select({ label, value, options, onChange, hideLabel, placeholder
     if (o.group && o.group !== shown[i - 1]?.group) {
       items.push(<li key={`g-${o.group}`} role="presentation" className={styles.group}>{o.group}</li>)
     }
-    const isSelected = o === selected
+    const isSelected = isChosen(o)
     items.push(
       <li
         key={String(o.value)}
@@ -148,11 +170,13 @@ export function Select({ label, value, options, onChange, hideLabel, placeholder
         onPointerMove={() => i !== active && !o.disabled && setActive(i)}
         onClick={() => choose(o)}
       >
+        {multiple ? <span className={styles.box} data-on={isSelected || undefined} aria-hidden>{isSelected ? <Check size={14} strokeWidth={3} /> : null}</span> : null}
+        {o.leading ? <span className={styles.leading} aria-hidden>{o.leading}</span> : null}
         <span className={styles.optionText}>
           <span className={styles.optionLabel}>{o.label}</span>
           {o.hint ? <span className={styles.hint}>{o.hint}</span> : null}
         </span>
-        {isSelected ? <Check size={18} strokeWidth={2.5} aria-hidden className={styles.check} /> : null}
+        {isSelected && !multiple ? <Check size={18} strokeWidth={2.5} aria-hidden className={styles.check} /> : null}
       </li>,
     )
   })
@@ -170,16 +194,17 @@ export function Select({ label, value, options, onChange, hideLabel, placeholder
         aria-controls={open ? listId : undefined}
         aria-labelledby={labelId}
         {...data}
-        data-value={String(value ?? '')}
+        data-value={chosen.join(',')}
         disabled={disabled}
         className={clsx(styles.trigger, styles[size], open && styles.open, className)}
         onClick={() => (open ? close() : openList())}
         onKeyDown={onTriggerKey}
       >
         {icon ? <span className={styles.icon} aria-hidden>{icon}</span> : null}
+        {!text && selected?.leading ? <span className={styles.leading} aria-hidden>{selected.leading}</span> : null}
         <span className={styles.value}>
           {prefix ? <span className={styles.prefix}>{prefix} </span> : null}
-          {selected ? selected.selectedLabel ?? selected.label : <span className={styles.placeholder}>{placeholder}</span>}
+          {text ?? (selected ? selected.selectedLabel ?? selected.label : <span className={styles.placeholder}>{placeholder}</span>)}
         </span>
         <ChevronDown size={18} aria-hidden className={styles.chevron} />
       </button>
@@ -214,12 +239,18 @@ export function Select({ label, value, options, onChange, hideLabel, placeholder
                 />
               </div>
             ) : null}
-            <ul ref={list} id={listId} role="listbox" aria-labelledby={labelId} tabIndex={-1} className={styles.list}
+            <ul ref={list} id={listId} role="listbox" aria-labelledby={labelId} aria-multiselectable={multiple || undefined} tabIndex={-1} className={styles.list}
               aria-activedescendant={!canSearch && active >= 0 ? optionId(active) : undefined}
               onKeyDown={(e) => onListKey(e, false)}>
               {items}
             </ul>
             {shown.length ? null : <p className={styles.empty}>Nada coincide con “{query}”.</p>}
+            {multiple ? (
+              <div className={styles.done}>
+                <span className={styles.count}>{chosen.length ? `${chosen.length} ${chosen.length === 1 ? 'elegido' : 'elegidos'}` : allLabel ?? 'Ninguno'}</span>
+                <button type="button" className={styles.doneButton} onClick={() => close()}>Listo</button>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

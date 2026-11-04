@@ -1,4 +1,5 @@
 // Pure helpers for the Select's list: which option is next, search and type-ahead.
+import type { ReactNode } from 'react'
 
 export interface SelectOption {
   value: string | number
@@ -7,6 +8,8 @@ export interface SelectOption {
   group?: string
   /** What the button shows once chosen, when it differs from the list (adds the group, say). */
   selectedLabel?: string
+  /** Before the label, in the list and on the button: a person's photo, say. */
+  leading?: ReactNode
   /** A second, quieter line. */
   hint?: string
   disabled?: boolean

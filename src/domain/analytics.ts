@@ -1,6 +1,7 @@
 import type { Rapport } from './reputation'
 import type { Consent, ReviewStatus, WorkStatus } from './visit'
 import { daysBetween } from './dates'
+import { matchesAny } from './filters'
 import { datesOf, type Range } from './report-period'
 
 // The reports panel's numbers, from the raw facts of a period (public.report_facts).
@@ -36,20 +37,21 @@ export interface Facts {
 
 export const EMPTY_FACTS: Facts = { visits: [], metrics: [], brands: [], stores: [], people: [] }
 
+/** Several values each; none means all; 0 means "without" a channel or seller. */
 export interface Filter {
-  person: string | null
-  channel: number | null
-  seller: number | null
-  area: string | null
+  people: string[]
+  channels: number[]
+  sellers: number[]
+  areas: string[]
 }
 
-export const NO_FILTER: Filter = { person: null, channel: null, seller: null, area: null }
+export const NO_FILTER: Filter = { people: [], channels: [], sellers: [], areas: [] }
 
 /** Only what the filters ask for; work totals and brands follow their visits. */
 export function filterFacts(f: Facts, by: Filter): Facts {
   const keep = (v: { ch: number | null; se: number | null; area: string | null }) =>
-    (by.channel === null || v.ch === by.channel) && (by.seller === null || v.se === by.seller) && (by.area === null || v.area === by.area)
-  const visits = f.visits.filter((v) => keep(v) && (by.person === null || v.m === by.person))
+    matchesAny(v.ch, by.channels, 0) && matchesAny(v.se, by.sellers, 0) && matchesAny(v.area, by.areas, '')
+  const visits = f.visits.filter((v) => keep(v) && matchesAny(v.m, by.people, ''))
   const ids = new Set(visits.map((v) => v.id))
   return { visits, metrics: f.metrics.filter((m) => ids.has(m.v)), brands: f.brands.filter((b) => ids.has(b.v)), stores: f.stores.filter(keep), people: f.people }
 }
@@ -175,7 +177,7 @@ export function byPerson(f: Facts): PersonRow[] {
   const people = [...new Set(f.visits.map((v) => v.m))]
   return people
     .map((personId) => {
-      const own = filterFacts(f, { ...NO_FILTER, person: personId })
+      const own = filterFacts(f, { ...NO_FILTER, people: [personId] })
       const s = summarize(own)
       return {
         personId, planned: s.planned, visited: s.visited, done: s.done, refused: s.refused, closed: s.closed,

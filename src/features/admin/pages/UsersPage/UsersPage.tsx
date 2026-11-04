@@ -9,7 +9,7 @@ import { PersonAvatar } from '@/features/people/PersonAvatar'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
 import { Segmented } from '@/ui/Segmented'
-import { Select } from '@/ui/Select'
+import { MultiSelect } from '@/ui/Select'
 import { Skeleton } from '@/ui/Skeleton'
 import { Table } from '@/ui/Table'
 import { useWorkContext } from '@/features/workday/context'
@@ -32,7 +32,7 @@ export function UsersPage() {
   const people = useQuery({ ...peopleQuery(ctx?.companyId ?? ''), enabled: Boolean(ctx) })
   const teams = useQuery({ ...teamsQuery(ctx?.companyId ?? ''), enabled: Boolean(ctx) })
   const company = useQuery({ ...companyQuery(ctx?.companyId ?? ''), enabled: Boolean(ctx) })
-  const [filter, setFilter] = useState<PeopleFilter>({ query: '', role: 'all', team: 'all' })
+  const [filter, setFilter] = useState<PeopleFilter>({ query: '', roles: [], teams: [] })
   const [tab, setTab] = useState<'people' | 'invites' | 'teams'>('people')
   const invites = useQuery({ ...invitationsQuery(ctx?.companyId ?? ''), enabled: Boolean(ctx) })
   const [editing, setEditing] = useState<string | null>(null)
@@ -52,10 +52,10 @@ export function UsersPage() {
           <Search size={18} aria-hidden />
           <input value={filter.query} onChange={(e) => setFilter((f) => ({ ...f, query: e.target.value }))} placeholder="Nombre o celular" aria-label="Buscar personas" />
         </label>
-        <Select label="Rol" value={filter.role} onChange={(v) => setFilter((f) => ({ ...f, role: v as PeopleFilter['role'] }))}
-          options={[{ value: 'all', label: 'Rol: todos' }, ...ROLE_PRIORITY.map((r) => ({ value: r, label: ROLE_LABEL[r] }))]} className={styles.filter} />
-        <Select label="Equipo" value={filter.team} onChange={(v) => setFilter((f) => ({ ...f, team: v }))}
-          options={[{ value: 'all', label: 'Equipo: todos' }, ...(teams.data ?? []).map((t) => ({ value: t.id, label: t.name })), { value: 'none', label: 'Sin equipo' }]} className={styles.filter} />
+        <MultiSelect label="Rol" values={filter.roles} onChange={(v) => setFilter((f) => ({ ...f, roles: ROLE_PRIORITY.filter((r) => v.includes(r)) }))} allLabel="Rol: todos" noun="roles"
+          options={ROLE_PRIORITY.map((r) => ({ value: r, label: ROLE_LABEL[r] }))} className={styles.filter} />
+        <MultiSelect label="Equipo" values={filter.teams} onChange={(v) => setFilter((f) => ({ ...f, teams: v }))} allLabel="Equipo: todos" noun="equipos"
+          options={[...(teams.data ?? []).map((t) => ({ value: t.id, label: t.name })), { value: 'none', label: 'Sin equipo' }]} className={styles.filter} />
       </div>
       {people.isPending ? (
         <Skeleton height={240} />

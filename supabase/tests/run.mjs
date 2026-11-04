@@ -713,8 +713,16 @@ await expectError('Another company cannot tag Panda’s stores', () => as('beto'
 const otherChannel = (await as('beto', `insert into channel (company_id, name) values ($1, 'Mayorista') returning id`, [other]))[0].id
 await expectError('…nor use another company’s channel', () => as('martin', `select tag_store($1, $2, null)`, [tagged, otherChannel]), /not found/)
 
-check('The directory filters by seller', (await as('martin', `select * from store_directory_v2($1, p_seller => $2)`, [panda, noraSeller])).map((r) => r.id).join() === tagged)
-check('…and by "without channel"', (await as('martin', `select * from store_directory_v2($1, p_channel => 0)`, [panda])).every((r) => r.channel_id === null))
+check('The directory filters by seller', (await as('martin', `select * from store_directory_v2($1, p_sellers => $2)`, [panda, [noraSeller]])).map((r) => r.id).join() === tagged)
+check('…and by "without channel"', (await as('martin', `select * from store_directory_v2($1, p_channels => '{0}')`, [panda])).every((r) => r.channel_id === null))
+{
+  const both = await as('martin', `select * from store_directory_v2($1, p_channels => $2, p_limit => 200)`, [panda, [0, kiosco]])
+  check('…several channels at once (with or without one)', both.length > 0 && both.every((r) => r.channel_id === null || r.channel_id === kiosco) && both.some((r) => r.channel_id === kiosco))
+  const areas = [...new Set((await as('martin', `select area from store_directory_v2($1, p_limit => 200)`, [panda])).map((r) => r.area).filter(Boolean))].slice(0, 2)
+  const twoAreas = await as('martin', `select area from store_directory_v2($1, p_areas => $2, p_limit => 200)`, [panda, areas])
+  check('…several zones at once', areas.length < 2 || (twoAreas.every((r) => areas.includes(r.area)) && new Set(twoAreas.map((r) => r.area)).size === 2))
+  check('…none chosen is all', (await as('martin', `select * from store_directory_v2($1, p_areas => '{}', p_limit => 200)`, [panda])).length === (await as('martin', `select * from store_directory_v2($1, p_limit => 200)`, [panda])).length)
+}
 const clients = await as('nora', `select * from seller_stores($1)`, [panda])
 check('A seller sees their clients', clients.length === 1 && clients[0].id === tagged && clients[0].channel_id === kiosco)
 check('…someone who is not a seller sees none', (await as('agus', `select count(*)::int n from seller_stores($1)`, [panda]))[0].n === 0)

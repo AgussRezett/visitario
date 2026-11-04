@@ -11,6 +11,7 @@ import { useConfirm } from '@/ui/ConfirmDialog'
 import { Field } from '@/ui/Field'
 import { Segmented } from '@/ui/Segmented'
 import { Select } from '@/ui/Select'
+import { personOption } from '@/features/people/person-options'
 import { matchQuery, useRunImport, type ImportPayloadRow, type ImportResult } from '@/features/import/api/import'
 import { reviewRows, tableOf, type Draft, type NameCheck, type ReviewRow } from '@/features/import/draft'
 import { useLocate } from '@/features/import/locate'
@@ -106,7 +107,7 @@ export function ReviewStep({ companyId, draft, rows, people, names, tags, date, 
     <div className={styles.settings}>
       <Select
         label="Para"
-        options={[{ value: '', label: 'Elegir activador…' }, ...people.map((p) => ({ value: p.id, label: `${p.firstName} ${p.lastName}${p.me ? ' (vos)' : ''}` }))]}
+        options={[{ value: '', label: 'Elegir activador…' }, ...people.map((p) => ({ ...personOption(p.id, p.firstName, p.lastName), label: `${p.firstName} ${p.lastName}${p.me ? ' (vos)' : ''}` }))]}
         value={draft.fallback ?? ''}
         onChange={(v) => update({ fallback: v || null })}
       />

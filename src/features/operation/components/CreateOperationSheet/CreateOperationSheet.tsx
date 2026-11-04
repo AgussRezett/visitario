@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { personOption } from '@/features/people/person-options'
 import { useQuery } from '@tanstack/react-query'
 import { Users } from 'lucide-react'
 import { formatLongDate } from '@/domain/dates'
@@ -76,7 +77,7 @@ export function CreateOperationSheet({ open, onClose, companyId, date, meId, onC
       <PeoplePicker label={meId ? 'Compañeros' : 'Activadores'} people={meId ? others : people.data ?? []} selected={selected} onToggle={toggle} />
       {!meId && selected.length >= 2 ? (
         <Select label="Encabeza" value={chosenHost} onChange={(v) => setHost(v)}
-          options={selected.map((id) => ({ value: id, label: nameOf(id) }))} />
+          options={selected.map((id) => { const p = people.data?.find((x) => x.personId === id); return p ? personOption(id, p.firstName, p.lastName) : { value: id, label: nameOf(id) } })} />
       ) : null}
       <Field label="Nombre" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} placeholder="Opcional: Ej. Coto Cabildo" />
       {people.error ? <Banner tone="error">No pudimos cargar los activadores. Revisá la conexión.</Banner> : null}

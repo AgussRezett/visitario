@@ -57,14 +57,15 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
     if (path.endsWith('/rpc/report_facts')) return done(json(reportFacts(state, body())))
     if (path.endsWith('/rpc/store_directory') || path.endsWith('/rpc/store_directory_v2')) {
       const b = body()
-      const tag = (value: unknown, wanted: unknown) => wanted === undefined || wanted === null || (wanted === 0 ? !value : value === wanted)
+      // Several at once; none means all; 0 means without one.
+      const anyOf = (value: unknown, wanted: unknown) => !Array.isArray(wanted) || wanted.length === 0 || wanted.includes(value ?? 0)
       const q = String(b.p_query ?? '').toLowerCase()
       const rows = (state.stores ?? []).filter((x) => (b.p_filter === 'archived' ? Boolean(x.deleted_at) && !x.merged_into && !x.removed_at : !x.deleted_at))
         .filter((x) => !q || `${x.name ?? ''} ${x.address} ${x.customer_number ?? ''}`.toLowerCase().includes(q))
         .filter((x) => b.p_filter !== 'unverified' || x.location_status !== 'verified')
         .filter((x) => b.p_filter !== 'added' || x.source === 'merchandiser')
-        .filter((x) => tag(x.channel_id, b.p_channel) && tag(x.seller_id, b.p_seller))
-        .filter((x) => !b.p_area || x.area === b.p_area)
+        .filter((x) => anyOf(x.channel_id, b.p_channels) && anyOf(x.seller_id, b.p_sellers))
+        .filter((x) => anyOf(x.area, b.p_areas))
         .sort(directorySort(String(b.p_sort ?? 'name')))
       return done(json(rows.map((x) => ({
         channel_id: x.channel_id ?? null, seller_id: x.seller_id ?? null,
