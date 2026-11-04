@@ -9,7 +9,9 @@ import { previousRange, rangeLabel, type Range } from '@/domain/report-period'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
 import { Refreshing } from '@/ui/Refreshing'
-import { Select } from '@/ui/Select'
+import { MultiSelect } from '@/ui/Select'
+import { toIds } from '@/domain/filters'
+import { personOption, sellerOption } from '@/features/people/person-options'
 import { Skeleton } from '@/ui/Skeleton'
 import { useCatalogs } from '@/features/workday/api/queries'
 import { reportFactsQuery } from '@/features/team/api/report-facts'
@@ -68,24 +70,23 @@ export function AnalyticsPanel({ companyId, range, today, compare, controls }: P
     now, before, projection, trend: direction, people, names: (id) => names.get(id)?.first ?? 'Alguien',
     channels: breakdown(f, 'ch'), channelName: (key) => (key ? channelName(Number(key)) : 'sin canal'), coverage: cover, heat: grid,
   })
-  const filtered = filter !== NO_FILTER && Object.values(filter).some((v) => v !== null)
-  const pick = (v: string) => (v === '' ? null : Number(v))
+  const filtered = Object.values(filter).some((v) => v.length > 0)
 
   const filters = (
     <div className={styles.filters}>
-      <Select label="Activador" hideLabel size="sm" value={filter.person ?? ''} onChange={(v) => setFilter((x) => ({ ...x, person: v || null }))}
-        options={[{ value: '', label: 'Todo el equipo' }, ...all.people.map((p) => ({ value: p.id, label: `${p.first} ${p.last}` }))]} />
+      <MultiSelect label="Activador" hideLabel size="sm" values={filter.people} onChange={(v) => setFilter((x) => ({ ...x, people: v }))}
+        allLabel="Todo el equipo" noun="activadores" options={all.people.map((p) => personOption(p.id, p.first, p.last))} />
       {areas.length ? (
-        <Select label="Zona" hideLabel size="sm" value={filter.area ?? ''} onChange={(v) => setFilter((x) => ({ ...x, area: v || null }))}
-          options={[{ value: '', label: 'Todas las zonas' }, ...areas.map((a) => ({ value: a, label: a }))]} />
+        <MultiSelect label="Zona" hideLabel size="sm" values={filter.areas} onChange={(v) => setFilter((x) => ({ ...x, areas: v }))}
+          allLabel="Todas las zonas" noun="zonas" options={areas.map((a) => ({ value: a, label: a }))} />
       ) : null}
       {catalogs?.channels?.length ? (
-        <Select label="Canal" hideLabel size="sm" value={filter.channel ?? ''} onChange={(v) => setFilter((x) => ({ ...x, channel: pick(v) }))}
-          options={[{ value: '', label: 'Todos los canales' }, ...catalogs.channels.map((c) => ({ value: c.id, label: c.name }))]} />
+        <MultiSelect label="Canal" hideLabel size="sm" values={filter.channels.map(String)} onChange={(v) => setFilter((x) => ({ ...x, channels: toIds(v) }))}
+          allLabel="Todos los canales" noun="canales" options={[...catalogs.channels.map((c) => ({ value: String(c.id), label: c.name })), { value: '0', label: 'Sin canal' }]} />
       ) : null}
       {catalogs?.sellers?.length ? (
-        <Select label="Vendedor" hideLabel size="sm" value={filter.seller ?? ''} onChange={(v) => setFilter((x) => ({ ...x, seller: pick(v) }))}
-          options={[{ value: '', label: 'Todos los vendedores' }, ...catalogs.sellers.map((s) => ({ value: s.id, label: s.name }))]} />
+        <MultiSelect label="Vendedor" hideLabel size="sm" values={filter.sellers.map(String)} onChange={(v) => setFilter((x) => ({ ...x, sellers: toIds(v) }))}
+          allLabel="Todos los vendedores" noun="vendedores" options={[...catalogs.sellers.map(sellerOption), { value: '0', label: 'Sin vendedor' }]} />
       ) : null}
       {filtered ? <Button variant="ghost" size="sm" onClick={() => setFilter(NO_FILTER)}><X size={16} aria-hidden />Limpiar</Button> : null}
     </div>
@@ -137,7 +138,7 @@ export function AnalyticsPanel({ companyId, range, today, compare, controls }: P
             </PanelCard>
 
             <PanelCard wide title="Activadores" hint="Tocá un nombre para ver solo a esa persona.">
-              <PeopleRanking rows={people} names={names} metric={metrics[0]} onPick={(id) => setFilter((x) => ({ ...x, person: id }))} />
+              <PeopleRanking rows={people} names={names} metric={metrics[0]} onPick={(id) => setFilter((x) => ({ ...x, people: [id] }))} />
             </PanelCard>
 
             <PanelCard title="Dónde se trabaja" hint="Visitas con resultado por canal, vendedor o zona.">

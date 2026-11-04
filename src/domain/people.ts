@@ -56,8 +56,10 @@ export const membersOf = (team: Team, people: CompanyPerson[]) =>
 
 export interface PeopleFilter {
   query: string
-  role: Role | 'all'
-  team: string | 'all' | 'none'
+  /** Several at once; none chosen means all. */
+  roles: Role[]
+  /** Team ids, or 'none' for "Sin equipo". */
+  teams: string[]
 }
 
 /** Search by name or the phone's last digits; filter by role and team. Active first, then invited. */
@@ -68,9 +70,8 @@ export function filterPeople(people: CompanyPerson[], f: PeopleFilter) {
     .filter((p) => {
       const name = `${p.firstName} ${p.lastName}`.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
       if (q && !name.includes(q) && !(p.phoneLast4 && q.replace(/\D/g, '') && p.phoneLast4.includes(q.replace(/\D/g, '')))) return false
-      if (f.role !== 'all' && !p.roles.includes(f.role)) return false
-      if (f.team === 'none' && p.teamId) return false
-      if (f.team !== 'all' && f.team !== 'none' && p.teamId !== f.team) return false
+      if (f.roles.length && !f.roles.some((r) => p.roles.includes(r))) return false
+      if (f.teams.length && !f.teams.includes(p.teamId ?? 'none')) return false
       return true
     })
     .sort((a, b) => order[a.status] - order[b.status])

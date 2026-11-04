@@ -28,9 +28,9 @@ export interface DirectoryRow {
 export interface DirectorySearch {
   query: string
   filter: DirectoryFilter
-  area: string | null
-  channel: number | null
-  seller: number | null
+  areas: string[]
+  channels: number[]
+  sellers: number[]
   sort?: DirectorySort
 }
 
@@ -40,9 +40,9 @@ export async function fetchDirectory(companyId: string, q: DirectorySearch, limi
     p_company: companyId,
     p_query: q.query || undefined,
     p_filter: q.filter,
-    p_area: q.area ?? undefined,
-    p_channel: q.channel ?? undefined,
-    p_seller: q.seller ?? undefined,
+    p_areas: q.areas,
+    p_channels: q.channels,
+    p_sellers: q.sellers,
     p_limit: limit,
     p_offset: offset,
     p_sort: q.sort ?? 'name',

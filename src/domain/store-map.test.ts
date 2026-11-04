@@ -41,11 +41,14 @@ describe('store map', () => {
 
   it('filters by area, seller ("without" too), channel, stale and text', () => {
     const pts = [p('a', { sellerId: 10, area: 'Belgrano', lastVisitDate: '2026-10-24', visits30: 1 }), p('b', { area: 'Palermo', name: 'Coto Cabildo' }), p('c', { sellerId: 11, channelId: 3 })]
-    expect(applyFilters(pts, { ...NO_FILTERS, sellerId: 0 }, TODAY).map((x) => x.id)).toEqual(['b'])
-    expect(applyFilters(pts, { ...NO_FILTERS, area: 'Palermo' }, TODAY).map((x) => x.id)).toEqual(['b'])
+    expect(applyFilters(pts, { ...NO_FILTERS, sellerIds: [0] }, TODAY).map((x) => x.id)).toEqual(['b'])
+    expect(applyFilters(pts, { ...NO_FILTERS, areas: ['Palermo'] }, TODAY).map((x) => x.id)).toEqual(['b'])
     expect(applyFilters(pts, { ...NO_FILTERS, staleOnly: true }, TODAY).map((x) => x.id)).toEqual(['b', 'c'])
     expect(applyFilters(pts, { ...NO_FILTERS, query: 'coto' }, TODAY).map((x) => x.id)).toEqual(['b'])
-    expect(applyFilters(pts, { ...NO_FILTERS, channelId: 3 }, TODAY).map((x) => x.id)).toEqual(['c'])
+    expect(applyFilters(pts, { ...NO_FILTERS, channelIds: [3] }, TODAY).map((x) => x.id)).toEqual(['c'])
+    // Several at once: any of them.
+    expect(applyFilters(pts, { ...NO_FILTERS, sellerIds: [0, 11] }, TODAY).map((x) => x.id)).toEqual(['b', 'c'])
+    expect(applyFilters(pts, { ...NO_FILTERS, areas: ['Palermo', 'Belgrano'] }, TODAY).map((x) => x.id)).toEqual(['a', 'b', 'c'])
   })
 
   it('insights per seller and area: coverage, stale, average days', () => {

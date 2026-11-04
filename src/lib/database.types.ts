@@ -2048,14 +2048,14 @@ export type Database = {
       day_operations: { Args: { p_company: string; p_date: string }; Returns: Json }
       store_directory_v2: {
         Args: {
-          p_area?: string
-          p_channel?: number
+          p_areas?: string[]
+          p_channels?: number[]
           p_company: string
           p_filter?: string
           p_limit?: number
           p_offset?: number
           p_query?: string
-          p_seller?: number
+          p_sellers?: number[]
           p_sort?: string
         }
         Returns: {

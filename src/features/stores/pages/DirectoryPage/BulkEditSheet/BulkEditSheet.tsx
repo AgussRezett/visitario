@@ -6,6 +6,7 @@ import { Button } from '@/ui/Button'
 import { useConfirm } from '@/ui/ConfirmDialog'
 import { Field } from '@/ui/Field'
 import { Select } from '@/ui/Select'
+import { sellerOption } from '@/features/people/person-options'
 import { Sheet } from '@/ui/Sheet'
 import type { Catalogs } from '@/features/workday/api/queries'
 import { BulkError, useBulkUpdateStores } from '@/features/stores/api/bulk'
@@ -105,7 +106,7 @@ export function BulkEditSheet({ open, onClose, onSaved, companyId, rows, catalog
             <p className={styles.lead}>Elegí solo lo que quieras cambiar. Lo que dejes como está no se toca.</p>
             <div className={styles.field}>
               <Select label="Vendedor" value={form.seller} onChange={(v) => setForm((f) => ({ ...f, seller: v }))}
-                options={[{ value: KEEP, label: keepLabel(now.seller, sellerName) }, { value: NONE, label: 'Sin vendedor' }, ...sellers.map((s) => ({ value: String(s.id), label: s.name }))]} />
+                options={[{ value: KEEP, label: keepLabel(now.seller, sellerName) }, { value: NONE, label: 'Sin vendedor' }, ...sellers.map(sellerOption)]} />
               <p className={styles.now}>{help(now.seller, sellerName)}</p>
             </div>
             <div className={styles.field}>

@@ -71,6 +71,12 @@ test('the reports panel: the period in figures, against the one before, by perso
   // One person only: everything follows.
   await ranking.getByRole('button', { name: /Diego Paz/ }).click()
   await expect(tile('Visitas con resultado')).toContainText('2')
+  const who = page.getByRole('combobox', { name: 'Activador' })
+  await expect(who).toContainText('Diego Paz')
+  // And a second one too: several at once.
+  await pick(who, /Lucía/)
+  await expect(who).toContainText(/^(Lucía Gómez|Diego Paz) \+1$/)
+  await expect(tile('Visitas con resultado')).toContainText('5')
   await page.getByRole('button', { name: 'Limpiar' }).click()
 
   // Another period, without comparing.

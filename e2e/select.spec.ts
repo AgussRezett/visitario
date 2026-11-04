@@ -33,10 +33,32 @@ test('Visitario’s Select: keyboard, search in long lists, a sheet on phones, a
   if (desktop) await page.screenshot({ path: `test-results/select-open-${info.project.name}.png` })
   await page.keyboard.press('ArrowDown')
   await page.keyboard.press('Enter')
+  // A filter takes several: the list stays open and ticks it.
+  await expect(list).toBeVisible()
+  await expect(list).toHaveAttribute('aria-multiselectable', 'true')
+  await expect(list.getByRole('option', { name: 'Paternal' })).toHaveAttribute('aria-selected', 'true')
+  await expect(list.getByRole('option', { name: 'Zona: todas' })).toHaveAttribute('aria-selected', 'false')
+  await expect(page.getByText('1 elegido', { exact: true })).toBeVisible()
+  await page.keyboard.press('Escape')
   await expect(list).toBeHidden()
   await expect(zone).toHaveAttribute('data-value', 'Paternal')
   await expect(zone).toBeFocused()
   await expect(page.getByRole('link', { name: /Autoservicio Lili/ })).toHaveCount(0)
+
+  // Two zones at once, then "todas" again.
+  await zone.click()
+  await list.getByRole('option', { name: 'Belgrano' }).click()
+  await page.getByRole('button', { name: 'Listo', exact: true }).click()
+  await expect(zone).toHaveAttribute('data-value', 'Paternal,Belgrano')
+  await expect(zone).toHaveText(/Paternal \+1/)
+  await expect(page.getByRole('link', { name: /Autoservicio Lili/ })).toBeVisible()
+  await zone.click()
+  await list.getByRole('option', { name: 'Zona: todas' }).click()
+  await page.keyboard.press('Escape')
+  await expect(zone).toHaveAttribute('data-value', '')
+  await zone.click()
+  await list.getByRole('option', { name: 'Paternal' }).click()
+  await page.keyboard.press('Escape')
 
   // Escape closes without changing; typing a letter jumps to it.
   await page.keyboard.press('ArrowDown')
@@ -58,6 +80,7 @@ test('Visitario’s Select: keyboard, search in long lists, a sheet on phones, a
     await page.screenshot({ path: `test-results/select-sheet-${info.project.name}.png` })
   }
   await page.keyboard.press('Enter')
+  await page.keyboard.press('Escape')
   await expect(seller).toHaveAttribute('data-value', '6')
   await expect(seller).toHaveText(/Nora Ruiz/)
 

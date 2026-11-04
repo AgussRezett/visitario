@@ -19,14 +19,15 @@ describe('people', () => {
   })
 
   it('search by name without accents, or by the phone digits', () => {
-    expect(filterPeople(people, { query: 'lucia', role: 'all', team: 'all' }).map((p) => p.personId)).toEqual(['p2'])
-    expect(filterPeople(people, { query: '1020', role: 'all', team: 'all' }).map((p) => p.personId)).toEqual(['p1'])
+    expect(filterPeople(people, { query: 'lucia', roles: [], teams: [] }).map((p) => p.personId)).toEqual(['p2'])
+    expect(filterPeople(people, { query: '1020', roles: [], teams: [] }).map((p) => p.personId)).toEqual(['p1'])
   })
 
   it('filter by role and team; active people first', () => {
-    expect(filterPeople(people, { query: '', role: 'supervisor', team: 'all' }).map((p) => p.personId)).toEqual(['p1', 'p5'])
-    expect(filterPeople(people, { query: '', role: 'all', team: 'none' }).map((p) => p.personId)).toEqual(['p4'])
-    expect(filterPeople(people, { query: '', role: 'all', team: 'north' }).map((p) => p.status)).toEqual(['active', 'active', 'invited'])
+    expect(filterPeople(people, { query: '', roles: ['supervisor'], teams: [] }).map((p) => p.personId)).toEqual(['p1', 'p5'])
+    expect(filterPeople(people, { query: '', roles: [], teams: ['none'] }).map((p) => p.personId)).toEqual(['p4'])
+    expect(filterPeople(people, { query: '', roles: [], teams: ['north'] }).map((p) => p.status)).toEqual(['active', 'active', 'invited'])
+    expect(filterPeople(people, { query: '', roles: [], teams: ['north', 'none'] }).length).toBe(filterPeople(people, { query: '', roles: [], teams: ['north'] }).length + 1)
   })
 
   it('a team: its supervisors and its active merchandisers', () => {

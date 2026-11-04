@@ -10,7 +10,9 @@ import { useIsDesktop } from '@/lib/useMedia'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
 import { Refreshing } from '@/ui/Refreshing'
-import { Select } from '@/ui/Select'
+import { MultiSelect } from '@/ui/Select'
+import { toIds } from '@/domain/filters'
+import { sellerOption } from '@/features/people/person-options'
 import { Skeleton } from '@/ui/Skeleton'
 import { StatusChip } from '@/ui/StatusChip'
 import { Table } from '@/ui/Table'
@@ -43,9 +45,9 @@ export function DirectoryPage() {
   const desktop = useIsDesktop()
   const companyId = ctx?.companyId ?? ''
   // Kept for this tab: coming back from a store finds them as they were.
-  const [{ query, filter, area, channel, seller, sort, page }, setFilters] = useDirectoryFilters(companyId)
+  const [{ query, filter, areas, channels: channelIds, sellers: sellerIds, sort, page }, setFilters] = useDirectoryFilters(companyId)
   const q = useDebounced(query.trim(), 300)
-  const list = useQuery({ ...directoryQuery(companyId, { query: q, filter, area, channel, seller, sort, page }), enabled: Boolean(ctx), placeholderData: keepPreviousData })
+  const list = useQuery({ ...directoryQuery(companyId, { query: q, filter, areas, channels: channelIds, sellers: sellerIds, sort, page }), enabled: Boolean(ctx), placeholderData: keepPreviousData })
   const counts = useQuery({ ...directoryCountsQuery(companyId), enabled: Boolean(ctx) })
   const catalogs = useCatalogs(companyId).data
   const reputation = useStoreReputation(companyId, (list.data?.rows ?? []).map((r) => r.id)).data
@@ -71,9 +73,8 @@ export function DirectoryPage() {
   const name = (r: DirectoryRow) => r.name ?? r.address
   const last = (r: DirectoryRow) => (r.lastVisit ? `${when(r.lastVisit.date)} · ${r.lastVisit.by}` : 'Nunca')
   const archived = filter === 'archived'
-  const filtered = query.trim() !== '' || filter !== 'all' || area !== null || channel !== null || seller !== null
+  const filtered = query.trim() !== '' || filter !== 'all' || areas.length > 0 || channelIds.length > 0 || sellerIds.length > 0
   const tagsOf = (r: DirectoryRow) => storeTags(catalogs, r)
-  const pick = (value: string) => (value === '' ? null : Number(value))
   const channels = catalogs?.channels ?? []
   const sellers = catalogs?.sellers ?? []
   const allHere = rows.length > 0 && rows.every((r) => selection.has(r.id))
@@ -84,7 +85,7 @@ export function DirectoryPage() {
     setSaved(null)
     if (total <= rows.length) return selection.toggleAll(rows)
     setMatching(true)
-    const all = await fetchAllMatching(companyId, { query: q, filter, area, channel, seller, sort }).catch(() => null)
+    const all = await fetchAllMatching(companyId, { query: q, filter, areas, channels: channelIds, sellers: sellerIds, sort }).catch(() => null)
     setMatching(false)
     if (all) selection.add(all)
   }
@@ -104,16 +105,16 @@ export function DirectoryPage() {
         </label>
         <div className={styles.chips}>
           {counts.data?.areas.length ? (
-            <Select label="Zona" value={area ?? ''} onChange={(v) => setFilters({ area: v || null })} hideLabel size="sm"
-              options={[{ value: '', label: 'Zona: todas' }, ...counts.data.areas.map((a) => ({ value: a, label: a }))]} />
+            <MultiSelect label="Zona" values={areas} onChange={(v) => setFilters({ areas: v })} hideLabel size="sm" allLabel="Zona: todas" noun="zonas"
+              options={counts.data.areas.map((a) => ({ value: a, label: a }))} />
           ) : null}
           {channels.length ? (
-            <Select label="Canal" value={channel === null ? '' : String(channel)} onChange={(v) => setFilters({ channel: pick(v) })} hideLabel size="sm"
-              options={[{ value: '', label: 'Canal: todos' }, { value: '0', label: 'Sin canal' }, ...channels.map((c) => ({ value: String(c.id), label: c.name }))]} />
+            <MultiSelect label="Canal" values={channelIds.map(String)} onChange={(v) => setFilters({ channels: toIds(v) })} hideLabel size="sm" allLabel="Canal: todos" noun="canales"
+              options={[{ value: '0', label: 'Sin canal' }, ...channels.map((c) => ({ value: String(c.id), label: c.name }))]} />
           ) : null}
           {sellers.length ? (
-            <Select label="Vendedor" value={seller === null ? '' : String(seller)} onChange={(v) => setFilters({ seller: pick(v) })} hideLabel size="sm"
-              options={[{ value: '', label: 'Vendedor: todos' }, { value: '0', label: 'Sin vendedor' }, ...sellers.map((s) => ({ value: String(s.id), label: s.name }))]} />
+            <MultiSelect label="Vendedor" values={sellerIds.map(String)} onChange={(v) => setFilters({ sellers: toIds(v) })} hideLabel size="sm" allLabel="Vendedor: todos" noun="vendedores"
+              options={[{ value: '0', label: 'Sin vendedor' }, ...sellers.map(sellerOption)]} />
           ) : null}
           <button type="button" className={styles.chip} aria-pressed={filter === 'unverified'} data-tone="warn" onClick={() => toggle('unverified')}>
             <MapPinOff size={16} aria-hidden />Sin ubicación · {counts.data?.unverified ?? 0}
@@ -146,7 +147,7 @@ export function DirectoryPage() {
       ) : list.error ? (
         <Banner tone="error">No pudimos cargar el directorio. Revisá la conexión.</Banner>
       ) : !rows.length ? (
-        <p className={styles.empty}>{archived && !q && !area ? 'No hay comercios archivados.' : q || filter !== 'all' || area || channel !== null || seller !== null ? 'Ningún comercio coincide.' : 'Todavía no hay comercios. Se suman al importar planillas o agregar direcciones.'}</p>
+        <p className={styles.empty}>{archived && !q && !areas.length ? 'No hay comercios archivados.' : filtered ? 'Ningún comercio coincide.' : 'Todavía no hay comercios. Se suman al importar planillas o agregar direcciones.'}</p>
       ) : (
         <Refreshing active={list.isPlaceholderData}>
           {desktop ? (

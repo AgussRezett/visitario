@@ -6,7 +6,9 @@ import { applyFilters, areasOf, colorsFor, insights, NO_FILTERS, NONE_COLOR, pai
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
 import { Segmented } from '@/ui/Segmented'
-import { Select } from '@/ui/Select'
+import { MultiSelect } from '@/ui/Select'
+import { toIds } from '@/domain/filters'
+import { sellerOption } from '@/features/people/person-options'
 import { Skeleton } from '@/ui/Skeleton'
 import { Switch } from '@/ui/Switch'
 import { useIsDesktop } from '@/lib/useMedia'
@@ -52,7 +54,7 @@ export function StoreMapPage({ point }: { point?: string }) {
   const desktop = useIsDesktop()
   const [open, setOpen] = useState(false)
 
-  const sellers = useMemo(() => [...(catalogs?.sellers ?? [])].sort((a, b) => a.name.localeCompare(b.name, 'es')).map((s) => ({ id: s.id, name: s.name })), [catalogs])
+  const sellers = useMemo(() => [...(catalogs?.sellers ?? [])].sort((a, b) => a.name.localeCompare(b.name, 'es')).map((s) => ({ id: s.id, name: s.name, personId: s.personId })), [catalogs])
   const channels = useMemo(() => (catalogs?.channels ?? []).map((c) => ({ id: c.id, name: c.name })), [catalogs])
   const all = useMemo(() => data.data ?? [], [data.data])
   const shown = useMemo(() => applyFilters(all, f, today), [all, f, today])
@@ -79,7 +81,7 @@ export function StoreMapPage({ point }: { point?: string }) {
   const set = (patch: Partial<MapFilters>) => setF((x) => ({ ...x, ...patch }))
   const areas = areasOf(all)
   const filtered = JSON.stringify(f) !== JSON.stringify(NO_FILTERS)
-  const active = [f.area, f.sellerId, f.channelId].filter((x) => x !== null).length + (f.staleOnly ? 1 : 0) + (f.query.trim().length >= 2 ? 1 : 0)
+  const active = [f.areas, f.sellerIds, f.channelIds].filter((x) => x.length > 0).length + (f.staleOnly ? 1 : 0) + (f.query.trim().length >= 2 ? 1 : 0)
   const current = all.find((p) => p.id === selected) ?? null
   const nameOf = (list: { id: number; name: string }[], id: number | null) => (id === null ? null : list.find((x) => x.id === id)?.name ?? null)
   const options = COLOR_OPTIONS.filter((o) => !(o.seller && asSeller))
@@ -101,13 +103,13 @@ export function StoreMapPage({ point }: { point?: string }) {
         ) : null}
         {desktop || open ? (<>
         <div className={styles.filters}>
-          <Select label="Zona" value={f.area ?? ''} onChange={(v) => set({ area: v || null })} options={[{ value: '', label: 'Todas' }, ...areas.map((a) => ({ value: a, label: a }))]} />
+          <MultiSelect label="Zona" values={f.areas} onChange={(v) => set({ areas: v })} allLabel="Todas" noun="zonas" options={areas.map((a) => ({ value: a, label: a }))} />
           {!asSeller ? (
-            <Select label="Vendedor" value={f.sellerId ?? ''} onChange={(v) => set({ sellerId: v === '' ? null : Number(v) })}
-              options={[{ value: '', label: 'Todos' }, ...sellers.map((s) => ({ value: s.id, label: s.name })), { value: 0, label: 'Sin vendedor' }]} />
+            <MultiSelect label="Vendedor" values={f.sellerIds.map(String)} onChange={(v) => set({ sellerIds: toIds(v) })} allLabel="Todos" noun="vendedores"
+              options={[...sellers.map(sellerOption), { value: '0', label: 'Sin vendedor' }]} />
           ) : null}
-          <Select label="Canal" value={f.channelId ?? ''} onChange={(v) => set({ channelId: v === '' ? null : Number(v) })}
-            options={[{ value: '', label: 'Todos' }, ...channels.map((c) => ({ value: c.id, label: c.name })), { value: 0, label: 'Sin canal' }]} />
+          <MultiSelect label="Canal" values={f.channelIds.map(String)} onChange={(v) => set({ channelIds: toIds(v) })} allLabel="Todos" noun="canales"
+            options={[...channels.map((c) => ({ value: String(c.id), label: c.name })), { value: '0', label: 'Sin canal' }]} />
           <label className={styles.search}>
             <Search size={18} aria-hidden />
             <input value={f.query} onChange={(e) => set({ query: e.target.value })} placeholder="Nombre, dirección o nro." aria-label="Buscar un punto" />
@@ -138,7 +140,7 @@ export function StoreMapPage({ point }: { point?: string }) {
               {paint.legend.map((l) => (
                 <li key={l.key} className={styles.legendItem}>
                   {by === 'seller' ? (
-                    <button type="button" className={styles.legendButton} onClick={() => set({ sellerId: l.key === 'none' ? 0 : Number(l.key) })} aria-label={`Ver solo ${l.label}`}>
+                    <button type="button" className={styles.legendButton} onClick={() => set({ sellerIds: [l.key === 'none' ? 0 : Number(l.key)] })} aria-label={`Ver solo ${l.label}`}>
                       <span className={styles.swatch} style={{ background: l.color }} aria-hidden />{l.label}
                     </button>
                   ) : (
@@ -152,8 +154,8 @@ export function StoreMapPage({ point }: { point?: string }) {
             data={facts}
             bySeller={!asSeller}
             sellerColor={(key) => (key === 'none' ? NONE_COLOR : sellerColor.get(Number(key)) ?? NONE_COLOR)}
-            onSeller={(key) => set({ sellerId: key === 'none' ? 0 : Number(key) })}
-            onArea={(key) => set({ area: key === 'none' ? null : key })}
+            onSeller={(key) => set({ sellerIds: [key === 'none' ? 0 : Number(key)] })}
+            onArea={(key) => set({ areas: key === 'none' ? [] : [key] })}
           />
         </div>
       )}

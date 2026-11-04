@@ -44,10 +44,12 @@ describe('reports: summary', () => {
   })
 
   it('filters by person, channel or zone, with their work', () => {
-    const only = filterFacts(facts, { ...NO_FILTER, person: 'p2' })
+    const only = filterFacts(facts, { ...NO_FILTER, people: ['p2'] })
     expect(only.visits.map((x) => x.id)).toEqual(['b'])
     expect(only.metrics).toEqual([{ v: 'b', id: 2, q: 1 }])
-    expect(filterFacts(facts, { ...NO_FILTER, area: 'Palermo' }).stores.map((s) => s.s)).toEqual(['s-b'])
+    expect(filterFacts(facts, { ...NO_FILTER, areas: ['Palermo'] }).stores.map((s) => s.s)).toEqual(['s-b'])
+    expect(filterFacts(facts, { ...NO_FILTER, areas: ['Palermo', 'Belgrano'] }).stores.map((s) => s.s)).toEqual(['s-a', 's-b'])
+    expect(filterFacts(facts, { ...NO_FILTER, channels: [0] }).stores.map((s) => s.s)).toEqual(['s-b', 's-x'])
   })
 })
 
