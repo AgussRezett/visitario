@@ -297,3 +297,77 @@
     }
   }
 }
+
+@layer ui {
+  // ---- Several at once: a tick box per row, and "Listo" at the bottom
+  .box {
+    @include center;
+    flex: none;
+    width: 20px;
+    height: 20px;
+    border: 1.5px solid $color-control;
+    border-radius: 6px;
+    background: $color-card;
+    color: $color-white;
+
+    &[data-on] {
+      border-color: $color-forest;
+      background: $color-forest;
+
+      @include dark {
+        border-color: $color-lime;
+        background: $color-lime;
+        color: $color-forest;
+      }
+    }
+  }
+
+  [aria-multiselectable] .option[aria-selected='true'] {
+    background: transparent;
+    color: $color-ink;
+    font-weight: $weight-semibold;
+
+    &[data-active] {
+      background: $color-muted;
+      box-shadow: none;
+    }
+  }
+
+  .leading {
+    @include flex(row, $align: center);
+    flex: none;
+  }
+
+  .done {
+    @include flex(row, $gap: space(3), $align: center, $justify: space-between);
+    flex: none;
+    padding: space(2) space(3);
+    border-top: 1px solid $color-line;
+
+    .layer[data-sheet] & {
+      padding: space(3) space(4);
+    }
+  }
+
+  .count {
+    @include text(label);
+    color: $color-ink-subtle;
+  }
+
+  .done-button {
+    @include text(label);
+    min-height: 36px;
+    padding-inline: space(4);
+    border: 0;
+    border-radius: $radius-full;
+    background: $color-forest;
+    font-weight: $weight-bold;
+    color: $color-on-forest;
+    cursor: pointer;
+
+    .layer[data-sheet] & {
+      min-height: $touch-target;
+      padding-inline: space(6);
+    }
+  }
+}
