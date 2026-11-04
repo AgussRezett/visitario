@@ -131,3 +131,10 @@
     border-color: $color-forest;
   }
 }
+
+// Who fixed the location from their visit, for the supervisor.
+.fixed {
+  @include text(tiny);
+  color: $color-ink-subtle;
+  font-weight: $weight-semibold;
+}
