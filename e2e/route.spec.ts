@@ -198,9 +198,17 @@ test('the stops can be put in another order by hand: the map follows and the day
   await expect(order.nth(0)).toContainText('Mas Ahorro')
 
   // Dragging Amenábar 1260 (4th) to the top, by its handle.
+  // Once the route by streets is in, nothing moves under the finger.
+  await expect(page.getByText('por calles')).toBeVisible()
   const handle = page.getByRole('button', { name: 'Mover Amenábar 1260' })
-  await handle.scrollIntoViewIfNeeded()
-  await order.nth(0).scrollIntoViewIfNeeded()
+  await handle.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+  // Measured once the page stopped moving (the map and the totals settle first).
+  await expect.poll(async () => {
+    const a = await handle.boundingBox()
+    await page.waitForTimeout(150)
+    const b = await handle.boundingBox()
+    return a && b && a.y === b.y
+  }).toBe(true)
   const from = await handle.boundingBox()
   const top = await order.nth(0).boundingBox()
   if (!from || !top) throw new Error('no boxes')
