@@ -19,6 +19,7 @@ import { VisitSkeleton } from '@/features/workday/components/Skeletons'
 import { originLabel } from '@/features/workday/visit-text'
 import { useVisitActions } from './useVisitActions'
 import { StoreInfo } from './StoreInfo'
+import { LocationSheet } from './LocationSheet'
 import { PhotoStrip } from './PhotoStrip'
 import { ArrivalSection } from './ArrivalSection'
 import { ConsentSection } from './ConsentSection'
@@ -98,6 +99,7 @@ function VisitBody(props: {
   const tags = storeTags(catalogs, v.store)
   // The phone closed Visitario while the camera or the gallery was open: say so, once.
   const [interrupted, setInterrupted] = useState(() => wasInterrupted())
+  const [locating, setLocating] = useState(false)
 
   return (
     <div className={styles.page}>
@@ -134,7 +136,7 @@ function VisitBody(props: {
             </div>
           ) : null}
           <OperationHere visit={v} meId={meId} firstName={firstName} />
-          <StoreInfo visit={v} tags={tags} />
+          <StoreInfo visit={v} tags={tags} onLocate={() => setLocating(true)} />
           <CorrectionPanel
             visit={v}
             actions={actions}
@@ -222,6 +224,7 @@ function VisitBody(props: {
           await actions.deletePhoto(p.id)
         }}
       />
+      {locating ? <LocationSheet visit={v} open onClose={() => setLocating(false)} /> : null}
     </div>
   )
 }

@@ -215,18 +215,7 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
       return json({ rows: state.capture.rows ?? [], unreadable: state.capture.unreadable ?? 0, model: 'fake' })
     }
     if (path.endsWith('/daily_metrics')) return json((state.dailyMetrics ?? []).filter((r) => matches(r, url.searchParams)))
-    if (path.endsWith('/rpc/save_route_plan')) {
-      const b = body()
-      state.routePlan = { workday_id: b.p_workday, mode: b.p_mode, from_origin: b.p_from_origin, stop_ids: b.p_stop_ids, km: b.p_km, minutes: b.p_minutes ?? null, by_street: b.p_by_street, line: b.p_line ?? null, custom: b.p_custom ?? false, updated_at: new Date().toISOString() }
-      return route.fulfill({ status: 204 })
-    }
     if (path.endsWith('/route_plan')) return json(state.routePlan && matches(state.routePlan, url.searchParams) ? state.routePlan : null)
-    if (path.endsWith('/functions/v1/route')) {
-      const b = body()
-      ;(state.routeAsked ??= []).push(b)
-      if (b.fixed && state.route) return json({ ids: (b.stops as Row[]).map((s) => s.id), km: 7.3, minutes: 25, line: [] })
-      return state.route ? json(state.route) : json({ error: 'not_configured' }, 503)
-    }
     if (path.endsWith('/functions/v1/geocode')) {
       // A store located and saved on the server (whoever added it).
       const storeId = body().storeId

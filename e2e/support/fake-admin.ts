@@ -19,6 +19,27 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
     await p
     return true as const
   }
+    // ---- The route of the day, and fixing where a store is
+    if (path.endsWith('/rpc/save_route_plan')) {
+      const b = body()
+      state.routePlan = { workday_id: b.p_workday, mode: b.p_mode, from_origin: b.p_from_origin, stop_ids: b.p_stop_ids, km: b.p_km, minutes: b.p_minutes ?? null, by_street: b.p_by_street, line: b.p_line ?? null, custom: b.p_custom ?? false, updated_at: new Date().toISOString() }
+      return done(route.fulfill({ status: 204 }))
+    }
+    if (path.endsWith('/functions/v1/route')) {
+      const b = body()
+      ;(state.routeAsked ??= []).push(b)
+      if (b.fixed && state.route) return done(json({ ids: (b.stops as Row[]).map((s) => s.id), km: 7.3, minutes: 25, line: [] }))
+      return done(state.route ? json(state.route) : json({ error: 'not_configured' }, 503))
+    }
+    if (path.endsWith('/rpc/fix_store_location')) {
+      const b = body()
+      ;(state.locationFixes ??= []).push(b)
+      for (const v of state.visits) {
+        const s = v.store as Row | null
+        if (s?.id === b.p_store) Object.assign(s, { lat: b.p_lat, lng: b.p_lng, location_status: 'verified', ...(b.p_address ? { address: b.p_address } : {}) })
+      }
+      return done(route.fulfill({ status: 204 }))
+    }
     // ---- Admin
     if (path.endsWith('/rpc/company_people')) return done(json(state.members ?? []))
     if (path.endsWith('/membership') && req.method() === 'PATCH') {
