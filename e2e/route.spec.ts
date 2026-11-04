@@ -104,7 +104,7 @@ test('the route on a street map: numbered stops to tap, the path by streets, the
 
   // Without the map service: the sketch, never a blank box.
   mapUp = false
-  await page.getByRole('button', { name: 'Recalcular' }).click()
+  await page.goto('/s/route')
   await expect(page.getByRole('region', { name: 'Mapa del recorrido' })).toHaveCount(0)
   await expect(page.getByRole('img', { name: /Croquis del recorrido/ })).toBeVisible()
 })
@@ -185,4 +185,54 @@ test('tomorrow’s route can be planned today: the week is right there', async (
   if (info.project.name === 'mobile') await page.getByRole('button', { name: 'Volver a las opciones' }).click()
   await page.getByRole('navigation', { name: 'Días de la semana' }).getByRole('button', { name: /14 de octubre/ }).click()
   await expect(page.getByText('Ese día todavía no tiene jornada')).toBeVisible()
+})
+
+test('the stops can be put in another order by hand: the map follows and the day keeps it as custom', async ({ page }, info) => {
+  await page.route('https://tiles.openfreemap.org/**', (route) => route.fulfill({ json: PLAIN_STYLE }))
+  const state: FakeState = { ...day(), route: { ids: ['v1', 'v4', 'v7', 'v2', 'v6'], km: 12.5, minutes: 41 } }
+  await installFakeSupabase(page, state)
+  await page.goto('/s/route')
+  await page.getByRole('button', { name: 'Calcular mejor orden' }).click()
+  await expect(page.getByText('Recorrido sugerido')).toBeVisible()
+  const order = page.getByRole('list', { name: 'Locales en el orden del recorrido' }).getByRole('listitem')
+  await expect(order.nth(0)).toContainText('Mas Ahorro')
+
+  // Dragging Amenábar 1260 (4th) to the top, by its handle.
+  const handle = page.getByRole('button', { name: 'Mover Amenábar 1260' })
+  await handle.scrollIntoViewIfNeeded()
+  await order.nth(0).scrollIntoViewIfNeeded()
+  const from = await handle.boundingBox()
+  const top = await order.nth(0).boundingBox()
+  if (!from || !top) throw new Error('no boxes')
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2)
+  await page.mouse.down()
+  for (let y = from.y; y > top.y - 10; y -= 12) await page.mouse.move(from.x + from.width / 2, y)
+  await page.mouse.up()
+  await expect(order.nth(0)).toContainText('Amenábar 1260')
+  await expect(order.nth(1)).toContainText('Mas Ahorro')
+  await expect(page.getByText('Recorrido personalizado')).toBeVisible()
+  // The map's pins follow at once.
+  await expect(page.getByRole('region', { name: 'Mapa del recorrido' }).getByRole('button', { name: /^1\. Amenábar 1260/ })).toBeVisible()
+
+  // With the keyboard too: the last one up one place.
+  await page.getByRole('button', { name: 'Mover Vidal 2044' }).focus()
+  await page.keyboard.press('ArrowUp')
+  await expect(order.nth(3)).toContainText('Vidal 2044')
+
+  // That order by streets, kept for the day as custom.
+  await expect(page.getByText('7,3 km')).toBeVisible()
+  await expect(page.getByText('25 min')).toBeVisible()
+  const asked = state.routeAsked?.at(-1)
+  expect(asked?.fixed).toBe(true)
+  expect((asked?.stops as { id: string }[]).map((s) => s.id)).toEqual(['v2', 'v1', 'v4', 'v6', 'v7'])
+  await expect.poll(() => state.routePlan?.custom).toBe(true)
+  expect(state.routePlan?.stop_ids).toEqual(['v2', 'v1', 'v4', 'v6', 'v7'])
+  await page.screenshot({ path: `test-results/route-custom-${info.project.name}.png`, fullPage: true })
+
+  // Coming back it is still the custom one; recalculating goes back to the suggested.
+  await page.goto('/s/route')
+  await expect(page.getByText('Recorrido personalizado')).toBeVisible()
+  await page.getByRole('button', { name: 'Volver al recorrido sugerido' }).click()
+  await expect(page.getByText('Recorrido sugerido')).toBeVisible()
+  await expect.poll(() => state.routePlan?.custom).toBe(false)
 })

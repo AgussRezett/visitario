@@ -31,11 +31,19 @@ const TONE: Record<StopTone, string | undefined> = {
   refused: styles.refused,
 }
 
-/** The route on a real street map: numbered stops to tap, zoom, and the path between them. */
+/**
+ * The route on a real street map: numbered stops to tap, zoom, and the path between them.
+ * The map loads once; a new order (dragged by hand) redraws the line and the pins in place.
+ */
 export default function StreetMap({ stops, origin, line, mode, progress = false }: StreetMapProps) {
   const box = useRef<HTMLDivElement>(null)
+  const map = useRef<maplibregl.Map | null>(null)
+  const markers = useRef<maplibregl.Marker[]>([])
   const [failed, setFailed] = useState(false)
+  const [ready, setReady] = useState(false)
   const located = stops.filter((v) => v.store.lat !== null && v.store.lng !== null)
+  const path = pathOf(located, origin, line)
+  const byStreet = Boolean(line && line.length > 1)
 
   useEffect(() => {
     const el = box.current
@@ -43,15 +51,12 @@ export default function StreetMap({ stops, origin, line, mode, progress = false 
     const dark = document.documentElement.dataset.theme === 'dark'
     const css = getComputedStyle(document.documentElement)
     const color = css.getPropertyValue(dark ? '--lime' : '--forest').trim() || '#173b30'
-    const coords: [number, number][] = located.map((v) => [v.store.lng as number, v.store.lat as number])
-    const path = line && line.length > 1 ? line : origin ? [[origin.lng, origin.lat] as [number, number], ...coords] : coords
-
-    let map: maplibregl.Map
+    let m: maplibregl.Map
     try {
-      map = new maplibregl.Map({
+      m = new maplibregl.Map({
         container: el,
         style: dark ? STYLE.dark : STYLE.light,
-        bounds: bounds([...path, ...coords]),
+        bounds: bounds([...path, ...located.map((v) => [v.store.lng as number, v.store.lat as number] as [number, number])]),
         fitBoundsOptions: { padding: 48, maxZoom: 16 },
         attributionControl: { compact: true },
         // On a phone, one finger scrolls the page; two move the map.
@@ -69,28 +74,42 @@ export default function StreetMap({ stops, origin, line, mode, progress = false 
       setFailed(true) // no WebGL
       return
     }
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
+    map.current = m
+    m.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right')
     // The style can't be had (no signal): the sketch takes over. A missing tile later is not a failure.
-    map.on('error', () => {
-      if (!map.isStyleLoaded()) setFailed(true)
+    m.on('error', () => {
+      if (!m.isStyleLoaded()) setFailed(true)
     })
-
-    map.on('load', () => {
-      map.addSource('route', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: path } } })
-      map.addLayer({
-        id: 'route',
-        type: 'line',
-        source: 'route',
-        layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': color, 'line-width': 4, 'line-opacity': 0.9, ...(line && line.length > 1 ? {} : { 'line-dasharray': [1.5, 1.5] }) },
-      })
+    m.on('load', () => {
+      m.addSource('route', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [] } } })
+      m.addLayer({ id: 'route', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': color, 'line-width': 4, 'line-opacity': 0.9 } })
+      setReady(true)
     })
+    return () => {
+      markers.current = []
+      map.current = null
+      setReady(false)
+      m.remove()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- created once; the effect below draws
+  }, [failed])
 
+  // The line and the pins, drawn again whenever the order, the path or a stop's state changes.
+  const drawn = JSON.stringify([path, located.map((v) => v.id + v.workStatus + v.reviewStatus), origin, mode, progress])
+  useEffect(() => {
+    const m = map.current
+    if (!m) return
+    const source = ready ? (m.getSource('route') as maplibregl.GeoJSONSource | undefined) : undefined
+    source?.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: path } })
+    // Straight lines are dashed: a sketch, not the streets.
+    if (source) m.setPaintProperty('route', 'line-dasharray', byStreet ? undefined : [1.5, 1.5])
+    markers.current.forEach((k) => k.remove())
+    markers.current = []
     if (origin) {
       const me = document.createElement('span')
       me.className = styles.origin ?? ''
       me.setAttribute('aria-label', 'Tu ubicación')
-      new maplibregl.Marker({ element: me }).setLngLat([origin.lng, origin.lat]).addTo(map)
+      markers.current.push(new maplibregl.Marker({ element: me }).setLngLat([origin.lng, origin.lat]).addTo(m))
     }
     located.forEach((v) => {
       const n = stops.indexOf(v) + 1
@@ -103,13 +122,10 @@ export default function StreetMap({ stops, origin, line, mode, progress = false 
       const said = progress ? `, ${STOP_TONE_LABEL[tone]}` : ''
       pin.setAttribute('aria-label', `${n}. ${placeName(v)}${said}`)
       const popup = new maplibregl.Popup({ offset: 18, closeButton: false, maxWidth: '260px' }).setDOMContent(card(n, v, mode))
-      new maplibregl.Marker({ element: pin }).setLngLat([v.store.lng as number, v.store.lat as number]).setPopup(popup).addTo(map)
+      markers.current.push(new maplibregl.Marker({ element: pin }).setLngLat([v.store.lng as number, v.store.lat as number]).setPopup(popup).addTo(m))
     })
-
-    return () => map.remove()
-    // The parent remounts it (key) when the plan changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [failed])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `drawn` says what changed
+  }, [drawn, ready, failed])
 
   if (failed) return <RouteSketch stops={stops} origin={origin} />
   const missing = stops.length - located.length
@@ -119,6 +135,13 @@ export default function StreetMap({ stops, origin, line, mode, progress = false 
       {missing ? <p className={styles.note}>{missing === 1 ? '1 local no tiene ubicación y no está en el mapa.' : `${missing} locales no tienen ubicación y no están en el mapa.`}</p> : null}
     </div>
   )
+}
+
+/** The path by streets when there is one; else the stops joined in straight lines. */
+function pathOf(located: Visit[], origin: Point | null, line: [number, number][] | null): [number, number][] {
+  if (line && line.length > 1) return line
+  const coords = located.map((v) => [v.store.lng as number, v.store.lat as number] as [number, number])
+  return origin ? [[origin.lng, origin.lat], ...coords] : coords
 }
 
 function bounds(points: [number, number][]): [[number, number], [number, number]] {

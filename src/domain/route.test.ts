@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyRouteOrder, approximateRoute, distanceKm, inRoute, lineFromFirstStop, mapsLegs, placeQuery, routeKm, type Stop } from './route'
+import { applyRouteOrder, approximateRoute, distanceKm, inRoute, lineFromFirstStop, mapsLegs, moveStop, placeQuery, routeKm, type Stop } from './route'
 
 // Along Cabildo, roughly south to north, about 500 m apart.
 const line: Stop[] = Array.from({ length: 6 }, (_, i) => ({ id: `s${i}`, location: { lat: -34.57 + i * 0.0045, lng: -58.45 } }))
@@ -122,5 +122,14 @@ describe('lineFromFirstStop', () => {
   })
   it('keeps nothing from an empty path', () => {
     expect(lineFromFirstStop([], { lat: 0, lng: 0 })).toEqual([])
+  })
+})
+
+describe('a custom order', () => {
+  it('moves one stop and keeps the rest in place', () => {
+    expect(moveStop(['a', 'b', 'c', 'd'], 0, 2)).toEqual(['b', 'c', 'a', 'd'])
+    expect(moveStop(['a', 'b', 'c', 'd'], 3, 0)).toEqual(['d', 'a', 'b', 'c'])
+    expect(moveStop(['a', 'b'], 1, 1)).toEqual(['a', 'b'])
+    expect(moveStop(['a', 'b'], 0, 5)).toEqual(['a', 'b']) // out of range: nothing moves
   })
 })

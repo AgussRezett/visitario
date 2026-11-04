@@ -18,6 +18,8 @@ export interface RoutePlan {
   byStreet: boolean
   /** The path by streets as [lng, lat], when the service sent it. */
   line: [number, number][] | null
+  /** Ordered by hand instead of the suggested order. */
+  custom: boolean
 }
 
 interface RouteResultProps {
@@ -37,12 +39,14 @@ interface RouteResultProps {
   onBack: () => void
   onRecalculate: () => void
   onApply: () => void
+  /** Dragging the stops into another order. */
+  onReorder: (ids: string[]) => void
 }
 
 const km = (n: number) => n.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 
 /** The suggested order, the Maps legs and applying it to the day (wireframes A08, AD08). */
-export function RouteResult({ plan, visits, mode, origin, fromOrigin, lastId, refining, savedAt, canRecalculate, onBack, onRecalculate, onApply }: RouteResultProps) {
+export function RouteResult({ plan, visits, mode, origin, fromOrigin, lastId, refining, savedAt, canRecalculate, onBack, onRecalculate, onApply, onReorder }: RouteResultProps) {
   if (!plan) {
     return (
       <section className={clsx(styles.card, styles.waiting)} aria-label="Orden sugerido">
@@ -73,10 +77,10 @@ export function RouteResult({ plan, visits, mode, origin, fromOrigin, lastId, re
       <div className={styles.appbar}>
         {canRecalculate ? <button type="button" className={styles.iconButton} onClick={onBack} aria-label="Volver a las opciones"><ArrowLeft size={22} aria-hidden /></button> : null}
         <span className={styles.appbarText}>
-          <span className={styles.cardTitle}>Recorrido sugerido</span>
+          <span className={styles.cardTitle}>{plan.custom ? 'Recorrido personalizado' : 'Recorrido sugerido'}</span>
           <span className={styles.help}>{how}</span>
         </span>
-        {canRecalculate ? <button type="button" className={styles.iconButton} onClick={onRecalculate} aria-label="Recalcular con los que quedan"><RefreshCw size={20} aria-hidden /></button> : null}
+        {canRecalculate ? <button type="button" className={styles.iconButton} onClick={onRecalculate} aria-label={plan.custom ? 'Volver al recorrido sugerido' : 'Recalcular con los que quedan'}><RefreshCw size={20} aria-hidden /></button> : null}
       </div>
 
       <div className={styles.summary} aria-live="polite">
@@ -100,10 +104,13 @@ export function RouteResult({ plan, visits, mode, origin, fromOrigin, lastId, re
       {outside ? <p className={styles.help}>{outside === 1 ? 'Sumaste 1 local después de calcularlo: recalculá para ubicarlo.' : `Sumaste ${outside} locales después de calcularlo: recalculá para ubicarlos.`}</p> : null}
 
       <Suspense fallback={<RouteSketch stops={stops} origin={origin} />}>
-        <StreetMap key={`${plan.ids.join(',')}:${plan.line?.length ?? 0}:${origin ? 'o' : ''}:${stops.map((v) => v.workStatus + v.reviewStatus).join()}`} stops={stops} origin={origin} line={plan.line} mode={mode} progress />
+        <StreetMap stops={stops} origin={origin} line={plan.line} mode={mode} progress />
       </Suspense>
 
-      <RouteStops stops={stops} mode={mode} lastId={lastId} />
+      {left.length > 1 ? (
+        <p className={styles.help}>{plan.custom ? 'Lo ordenaste vos. Para volver al sugerido, recalculalo.' : 'Arrastrá los locales para cambiar el orden: el mapa se actualiza solo.'}</p>
+      ) : null}
+      <RouteStops stops={stops} mode={mode} lastId={lastId} onReorder={left.length > 1 ? onReorder : undefined} />
 
       {left.length ? (
         <div className={styles.footer}>
