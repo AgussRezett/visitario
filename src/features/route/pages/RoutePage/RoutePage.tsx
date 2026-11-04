@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { formatLongDate, todayInArgentina } from '@/domain/dates'
-import { applyRouteOrder, approximateRoute, inRoute, lineFromFirstStop, type Point, type Stop } from '@/domain/route'
+import { applyRouteOrder, approximateRoute, inRoute, lineFromFirstStop, routeKm, type Point, type Stop, type TravelMode } from '@/domain/route'
 import { Banner } from '@/ui/Banner'
 import { useWorkContext } from '@/features/workday/context'
 import { historyQuery, workdayQuery, type Visit } from '@/features/workday/api/queries'
@@ -47,6 +47,17 @@ export function RoutePage({ date: requested }: { date?: string }) {
   const workdayId = workday.data?.id ?? ''
   const saved = useQuery({ ...savedRouteQuery(workdayId), enabled: Boolean(workdayId) })
   const save = useSaveRoute(workdayId)
+  // The last street request wins: a newer drag or a new calculation drops older answers.
+  const request = useRef(0)
+  const timer = useRef(0)
+  useEffect(() => () => window.clearTimeout(timer.current), [])
+
+  /** Kept for the day, without the stretch from the phone: where the person was is never saved. */
+  const keep = (final: Omit<RoutePlan, 'custom'>, stops: Stop[], origin: Point | undefined, mode: TravelMode, custom: boolean) => {
+    const first = stops.find((s) => s.id === final.ids.find((id) => stops.some((x) => x.id === id)))
+    const line = final.line?.length && first ? (origin ? lineFromFirstStop(final.line, first.location) : final.line) : null
+    save.mutate({ ...final, line, mode, fromOrigin: Boolean(origin), custom })
+  }
 
   // Coming back to a route kept from before: recalculating starts from how it was made.
   const savedMode = saved.data?.mode
@@ -64,23 +75,50 @@ export function RoutePage({ date: requested }: { date?: string }) {
   const calculate = async () => {
     const stops = selected.map(toStop)
     if (!stops.length) return
+    window.clearTimeout(timer.current)
+    const n = ++request.current
     const origin: Point | undefined = options.origin ?? undefined
     // Without my location the trip starts at a store: the chosen one, or the first of the day.
     const has = (id: string) => stops.some((s) => s.id === id)
     const firstId = has(options.firstId) ? options.firstId : origin ? undefined : stops[0]?.id
     const last = has(lastId) && lastId !== firstId ? lastId : undefined
     const straight = approximateRoute({ stops, origin, firstId, lastId: last })
-    setPlan({ key, ids: straight.ids, km: straight.km, minutes: null, byStreet: false, line: null })
+    setPlan({ key, ids: straight.ids, km: straight.km, minutes: null, byStreet: false, line: null, custom: false })
     setStep('result')
     setBusy(true)
     const byStreet = await streetRoute({ stops, origin, firstId, lastId: last, mode: options.mode })
+    if (n !== request.current) return
     setBusy(false)
     const final = byStreet ? { ids: byStreet.ids, km: byStreet.km, minutes: byStreet.minutes, byStreet: true, line: byStreet.line } : { ...straight, minutes: null, byStreet: false, line: null }
-    if (byStreet) setPlan({ key, ...final })
-    // Kept for the day, without the stretch from the phone: where the person was is never saved.
-    const first = stops.find((s) => s.id === final.ids[0])
-    const line = final.line?.length && first ? (origin ? lineFromFirstStop(final.line, first.location) : final.line) : null
-    save.mutate({ ...final, line, mode: options.mode, fromOrigin: Boolean(origin) })
+    if (byStreet) setPlan({ key, ...final, custom: false })
+    keep(final, stops, origin, options.mode, false)
+  }
+
+  /** Ordered by hand: straight lines at once, then that same order by streets, and kept. */
+  const reorder = (ids: string[]) => {
+    if (!day) return
+    const byId = new Map(day.map((v) => [v.id, v]))
+    const stops = ids.flatMap((id) => {
+      const v = byId.get(id)
+      return v && located(v) ? [toStop(v)] : []
+    })
+    const origin = kept ? undefined : options.origin ?? undefined
+    const mode = kept ? kept.mode : options.mode
+    setPlan({ key, ids, km: routeKm(stops, origin), minutes: null, byStreet: false, line: null, custom: true })
+    setStep('result')
+    setBusy(true)
+    const n = ++request.current
+    window.clearTimeout(timer.current)
+    // A moment after the last move, so dragging over several places asks only once.
+    timer.current = window.setTimeout(() => {
+      void streetRoute({ stops, origin, mode, fixed: true }).then((byStreet) => {
+        if (n !== request.current) return
+        setBusy(false)
+        const final = byStreet ? { ids, km: byStreet.km, minutes: byStreet.minutes, byStreet: true, line: byStreet.line } : { ids, km: routeKm(stops, origin), minutes: null, byStreet: false, line: null }
+        if (byStreet) setPlan({ key, ...final, custom: true })
+        keep(final, stops, origin, mode, true)
+      })
+    }, 700)
   }
 
   const apply = async () => {
@@ -138,6 +176,7 @@ export function RoutePage({ date: requested }: { date?: string }) {
         onBack={() => setStep('setup')}
         onRecalculate={() => void calculate()}
         onApply={() => void apply()}
+        onReorder={reorder}
       />
     )
     body = (

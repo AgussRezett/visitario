@@ -14,8 +14,8 @@ export interface StreetRoute {
  * The order by streets from LocationIQ, or null when it can't be had (no signal, the
  * service is off, too many stops): the caller keeps the straight-line order.
  */
-export async function streetRoute(req: { stops: readonly Stop[]; origin?: Point; firstId?: string; lastId?: string; mode: TravelMode }): Promise<StreetRoute | null> {
-  if (req.stops.length < 2 || req.stops.length + (req.origin ? 1 : 0) > 25 || (!req.origin && !req.firstId)) return null
+export async function streetRoute(req: { stops: readonly Stop[]; origin?: Point; firstId?: string; lastId?: string; mode: TravelMode; fixed?: boolean }): Promise<StreetRoute | null> {
+  if (req.stops.length < 2 || req.stops.length + (req.origin ? 1 : 0) > 25 || (!req.origin && !req.firstId && !req.fixed)) return null
   if (typeof navigator !== 'undefined' && !navigator.onLine) return null
   const { data, error } = await supabase.functions.invoke<StreetRoute>('route', {
     body: {
@@ -24,11 +24,14 @@ export async function streetRoute(req: { stops: readonly Stop[]; origin?: Point;
       firstId: req.firstId,
       lastId: req.lastId,
       mode: req.mode,
+      // The order as it comes (ordered by hand): only drawn by streets.
+      fixed: req.fixed || undefined,
     },
   })
   if (error || !data) return null
   const known = new Set(req.stops.map((s) => s.id))
   if (data.ids.length !== known.size || !data.ids.every((id) => known.has(id))) return null
+  if (req.fixed && data.ids.some((id, i) => id !== req.stops[i]?.id)) return null
   return { ...data, line: Array.isArray(data.line) ? data.line : [] }
 }
 
@@ -54,6 +57,8 @@ export interface SavedRoute {
   line: [number, number][] | null
   mode: TravelMode
   fromOrigin: boolean
+  /** Ordered by hand instead of the suggested order. */
+  custom: boolean
   savedAt: string
 }
 
@@ -70,7 +75,7 @@ export const savedRouteQuery = (workdayId: string) =>
     queryFn: async (): Promise<SavedRoute | null> => {
       const { data, error } = await supabase
         .from('route_plan')
-        .select('stop_ids, km, minutes, by_street, line, mode, from_origin, updated_at')
+        .select('stop_ids, km, minutes, by_street, line, mode, from_origin, custom, updated_at')
         .eq('workday_id', workdayId)
         .maybeSingle()
       if (error) throw error
@@ -78,7 +83,7 @@ export const savedRouteQuery = (workdayId: string) =>
       return {
         ids: data.stop_ids, km: Number(data.km), minutes: data.minutes, byStreet: data.by_street,
         line: isLine(data.line) ? data.line : null, mode: data.mode === 'driving' ? 'driving' : 'walking',
-        fromOrigin: data.from_origin, savedAt: data.updated_at,
+        fromOrigin: data.from_origin, custom: data.custom, savedAt: data.updated_at,
       }
     },
   })
@@ -90,7 +95,7 @@ export function useSaveRoute(workdayId: string) {
     mutationFn: async (r: Omit<SavedRoute, 'savedAt'>) => {
       const { error } = await supabase.rpc('save_route_plan', {
         p_workday: workdayId, p_mode: r.mode, p_from_origin: r.fromOrigin, p_stop_ids: r.ids, p_km: Math.round(r.km * 100) / 100,
-        p_by_street: r.byStreet, p_minutes: r.minutes ?? undefined, p_line: r.line ?? undefined,
+        p_by_street: r.byStreet, p_minutes: r.minutes ?? undefined, p_line: r.line ?? undefined, p_custom: r.custom,
       })
       if (error) throw error
     },

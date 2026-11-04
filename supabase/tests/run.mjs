@@ -859,6 +859,12 @@ check('Ended: Lucía can join another one that day', (await as('lucia', `select 
   await save('agus', 3.1)
   const again = await as('agus', `select km, version, line from route_plan where workday_id = $1`, [wAgus])
   check('Calculating again replaces it: one route per day', again.length === 1 && Number(again[0].km) === 3.1 && again[0].version === 2 && again[0].line === null)
+  check('A route saved without saying how is the suggested one', (await as('agus', `select custom from route_plan where workday_id = $1`, [wAgus]))[0].custom === false)
+  await as('agus', `select save_route_plan($1, 'driving', false, $2::uuid[], 4.2, false, null, null, true)`, [wAgus, [...ids].reverse()])
+  const custom = (await as('agus', `select custom, stop_ids from route_plan where workday_id = $1`, [wAgus]))[0]
+  check('The activador keeps an order of their own: it says so', custom.custom === true && custom.stop_ids[0] === ids[1])
+  await save('agus', 3.1)
+  check('Calculating the suggested one again leaves the custom one', (await as('agus', `select custom from route_plan where workday_id = $1`, [wAgus]))[0].custom === false)
   check('His supervisor (Martín) sees it', (await as('martin', `select 1 from route_plan where workday_id = $1`, [wAgus])).length === 1)
   check('The admin (Carla) sees it', (await as('carla', `select 1 from route_plan where workday_id = $1`, [wAgus])).length === 1)
   check('Lucía (another team) does not', (await as('lucia', `select 1 from route_plan where workday_id = $1`, [wAgus])).length === 0)

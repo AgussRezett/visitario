@@ -44,6 +44,15 @@ export function routeKm(order: readonly Stop[], origin?: Point): number {
   return km
 }
 
+/** The order with one stop moved from one place to another (a drag in a custom route). */
+export function moveStop<T>(order: readonly T[], from: number, to: number): T[] {
+  const next = [...order]
+  if (from < 0 || from >= next.length || to < 0 || to >= next.length || from === to) return next
+  const [item] = next.splice(from, 1) as [T]
+  next.splice(to, 0, item)
+  return next
+}
+
 /**
  * The shortest order that respects the first and last store, by straight-line distance:
  * exact up to 15 stores, local search above (see domain/tsp). Used without signal or

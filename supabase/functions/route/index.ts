@@ -1,11 +1,13 @@
 // The day's route by streets, for signed-in people only.
-//   POST { stops: [{ id, lat, lng }], origin?: { lat, lng }, firstId?, lastId?, mode: 'driving' | 'walking' }
+//   POST { stops: [{ id, lat, lng }], origin?: { lat, lng }, firstId?, lastId?, mode: 'driving' | 'walking', fixed? }
 //   → { ids: string[], km: number, minutes: number, line: [lng, lat][] } (line: the path by streets, for the map)
 // The trip always starts at a fixed point: the origin, or the first store (the app sends one).
 // How: LocationIQ gives the street distance and time between every pair of points (Matrix);
 // the order is solved here, exact up to 15 stores (./tsp.ts, the same file as src/domain/tsp.ts):
 // on foot the shortest walk, by car the quickest drive (one-way streets count). Then
 // LocationIQ draws that order by streets (Directions).
+// With fixed: true the stops keep the order sent (a route the activador ordered by hand):
+// no Matrix, only Directions for that order.
 // Without LOCATIONIQ_KEY it answers 503 and the app keeps its straight-line order.
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { shortestPath } from './tsp.ts'
@@ -43,12 +45,13 @@ Deno.serve(async (req) => {
   if (!auth.user) return json({ error: 'unauthorized' }, 401)
   if (!key) return json({ error: 'not_configured' }, 503)
 
-  const body = (await req.json().catch(() => null)) as { stops?: unknown; origin?: unknown; firstId?: unknown; lastId?: unknown; mode?: unknown } | null
+  const body = (await req.json().catch(() => null)) as { stops?: unknown; origin?: unknown; firstId?: unknown; lastId?: unknown; mode?: unknown; fixed?: unknown } | null
   const stops = Array.isArray(body?.stops) ? (body.stops as Stop[]) : []
   const origin = body?.origin === undefined || body?.origin === null ? undefined : body.origin
   const firstId = typeof body?.firstId === 'string' ? body.firstId : undefined
   const lastId = typeof body?.lastId === 'string' && body.lastId !== firstId ? body.lastId : undefined
   const mode = body?.mode === 'walking' ? 'walking' : body?.mode === 'driving' ? 'driving' : null
+  const fixed = body?.fixed === true
   if (
     !mode || stops.length < 2 || stops.length + (origin ? 1 : 0) > 25 ||
     !stops.every((s) => typeof s?.id === 'string' && s.id.length < 100 && valid(s)) ||
@@ -56,7 +59,7 @@ Deno.serve(async (req) => {
     (origin !== undefined && !valid(origin)) ||
     (firstId !== undefined && !stops.some((s) => s.id === firstId)) ||
     (lastId !== undefined && !stops.some((s) => s.id === lastId)) ||
-    (!origin && !firstId)
+    (!origin && !firstId && !fixed)
   ) return json({ error: 'invalid' }, 400)
 
   // The points: the origin first when there is one, then the stores.
@@ -67,6 +70,7 @@ Deno.serve(async (req) => {
   const coords = (list: Point[]) => list.map((p) => `${p.lng},${p.lat}`).join(';')
 
   try {
+    if (fixed) return json(await draw(points.map((_, i) => i), points, mode, stops.map((s) => s.id)))
     const matrix = await ask(`matrix/${mode}/${coords(points)}`, { annotations: 'distance,duration' }) as { code?: string; distances?: (number | null)[][]; durations?: (number | null)[][] }
     if (matrix?.code !== 'Ok') return json({ error: 'router_failed' }, 502)
     // On foot, the shortest walk; by car, the quickest drive. No street route: straight line, longer.
@@ -80,25 +84,30 @@ Deno.serve(async (req) => {
     const { order } = shortestPath({ n: points.length, cost, start: origin ? 0 : firstAt, end: lastAt })
     const ids = order.filter((i) => i >= shift).map((i) => (stops[i - shift] as Stop).id)
     if (ids.length !== stops.length) return json({ error: 'router_failed' }, 502)
-
-    const trip = await ask(`directions/${mode}/${coords(order.map((i) => points[i] as Point))}`, { overview: 'full', geometries: 'geojson', steps: 'false' }) as
-      { code?: string; routes?: { distance?: number; duration?: number; geometry?: { coordinates?: unknown } }[] }
-    const route = trip?.code === 'Ok' ? trip.routes?.[0] : undefined
-    const distance = route?.distance ?? NaN
-    const duration = route?.duration ?? NaN
-    if (!Number.isFinite(distance) || !Number.isFinite(duration)) return json({ error: 'router_failed' }, 502)
-    // The path, rounded to ~1 m and at most 4000 points: enough to draw it, light to send.
-    const raw = route?.geometry?.coordinates
-    const path: unknown[] = Array.isArray(raw) ? raw : []
-    const step = Math.max(1, Math.ceil(path.length / 4000))
-    const line = path
-      .filter((_, i) => i % step === 0 || i === path.length - 1)
-      .flatMap((c) => (Array.isArray(c) && Number.isFinite(c[0]) && Number.isFinite(c[1]) ? [[Math.round(c[0] * 1e5) / 1e5, Math.round(c[1] * 1e5) / 1e5]] : []))
-    return json({ ids, km: Math.round(distance / 100) / 10, minutes: Math.round(duration / 60), line })
+    return json(await draw(order, points, mode, ids))
   } catch {
     return json({ error: 'router_failed' }, 502)
   }
 })
+
+/** That order by streets (Directions): how far, how long and the path to draw. Throws if it fails. */
+async function draw(order: number[], points: Point[], mode: string, ids: string[]) {
+  const coords = order.map((i) => points[i] as Point).map((p) => `${p.lng},${p.lat}`).join(';')
+  const trip = await ask(`directions/${mode}/${coords}`, { overview: 'full', geometries: 'geojson', steps: 'false' }) as
+    { code?: string; routes?: { distance?: number; duration?: number; geometry?: { coordinates?: unknown } }[] }
+  const route = trip?.code === 'Ok' ? trip.routes?.[0] : undefined
+  const distance = route?.distance ?? NaN
+  const duration = route?.duration ?? NaN
+  if (!Number.isFinite(distance) || !Number.isFinite(duration)) throw new Error('router_failed')
+  // The path, rounded to ~1 m and at most 4000 points: enough to draw it, light to send.
+  const raw = route?.geometry?.coordinates
+  const path: unknown[] = Array.isArray(raw) ? raw : []
+  const step = Math.max(1, Math.ceil(path.length / 4000))
+  const line = path
+    .filter((_, i) => i % step === 0 || i === path.length - 1)
+    .flatMap((c) => (Array.isArray(c) && Number.isFinite(c[0]) && Number.isFinite(c[1]) ? [[Math.round(c[0] * 1e5) / 1e5, Math.round(c[1] * 1e5) / 1e5]] : []))
+  return { ids, km: Math.round(distance / 100) / 10, minutes: Math.round(duration / 60), line }
+}
 
 /** One LocationIQ call; the free plan allows 2 a second, so a refusal waits and tries once more. */
 async function ask(path: string, params: Record<string, string>): Promise<unknown> {

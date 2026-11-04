@@ -845,6 +845,7 @@ export type Database = {
           by_street: boolean
           company_id: string
           created_at: string
+          custom: boolean
           from_origin: boolean
           km: number
           line: Json | null
@@ -1997,7 +1998,7 @@ export type Database = {
       }
       run_purge: { Args: never; Returns: number }
       save_route_plan: {
-        Args: { p_by_street: boolean; p_from_origin: boolean; p_km: number; p_line?: Json; p_minutes?: number; p_mode: string; p_stop_ids: string[]; p_workday: string }
+        Args: { p_by_street: boolean; p_custom?: boolean; p_from_origin: boolean; p_km: number; p_line?: Json; p_minutes?: number; p_mode: string; p_stop_ids: string[]; p_workday: string }
         Returns: undefined
       }
       search_stores: {
