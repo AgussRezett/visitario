@@ -18,6 +18,17 @@
     border-top: 1px solid $color-line;
   }
 
+  // Held by its handle: lifted over the others while it moves.
+  &[data-dragging] {
+    position: relative;
+    z-index: 1;
+    margin-inline: calc(-1 * #{space(2)});
+    padding-inline: space(2);
+    border-radius: $radius-md;
+    background: $color-card;
+    box-shadow: $shadow-sheet;
+  }
+
   // Done stops stay in their place, quieter.
   &[data-tone='done'],
   &[data-tone='approved'],
@@ -106,4 +117,32 @@
 
 .hidden {
   @include visually-hidden;
+}
+
+// The handle to drag a stop (or move it with the arrow keys): big enough for a thumb.
+.grip {
+  @include center;
+  flex-shrink: 0;
+  width: 32px;
+  height: $touch-target;
+  margin-left: calc(-1 * #{space(2)});
+  border-radius: $radius-sm;
+  color: $color-ink-subtle;
+  cursor: grab;
+  touch-action: none; // the finger drags the stop, not the page
+
+  @include hover {
+    background: $color-muted;
+    color: $color-ink;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-focus;
+    outline-offset: 2px;
+  }
+
+  [data-dragging] & {
+    cursor: grabbing;
+    color: $color-ink;
+  }
 }
