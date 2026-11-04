@@ -210,10 +210,7 @@
   @include flex(column, $gap: space(3.5));
 
   @include up(lg) {
-    display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-    align-items: start;
-    gap: space(5);
+    max-width: 760px;
   }
 }
 
@@ -248,21 +245,7 @@
   color: $color-ink-muted;
 }
 
-.paid {
-  @include text(tiny);
-  margin-left: space(1.5);
-  padding: space(0.5) space(2);
-  border-radius: $radius-full;
-  background: $color-lime-soft;
-  font-weight: $weight-bold;
-  color: $color-lime-soft-ink;
-  vertical-align: middle;
-}
 
-.muted {
-  @include text(label);
-  color: $color-ink-subtle;
-}
 
 .phone-footer {
   position: sticky;

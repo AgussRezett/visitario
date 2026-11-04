@@ -147,11 +147,6 @@ export function DailyReports({ date: requested }: { date?: string }) {
                 <pre className={styles.report}>{selectedText}</pre>
               </section>
             ) : null}
-            <section className={clsx(styles.card, styles.desktopOnly)} aria-label="Reportes para presentar">
-              <p className={styles.cardTitle}>Reportes para presentar <span className={styles.paid}>Plan pago</span></p>
-              <p className={styles.muted}>Estadísticas por período, zona y comercio, con diseño de Visitario para compartir con tu empresa. Llega después de la primera versión.</p>
-              <Button variant="secondary" size="sm" disabled>Próximamente</Button>
-            </section>
           </div>
 
           <div className={styles.phoneFooter}>
