@@ -22,6 +22,19 @@
   @include eyebrow;
 }
 
+.top {
+  @include flex(column, $gap: space(3));
+
+  @include up(lg) {
+    @include flex(row, $gap: space(5), $align: flex-end, $justify: space-between);
+    flex-wrap: wrap;
+  }
+}
+
+.week {
+  margin-inline: calc(-1 * #{space(2)});
+}
+
 // On the phone the result replaces the options (A07 → A08), title included.
 .top[data-step='result'] {
   display: none;
@@ -195,7 +208,11 @@
   }
 }
 
-.choice-text,
+.choice-text {
+  @include flex(column, $gap: space(0.5));
+  flex: 1;
+  min-width: 0;
+}
 
 .choice-name {
   @include truncate;
