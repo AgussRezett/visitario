@@ -165,3 +165,24 @@ test('with everything done the saved route is still there to look at, with nothi
   await expect(page.getByRole('region', { name: 'Orden sugerido' }).getByText('todos hechos')).toBeVisible()
   await expect(page.getByRole('button', { name: /Recalcular/ })).toHaveCount(0)
 })
+
+test('tomorrow’s route can be planned today: the week is right there', async ({ page }, info) => {
+  const state = day()
+  state.workday = { ...state.workday, work_date: '2026-10-13' }
+  state.visits = state.visits.map((v) => ({ ...v, work_date: '2026-10-13' }))
+  await installFakeSupabase(page, state)
+  await page.goto('/s/route')
+  await expect(page.getByText('Hoy todavía no hay recorrido')).toBeVisible()
+
+  await page.getByRole('navigation', { name: 'Días de la semana' }).getByRole('button', { name: /13 de octubre/ }).click()
+  await expect(page).toHaveURL(/date=2026-10-13/)
+  await expect(page.getByText('Locales a visitar · 5 de 5')).toBeVisible()
+  await page.getByRole('button', { name: 'Calcular mejor orden' }).click()
+  await expect(page.getByRole('region', { name: 'Orden sugerido' }).getByRole('listitem')).toHaveCount(5)
+
+  // A day without a workday says so, without the "today" wording. On the phone the result
+  // takes the screen: back to the options, where the week is.
+  if (info.project.name === 'mobile') await page.getByRole('button', { name: 'Volver a las opciones' }).click()
+  await page.getByRole('navigation', { name: 'Días de la semana' }).getByRole('button', { name: /14 de octubre/ }).click()
+  await expect(page.getByText('Ese día todavía no tiene jornada')).toBeVisible()
+})

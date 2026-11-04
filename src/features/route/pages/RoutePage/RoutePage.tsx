@@ -5,7 +5,8 @@ import { formatLongDate, todayInArgentina } from '@/domain/dates'
 import { applyRouteOrder, approximateRoute, inRoute, lineFromFirstStop, type Point, type Stop } from '@/domain/route'
 import { Banner } from '@/ui/Banner'
 import { useWorkContext } from '@/features/workday/context'
-import { workdayQuery, type Visit } from '@/features/workday/api/queries'
+import { historyQuery, workdayQuery, type Visit } from '@/features/workday/api/queries'
+import { WeekStrip } from '@/features/workday/components/WeekStrip'
 import { useVisitList } from '@/features/sync/hooks'
 import { visitChanges } from '@/features/sync/changes'
 import { DaySkeleton } from '@/features/workday/components/Skeletons'
@@ -26,6 +27,8 @@ export function RoutePage({ date: requested }: { date?: string }) {
   const companyId = ctx?.companyId ?? ''
   const personId = ctx?.personId ?? ''
   const workday = useQuery({ ...workdayQuery(companyId, personId, date), enabled: Boolean(ctx) })
+  const history = useQuery({ ...historyQuery(companyId, personId), enabled: Boolean(ctx) })
+  const isToday = date === todayInArgentina()
   // With an operativo, its stops are on my route too.
   const visits = useOperationDay(companyId, personId, workday.data, date)
   const day = useVisitList(visits.visits)
@@ -87,7 +90,7 @@ export function RoutePage({ date: requested }: { date?: string }) {
       const v = byId.get(move.id)
       if (v) await visitChanges(v).patch({ sort_order: move.sortOrder })
     }
-    await navigate({ to: '/s/workday', search: date === todayInArgentina() ? {} : { date } })
+    await navigate({ to: '/s/workday', search: isToday ? {} : { date } })
   }
 
   if (!ctx) return null
@@ -97,11 +100,17 @@ export function RoutePage({ date: requested }: { date?: string }) {
       <h1 className={styles.title}>Recorrido</h1>
     </div>
   )
+  // Any day of the week: tomorrow's route can be planned the night before.
+  const week = (
+    <div className={styles.week}>
+      <WeekStrip date={date} days={history.data ?? []} onSelect={(d) => void navigate({ to: '/s/route', search: d === todayInArgentina() ? {} : { date: d } })} />
+    </div>
+  )
 
   let body
   if (workday.isError || visits.isError) body = <Banner tone="error">No pudimos cargar tu jornada. Revisá la conexión y recargá.</Banner>
   else if (workday.isPending || (workday.data && !day)) body = <DaySkeleton />
-  else if (!workday.data) body = <Banner tone="info" title="Hoy todavía no hay recorrido">Cuando abras la jornada y cargues los locales, acá vas a poder ordenarlos.</Banner>
+  else if (!workday.data) body = <Banner tone="info" title={isToday ? 'Hoy todavía no hay recorrido' : 'Ese día todavía no tiene jornada'}>{isToday ? 'Cuando abras la jornada y cargues los locales, acá vas a poder ordenarlos.' : 'Cuando tu supervisor te asigne locales para ese día, acá vas a poder ordenarlos.'}</Banner>
   else if (!todo.length && !kept) body = <Banner tone="ok" title="No quedan locales por visitar">Los de esta jornada ya están terminados, aprobados o no autorizaron la visita.</Banner>
   else {
     const setup = (
@@ -141,7 +150,7 @@ export function RoutePage({ date: requested }: { date?: string }) {
 
   return (
     <div className={styles.page}>
-      <div className={styles.top} data-step={view}>{head}</div>
+      <div className={styles.top} data-step={view}>{head}{week}</div>
       {body}
     </div>
   )
