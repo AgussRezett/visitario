@@ -33,3 +33,24 @@ export async function verifyStore(storeId: string): Promise<StoreLocated> {
   if (error || !data) throw new Error('verify_failed')
   return data.status
 }
+
+/**
+ * The activador fixes where a store of their day is: the pin and, if they changed it, the
+ * address (the street number, usually). Saved as verified, with who did it.
+ */
+export async function fixStoreLocation(storeId: string, point: { lat: number; lng: number }, address?: string): Promise<void> {
+  const { error } = await supabase.rpc('fix_store_location', { p_store: storeId, p_lat: point.lat, p_lng: point.lng, p_address: address })
+  if (error) throw new Error(error.code === '42501' ? 'Solo podés corregir locales de tus jornadas.' : error.code === '22023' ? 'Esa ubicación no parece estar en Argentina.' : 'No pudimos guardarla. Revisá la conexión y probá de nuevo.')
+}
+
+/** The phone's position with how sure it is (metres), once, when the person asks. Never stored. */
+export function positionHere(): Promise<{ lat: number; lng: number; accuracy: number }> {
+  return new Promise((resolve, reject) => {
+    if (!('geolocation' in navigator)) return reject(new Error('unsupported'))
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy }),
+      reject,
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    )
+  })
+}

@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { ExternalLink, MapPinOff, RotateCw } from 'lucide-react'
+import { formatDayMonth, formatTime, todayInArgentina } from '@/domain/dates'
 import { mapsSearchUrl } from '@/domain/places'
 import { LOCATION_LABEL } from '@/domain/stores'
 import { Banner } from '@/ui/Banner'
@@ -16,6 +17,12 @@ const VERIFY_MESSAGE = {
   kept: { tone: 'info', text: 'No encontramos la altura exacta: dejamos la ubicación verificada que ya tenía.' },
   not_found: { tone: 'warn', text: 'No encontramos esa dirección. Revisá cómo está escrita o cargá la ubicación a mano en "Editar datos".' },
 } as const
+
+/** "hoy 15:02" or the day and the time. */
+const formatWhen = (at: string) => {
+  const day = new Date(at).toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
+  return `${day === todayInArgentina() ? 'hoy' : formatDayMonth(day)} ${formatTime(at)}`
+}
 
 /** Where the store is: the map with its pin, the address, and checking it again. */
 export function LocationCard({ store: s, scope, canEdit }: { store: StoreDetail; scope: 'caba' | 'argentina'; canEdit: boolean }) {
@@ -43,6 +50,7 @@ export function LocationCard({ store: s, scope, canEdit }: { store: StoreDetail;
             <span className={styles.status} data-status={s.locationStatus}>{LOCATION_LABEL[s.locationStatus]}</span>
           </span>
           {located ? <span className={styles.coords}>{(s.lat as number).toFixed(5)}, {(s.lng as number).toFixed(5)}</span> : null}
+          {s.locatedBy ? <span className={styles.fixed}>Ubicación corregida por {s.locatedBy.name} · {formatWhen(s.locatedBy.at)}</span> : null}
         </div>
         <div className={styles.actions}>
           <a className={styles.link} href={mapsSearchUrl(s)} target="_blank" rel="noreferrer"><ExternalLink size={16} aria-hidden />Abrir en Maps</a>

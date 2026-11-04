@@ -904,6 +904,8 @@ export type Database = {
           id: string
           lat: number | null
           lng: number | null
+          located_at: string | null
+          located_by: string | null
           location_status: Database["public"]["Enums"]["location_status"]
           merged_into: string | null
           name: string | null
@@ -925,6 +927,8 @@ export type Database = {
           id?: string
           lat?: number | null
           lng?: number | null
+          located_at?: string | null
+          located_by?: string | null
           location_status?: Database["public"]["Enums"]["location_status"]
           merged_into?: string | null
           name?: string | null
@@ -946,6 +950,8 @@ export type Database = {
           id?: string
           lat?: number | null
           lng?: number | null
+          located_at?: string | null
+          located_by?: string | null
           location_status?: Database["public"]["Enums"]["location_status"]
           merged_into?: string | null
           name?: string | null
@@ -956,6 +962,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "store_located_by_fkey"
+            columns: ["located_by"]
+            isOneToOne: false
+            referencedRelation: "person"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "store_company_id_fkey"
             columns: ["company_id"]
@@ -1739,6 +1752,10 @@ export type Database = {
         }[]
       }
       dismiss_resumable: { Args: { p_visits: string[] }; Returns: number }
+      fix_store_location: {
+        Args: { p_address?: string; p_lat: number; p_lng: number; p_store: string }
+        Returns: undefined
+      }
       find_person_by_dni: {
         Args: { p_company: string; p_dni: string }
         Returns: {

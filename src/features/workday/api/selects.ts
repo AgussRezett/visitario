@@ -33,7 +33,8 @@ export const EXPORT_VISIT_SELECT = `
 // A store's card in the directory: who added it.
 export const STORE_SELECT = `
   id, company_id, name, address, area, customer_number, lat, lng, location_status, source, created_at, deleted_at, merged_into, removed_at, channel_id, seller_id,
-  creator:person!store_created_by_fkey (first_name)
+  creator:person!store_created_by_fkey (first_name),
+  located_at, fixer:person!store_located_by_fkey (first_name)
 `
 
 // The team's reports: what each visit adds to its merchandiser's day.

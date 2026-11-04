@@ -1109,6 +1109,29 @@ check('has_password is true for a user with a password', (await as('agus', `sele
 check('has_password is false for a user without one', (await as('lucia', `select has_password() v`))[0].v === false);
 await expectError('Anonymous cannot call has_password', () => asAnon(`select has_password()`));
 
+// ---- The activador fixes where a store of their day is (and only that)
+{
+  const mine = (await sys(`insert into store (company_id, address, area) values ($1, 'Thames 1100', 'Palermo') returning id`, [panda]))[0].id
+  const notMine = (await sys(`insert into store (company_id, address, customer_number) values ($1, 'Gorriti 4000', '777') returning id`, [panda]))[0].id
+  const day = (await as('agus', `select open_workday($1, '2099-02-01') id`, [panda]))[0].id
+  await sys(`insert into visit (company_id, workday_id, merchandiser_id, work_date, store_id, added_by) values ($1, $2, $3, '2099-02-01', $4, $3)`, [panda, day, agus, mine])
+  await as('agus', `select fix_store_location($1, -34.5889, -58.4301, 'Thames 1150')`, [mine])
+  const fixed = (await sys(`select lat, lng, address, location_status::text st, located_by, located_at from store where id = $1`, [mine]))[0]
+  check('Agus fixes the pin and the street number of a store of his day', fixed.lat === -34.5889 && fixed.address === 'Thames 1150' && fixed.st === 'verified')
+  check('The store says who fixed it and when', fixed.located_by === agus && fixed.located_at !== null)
+  check('His supervisor sees who fixed it', (await as('martin', `select located_by from store where id = $1`, [mine]))[0].located_by === agus)
+  await expectError('Not a store outside his days', () => as('agus', `select fix_store_location($1, -34.58, -58.42)`, [notMine]), /own workdays/)
+  await expectError('Lucía (not her day) cannot either', () => as('lucia', `select fix_store_location($1, -34.58, -58.42)`, [mine]), /own workdays/)
+  await expectError('Nor another company', () => as('beto', `select fix_store_location($1, -34.58, -58.42)`, [mine]), /not found|own workdays/)
+  await expectError('A pin outside Argentina is refused', () => as('agus', `select fix_store_location($1, 40.4, -3.7)`, [mine]), /outside Argentina/)
+  await expectError('He still cannot edit the store directly', () => as('agus', `update store set customer_number = '1' where id = $1 returning id`, [mine]).then((r) => { if (!r.length) throw new Error('permission: no rows') }), /permission|no rows/)
+  await as('martin', `update store set lat = -34.59, lng = -58.43 where id = $1`, [mine])
+  check('Moved by the supervisor: no longer the activador\'s fix', (await sys(`select located_by from store where id = $1`, [mine]))[0].located_by === null)
+  await as('martin', `select fix_store_location($1, -34.58, -58.42)`, [notMine])
+  check('A supervisor may use it too', (await sys(`select located_by from store where id = $1`, [notMine]))[0].located_by === martin)
+  await sys(`update visit set deleted_at = now() where workday_id = $1`, [day])
+}
+
 const carlaMembership = (await sys(`select id from membership where person_id = $1`, [await pid('carla')]))[0].id;
 await expectError('A company cannot lose its last admin', () => as('carla', `update membership set roles = '{supervisor}' where id = $1`, [carlaMembership]), /admin/);
 

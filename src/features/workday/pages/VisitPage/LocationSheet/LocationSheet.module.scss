@@ -1,0 +1,96 @@
+@use '@/styles/abstracts' as *;
+
+.body {
+  @include flex(column, $gap: space(3));
+}
+
+// The map with a fixed pin in the middle: the person moves the map under it.
+.map-wrap {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid $color-line;
+  border-radius: $radius-md;
+}
+
+.map {
+  height: 260px;
+
+  @include up(lg) {
+    height: 320px;
+  }
+}
+
+.pin {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  @include square(22px);
+  border: 3px solid $color-card;
+  border-radius: $radius-full;
+  background: $color-forest;
+  box-shadow: 0 0 0 6px color-mix(in srgb, $color-forest 22%, transparent), 0 2px 6px rgb(0 0 0 / 0.3);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+
+  @include dark {
+    border-color: $color-ground;
+    background: $color-lime;
+    box-shadow: 0 0 0 6px color-mix(in srgb, $color-lime 25%, transparent), 0 2px 6px rgb(0 0 0 / 0.5);
+  }
+}
+
+.help,
+.note {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: space(2);
+}
+
+// Lined up with the input, under its label.
+.search-button {
+  margin-top: 26px;
+}
+
+.results {
+  @include flex(column, $gap: space(1.5));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.result {
+  @include flex(column, $gap: space(0.5));
+  width: 100%;
+  min-height: $touch-target;
+  padding: space(2.5) space(3.5);
+  border: 1px solid $color-line;
+  border-radius: $radius-md;
+  background: $color-card;
+  text-align: left;
+  cursor: pointer;
+
+  @include hover {
+    border-color: $color-forest;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-focus;
+    outline-offset: 2px;
+  }
+}
+
+.result-name {
+  font-weight: $weight-bold;
+  overflow-wrap: anywhere;
+}
+
+.result-note {
+  @include text(tiny);
+  color: $color-ink-subtle;
+}

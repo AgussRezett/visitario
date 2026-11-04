@@ -48,9 +48,33 @@
 }
 
 .located {
+  @include flex(row, $gap: space(1.5), $align: center);
+  min-height: $touch-target;
   margin-left: auto;
+  padding: 0 space(1) 0 0;
+  border: 0;
+  border-radius: $radius-full;
+  background: transparent;
+  cursor: pointer;
 
   @include up(lg) {
     margin-left: 0;
   }
+
+  &:disabled {
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-focus;
+    outline-offset: 2px;
+  }
+}
+
+// "Revisar ›": says the chip opens the map.
+.check {
+  @include flex(row, $align: center);
+  @include text(label);
+  font-weight: $weight-bold;
+  color: $color-ink-muted;
 }

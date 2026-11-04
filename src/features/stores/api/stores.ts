@@ -102,6 +102,8 @@ export interface StoreDetail {
   source: StoreSource
   createdAt: string
   createdByName: string | null
+  /** An activador fixed where it is, from their visit: who and when. */
+  locatedBy: { name: string; at: string } | null
   channelId: number | null
   sellerId: number | null
   /** Taken out of the directory by hand. */
@@ -127,6 +129,7 @@ export const storeQuery = (storeId: string) =>
         id: data.id, companyId: data.company_id, name: data.name, address: data.address, area: data.area, customerNumber: data.customer_number,
         lat: data.lat, lng: data.lng, locationStatus: data.location_status, source: data.source, createdAt: data.created_at,
         createdByName: (data.creator as { first_name: string } | null)?.first_name ?? null,
+        locatedBy: data.located_at && data.fixer ? { name: (data.fixer as { first_name: string }).first_name, at: data.located_at } : null,
         channelId: data.channel_id,
         sellerId: data.seller_id,
         archivedAt: data.merged_into || data.removed_at ? null : data.deleted_at,

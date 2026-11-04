@@ -67,6 +67,8 @@ export interface FakeState {
   routeAsked?: Row[]
   /** The day's saved route (route_plan), as save_route_plan left it. */
   routePlan?: Row
+  /** What fix_store_location was asked (the activador fixing where a store is). */
+  locationFixes?: Row[]
   /** What reading a capture with AI answers: rows, or an error status. */
   capture?: { rows?: Row[]; unreadable?: number; status?: number }
   /** Reputation: store_reputation rows and rapport_facts rows (by week). */
