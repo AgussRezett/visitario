@@ -36,7 +36,7 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
       ;(state.locationFixes ??= []).push(b)
       for (const v of state.visits) {
         const s = v.store as Row | null
-        if (s?.id === b.p_store) Object.assign(s, { lat: b.p_lat, lng: b.p_lng, location_status: 'verified', ...(b.p_address ? { address: b.p_address } : {}) })
+        if (s && s.id === b.p_store) Object.assign(s, { lat: b.p_lat, lng: b.p_lng, location_status: 'verified', ...(b.p_address ? { address: b.p_address } : {}) })
       }
       return done(route.fulfill({ status: 204 }))
     }
