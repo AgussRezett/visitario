@@ -1,4 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react'
+import { LoaderCircle } from 'lucide-react'
 import clsx from 'clsx'
 import { markPicking, pickingDone } from '@/features/workday/photo-picking'
 import { CameraSheet } from '@/features/workday/components/CameraSheet'
@@ -8,7 +9,8 @@ import styles from './PhotoPicker.module.scss'
 const isPhone = () => typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches
 
 interface PhotoPickerProps {
-  onPick: (file: File) => void
+  /** May return a promise: the button shows the photo is on its way until it settles. */
+  onPick: (file: File) => unknown
   /** camera: opens the rear camera on phones; gallery: lets the person choose a picture. */
   source?: 'camera' | 'gallery'
   /** Which camera opens on phones: the rear one (stores) or the front one (a selfie). */
@@ -30,6 +32,13 @@ export function PhotoPicker({ onPick, source = 'camera', facing = 'environment',
   const input = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
   const [camera, setCamera] = useState(false)
+  // From the shutter (or the chosen file) until the photo is in the visit: "Guardando foto".
+  const [pending, setPending] = useState(0)
+  const track = (work: Promise<unknown>) => {
+    setPending((n) => n + 1)
+    void work.catch(() => null).finally(() => setPending((n) => Math.max(0, n - 1)))
+  }
+  const pick = (file: File) => track(Promise.resolve().then(() => onPick(file)))
   const openPicker = () => {
     markPicking()
     input.current?.click()
@@ -38,8 +47,9 @@ export function PhotoPicker({ onPick, source = 'camera', facing = 'environment',
     <>
       <button
         type="button"
-        className={clsx(className, dragging && styles.dragging)}
+        className={clsx(className, styles.picker, dragging && styles.dragging)}
         aria-label={label}
+        aria-busy={pending > 0 || undefined}
         disabled={disabled}
         onClick={() => {
           if (source === 'camera' && isPhone() && hasCamera()) {
@@ -56,10 +66,16 @@ export function PhotoPicker({ onPick, source = 'camera', facing = 'environment',
           e.preventDefault()
           setDragging(false)
           const file = e.dataTransfer.files[0]
-          if (file?.type.startsWith('image/')) onPick(file)
+          if (file?.type.startsWith('image/')) pick(file)
         }}
       >
         {children}
+        {pending ? (
+          <span className={styles.busy} role="status">
+            <LoaderCircle size={22} aria-hidden className={styles.spin} />
+            <span className={styles.busyText}>Guardando foto</span>
+          </span>
+        ) : null}
       </button>
       <input
         ref={input}
@@ -71,7 +87,7 @@ export function PhotoPicker({ onPick, source = 'camera', facing = 'environment',
           pickingDone()
           const file = e.target.files?.[0]
           e.target.value = ''
-          if (file) onPick(file)
+          if (file) pick(file)
         }}
       />
       {camera ? (
@@ -81,7 +97,7 @@ export function PhotoPicker({ onPick, source = 'camera', facing = 'environment',
           onShot={(photo) => {
             setCamera(false)
             // Encoding takes a moment after the camera is gone; a failure is rare (no canvas).
-            void photo.then(onPick, () => null)
+            track(photo.then(onPick))
           }}
           onFallback={() => {
             setCamera(false)
