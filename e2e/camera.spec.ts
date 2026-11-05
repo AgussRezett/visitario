@@ -107,3 +107,29 @@ test('if the phone closed the app while choosing a photo, the visit says so once
   await expect(page.getByRole('button', { name: 'Marcar llegada con la foto de la fachada' }).first()).toBeAttached()
   await expect(page.getByText('La foto no llegó')).toHaveCount(0)
 })
+
+test('from the shutter until the photo is in the visit, the button says it is being saved', async ({ page, context }, info) => {
+  test.skip(info.project.name !== 'mobile', 'phones only')
+  await context.grantPermissions(['camera'])
+  // A slow phone, and one without the worker: the page encodes, and takes a second and a half.
+  await page.addInitScript(() => {
+    Object.defineProperty(window, 'OffscreenCanvas', { value: undefined })
+    const encode = HTMLCanvasElement.prototype.toBlob
+    HTMLCanvasElement.prototype.toBlob = function (cb, ...rest) {
+      encode.call(this, (b) => setTimeout(() => cb(b), 1500), ...rest)
+    }
+  })
+  const s = state()
+  await installFakeSupabase(page, s)
+  await page.goto('/visit/v1')
+  const arrive = page.getByRole('button', { name: 'Marcar llegada con la foto de la fachada' })
+  await arrive.click()
+  const camera = page.getByRole('dialog', { name: 'Cámara' })
+  await camera.getByRole('button', { name: 'Sacar la foto' }).click()
+  await expect(camera).toBeHidden()
+  await expect(arrive).toHaveAttribute('aria-busy', 'true')
+  await expect(arrive.getByText('Guardando foto')).toBeVisible()
+  await page.screenshot({ path: 'test-results/photo-saving-mobile.png' })
+  await expect(page.getByText(/con la foto de fachada/)).toBeVisible()
+  await expect.poll(() => s.uploads.map((u) => u.meta.kind)).toEqual(['storefront'])
+})

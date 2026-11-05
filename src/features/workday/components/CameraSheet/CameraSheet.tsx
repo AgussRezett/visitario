@@ -3,6 +3,7 @@ import { Camera, Focus, RefreshCw, Smartphone, X } from 'lucide-react'
 import { Button } from '@/ui/Button'
 import { PHOTO_MAX_SIDE, PHOTO_QUALITY } from '@/domain/image'
 import { markReady } from '@/features/workday/api/photos'
+import { encodeJpeg } from './encode'
 import { focusPoint, shotSize, type Turn } from './frame'
 import { useTurn } from './useMotion'
 import styles from './CameraSheet.module.scss'
@@ -59,17 +60,15 @@ function snapshot(v: HTMLVideoElement, mirror: boolean, turn: Turn) {
   const own = canvas !== spare
   if (!own) encoding = true
   // The frame is in the canvas already: the camera can close while this finishes.
-  return new Promise<File>((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (own) {
-        canvas.width = 0
-        canvas.height = 0
-      } else encoding = false
-      if (!blob) return reject(new Error('encode'))
-      const file = new File([blob], `foto-${Date.now()}.jpg`, { type: 'image/jpeg' })
-      markReady(file, size.width, size.height)
-      resolve(file)
-    }, 'image/jpeg', PHOTO_QUALITY)
+  return encodeJpeg(canvas, PHOTO_QUALITY).then((blob) => {
+    if (own) {
+      canvas.width = 0
+      canvas.height = 0
+    } else encoding = false
+    if (!blob) throw new Error('encode')
+    const file = new File([blob], `foto-${Date.now()}.jpg`, { type: 'image/jpeg' })
+    markReady(file, size.width, size.height)
+    return file
   })
 }
 
