@@ -27,6 +27,10 @@ test('on the phone the storefront photo is taken inside Visitario, without leavi
   await expect(camera).toBeHidden()
   await expect(page.getByText(/con la foto de fachada/)).toBeVisible()
   await expect.poll(() => s.uploads.map((u) => u.meta.kind)).toEqual(['storefront'])
+  // Taken straight at the kept size: the camera's own frame size (never above 1400 px), one JPEG.
+  const meta = s.uploads[0]?.meta as { width: number; height: number }
+  expect(Math.max(meta.width, meta.height)).toBeLessThanOrEqual(1400)
+  expect(meta.width).toBeGreaterThan(0)
 })
 
 test('held sideways it says the photo goes out lying down; a tap focuses where the phone allows it', async ({ page, context }, info) => {

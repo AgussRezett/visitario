@@ -54,6 +54,10 @@ async function decode(file: Blob): Promise<{ source: CanvasImageSource; width: n
   }
 }
 
+/** Pictures already at the kept size and quality (Visitario's camera): nothing to redo. */
+const ready = new WeakMap<Blob, { width: number; height: number }>()
+export const markReady = (photo: Blob, width: number, height: number) => ready.set(photo, { width, height })
+
 /**
  * Resizes to 1400 px and re-encodes as JPEG 72 % (other sizes for captures to read).
  * Drawing to a canvas drops all EXIF metadata, so no location ever leaves the phone.
@@ -61,6 +65,8 @@ async function decode(file: Blob): Promise<{ source: CanvasImageSource; width: n
  * after photo it ran out (the camera took seconds to show each picture until a restart).
  */
 export async function compressPhoto(file: Blob, maxSide = PHOTO_MAX_SIDE, quality = PHOTO_QUALITY) {
+  const done = ready.get(file)
+  if (done && maxSide === PHOTO_MAX_SIDE && quality === PHOTO_QUALITY) return { blob: file, ...done }
   const image = await decode(file)
   const size = fitWithin(image.width, image.height, maxSide)
   const canvas = document.createElement('canvas')

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { focusPoint, turnFor, turnedSize } from './frame'
+import { focusPoint, shotSize, turnFor, turnedSize } from './frame'
 
 describe('camera picture', () => {
   it('stays standing when the phone is upright, flat or the screen already turned', () => {
@@ -24,5 +24,15 @@ describe('camera picture', () => {
     // A 390×700 preview showing a 1440×1920 stream: 390×520 tall, 90 px bars above and below.
     expect(focusPoint({ x: 195, y: 350 }, { width: 390, height: 700 }, { width: 1440, height: 1920 })).toEqual({ x: 0.5, y: 0.5 })
     expect(focusPoint({ x: 0, y: 10 }, { width: 390, height: 700 }, { width: 1440, height: 1920 })).toEqual({ x: 0, y: 0 })
+  })
+})
+
+describe('the shot', () => {
+  it('comes out at the kept size, turned when the phone is sideways', () => {
+    expect(shotSize(1440, 1920, 0, 1400)).toEqual({ draw: { width: 1050, height: 1400 }, width: 1050, height: 1400 })
+    expect(shotSize(1440, 1920, 90, 1400)).toEqual({ draw: { width: 1050, height: 1400 }, width: 1400, height: 1050 })
+    expect(shotSize(1920, 1440, 0, 1400)).toEqual({ draw: { width: 1400, height: 1050 }, width: 1400, height: 1050 })
+    // A small camera is never enlarged.
+    expect(shotSize(640, 480, 0, 1400)).toEqual({ draw: { width: 640, height: 480 }, width: 640, height: 480 })
   })
 })
