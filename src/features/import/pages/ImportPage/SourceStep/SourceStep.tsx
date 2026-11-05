@@ -119,7 +119,7 @@ export function SourceStep({ companyId, tags, onAddSeller, draft, formats, onCan
             help={
               pastedLines
                 ? `${pastedLines} ${pastedLines === 1 ? 'línea' : 'líneas'}`
-                : `Separá con ; o coma, en cualquier orden.${tags.sellers.length || tags.channels.length ? ' Con @ elegís el vendedor y con # el canal.' : ''} Si copiás del Excel con títulos o más columnas, te pregunta qué es cada una.`
+                : `Separá las partes con punto y coma, coma o |, en cualquier orden.${tags.sellers.length || tags.channels.length ? ' Con @ elegís el vendedor y con # el canal.' : ''} Si copiás del Excel con títulos o más columnas, te pregunta qué es cada una.`
             }
           />
         </div>

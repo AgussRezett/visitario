@@ -1,4 +1,4 @@
-import { parseLine } from '@/domain/import'
+import { isTableNoise, parseLine } from '@/domain/import'
 import { extractMentions, type Mentionable } from '@/domain/mentions'
 
 export interface PastedLine {
@@ -16,7 +16,7 @@ export function readLines(pasted: string, sellers: readonly Mentionable[], chann
   return pasted
     .split('\n')
     .map((l) => l.trim())
-    .filter(Boolean)
+    .filter((l) => l && !isTableNoise(l))
     .map((text) => {
       const m = extractMentions(text, sellers, channels)
       return { text, ...parseLine(m.rest), sellerId: m.sellerId, channelId: m.channelId, unknown: m.unknown }
@@ -28,7 +28,7 @@ export function readLines(pasted: string, sellers: readonly Mentionable[], chann
 export function pastedHelp(lines: PastedLine[], mentions: boolean) {
   if (!lines.length) {
     const tip = mentions ? ' Con @ elegís el vendedor y con # el canal.' : ''
-    return `Separá con ; o coma, en cualquier orden. Los nuevos se agregan sin ubicación; los verificás después.${tip}`
+    return `Separá las partes con punto y coma, coma o |, en cualquier orden. Los nuevos se agregan sin ubicación; los verificás después.${tip}`
   }
   const count = (f: (l: PastedLine) => unknown) => lines.filter(f).length
   const parts = [`${lines.length} ${lines.length === 1 ? 'local' : 'locales'}`]

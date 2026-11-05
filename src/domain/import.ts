@@ -123,15 +123,22 @@ export function parsePasted(text: string): { kind: 'lines'; lines: string[] } | 
     const table = parseDelimited(text, ['\t', ';'])
     if (looksLikeHeader(table) || (table[0]?.length ?? 0) > 3) return { kind: 'table', table }
   }
-  return { kind: 'lines', lines: lines.filter((l) => l.length >= 3) }
+  return { kind: 'lines', lines: lines.filter((l) => l.length >= 3 && !isTableNoise(l)) }
 }
+
+/**
+ * A line of a table copied from WhatsApp, a document or a chat, that is not a store: the
+ * separator "|---|---|" or the titles "| Nro | Dirección | Zona |" (no digits at all).
+ */
+export const isTableNoise = (line: string) => /^[\s|:+-]*$/.test(line) || (line.trim().startsWith('|') && !/\d/.test(line))
 
 /**
  * One pasted line: a number alone is the customer number, the part with street and number
  * the address, the next words the area. "Tres Arroyos 762" alone is just the address.
+ * Parts go apart with ; , tab or | (a table copied as text: "| 92 | Venezuela 3943 | Almagro |").
  */
 export function parseLine(line: string): Pick<ImportRow, 'customerNumber' | 'address' | 'area'> {
-  const parts = line.split(/[;\t,]/).map((p) => p.replace(/\s+/g, ' ').trim()).filter(Boolean)
+  const parts = line.split(/[;\t,|]/).map((p) => p.replace(/\s+/g, ' ').trim()).filter(Boolean)
   const customerNumber = parts.find((p) => isNumber(p.replace(/^(n°|nro\.?|cliente)\s*/i, ''))) ?? ''
   const rest = parts.filter((p) => p !== customerNumber)
   const address = rest.find(isAddress) ?? rest.find((p) => /[a-zñ]/i.test(p)) ?? ''

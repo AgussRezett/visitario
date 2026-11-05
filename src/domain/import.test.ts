@@ -48,6 +48,14 @@ describe('reading the table', () => {
     expect(parseLine('Juramento 2101, Belgrano')).toEqual({ customerNumber: '', address: 'Juramento 2101', area: 'Belgrano' })
     expect(parseLine('Moldes 1365')).toEqual({ customerNumber: '', address: 'Moldes 1365', area: '' })
     expect(parseLine('19008')).toEqual({ customerNumber: '19008', address: '', area: '' })
+    // A table copied as text, with | between the columns (what Diego pasted on 5/11).
+    expect(parseLine('| 92 | Venezuela 3943 | Almagro | Joaquin Pr. |')).toEqual({ customerNumber: '92', address: 'Venezuela 3943', area: 'Almagro' })
+    expect(parseLine('|1004|Av. Brasil 3076|Boedo|')).toEqual({ customerNumber: '1004', address: 'Av. Brasil 3076', area: 'Boedo' })
+  })
+
+  it('skips the titles and the separator of a table copied as text', () => {
+    const pasted = '| Nro | Dirección | Zona | Vendedor |\n|---|---|---|---|\n| 92 | Venezuela 3943 | Almagro | Joaquin Pr. |\n| 32 | Sarmiento 4062 | Almagro | Josefina Gi. |'
+    expect(parsePasted(pasted)).toEqual({ kind: 'lines', lines: ['| 92 | Venezuela 3943 | Almagro | Joaquin Pr. |', '| 32 | Sarmiento 4062 | Almagro | Josefina Gi. |'] })
   })
 })
 
