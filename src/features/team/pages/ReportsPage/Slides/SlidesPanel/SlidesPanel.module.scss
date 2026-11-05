@@ -1,0 +1,74 @@
+@use '@/styles/abstracts' as *;
+
+.panel {
+  @include flex(column, $gap: space(4));
+}
+
+.bar {
+  @include flex(row, $gap: space(2), $align: flex-end);
+  flex-wrap: wrap;
+}
+
+.summary {
+  @include surface;
+  @include flex(column, $gap: space(3));
+  padding: space(4);
+}
+
+.figures {
+  display: grid;
+  gap: space(3);
+
+  @include up(sm) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.figure {
+  @include flex(column);
+  @include text(label);
+  color: $color-ink-muted;
+
+  b {
+    @include heading(title);
+    color: $color-ink;
+  }
+}
+
+.help {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.actions {
+  @include flex(row, $gap: space(3), $align: center);
+  flex-wrap: wrap;
+}
+
+.progress {
+  @include flex(row, $gap: space(2), $align: center);
+  @include text(label);
+  color: $color-ink-muted;
+
+  progress {
+    width: 140px;
+    accent-color: $color-forest;
+  }
+}
+
+.previews {
+  @include flex(column, $gap: space(3));
+}
+
+.grid {
+  display: grid;
+  gap: space(4);
+
+  @include up(sm) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @include up(lg) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

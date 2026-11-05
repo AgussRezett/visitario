@@ -1,0 +1,127 @@
+@use '@/styles/abstracts' as *;
+
+.item {
+  @include flex(column, $gap: space(2));
+  position: relative;
+  margin: 0;
+  min-width: 0;
+}
+
+// The slide as it will come out: 16:9, white like the PowerPoint, in both themes.
+.slide {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  border: 1px solid $color-line;
+  border-radius: $radius-sm;
+  background: $color-white;
+  container-type: inline-size;
+}
+
+.background {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.title,
+.date {
+  position: absolute;
+  @include center;
+  font-family: 'Arial Black', Arial, sans-serif;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
+  color: $color-print-ink;
+}
+
+// Sized with the slide (container units), like the real one.
+.title {
+  font-size: 3.4cqw;
+}
+
+.date {
+  font-size: 1.5cqw;
+}
+
+.photo {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  background: $color-muted;
+  cursor: pointer;
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  &[data-selected] {
+    outline: 3px solid $color-focus;
+    outline-offset: 1px;
+  }
+
+  &:focus-visible {
+    outline: 3px solid $color-focus;
+  }
+}
+
+.none {
+  position: absolute;
+  inset: 0;
+  @include center;
+  @include text(label);
+  color: $color-print-ink;
+  opacity: 0.55;
+}
+
+.tools {
+  @include flex(row, $gap: space(2), $align: center);
+  flex-wrap: wrap;
+}
+
+.out {
+  @include flex(row, $gap: space(2), $align: center);
+  flex-wrap: wrap;
+}
+
+.out-label {
+  @include text(tiny);
+  color: $color-ink-subtle;
+  font-weight: $weight-semibold;
+}
+
+.out-photo {
+  @include flex(row, $gap: space(1), $align: center);
+  min-height: $touch-target;
+  padding: space(1);
+  border: 1px dashed $color-control;
+  border-radius: $radius-sm;
+  background: $color-card;
+  color: $color-ink-muted;
+  cursor: pointer;
+
+  img {
+    width: 48px;
+    height: 36px;
+    border-radius: 4px;
+    object-fit: cover;
+    opacity: 0.6;
+  }
+}
+
+.caption {
+  position: absolute;
+  top: space(1.5);
+  left: space(1.5);
+  @include text(tiny);
+  padding: 0 space(1.5);
+  border-radius: $radius-full;
+  background: rgb(0 0 0 / 0.55);
+  color: $color-white;
+  font-weight: $weight-bold;
+}
