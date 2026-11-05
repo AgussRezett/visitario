@@ -54,8 +54,8 @@ export function LocationSheet({ visit: v, open, onClose }: { visit: Visit; open:
       const p = await positionHere()
       setPoint({ lat: p.lat, lng: p.lng })
       setNote(p.accuracy > ROUGH_GPS
-        ? { tone: 'warn', text: `El GPS marca con ±${Math.round(p.accuracy)} m de error. Si el pin no quedó en la puerta, mové el mapa.` }
-        : { tone: 'info', text: 'Listo: el pin quedó donde estás. Si no es la puerta, mové el mapa.' })
+        ? { tone: 'warn', text: `El GPS marca con ±${Math.round(p.accuracy)} m de error. Si el pin no quedó en la puerta, arrastralo.` }
+        : { tone: 'info', text: 'Listo: el pin quedó donde estás. Si no es la puerta, arrastralo.' })
     } catch {
       setNote({ tone: 'error', text: 'No pudimos saber dónde estás. Revisá que Visitario tenga permiso de ubicación.' })
     } finally {
@@ -89,7 +89,7 @@ export function LocationSheet({ visit: v, open, onClose }: { visit: Visit; open:
         <Suspense fallback={<Skeleton height={260} />}>
           <PickMap point={point} onMove={(p) => { setPoint(p); setNote(null) }} />
         </Suspense>
-        <p className={styles.help}>{point ? 'Mové el mapa hasta que el pin quede sobre la puerta del local.' : 'Todavía no sabemos dónde está: usá tu ubicación, buscá la dirección o mové el mapa.'}</p>
+        <p className={styles.help}>{point ? 'Arrastrá el pin hasta la puerta del local, o tocá el mapa donde está. Mover el mapa no cambia nada.' : 'Todavía no sabemos dónde está: usá tu ubicación, buscá la dirección o tocá el mapa donde está.'}</p>
         {note ? <Banner tone={note.tone}>{note.text}</Banner> : null}
 
         <form className={styles.search} onSubmit={(e) => { e.preventDefault(); void search() }}>

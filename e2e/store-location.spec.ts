@@ -45,7 +45,7 @@ test('the activador checks where a store of their day landed and fixes it at the
   await expect(page.getByRole('button', { name: 'Revisar ubicación: Ubicada' })).toBeVisible()
 })
 
-test('without changing anything there is nothing to save; moving the map is enough to fix it', async ({ page }) => {
+test('moving the map only looks around: the pin stays on its spot until it is dragged or the map is tapped', async ({ page }) => {
   await page.route('https://tiles.openfreemap.org/**', (route) => route.fulfill({ json: PLAIN_STYLE }))
   const s = state()
   s.visits[0] = { ...s.visits[0], store: { ...(s.visits[0]?.store as object), location_status: 'verified' } } as (typeof s.visits)[number]
@@ -53,18 +53,51 @@ test('without changing anything there is nothing to save; moving the map is enou
   await page.goto('/visit/v1')
   await page.getByRole('button', { name: 'Revisar ubicación: Ubicada' }).click()
   const sheet = page.getByRole('dialog', { name: 'Revisar ubicación' })
-  await expect(sheet.getByRole('button', { name: 'Guardar ubicación' })).toBeDisabled()
+  const save = sheet.getByRole('button', { name: 'Guardar ubicación' })
+  await expect(save).toBeDisabled()
 
   const map = sheet.getByRole('region', { name: /Mapa para ubicar el local/ })
-  await expect(map).toBeVisible()
+  const pin = map.getByRole('img', { name: 'Ubicación del local' })
+  await expect(pin).toBeVisible()
   const box = await map.boundingBox()
-  if (!box) throw new Error('no map')
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  const before = await pin.boundingBox()
+  if (!box || !before) throw new Error('no map')
+
+  // Dragging the map from a corner: the pin travels with its spot, nothing to save.
+  await page.mouse.move(box.x + 30, box.y + box.height - 30)
   await page.mouse.down()
-  await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2 + 30, { steps: 8 })
+  await page.mouse.move(box.x + 90, box.y + box.height - 60, { steps: 8 })
   await page.mouse.up()
-  await expect(sheet.getByRole('button', { name: 'Guardar ubicación' })).toBeEnabled()
+  const after = await pin.boundingBox()
+  expect(Math.round((after?.x ?? 0) - before.x)).toBeGreaterThan(40)
+  await expect(save).toBeDisabled()
+
+  // Dragging the pin itself moves the location.
+  const at = (await pin.boundingBox()) ?? before
+  await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(at.x + at.width / 2 + 40, at.y + at.height / 2 + 20, { steps: 8 })
+  await page.mouse.up()
+  await expect(save).toBeEnabled()
+  await save.click()
+  await expect.poll(() => s.locationFixes?.length).toBe(1)
+  expect(s.locationFixes?.[0]?.p_lng).not.toBe(-58.4199)
+  expect(s.locationFixes?.[0]?.p_address).toBeUndefined()
+})
+
+test('without a location yet, tapping the map puts the pin there', async ({ page }) => {
+  await page.route('https://tiles.openfreemap.org/**', (route) => route.fulfill({ json: PLAIN_STYLE }))
+  const s = state()
+  s.visits[0] = { ...s.visits[0], store: { ...(s.visits[0]?.store as object), lat: null, lng: null, location_status: 'unverified' } } as (typeof s.visits)[number]
+  await installFakeSupabase(page, s)
+  await page.goto('/visit/v1')
+  await page.getByRole('button', { name: 'Revisar ubicación: Sin ubicación' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Revisar ubicación' })
+  const map = sheet.getByRole('region', { name: /Mapa para ubicar el local/ })
+  await expect(map.getByRole('img', { name: 'Ubicación del local' })).toHaveCount(0)
+  await expect(sheet.getByRole('button', { name: 'Guardar ubicación' })).toBeDisabled()
+  await map.click({ position: { x: 120, y: 120 } })
+  await expect(map.getByRole('img', { name: 'Ubicación del local' })).toBeVisible()
   await sheet.getByRole('button', { name: 'Guardar ubicación' }).click()
   await expect.poll(() => s.locationFixes?.length).toBe(1)
-  expect(s.locationFixes?.[0]?.p_address).toBeUndefined()
 })
