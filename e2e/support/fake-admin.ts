@@ -161,6 +161,9 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
       }
       return done(json(state.templates ?? []))
     }
+    // ---- The store's history for the activador (read only)
+    if (path.endsWith('/rpc/store_history')) return done(json(state.storeHistory ?? []))
+    if (path.endsWith('/rpc/history_visit')) return done(json(state.pastVisits?.[String(body().p_visit)] ?? null))
     if (path.endsWith('/rpc/delete_seller')) {
       const id = Number(body().p_seller)
       const seller = state.catalogs?.seller?.find((x) => x.id === id)

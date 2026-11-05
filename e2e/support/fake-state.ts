@@ -73,6 +73,9 @@ export interface FakeState {
   photoFiles?: Record<string, Buffer>
   /** How many stores each seller has (delete_seller refuses those with any). */
   sellerStores?: Record<number, number>
+  /** The store's past visits (store_history) and each one in full (history_visit). */
+  storeHistory?: Row[]
+  pastVisits?: Record<string, Row>
   /** What reading a capture with AI answers: rows, or an error status. */
   capture?: { rows?: Row[]; unreadable?: number; status?: number }
   /** Reputation: store_reputation rows and rapport_facts rows (by week). */

@@ -31,11 +31,20 @@ const EVENT_TEXT: Record<string, string> = {
 const minutesBetween = (a: string, b: string) => Math.round((new Date(b).getTime() - new Date(a).getTime()) / 60_000)
 
 /** Everything the supervisor needs to judge a visit (S02 / SM02). */
-export function ReviewDetail({ visit: v, meId, draft }: { visit: TeamVisit; meId: string; draft: ReviewDraft }) {
+/** The work of a visit (metrics, brands), when it comes with the visit instead of being asked. */
+export interface VisitWork { metrics: Record<number, number>; brands: number[] }
+
+/**
+ * A visit in full: store, result, photos, work and notes. For a supervisor, with the
+ * conversation and the review form; `readOnly` (an activador looking at the store's
+ * history) leaves only what happened, with its work handed in.
+ */
+export function ReviewDetail({ visit: v, meId, draft, readOnly = false, work: given }: { visit: TeamVisit; meId: string; draft?: ReviewDraft; readOnly?: boolean; work?: VisitWork }) {
   const catalogs = useCatalogs(v.companyId)
-  const work = useQuery(visitWorkQuery(v.id))
-  const comments = useQuery(commentsQuery(v.id))
-  const events = useQuery(visitEventsQuery(v.id))
+  const asked = useQuery({ ...visitWorkQuery(v.id), enabled: !given })
+  const work = { data: given ?? asked.data }
+  const comments = useQuery({ ...commentsQuery(v.id), enabled: !readOnly })
+  const events = useQuery({ ...visitEventsQuery(v.id), enabled: !readOnly })
   const urlFor = usePhotoUrls(v.photos.map((p) => p.id))
   const [viewer, setViewer] = useState<{ photos: Photo[]; startId: string; title: string } | null>(null)
 
@@ -72,9 +81,9 @@ export function ReviewDetail({ visit: v, meId, draft }: { visit: TeamVisit; meId
             <span className={styles.muted}>{[v.store.name ? v.store.address : null, v.store.area, v.store.customerNumber && `Cliente ${v.store.customerNumber}`].filter(Boolean).join(' · ')}</span>
             <StoreTagsLine tags={storeTags(catalogs.data, v.store)} showMissing={Boolean(catalogs.data?.channels?.length || catalogs.data?.sellers?.length)} />
             {/* The store's page in the directory (its history, data, map); its back link returns here. */}
-            <Link to="/stores/$storeId" params={{ storeId: v.store.id }} search={{ from: here }} className={buttonClass('secondary', 'sm', styles.storeLink)}>
+            {readOnly ? null : <Link to="/stores/$storeId" params={{ storeId: v.store.id }} search={{ from: here }} className={buttonClass('secondary', 'sm', styles.storeLink)}>
               <Store size={16} aria-hidden />Ver ficha del local
-            </Link>
+            </Link>}
           </div>
           <StatusChip work={v.workStatus} review={v.reviewStatus} />
         </div>
@@ -130,14 +139,14 @@ export function ReviewDetail({ visit: v, meId, draft }: { visit: TeamVisit; meId
         </section>
       </div>
 
-      {comments.data?.length ? (
+      {!readOnly && comments.data?.length ? (
         <section className={styles.card}>
           <h3 className={styles.heading}>Conversación</h3>
           <Conversation comments={comments.data} meId={meId} displayLabel={displayLabel} />
         </section>
       ) : null}
 
-      <ReviewForm visit={v} meId={meId} draft={draft} displayLabel={displayLabel} />
+      {!readOnly && draft ? <ReviewForm visit={v} meId={meId} draft={draft} displayLabel={displayLabel} /> : null}
 
       <PhotoViewer
         photos={viewer?.photos ?? []}

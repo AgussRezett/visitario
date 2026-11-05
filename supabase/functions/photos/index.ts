@@ -133,10 +133,14 @@ async function signedUrls(req: Request, user: SupabaseClient) {
   const body = (await req.json().catch(() => null)) as { ids?: unknown } | null
   const ids = Array.isArray(body?.ids) ? body.ids.filter((x): x is string => typeof x === 'string' && UUID.test(x)).slice(0, 100) : []
   if (!ids.length) return json({ urls: {} })
-  // Only photos the caller can see (RLS) and that finished uploading.
+  // Only photos the caller can see (RLS) and that finished uploading; for an activador, also
+  // those of the store's history seen from a visit of their day (history_photos decides).
   const { data } = await user.from('photo').select('id, company_id, visit_id').in('id', ids).not('uploaded_at', 'is', null)
+  const found = new Set((data ?? []).map((p) => p.id))
+  const rest = ids.filter((id) => !found.has(id))
+  const { data: history } = rest.length ? await user.rpc('history_photos', { p_ids: rest }) : { data: [] }
   const signed = await Promise.all(
-    (data ?? []).map(async (p) => {
+    [...(data ?? []), ...((history ?? []) as { id: string; company_id: string; visit_id: string }[])].map(async (p) => {
       const url = new URL(objectUrl(objectKey(p.company_id, p.visit_id, p.id)))
       url.searchParams.set('X-Amz-Expires', String(URL_TTL_SECONDS))
       return [p.id, (await r2.sign(url.toString(), { method: 'GET', aws: { signQuery: true } })).url] as const

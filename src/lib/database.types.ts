@@ -1763,6 +1763,8 @@ export type Database = {
         Args: { p_address?: string; p_lat: number; p_lng: number; p_store: string }
         Returns: undefined
       }
+      history_photos: { Args: { p_ids: string[] }; Returns: { company_id: string; id: string; visit_id: string }[] }
+      history_visit: { Args: { p_visit: string }; Returns: Json }
       find_person_by_dni: {
         Args: { p_company: string; p_dni: string }
         Returns: {
@@ -2024,6 +2026,19 @@ export type Database = {
       save_route_plan: {
         Args: { p_by_street: boolean; p_custom?: boolean; p_from_origin: boolean; p_km: number; p_line?: Json; p_minutes?: number; p_mode: string; p_stop_ids: string[]; p_workday: string }
         Returns: undefined
+      }
+      store_history: {
+        Args: { p_visit: string }
+        Returns: {
+          afters: number
+          consent: Database["public"]["Enums"]["consent_kind"] | null
+          displays: number
+          id: string
+          merchandiser: string
+          review_status: Database["public"]["Enums"]["review_status"]
+          work_date: string
+          work_status: Database["public"]["Enums"]["work_status"]
+        }[]
       }
       search_stores: {
         Args: { p_company: string; p_limit?: number; p_query: string }
