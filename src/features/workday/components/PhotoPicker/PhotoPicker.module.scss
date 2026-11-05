@@ -5,3 +5,40 @@
   outline: 2px dashed $color-focus;
   outline-offset: 2px;
 }
+
+.picker {
+  position: relative;
+}
+
+// From the shutter until the photo is in the visit: light, over the button itself.
+.busy {
+  @include flex(row, $gap: space(2), $align: center, $justify: center);
+  flex-wrap: wrap;
+  position: absolute;
+  inset: 0;
+  padding: space(1);
+  border-radius: inherit;
+  background: $color-card; // solid: the button's own text must not show through
+  color: $color-ink;
+  pointer-events: none;
+}
+
+.busy-text {
+  @include text(tiny);
+  font-weight: $weight-bold;
+  text-align: center;
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation-duration: 2.4s;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
