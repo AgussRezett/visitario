@@ -7,7 +7,7 @@ on:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # Playwright has no Chromium for 26.04 yet
     env:
       VITE_SUPABASE_URL: https://mjpzawlyjjlmluozjwap.supabase.co
       VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_-PYMHAnKQvaJgir69lNNmw_GbIpkmK1
@@ -26,7 +26,7 @@ jobs:
       - run: npm run build
 
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # Playwright has no Chromium for 26.04 yet
     needs: check
     env:
       VITE_SUPABASE_URL: https://mjpzawlyjjlmluozjwap.supabase.co
