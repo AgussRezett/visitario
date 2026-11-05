@@ -30,10 +30,10 @@ const inches = (b: Box) => ({ x: b.x * W, y: b.y * H, w: b.w * W, h: b.h * H })
 const titleSize = (title: string) => (title.length <= 26 ? 32 : title.length <= 36 ? 28 : 22)
 
 /**
- * Builds and downloads the presentation. `linkFor` gives a signed link per photo; `onStep`
- * tells how many photos are ready, for the progress bar. Photos that fail are left out.
+ * Builds and downloads the presentation. `fileFor` brings each photo's file; `onStep` tells
+ * how many photos are ready, for the progress bar. A photo that fails twice is left out.
  */
-export async function buildDeck(deck: Deck, linkFor: (ids: string[]) => Promise<Record<string, string>>, onStep: (done: number, total: number) => void): Promise<{ missing: number }> {
+export async function buildDeck(deck: Deck, fileFor: (id: string) => Promise<Blob>, onStep: (done: number, total: number) => void): Promise<{ missing: number }> {
   const { default: PptxGenJS } = await import('pptxgenjs')
   const pptx = new PptxGenJS()
   pptx.layout = 'LAYOUT_WIDE'
@@ -49,14 +49,12 @@ export async function buildDeck(deck: Deck, linkFor: (ids: string[]) => Promise<
   })
 
   const ids = deck.slides.flatMap((s) => s.photoIds)
-  const links = await linkFor(ids)
   const images = new Map<string, { data: string; aspect: number }>()
   let done = 0
   let missing = 0
   onStep(0, ids.length)
   await pool(ids, AT_ONCE, async (id) => {
-    const link = links[id]
-    const image = link ? await lighter(link).catch(() => null) : null
+    const image = await lighter(() => fileFor(id)).catch(() => lighter(() => fileFor(id))).catch(() => null)
     if (image) images.set(id, image)
     else missing++
     onStep(++done, ids.length)
@@ -80,10 +78,8 @@ export async function buildDeck(deck: Deck, linkFor: (ids: string[]) => Promise<
 }
 
 /** A photo smaller and lighter, upright, as a data URL with its shape. */
-async function lighter(link: string): Promise<{ data: string; aspect: number }> {
-  const res = await fetch(link)
-  if (!res.ok) throw new Error('photo')
-  const bitmap = await createImageBitmap(await res.blob())
+async function lighter(file: () => Promise<Blob>): Promise<{ data: string; aspect: number }> {
+  const bitmap = await createImageBitmap(await file())
   const scale = Math.min(1, LONG_SIDE / Math.max(bitmap.width, bitmap.height))
   const canvas = document.createElement('canvas')
   canvas.width = Math.round(bitmap.width * scale)

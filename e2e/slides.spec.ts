@@ -35,10 +35,13 @@ const state = (): FakeState => ({
 })
 
 test('the photo presentation: total on the cover, one slide per visit with every después, tidied and downloaded', async ({ page }, info) => {
-  const s = state()
+  const s = { ...state(), photoFiles: { a1: LANDSCAPE, a2: PORTRAIT, a3: PORTRAIT, a4: PORTRAIT } }
   await installFakeSupabase(page, s, 'supervisor')
   // After the fake: the routes added last answer first.
-  await page.route('https://photos.test/**', (r) => r.fulfill({ contentType: 'image/jpeg', body: r.request().url().includes('/a1.') ? LANDSCAPE : PORTRAIT }))
+  // Like the real bucket: its links show as images, but a script cannot read them (no CORS).
+  await page.route('https://photos.test/**', (r) => (r.request().resourceType() === 'image'
+    ? r.fulfill({ contentType: 'image/jpeg', body: r.request().url().includes('/a1.') ? LANDSCAPE : PORTRAIT })
+    : r.abort('accessdenied')))
   await page.route('**/storage/v1/object/public/slides/**', (r) => r.fulfill({ contentType: 'image/png', body: BACKGROUND }))
   await page.goto('/s/reports?view=slides&period=custom&from=2026-10-01&to=2026-10-31')
 

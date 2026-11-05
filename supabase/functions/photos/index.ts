@@ -1,6 +1,9 @@
 // Photos in Cloudflare R2, always through this function:
 //   POST /photos          multipart: `file` (JPEG) + `meta` (JSON) → stores the row and the file
 //   POST /photos/urls     { ids: string[] } → short-lived signed URLs to view them
+//   POST /photos/file     { id: string } → the JPEG itself (to put it in a file, e.g. the
+//                         PowerPoint): the bucket has no CORS, so the browser can show its
+//                         links but not read them.
 // The row is inserted with the caller's token, so RLS and the database guards decide
 // who may add a photo to which visit. Only after the file is in R2 is it marked uploaded.
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
@@ -143,6 +146,18 @@ async function signedUrls(req: Request, user: SupabaseClient) {
   return json({ urls })
 }
 
+async function photoFile(req: Request, user: SupabaseClient) {
+  const body = (await req.json().catch(() => null)) as { id?: unknown } | null
+  const id = typeof body?.id === 'string' && UUID.test(body.id) ? body.id : null
+  if (!id) return json({ error: 'invalid_request' }, 400)
+  // The same rule as the links: a photo the caller can see (RLS), already uploaded.
+  const { data: p } = await user.from('photo').select('id, company_id, visit_id').eq('id', id).not('uploaded_at', 'is', null).maybeSingle()
+  if (!p) return json({ error: 'not_found' }, 404)
+  const got = await r2.fetch(objectUrl(objectKey(p.company_id, p.visit_id, p.id))).catch(() => null)
+  if (!got?.ok || !got.body) return json({ error: 'storage_failed' }, 502)
+  return new Response(got.body, { headers: { ...corsHeaders, 'Content-Type': 'application/octet-stream', 'Cache-Control': 'private, no-store' } })
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405)
@@ -163,5 +178,6 @@ Deno.serve(async (req) => {
 
   const path = new URL(req.url).pathname
   if (path.endsWith('/urls')) return signedUrls(req, user)
+  if (path.endsWith('/file')) return photoFile(req, user)
   return upload(req, user, admin)
 })
