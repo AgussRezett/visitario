@@ -1757,6 +1757,7 @@ export type Database = {
           work_status: Database["public"]["Enums"]["work_status"]
         }[]
       }
+      delete_seller: { Args: { p_seller: number }; Returns: undefined }
       dismiss_resumable: { Args: { p_visits: string[] }; Returns: number }
       fix_store_location: {
         Args: { p_address?: string; p_lat: number; p_lng: number; p_store: string }

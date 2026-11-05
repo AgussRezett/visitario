@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Merge } from 'lucide-react'
+import { Merge, Trash2 } from 'lucide-react'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
 import { useConfirm } from '@/ui/ConfirmDialog'
@@ -13,9 +13,12 @@ import styles from './ItemSheet.module.scss'
 
 export type Editing = { kind: CatalogKind; item: CatalogItem | null } | null
 
-/** Add or edit a catalog item. Items are deactivated, never deleted; a repeated seller is merged. */
+/**
+ * Add or edit a catalog item. Items are deactivated, never deleted; a repeated seller is
+ * merged, and one loaded by mistake (no user, no stores) can be deleted.
+ */
 export function ItemSheet({ editing, companyId, sellers = [], onClose }: { editing: Editing; companyId: string; sellers?: CatalogItem[]; onClose: () => void }) {
-  const { save, mergeSellers } = useCatalogAdmin(companyId)
+  const { save, mergeSellers, deleteSeller } = useCatalogAdmin(companyId)
   const { confirm, dialog } = useConfirm()
   const [into, setInto] = useState('')
   const [name, setName] = useState('')
@@ -29,6 +32,7 @@ export function ItemSheet({ editing, companyId, sellers = [], onClose }: { editi
     setInto('')
     save.reset()
     mergeSellers.reset()
+    deleteSeller.reset()
     // eslint-disable-next-line react-hooks/exhaustive-deps -- a new item starts a new form
   }, [editing])
 
@@ -53,6 +57,19 @@ export function ItemSheet({ editing, companyId, sellers = [], onClose }: { editi
     })
     if (!ok) return
     await mergeSellers.mutateAsync({ keep: target.id, drop: current.id })
+    onClose()
+  }
+
+  const remove = async () => {
+    if (!current) return
+    const ok = await confirm({
+      title: `¿Eliminar a «${current.name}»?`,
+      description: 'Se borra del catálogo para siempre. Solo se puede si no tiene usuario ni comercios.',
+      confirmLabel: 'Eliminar',
+      tone: 'danger',
+    })
+    if (!ok) return
+    await deleteSeller.mutateAsync(current.id)
     onClose()
   }
 
@@ -95,6 +112,14 @@ export function ItemSheet({ editing, companyId, sellers = [], onClose }: { editi
               <Button variant="secondary" size="md" disabled={!target} loading={mergeSellers.isPending} onClick={() => void merge().catch(() => null)}><Merge size={18} aria-hidden />Unir</Button>
             </div>
             {mergeSellers.error ? <Banner tone="error">{mergeSellers.error.message}</Banner> : null}
+          </div>
+        ) : null}
+        {current && !current.extra ? (
+          <div className={styles.remove}>
+            <span className={styles.mergeTitle}>¿Lo cargaste por error?</span>
+            <p className={styles.help}>Si no tiene comercios, lo podés eliminar. Si tiene, unilo con otro o desactivalo.</p>
+            <Button variant="danger" size="md" loading={deleteSeller.isPending} onClick={() => void remove().catch(() => null)}><Trash2 size={18} aria-hidden />Eliminar vendedor</Button>
+            {deleteSeller.error ? <Banner tone="error">{deleteSeller.error.message}</Banner> : null}
           </div>
         ) : null}
         {save.error ? <Banner tone="error">{save.error.message}</Banner> : null}

@@ -64,3 +64,31 @@ test('the same seller loaded twice is merged from the catalog, asking first', as
   await page.getByRole('button', { name: 'Editar Joaquin Pr', exact: true }).click()
   await expect(page.getByRole('dialog', { name: 'Editar Joaquin Pr' }).getByLabel('Unir con').getByRole('option', { name: /Florencia Sereno/ })).toHaveCount(0)
 })
+
+test('a seller loaded by mistake (no user, no stores) is deleted from the catalog; one with stores is not', async ({ page }) => {
+  const s = state({ catalogs: { seller: [...sellers(), { id: 4, name: 'Mirko', active: true, person_id: null }] }, sellerStores: { 1: 3 } })
+  await installFakeSupabase(page, s, 'admin')
+  await page.goto('/s/catalogs')
+
+  // With stores: it says why, and what to do instead.
+  await page.getByRole('button', { name: 'Editar Florencia Se', exact: true }).click()
+  let sheet = page.getByRole('dialog', { name: 'Editar Florencia Se' })
+  await sheet.getByRole('button', { name: 'Eliminar vendedor' }).click()
+  await page.getByRole('alertdialog', { name: '¿Eliminar a «Florencia Se»?' }).getByRole('button', { name: 'Eliminar' }).click()
+  await expect(sheet.getByText('Tiene 3 comercios (contando los archivados): unilo con otro vendedor o desactivalo.')).toBeVisible()
+  await sheet.getByRole('button', { name: 'Cancelar' }).click()
+
+  // With a user: no delete at all.
+  await page.getByRole('button', { name: 'Editar Joaquin Pr', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: 'Editar Joaquin Pr' }).getByRole('button', { name: 'Eliminar vendedor' })).toHaveCount(0)
+  await page.getByRole('dialog', { name: 'Editar Joaquin Pr' }).getByRole('button', { name: 'Cancelar' }).click()
+
+  // Nothing depends on it: gone.
+  await page.getByRole('button', { name: 'Editar Mirko', exact: true }).click()
+  sheet = page.getByRole('dialog', { name: 'Editar Mirko' })
+  await sheet.getByRole('button', { name: 'Eliminar vendedor' }).click()
+  await page.getByRole('alertdialog', { name: '¿Eliminar a «Mirko»?' }).getByRole('button', { name: 'Eliminar' }).click()
+  await expect(sheet).toHaveCount(0)
+  await expect.poll(() => s.catalogs?.seller?.map((x) => x.name)).toEqual(['Florencia Se', 'Joaquin Pr', 'Florencia Sereno'])
+  await expect(page.getByRole('button', { name: 'Editar Mirko', exact: true })).toHaveCount(0)
+})

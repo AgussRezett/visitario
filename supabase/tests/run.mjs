@@ -1141,6 +1141,19 @@ await expectError('Anonymous cannot call has_password', () => asAnon(`select has
   check('Another company does not see them', (await as('beto', `select slides_cover_path from company where id = $1`, [panda])).length === 0)
 }
 
+// ---- An admin deletes a seller nobody depends on
+{
+  const [{ id: spare }] = await as('carla', `insert into seller (company_id, name) values ($1, 'Mirko') returning id`, [panda])
+  const [{ id: busy }] = await as('carla', `insert into seller (company_id, name) values ($1, 'Con comercios') returning id`, [panda])
+  await sys(`insert into store (company_id, address, seller_id, deleted_at) values ($1, 'Archivado 100', $2, now())`, [panda, busy])
+  await expectError('A supervisor cannot delete sellers', () => as('martin', `select delete_seller($1)`, [spare]), /admin/)
+  await expectError('Nor another company', () => as('beto', `select delete_seller($1)`, [spare]), /admin/)
+  await expectError('Not one with stores (archived ones count)', () => as('carla', `select delete_seller($1)`, [busy]), /has 1 stores/)
+  await expectError('Not one with a Visitario user', () => as('carla', `select delete_seller($1)`, [noraSeller]), /user/)
+  await as('carla', `select delete_seller($1)`, [spare])
+  check('The admin deletes a seller without user nor stores', (await sys(`select 1 from seller where id = $1`, [spare])).length === 0)
+}
+
 const carlaMembership = (await sys(`select id from membership where person_id = $1`, [await pid('carla')]))[0].id;
 await expectError('A company cannot lose its last admin', () => as('carla', `update membership set roles = '{supervisor}' where id = $1`, [carlaMembership]), /admin/);
 

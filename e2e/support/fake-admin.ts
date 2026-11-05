@@ -161,6 +161,15 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
       }
       return done(json(state.templates ?? []))
     }
+    if (path.endsWith('/rpc/delete_seller')) {
+      const id = Number(body().p_seller)
+      const seller = state.catalogs?.seller?.find((x) => x.id === id)
+      if (seller?.person_id) return done(json({ code: '23503', message: 'The seller has a Visitario user' }, 400))
+      const stores = state.sellerStores?.[id] ?? 0
+      if (stores) return done(json({ code: '23503', message: `The seller has ${stores} stores` }, 400))
+      if (state.catalogs?.seller) state.catalogs.seller = state.catalogs.seller.filter((x) => x.id !== id)
+      return done(route.fulfill({ status: 204 }))
+    }
     if (path.endsWith('/rpc/merge_sellers')) {
       const b = body()
       const list = state.catalogs?.seller ?? []

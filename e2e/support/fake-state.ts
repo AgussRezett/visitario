@@ -71,6 +71,8 @@ export interface FakeState {
   locationFixes?: Row[]
   /** The JPEG each photo answers with through /photos/file (the PowerPoint's photos). */
   photoFiles?: Record<string, Buffer>
+  /** How many stores each seller has (delete_seller refuses those with any). */
+  sellerStores?: Record<number, number>
   /** What reading a capture with AI answers: rows, or an error status. */
   capture?: { rows?: Row[]; unreadable?: number; status?: number }
   /** Reputation: store_reputation rows and rapport_facts rows (by week). */
