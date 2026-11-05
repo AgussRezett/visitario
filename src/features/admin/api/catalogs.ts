@@ -110,5 +110,16 @@ export function useCatalogAdmin(companyId: string) {
     },
     onSettled: () => Promise.all([refresh(), qc.invalidateQueries({ queryKey: ['stores'] })]),
   })
-  return { save, saveFormat, mergeSellers }
+  // Loaded by mistake: gone for good, only when no store nor user depends on it.
+  const deleteSeller = useMutation({
+    mutationFn: async (id: number) => {
+      const { error } = await supabase.rpc('delete_seller', { p_seller: id })
+      if (!error) return
+      const stores = /has (\d+) stores/.exec(error.message)?.[1]
+      if (stores) throw new Error(`Tiene ${stores === '1' ? '1 comercio' : `${stores} comercios`} (contando los archivados): unilo con otro vendedor o desactivalo.`)
+      throw new Error(/user/.test(error.message) ? 'Tiene usuario en Visitario: no se puede eliminar. Podés desactivarlo.' : message(error.message))
+    },
+    onSettled: refresh,
+  })
+  return { save, saveFormat, mergeSellers, deleteSeller }
 }
