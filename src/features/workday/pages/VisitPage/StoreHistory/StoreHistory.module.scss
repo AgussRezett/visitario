@@ -1,0 +1,96 @@
+@use '@/styles/abstracts' as *;
+
+.card {
+  @include surface;
+  @include flex(column, $gap: space(2));
+  padding: space(1) space(4);
+}
+
+.toggle {
+  @include flex(row, $gap: space(2.5), $align: center);
+  min-height: 52px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: $color-ink;
+  text-align: left;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid $color-focus;
+    outline-offset: 2px;
+  }
+}
+
+.title {
+  flex: 1;
+  @include text(base);
+  font-weight: $weight-bold;
+}
+
+.chevron {
+  color: $color-ink-subtle;
+  transition: transform $duration-fast $ease-standard;
+
+  [aria-expanded='true'] > & {
+    transform: rotate(180deg);
+  }
+}
+
+.help {
+  @include text(label);
+  padding-bottom: space(3);
+  color: $color-ink-subtle;
+}
+
+.list {
+  @include flex(column);
+  margin: 0;
+  padding: 0 0 space(2);
+  list-style: none;
+
+  li + li {
+    border-top: 1px solid $color-line;
+  }
+}
+
+.row {
+  @include flex(row, $gap: space(3), $align: center);
+  min-height: 60px;
+  padding-block: space(2);
+  color: $color-ink;
+  text-decoration: none;
+
+  @include hover {
+    .name {
+      text-decoration: underline;
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-focus;
+    outline-offset: 2px;
+  }
+}
+
+.text {
+  @include flex(column);
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  @include truncate;
+  font-weight: $weight-bold;
+}
+
+.note {
+  @include text(label);
+  color: $color-ink-subtle;
+}
+
+.go {
+  flex-shrink: 0;
+  color: $color-ink-subtle;
+}
