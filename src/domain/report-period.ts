@@ -2,7 +2,7 @@ import { addDays, daysBetween } from './dates'
 
 // The reports' period: presets, the one before it to compare, and its working days.
 
-export type PeriodPreset = 'today' | '7d' | '30d' | 'month' | 'prev_month' | '90d' | 'year' | 'custom'
+export type PeriodPreset = 'today' | '7d' | '30d' | 'month' | 'prev_month' | 'quarter' | 'prev_quarter' | '90d' | 'year' | 'custom'
 
 export interface Range {
   from: string
@@ -15,6 +15,8 @@ export const PERIOD_LABEL: Record<PeriodPreset, string> = {
   '30d': 'Últimos 30 días',
   month: 'Este mes',
   prev_month: 'Mes anterior',
+  quarter: 'Este trimestre',
+  prev_quarter: 'Trimestre anterior',
   '90d': 'Últimos 90 días',
   year: 'Este año',
   custom: 'Elegir fechas',
@@ -25,6 +27,13 @@ const monthEnd = (date: string) => {
   const [y, m] = date.split('-').map(Number) as [number, number]
   const last = new Date(Date.UTC(y, m, 0)).getUTCDate()
   return `${date.slice(0, 7)}-${String(last).padStart(2, '0')}`
+}
+
+/** The quarter (Q1 = Jan–Mar…) a date is in. */
+const quarterOf = (date: string): Range => {
+  const first = Math.floor((Number(date.slice(5, 7)) - 1) / 3) * 3 + 1
+  const from = `${date.slice(0, 4)}-${String(first).padStart(2, '0')}-01`
+  return { from, to: monthEnd(`${date.slice(0, 4)}-${String(first + 2).padStart(2, '0')}-01`) }
 }
 
 /** The dates of a preset, as of `today` (Argentina). "Este mes" runs to the month's end: the rest is projected. */
@@ -39,6 +48,8 @@ export function rangeFor(preset: PeriodPreset, today: string, custom?: Range): R
       const prev = addDays(monthStart(today), -1)
       return { from: monthStart(prev), to: monthEnd(prev) }
     }
+    case 'quarter': return quarterOf(today)
+    case 'prev_quarter': return quarterOf(addDays(quarterOf(today).from, -1))
     case 'year': return { from: `${today.slice(0, 4)}-01-01`, to: today }
     case 'custom': return custom && custom.from <= custom.to ? custom : { from: addDays(today, -29), to: today }
   }

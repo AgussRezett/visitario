@@ -7,6 +7,10 @@ describe('report period', () => {
     expect(rangeFor('7d', today)).toEqual({ from: '2026-10-28', to: '2026-11-03' })
     expect(rangeFor('month', today)).toEqual({ from: '2026-11-01', to: '2026-11-30' })
     expect(rangeFor('prev_month', today)).toEqual({ from: '2026-10-01', to: '2026-10-31' })
+    // Quarters: Q4 is October to December; the one before, July to September.
+    expect(rangeFor('quarter', today)).toEqual({ from: '2026-10-01', to: '2026-12-31' })
+    expect(rangeFor('prev_quarter', today)).toEqual({ from: '2026-07-01', to: '2026-09-30' })
+    expect(rangeFor('prev_quarter', '2026-02-10')).toEqual({ from: '2025-10-01', to: '2025-12-31' })
     expect(rangeFor('custom', today, { from: '2026-10-05', to: '2026-10-01' })).toEqual(rangeFor('30d', today))
   })
 

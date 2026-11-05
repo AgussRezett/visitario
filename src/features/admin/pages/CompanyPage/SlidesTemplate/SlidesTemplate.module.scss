@@ -1,0 +1,40 @@
+@use '@/styles/abstracts' as *;
+
+.parts {
+  display: grid;
+  gap: space(4);
+
+  @include up(sm) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.part {
+  @include flex(column, $gap: space(2));
+  min-width: 0;
+}
+
+.label {
+  @include text(label);
+  font-weight: $weight-bold;
+}
+
+// The background as it will look: always 16:9.
+.preview,
+.empty {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 1px solid $color-line;
+  border-radius: $radius-sm;
+  background: $color-white;
+}
+
+.preview {
+  object-fit: cover;
+}
+
+.empty {
+  @include center;
+  @include text(label);
+  color: $color-ink-subtle;
+}

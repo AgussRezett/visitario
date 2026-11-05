@@ -1,0 +1,1 @@
+export { SlidesPanel } from './SlidesPanel'

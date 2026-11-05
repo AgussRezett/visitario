@@ -1132,6 +1132,15 @@ await expectError('Anonymous cannot call has_password', () => asAnon(`select has
   await sys(`update visit set deleted_at = now() where workday_id = $1`, [day])
 }
 
+// ---- The company's look for the photo presentations
+{
+  await as('carla', `update company set slides_cover_path = $2, slides_page_path = $3 where id = $1`, [panda, `${panda}/cover-1.png`, `${panda}/page-1.png`])
+  check('An admin sets the presentation backgrounds', (await as('martin', `select slides_cover_path from company where id = $1`, [panda]))[0].slides_cover_path === `${panda}/cover-1.png`)
+  const tried = await as('martin', `update company set slides_cover_path = 'x' where id = $1 returning id`, [panda])
+  check('A supervisor cannot change them', tried.length === 0 && (await sys(`select slides_cover_path from company where id = $1`, [panda]))[0].slides_cover_path === `${panda}/cover-1.png`)
+  check('Another company does not see them', (await as('beto', `select slides_cover_path from company where id = $1`, [panda])).length === 0)
+}
+
 const carlaMembership = (await sys(`select id from membership where person_id = $1`, [await pid('carla')]))[0].id;
 await expectError('A company cannot lose its last admin', () => as('carla', `update membership set roles = '{supervisor}' where id = $1`, [carlaMembership]), /admin/);
 

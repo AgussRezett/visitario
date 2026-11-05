@@ -17,6 +17,9 @@ export interface CompanySettings {
   logoVersion: number | null
   shiftStart: string
   shiftEnd: string
+  /** The photo presentation's backgrounds (files in the "slides" bucket). */
+  slidesCoverPath: string | null
+  slidesPagePath: string | null
 }
 
 export const companyQuery = (companyId: string) =>
@@ -25,7 +28,7 @@ export const companyQuery = (companyId: string) =>
     queryFn: async (): Promise<CompanySettings> => {
       const { data, error } = await supabase
         .from('company')
-        .select('id, name, kind, geocoding_scope, show_whatsapp, messages_per_display, photo_retention_months, logo_version, shift_start, shift_end')
+        .select('id, name, kind, geocoding_scope, show_whatsapp, messages_per_display, photo_retention_months, logo_version, shift_start, shift_end, slides_cover_path, slides_page_path')
         .eq('id', companyId)
         .single()
       if (error) throw error
@@ -40,6 +43,8 @@ export const companyQuery = (companyId: string) =>
         logoVersion: data.logo_version,
         shiftStart: data.shift_start.slice(0, 5),
         shiftEnd: data.shift_end.slice(0, 5),
+        slidesCoverPath: data.slides_cover_path,
+        slidesPagePath: data.slides_page_path,
       }
     },
   })
@@ -192,3 +197,27 @@ export const supportLogQuery = (companyId: string) =>
       return data.map((a) => ({ id: a.id, reason: a.reason, startsAt: a.starts_at, endsAt: a.ends_at }))
     },
   })
+
+/**
+ * Puts one of the presentation's backgrounds (the cover or the slide) and drops the one
+ * before. A new name each time, so phones and browsers never show the old one from cache.
+ */
+export function useSlideBackground(companyId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ which, file, current }: { which: 'cover' | 'page'; file: File; current: string | null }) => {
+      if (!['image/png', 'image/jpeg'].includes(file.type)) throw new Error('Tiene que ser una imagen PNG o JPG.')
+      if (file.size > 3 * 1024 * 1024) throw new Error('La imagen pesa más de 3 MB. Exportala más liviana.')
+      const path = `${companyId}/${which}-${Date.now()}.${file.type === 'image/png' ? 'png' : 'jpg'}`
+      const { error } = await supabase.storage.from('slides').upload(path, file, { contentType: file.type, cacheControl: '31536000' })
+      if (error) throw new Error('No pudimos subir la imagen. Probá de nuevo.')
+      const saved = await supabase.from('company').update(which === 'cover' ? { slides_cover_path: path } : { slides_page_path: path }).eq('id', companyId)
+      if (saved.error) {
+        void supabase.storage.from('slides').remove([path])
+        throw new Error('No pudimos guardar la imagen. Probá de nuevo.')
+      }
+      if (current) void supabase.storage.from('slides').remove([current])
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['admin', 'company', companyId] }),
+  })
+}

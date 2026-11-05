@@ -8,10 +8,11 @@ import { Switch } from '@/ui/Switch'
 import { useWorkContext } from '@/features/workday/context'
 import { AnalyticsPanel } from '../Panel/AnalyticsPanel'
 import { DailyReports } from '../ReportsPage'
+import { SlidesPanel } from '../Slides'
 import styles from './ReportsHub.module.scss'
 
 export interface ReportsSearch {
-  view?: 'panel' | 'daily'
+  view?: 'panel' | 'daily' | 'slides'
   period?: PeriodPreset
   from?: string
   to?: string
@@ -49,7 +50,7 @@ export function ReportsHub({ search }: { search: ReportsSearch }) {
           <Field label="Hasta" type="date" value={range.to} min={range.from} max={today} onChange={(e) => e.target.value && go({ from: range.from, to: e.target.value })} />
         </div>
       ) : null}
-      <Switch checked={compare} onChange={(on) => go({ compare: on ? undefined : false })} className={styles.compare}>Comparar con el período anterior</Switch>
+      {view === 'panel' ? <Switch checked={compare} onChange={(on) => go({ compare: on ? undefined : false })} className={styles.compare}>Comparar con el período anterior</Switch> : null}
     </div>
   )
 
@@ -58,14 +59,16 @@ export function ReportsHub({ search }: { search: ReportsSearch }) {
       <header className={styles.top}>
         <div className={styles.titles}>
           <span className={styles.eyebrow}>Reportes de {ctx.companyName}</span>
-          <h1 className={styles.title}>{view === 'panel' ? `Del ${rangeLabel(range)}` : 'Informes del día'}</h1>
+          <h1 className={styles.title}>{view === 'daily' ? 'Informes del día' : view === 'slides' ? 'Presentación de fotos' : `Del ${rangeLabel(range)}`}</h1>
         </div>
         <Segmented label="Vista" value={view} onChange={(v) => go(v === 'panel' ? { view: undefined, date: undefined } : { view: v })}
-          options={[{ value: 'panel', label: 'Panel' }, { value: 'daily', label: 'Informes del día' }]} />
+          options={[{ value: 'panel', label: 'Panel' }, { value: 'slides', label: 'Presentación' }, { value: 'daily', label: 'Informes del día' }]} />
       </header>
       {view === 'panel'
         ? <AnalyticsPanel companyId={ctx.companyId} range={range} today={today} compare={compare} controls={controls} />
-        : <DailyReports date={search.date} />}
+        : view === 'slides'
+          ? <SlidesPanel key={`${range.from}:${range.to}`} companyId={ctx.companyId} range={range} controls={controls} />
+          : <DailyReports date={search.date} />}
     </div>
   )
 }

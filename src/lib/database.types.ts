@@ -185,6 +185,8 @@ export type Database = {
           require_shelf_facings: boolean
           shift_end: string
           shift_start: string
+          slides_cover_path: string | null
+          slides_page_path: string | null
           show_whatsapp: boolean
           timezone: string
           updated_at: string
@@ -204,6 +206,8 @@ export type Database = {
           require_shelf_facings?: boolean
           shift_end?: string
           shift_start?: string
+          slides_cover_path?: string | null
+          slides_page_path?: string | null
           show_whatsapp?: boolean
           timezone?: string
           updated_at?: string
@@ -223,6 +227,8 @@ export type Database = {
           require_shelf_facings?: boolean
           shift_end?: string
           shift_start?: string
+          slides_cover_path?: string | null
+          slides_page_path?: string | null
           show_whatsapp?: boolean
           timezone?: string
           updated_at?: string
