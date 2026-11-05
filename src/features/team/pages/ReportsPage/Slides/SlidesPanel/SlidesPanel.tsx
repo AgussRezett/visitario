@@ -8,7 +8,7 @@ import { Button } from '@/ui/Button'
 import { MultiSelect } from '@/ui/Select'
 import { Skeleton } from '@/ui/Skeleton'
 import { companyQuery } from '@/features/admin/api/company'
-import { photoLinks, slideAssetUrl, slidesQuery, type SlideVisit } from '@/features/team/api/slides'
+import { photoFile, slideAssetUrl, slidesQuery, type SlideVisit } from '@/features/team/api/slides'
 import { usePhotoUrls } from '@/features/workday/api/photos'
 import { personOption } from '@/features/people/person-options'
 import { SlidePreview } from '../SlidePreview'
@@ -89,7 +89,7 @@ export function SlidesPanel({ companyId, range, controls }: { companyId: string;
         total: chosen.length,
         slides: withPhotos.map((s) => ({ title: slideTitle(s.visit.address, s.visit.customerNumber), date: dayMonth(s.visit.date), photoIds: s.photos.map((p) => p.id) })),
         coverUrl, pageUrl, fileName: deckFileName(range.from, range.to),
-      }, photoLinks, (done, total) => setProgress({ done, total }))
+      }, photoFile, (done, total) => setProgress({ done, total }))
       setResult(missing
         ? { tone: 'warn', text: `Listo, pero ${missing === 1 ? '1 foto no se pudo bajar y quedó afuera' : `${missing} fotos no se pudieron bajar y quedaron afuera`}. Probá de nuevo con buena conexión.` }
         : { tone: 'ok', text: 'Listo: la presentación se descargó. Abrila con PowerPoint o subila a Google Slides.' })

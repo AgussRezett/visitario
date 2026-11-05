@@ -31,6 +31,10 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
       if (b.fixed && state.route) return done(json({ ids: (b.stops as Row[]).map((s) => s.id), km: 7.3, minutes: 25, line: [] }))
       return done(state.route ? json(state.route) : json({ error: 'not_configured' }, 503))
     }
+    if (path.endsWith('/functions/v1/photos/file')) {
+      const file = state.photoFiles?.[String(body().id)]
+      return done(file ? route.fulfill({ contentType: 'application/octet-stream', body: file }) : json({ error: 'not_found' }, 404))
+    }
     if (path.endsWith('/rpc/fix_store_location')) {
       const b = body()
       ;(state.locationFixes ??= []).push(b)

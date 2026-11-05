@@ -69,6 +69,8 @@ export interface FakeState {
   routePlan?: Row
   /** What fix_store_location was asked (the activador fixing where a store is). */
   locationFixes?: Row[]
+  /** The JPEG each photo answers with through /photos/file (the PowerPoint's photos). */
+  photoFiles?: Record<string, Buffer>
   /** What reading a capture with AI answers: rows, or an error status. */
   capture?: { rows?: Row[]; unreadable?: number; status?: number }
   /** Reputation: store_reputation rows and rapport_facts rows (by week). */

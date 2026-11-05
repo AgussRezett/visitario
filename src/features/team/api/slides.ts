@@ -90,15 +90,14 @@ function toSlideVisit(r: Row): SlideVisit {
   }
 }
 
-/** Signed links for the photos, 100 at a time (what the function signs at once). */
-export async function photoLinks(ids: string[]): Promise<Record<string, string>> {
-  const links: Record<string, string> = {}
-  for (let i = 0; i < ids.length; i += 100) {
-    const { data, error } = await supabase.functions.invoke<{ urls: Record<string, string> }>('photos/urls', { body: { ids: ids.slice(i, i + 100) } })
-    if (error) throw error
-    Object.assign(links, data?.urls ?? {})
-  }
-  return links
+/**
+ * A photo's file, through Visitario's photos function: the bucket only lets the browser show
+ * its links, not read them, so the bytes come this way (with the same permissions).
+ */
+export async function photoFile(id: string): Promise<Blob> {
+  const { data, error } = await supabase.functions.invoke<Blob>('photos/file', { body: { id } })
+  if (error || !(data instanceof Blob) || !data.size) throw new Error('photo')
+  return data
 }
 
 /** Where the company's backgrounds are (public files in the "slides" bucket). */
