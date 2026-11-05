@@ -72,7 +72,13 @@ test('moving the map only looks around: the pin stays on its spot until it is dr
   expect(Math.round((after?.x ?? 0) - before.x)).toBeGreaterThan(40)
   await expect(save).toBeDisabled()
 
-  // Dragging the pin itself moves the location.
+  // Dragging the pin itself moves the location, once the map stopped gliding (its inertia).
+  await expect.poll(async () => {
+    const a = await pin.boundingBox()
+    await page.waitForTimeout(150)
+    const b = await pin.boundingBox()
+    return Boolean(a && b && a.x === b.x && a.y === b.y)
+  }).toBe(true)
   const at = (await pin.boundingBox()) ?? before
   await page.mouse.move(at.x + at.width / 2, at.y + at.height / 2)
   await page.mouse.down()
