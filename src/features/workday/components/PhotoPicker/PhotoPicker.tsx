@@ -78,9 +78,10 @@ export function PhotoPicker({ onPick, source = 'camera', facing = 'environment',
         <CameraSheet
           facing={facing}
           onClose={() => setCamera(false)}
-          onShot={(file) => {
+          onShot={(photo) => {
             setCamera(false)
-            onPick(file)
+            // Encoding takes a moment after the camera is gone; a failure is rare (no canvas).
+            void photo.then(onPick, () => null)
           }}
           onFallback={() => {
             setCamera(false)

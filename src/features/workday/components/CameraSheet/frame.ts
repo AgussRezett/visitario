@@ -22,6 +22,17 @@ export function turnFor(motion: { x: number; y: number } | null, ios: boolean, s
 /** The size of the picture once turned. */
 export const turnedSize = (width: number, height: number, turn: Turn) => (turn === 0 ? { width, height } : { width: height, height: width })
 
+/**
+ * The shot straight at the size it is kept (the long side at most `maxSide`): the frame is
+ * drawn `draw` big, then turned into a canvas `width` × `height`. One small picture, encoded
+ * once, instead of the full camera frame encoded and then shrunk and encoded again.
+ */
+export function shotSize(videoWidth: number, videoHeight: number, turn: Turn, maxSide: number) {
+  const scale = Math.min(1, maxSide / Math.max(videoWidth, videoHeight))
+  const draw = { width: Math.max(1, Math.round(videoWidth * scale)), height: Math.max(1, Math.round(videoHeight * scale)) }
+  return { draw, ...turnedSize(draw.width, draw.height, turn) }
+}
+
 /** Where a tap on the preview lands in the camera's picture, from 0 to 1 (object-fit: contain). */
 export function focusPoint(tap: { x: number; y: number }, box: { width: number; height: number }, video: { width: number; height: number }) {
   const scale = Math.min(box.width / video.width, box.height / video.height)

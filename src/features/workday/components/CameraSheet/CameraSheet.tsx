@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { Camera, Focus, RefreshCw, Smartphone, X } from 'lucide-react'
 import { Button } from '@/ui/Button'
-import { focusPoint, turnedSize, type Turn } from './frame'
+import { PHOTO_MAX_SIDE, PHOTO_QUALITY } from '@/domain/image'
+import { markReady } from '@/features/workday/api/photos'
+import { focusPoint, shotSize, type Turn } from './frame'
 import { useTurn } from './useMotion'
 import styles from './CameraSheet.module.scss'
 
 interface CameraSheetProps {
   /** Rear camera for stores, front camera for a selfie. */
   facing: 'environment' | 'user'
-  onShot: (file: File) => void
+  /** The frame is taken: the camera closes at once, the picture follows (a few ms later). */
+  onShot: (photo: Promise<File>) => void
   onClose: () => void
   /** The browser cannot use the camera here: open the phone's camera app instead. */
   onFallback: () => void
@@ -19,35 +22,55 @@ type State = 'starting' | 'live' | 'blocked'
 /** What the browser's camera may let us do: not every phone lets a page choose the focus. */
 type FocusCaps = { focusMode?: string[]; pointsOfInterest?: unknown }
 
-/** A canvas holds its pixels until the browser collects it; iPhone has a small budget for them. */
-const release = (c: HTMLCanvasElement) => {
-  c.width = 0
-  c.height = 0
-}
+/**
+ * One canvas for every shot, kept: a new one per photo piled up until the browser collected
+ * them, and iPhone has a small budget for canvas memory (photo after photo got slower).
+ */
+let spare: HTMLCanvasElement | null = null
+let encoding = false
 
-/** The frame as it is saved: mirrored for a selfie, turned when the phone is held sideways. */
-function capture(v: HTMLVideoElement, mirror: boolean, turn: Turn) {
-  const frame = document.createElement('canvas')
-  frame.width = v.videoWidth
-  frame.height = v.videoHeight
-  const fctx = frame.getContext('2d')
-  if (!fctx) return null
-  if (mirror) {
-    fctx.translate(frame.width, 0)
-    fctx.scale(-1, 1)
+/**
+ * The frame straight at the kept size (1400 px, JPEG 72 %): drawn once, mirrored for a
+ * selfie and turned when the phone is held sideways, and encoded once. Before, the full
+ * camera frame was encoded at 92 %, then decoded, shrunk and encoded again.
+ */
+function snapshot(v: HTMLVideoElement, mirror: boolean, turn: Turn) {
+  const size = shotSize(v.videoWidth, v.videoHeight, turn, PHOTO_MAX_SIDE)
+  // A shot still encoding keeps its canvas; this one gets its own (rare: two shots at once).
+  const canvas = !encoding && spare ? spare : document.createElement('canvas')
+  if (!encoding) spare = canvas
+  canvas.width = size.width
+  canvas.height = size.height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
+  if (turn === 90) {
+    ctx.translate(size.width, 0)
+    ctx.rotate(Math.PI / 2)
+  } else if (turn === -90) {
+    ctx.translate(0, size.height)
+    ctx.rotate(-Math.PI / 2)
   }
-  fctx.drawImage(v, 0, 0)
-  if (turn === 0) return frame
-  const out = document.createElement('canvas')
-  Object.assign(out, turnedSize(frame.width, frame.height, turn))
-  const octx = out.getContext('2d')
-  if (!octx) return frame
-  if (turn === 90) octx.translate(out.width, 0)
-  else octx.translate(0, out.height)
-  octx.rotate((turn * Math.PI) / 180)
-  octx.drawImage(frame, 0, 0)
-  release(frame)
-  return out
+  if (mirror) {
+    ctx.translate(size.draw.width, 0)
+    ctx.scale(-1, 1)
+  }
+  ctx.drawImage(v, 0, 0, size.draw.width, size.draw.height)
+  const own = canvas !== spare
+  if (!own) encoding = true
+  // The frame is in the canvas already: the camera can close while this finishes.
+  return new Promise<File>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (own) {
+        canvas.width = 0
+        canvas.height = 0
+      } else encoding = false
+      if (!blob) return reject(new Error('encode'))
+      const file = new File([blob], `foto-${Date.now()}.jpg`, { type: 'image/jpeg' })
+      markReady(file, size.width, size.height)
+      resolve(file)
+    }, 'image/jpeg', PHOTO_QUALITY)
+  })
 }
 
 /**
@@ -77,7 +100,7 @@ export function CameraSheet({ facing: initial, onShot, onClose, onFallback }: Ca
     const el = video.current
     setState('starting')
     navigator.mediaDevices
-      .getUserMedia({ audio: false, video: { facingMode: { ideal: facing }, width: { ideal: 1920 }, height: { ideal: 1440 } } })
+      .getUserMedia({ audio: false, video: { facingMode: { ideal: facing }, width: { ideal: 1600 }, height: { ideal: 1200 } } })
       .then(async (s) => {
         if (!alive) return s.getTracks().forEach((t) => t.stop())
         stream.current = s
@@ -108,17 +131,11 @@ export function CameraSheet({ facing: initial, onShot, onClose, onFallback }: Ca
     if (!v || !v.videoWidth || shooting) return
     setShooting(true)
     // Only a standing picture is turned: if the stream already lies down, it is right as it is.
-    const canvas = capture(v, facing === 'user', v.videoHeight > v.videoWidth ? turn : 0)
-    if (!canvas) return setShooting(false)
-    canvas.toBlob(
-      (blob) => {
-        release(canvas)
-        setShooting(false)
-        if (blob) onShot(new File([blob], `foto-${Date.now()}.jpg`, { type: 'image/jpeg' }))
-      },
-      'image/jpeg',
-      0.92,
-    )
+    const photo = snapshot(v, facing === 'user', v.videoHeight > v.videoWidth ? turn : 0)
+    if (!photo) return setShooting(false)
+    // The camera stops now: its stream is the heaviest thing on screen.
+    stream.current?.getTracks().forEach((t) => t.stop())
+    onShot(photo)
   }
 
   /** Tap to focus there (where the phone allows it). */
