@@ -20,6 +20,7 @@ import { originLabel } from '@/features/workday/visit-text'
 import { useVisitActions } from './useVisitActions'
 import { StoreInfo } from './StoreInfo'
 import { LocationSheet } from './LocationSheet'
+import { StoreHistory } from './StoreHistory'
 import { PhotoStrip } from './PhotoStrip'
 import { ArrivalSection } from './ArrivalSection'
 import { ConsentSection } from './ConsentSection'
@@ -199,6 +200,7 @@ function VisitBody(props: {
               </div>
             </div>
           </div>
+          <StoreHistory visitId={v.id} />
           <RemoveStop visit={v} back={back} />
         </div>
       </div>

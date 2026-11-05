@@ -18,6 +18,7 @@ import { Route as WelcomeRouteImport } from './../routes/welcome'
 import { Route as AppPlatformRouteImport } from './../routes/_app/platform'
 import { Route as AppProfileRouteImport } from './../routes/_app/profile'
 import { Route as InvitacionTokenRouteImport } from './../routes/invitacion.$token'
+import { Route as AppPastVisitIdRouteImport } from './../routes/_app/past.$visitId'
 import { Route as AppPlatformIndexRouteImport } from './../routes/_app/platform.index'
 import { Route as AppPlatformCompanyIdRouteImport } from './../routes/_app/platform.$companyId'
 import { Route as AppReviewVisitIdRouteImport } from './../routes/_app/review.$visitId'
@@ -86,6 +87,11 @@ const InvitacionTokenRoute = InvitacionTokenRouteImport.update({
   id: '/invitacion/$token',
   path: '/invitacion/$token',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppPastVisitIdRoute = AppPastVisitIdRouteImport.update({
+  id: '/past/$visitId',
+  path: '/past/$visitId',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppPlatformIndexRoute = AppPlatformIndexRouteImport.update({
   id: '/',
@@ -217,6 +223,7 @@ export interface FileRoutesByFullPath {
   '/platform': typeof AppPlatformRouteWithChildren
   '/profile': typeof AppProfileRoute
   '/invitacion/$token': typeof InvitacionTokenRoute
+  '/past/$visitId': typeof AppPastVisitIdRoute
   '/platform/$companyId': typeof AppPlatformCompanyIdRoute
   '/review/$visitId': typeof AppReviewVisitIdRoute
   '/s/$section': typeof AppSSectionRoute
@@ -250,6 +257,7 @@ export interface FileRoutesByTo {
   '/welcome': typeof WelcomeRoute
   '/profile': typeof AppProfileRoute
   '/invitacion/$token': typeof InvitacionTokenRoute
+  '/past/$visitId': typeof AppPastVisitIdRoute
   '/platform/$companyId': typeof AppPlatformCompanyIdRoute
   '/review/$visitId': typeof AppReviewVisitIdRoute
   '/s/$section': typeof AppSSectionRoute
@@ -286,6 +294,7 @@ export interface FileRoutesById {
   '/_app/platform': typeof AppPlatformRouteWithChildren
   '/_app/profile': typeof AppProfileRoute
   '/invitacion/$token': typeof InvitacionTokenRoute
+  '/_app/past/$visitId': typeof AppPastVisitIdRoute
   '/_app/platform/$companyId': typeof AppPlatformCompanyIdRoute
   '/_app/review/$visitId': typeof AppReviewVisitIdRoute
   '/_app/s/$section': typeof AppSSectionRoute
@@ -322,6 +331,7 @@ export interface FileRouteTypes {
     | '/platform'
     | '/profile'
     | '/invitacion/$token'
+    | '/past/$visitId'
     | '/platform/$companyId'
     | '/review/$visitId'
     | '/s/$section'
@@ -355,6 +365,7 @@ export interface FileRouteTypes {
     | '/welcome'
     | '/profile'
     | '/invitacion/$token'
+    | '/past/$visitId'
     | '/platform/$companyId'
     | '/review/$visitId'
     | '/s/$section'
@@ -390,6 +401,7 @@ export interface FileRouteTypes {
     | '/_app/platform'
     | '/_app/profile'
     | '/invitacion/$token'
+    | '/_app/past/$visitId'
     | '/_app/platform/$companyId'
     | '/_app/review/$visitId'
     | '/_app/s/$section'
@@ -490,6 +502,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/invitacion/$token'
       preLoaderRoute: typeof InvitacionTokenRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/past/$visitId': {
+      id: '/_app/past/$visitId'
+      path: '/past/$visitId'
+      fullPath: '/past/$visitId'
+      preLoaderRoute: typeof AppPastVisitIdRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/platform/': {
       id: '/_app/platform/'
@@ -679,6 +698,7 @@ const AppPlatformRouteWithChildren = AppPlatformRoute._addFileChildren(
 interface AppRouteChildren {
   AppPlatformRoute: typeof AppPlatformRouteWithChildren
   AppProfileRoute: typeof AppProfileRoute
+  AppPastVisitIdRoute: typeof AppPastVisitIdRoute
   AppReviewVisitIdRoute: typeof AppReviewVisitIdRoute
   AppSSectionRoute: typeof AppSSectionRoute
   AppSAssignRoute: typeof AppSAssignRoute
@@ -706,6 +726,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppPlatformRoute: AppPlatformRouteWithChildren,
   AppProfileRoute: AppProfileRoute,
+  AppPastVisitIdRoute: AppPastVisitIdRoute,
   AppReviewVisitIdRoute: AppReviewVisitIdRoute,
   AppSSectionRoute: AppSSectionRoute,
   AppSAssignRoute: AppSAssignRoute,

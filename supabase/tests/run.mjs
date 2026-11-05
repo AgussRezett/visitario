@@ -1154,6 +1154,39 @@ await expectError('Anonymous cannot call has_password', () => asAnon(`select has
   check('The admin deletes a seller without user nor stores', (await sys(`select 1 from seller where id = $1`, [spare])).length === 0)
 }
 
+// ---- The activador sees the store's history from a visit of their day (read only)
+{
+  const lucia = await pid('lucia')
+  const corner = (await sys(`insert into store (company_id, address) values ($1, 'Historial 123') returning id`, [panda]))[0].id
+  const elsewhere = (await sys(`insert into store (company_id, address) values ($1, 'Ajeno 456') returning id`, [panda]))[0].id
+  const wAgus = (await as('agus', `select open_workday($1, '2099-03-01') id`, [panda]))[0].id
+  const wLucia = (await as('lucia', `select open_workday($1, '2099-03-08') id`, [panda]))[0].id
+  const past = (await sys(`insert into visit (company_id, workday_id, merchandiser_id, work_date, store_id, added_by, work_status, consent, notes, finished_at)
+    values ($1, $2, $3, '2099-03-01', $4, $3, 'done', 'yes', 'Góndola armada', now()) returning id`, [panda, wAgus, agus, corner]))[0].id
+  const pending = (await sys(`insert into visit (company_id, workday_id, merchandiser_id, work_date, store_id, added_by) values ($1, $2, $3, '2099-03-01', $4, $3) returning id`, [panda, wAgus, agus, elsewhere]))[0].id
+  // Finished, without walking it through the guards (they want the storefront photo first).
+  await sys(`set session_replication_role = replica`)
+  await sys(`update visit set work_status = 'done', consent = 'yes', arrived_at = now(), finished_at = now() where id = $1`, [past])
+  await sys(`set session_replication_role = origin`)
+  const mine = (await sys(`insert into visit (company_id, workday_id, merchandiser_id, work_date, store_id, added_by) values ($1, $2, $3, '2099-03-08', $4, $3) returning id`, [panda, wLucia, lucia, corner]))[0].id
+  const shelf = (await sys(`insert into display (company_id, visit_id, display_type_id) values ($1, $2, $3) returning id`, [panda, past, endcap]))[0].id
+  const shot = (await sys(`insert into photo (id, company_id, visit_id, display_id, kind, taken_at, bytes, width, height, created_by, uploaded_at)
+    values (gen_random_uuid(), $1, $2, $3, 'after', now(), 1000, 1400, 1050, $4, now()) returning id`, [panda, past, shelf, agus]))[0].id
+
+  const list = await as('lucia', `select * from store_history($1)`, [mine])
+  check('Lucía sees the store’s past visits from her visit, by anyone', list.length === 1 && list[0].id === past && list[0].merchandiser === 'Agustín' && list[0].afters === 1)
+  const one = (await as('lucia', `select history_visit($1) v`, [past]))[0].v
+  check('…and each one in detail: notes, displays and photos', one?.notes === 'Góndola armada' && one.display.length === 1 && one.photo[0].id === shot)
+  check('…and may get its photos', (await as('lucia', `select id from history_photos($1::uuid[])`, [[shot]])).length === 1)
+  check('Not unfinished visits, nor stores outside her days', (await as('lucia', `select history_visit($1) v`, [pending]))[0].v === null)
+  check('Not from someone else’s visit', (await as('lucia', `select * from store_history($1)`, [pending])).length === 0)
+  check('Still read only: no editing Agus’s displays', (await as('lucia', `update display set reference = 'x' where id = $1 returning id`, [shelf])).length === 0)
+  check('Nor seeing them through the tables', (await as('lucia', `select id from visit where id = $1`, [past])).length === 0)
+  check('Another company sees nothing', (await as('beto', `select history_visit($1) v`, [past]))[0].v === null && (await as('beto', `select id from history_photos($1::uuid[])`, [[shot]])).length === 0)
+  await expectError('Anonymous cannot ask', () => asAnon(`select * from store_history($1)`, [mine]))
+  await sys(`update visit set deleted_at = now() where id = any($1::uuid[])`, [[past, pending, mine]])
+}
+
 const carlaMembership = (await sys(`select id from membership where person_id = $1`, [await pid('carla')]))[0].id;
 await expectError('A company cannot lose its last admin', () => as('carla', `update membership set roles = '{supervisor}' where id = $1`, [carlaMembership]), /admin/);
 
