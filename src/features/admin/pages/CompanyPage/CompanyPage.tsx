@@ -13,6 +13,7 @@ import { Switch } from '@/ui/Switch'
 import { useWorkContext } from '@/features/workday/context'
 import { companyQuery, exportCsv, saveFile, subscriptionQuery, usageQuery, useCompanyUpdate } from '@/features/admin/api/company'
 import { SupportLog } from './SupportLog'
+import { SlidesTemplate } from './SlidesTemplate'
 import styles from './CompanyPage.module.scss'
 
 const PLAN_TEXT: Record<string, string> = {
@@ -122,6 +123,8 @@ export function CompanyPage() {
             <span className={styles.help}>Puente mientras el supervisor no revise en Visitario.</span>
           </Switch>
         </section>
+
+        {c ? <SlidesTemplate company={c} cardClass={styles.card} headingClass={styles.heading} helpClass={styles.help} /> : null}
 
         <section className={styles.card} aria-label="Tus datos">
           <h2 className={styles.heading}>Tus datos</h2>

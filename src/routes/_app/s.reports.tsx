@@ -6,7 +6,7 @@ const day = (v: unknown) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test
 
 export const Route = createFileRoute('/_app/s/reports')({
   validateSearch: (search: Record<string, unknown>): ReportsSearch => ({
-    view: search.view === 'daily' ? 'daily' : undefined,
+    view: search.view === 'daily' || search.view === 'slides' ? search.view : undefined,
     period: typeof search.period === 'string' && search.period in PERIOD_LABEL ? (search.period as PeriodPreset) : undefined,
     from: day(search.from),
     to: day(search.to),
