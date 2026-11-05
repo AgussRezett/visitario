@@ -88,7 +88,6 @@ export default function PickMap({ point, onMove }: PickMapProps) {
       map.current = null
       pin.current = null
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- created once; the point moves below
   }, [failed])
 
   // A new point from outside (GPS, a search): the pin and the view go there.
@@ -99,7 +98,6 @@ export default function PickMap({ point, onMove }: PickMapProps) {
     if (!m) return
     place(m, point)
     m.flyTo({ center: [point.lng, point.lat], zoom: 17, duration: 600 })
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- place only uses refs
   }, [point])
 
   if (failed) return <p className={styles.note}>No pudimos mostrar el mapa en este dispositivo. Usá "Estoy en el local" o buscá la dirección.</p>
