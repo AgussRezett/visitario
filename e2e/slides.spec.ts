@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
+import JSZip from 'jszip'
 import { atFakeToday, installFakeSupabase, visitRow, type FakeState, type Row } from './support/fake-supabase'
 
 test.beforeEach(({ page }) => atFakeToday(page))
@@ -71,10 +72,20 @@ test('the photo presentation: total on the cover, one slide per visit with every
   await summary.getByRole('button', { name: 'Descargar PowerPoint' }).click()
   const file = await download
   expect(file.suggestedFilename()).toBe('visitario-2026-10-01-a-2026-10-31.pptx')
+  await file.saveAs(`test-results/deck-${info.project.name}.pptx`)
   const pptx = readFileSync(await file.path())
   const names = pptx.toString('latin1')
   // The cover and two slides (the visit without después has none).
   expect(names).toContain('ppt/slides/slide3.xml')
   expect(names).not.toContain('ppt/slides/slide4.xml')
+  // The backgrounds are pictures behind everything, not slide backgrounds: those are lost
+  // when a slide is pasted into another presentation.
+  const zip = await JSZip.loadAsync(pptx)
+  for (const n of [1, 2, 3]) {
+    const xml = (await zip.file(`ppt/slides/slide${n}.xml`)?.async('string')) ?? ''
+    expect(xml).not.toContain('<p:bg>')
+    expect(xml.indexOf('descr="Fondo"')).toBeGreaterThan(0)
+    expect(xml.indexOf('descr="Fondo"')).toBeLessThan(xml.indexOf('<p:sp>') < 0 ? Infinity : xml.indexOf('<p:sp>'))
+  }
   await expect(summary).toContainText('Listo: la presentación se descargó.')
 })

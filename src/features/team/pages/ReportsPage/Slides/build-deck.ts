@@ -1,3 +1,4 @@
+import type PptxGenJS from 'pptxgenjs'
 import { DATE_AREA, TITLE_AREA, TOTAL_AREA, layoutPhotos, type Box } from '@/domain/slides'
 
 // The .pptx itself, built in the browser: the company's backgrounds, the total on the cover,
@@ -43,7 +44,7 @@ export async function buildDeck(deck: Deck, fileFor: (id: string) => Promise<Blo
   const [cover, page] = await Promise.all([deck.coverUrl ? dataUrl(deck.coverUrl) : null, deck.pageUrl ? dataUrl(deck.pageUrl) : null])
 
   const first = pptx.addSlide()
-  if (cover) first.background = { data: cover }
+  if (cover) backdrop(first, cover)
   first.addText([{ text: 'TOTAL:', options: { breakLine: true } }, { text: String(deck.total) }], {
     ...inches(TOTAL_AREA), fontFace: 'Arial Black', fontSize: 30, bold: true, color: '000000', align: 'center', valign: 'middle',
   })
@@ -62,7 +63,7 @@ export async function buildDeck(deck: Deck, fileFor: (id: string) => Promise<Blo
 
   for (const s of deck.slides) {
     const slide = pptx.addSlide()
-    if (page) slide.background = { data: page }
+    if (page) backdrop(slide, page)
     slide.addText(s.title, { ...inches(TITLE_AREA), fontFace: 'Arial Black', fontSize: titleSize(s.title), bold: true, color: '000000', align: 'center', valign: 'middle', fit: 'shrink' })
     slide.addText(s.date, { ...inches(DATE_AREA), fontFace: 'Arial Black', fontSize: 14, bold: true, color: '000000', align: 'center', valign: 'middle' })
     const photos = s.photoIds.flatMap((id) => images.get(id) ?? [])
@@ -75,6 +76,15 @@ export async function buildDeck(deck: Deck, fileFor: (id: string) => Promise<Blo
   const blob = (await pptx.write({ outputType: 'blob' })) as Blob
   download(deck.fileName, blob)
   return { missing }
+}
+
+/**
+ * The company's background as a full-slide picture behind everything, not as the slide's
+ * background: PowerPoint drops a slide background when the slide is pasted into another
+ * presentation (it takes that one's theme), but a picture always goes with it.
+ */
+function backdrop(slide: PptxGenJS.Slide, data: string) {
+  slide.addImage({ data, x: 0, y: 0, w: W, h: H, altText: 'Fondo' })
 }
 
 /** A photo smaller and lighter, upright, as a data URL with its shape. */
