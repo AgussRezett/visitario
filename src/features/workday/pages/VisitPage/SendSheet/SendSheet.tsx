@@ -5,6 +5,7 @@ import { isReady, nextSend, shareFileName, type Send, type SendGroup } from '@/d
 import { copyText, share } from '@/lib/share'
 import { Button } from '@/ui/Button'
 import { Sheet } from '@/ui/Sheet'
+import { PhotoImage, type Framed } from '@/features/workday/components/PhotoImage'
 import { sendState, useShareFiles, type SendState } from './useShareFiles'
 import styles from './SendSheet.module.scss'
 
@@ -16,6 +17,8 @@ interface SendSheetProps {
   sent: ReadonlySet<string>
   onSent: (key: string) => void
   urlFor: (id: string) => string | undefined
+  /** Each photo's size and crop: they go, and show, cropped. */
+  frameFor?: (id: string) => Framed | undefined
 }
 
 const GROUPS: { group: SendGroup; title: string }[] = [
@@ -29,8 +32,8 @@ const GROUPS: { group: SendGroup; title: string }[] = [
  * Sends the visit to WhatsApp one message at a time, each with its photos: the main button
  * always offers the next one, so the activador only taps, picks the chat and comes back.
  */
-export function SendSheet({ open, onClose, address, sends, sent, onSent, urlFor }: SendSheetProps) {
-  const { files, retry } = useShareFiles(sends.flatMap((s) => s.photoIds), urlFor, open)
+export function SendSheet({ open, onClose, address, sends, sent, onSent, urlFor, frameFor }: SendSheetProps) {
+  const { files, retry } = useShareFiles(sends.flatMap((s) => s.photoIds), urlFor, open, (id) => frameFor?.(id)?.crop ?? null)
   const [announce, setAnnounce] = useState('')
   const next = nextSend(sends, sent)
   const done = sends.filter((s) => sent.has(s.key)).length
@@ -95,7 +98,7 @@ export function SendSheet({ open, onClose, address, sends, sent, onSent, urlFor 
               <ul className={styles.rows}>
                 {rows.map((s) => (
                   <li key={s.key}>
-                    <Row send={s} state={stateOf(s)} sent={sent.has(s.key)} isNext={next?.key === s.key} url={s.photoIds[0] ? urlFor(s.photoIds[0]) : undefined} onSend={() => send(s)} />
+                    <Row send={s} state={stateOf(s)} sent={sent.has(s.key)} isNext={next?.key === s.key} url={s.photoIds[0] ? urlFor(s.photoIds[0]) : undefined} frame={s.photoIds[0] ? frameFor?.(s.photoIds[0]) : undefined} onSend={() => send(s)} />
                   </li>
                 ))}
               </ul>
@@ -110,7 +113,7 @@ export function SendSheet({ open, onClose, address, sends, sent, onSent, urlFor 
   )
 }
 
-function Row({ send: s, state, sent, isNext, url, onSend }: { send: Send; state: SendState; sent: boolean; isNext: boolean; url: string | undefined; onSend: () => void }) {
+function Row({ send: s, state, sent, isNext, url, frame, onSend }: { send: Send; state: SendState; sent: boolean; isNext: boolean; url: string | undefined; frame?: Framed; onSend: () => void }) {
   const status = sent
     ? { text: 'Enviado', icon: <Check size={14} strokeWidth={3} aria-hidden />, tone: 'sent' }
     : state === 'missing'
@@ -133,7 +136,7 @@ function Row({ send: s, state, sent, isNext, url, onSend }: { send: Send; state:
       aria-label={`${verb} ${s.label} · ${status.text}`}
     >
       <span className={styles.thumb} aria-hidden>
-        {s.textOnly ? <NotebookPen size={20} /> : url && !broken ? <img src={url} alt="" className={styles.image} onError={() => setBroken(true)} /> : <Camera size={20} />}
+        {s.textOnly ? <NotebookPen size={20} /> : url && !broken ? <PhotoImage url={url} frame={frame} className={styles.image} onError={() => setBroken(true)} /> : <Camera size={20} />}
         {s.photoIds.length > 1 ? <span className={styles.more}>{s.photoIds.length}</span> : null}
       </span>
       <span className={styles.texts}>

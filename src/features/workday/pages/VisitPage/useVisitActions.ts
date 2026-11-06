@@ -1,3 +1,4 @@
+import { toStored, type Crop } from '@/domain/crop'
 import { useMemo, useState } from 'react'
 import { argentinaTime } from '@/domain/dates'
 import { finishStatus, type Consent } from '@/domain/visit'
@@ -83,6 +84,7 @@ export function useVisitActions(visit: Visit) {
     retry: retryStore,
     replacePhoto,
     deletePhoto: (id: string) => changes.removePhoto(id),
+    cropPhoto: (id: string, crop: Crop | null) => changes.cropPhoto(id, toStored(crop)),
     retryPhoto: (id: string) => retry(id),
     changes,
     /** Only while the photo is being compressed on the phone. */

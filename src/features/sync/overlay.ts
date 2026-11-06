@@ -1,3 +1,4 @@
+import { fromStored } from '@/domain/crop'
 import type { Visit } from '@/features/workday/api/queries'
 import type { OutboxRow } from './db'
 import type { VisitFields } from './ops'
@@ -62,7 +63,7 @@ export function applyToVisit(visit: Visit, rows: readonly OutboxRow[]): Visit | 
         break
       case 'photo.add':
         if (!v.photos.some((p) => p.id === op.photoId)) {
-          v = { ...v, photos: [...v.photos, { id: op.photoId, kind: op.photoKind, displayId: op.displayId, takenAt: op.takenAt, uploaded: false }] }
+          v = { ...v, photos: [...v.photos, { id: op.photoId, kind: op.photoKind, displayId: op.displayId, takenAt: op.takenAt, uploaded: false, width: op.width, height: op.height, crop: null }] }
           if (op.photoKind === 'storefront' && v.workStatus === 'pending') v = { ...v, workStatus: 'in_progress', arrivedAt: v.arrivedAt ?? op.takenAt }
         }
         break
@@ -74,6 +75,9 @@ export function applyToVisit(visit: Visit, rows: readonly OutboxRow[]): Visit | 
         }
         break
       }
+      case 'photo.crop':
+        v = { ...v, photos: v.photos.map((p) => (p.id === op.photoId ? { ...p, crop: fromStored(op.crop) } : p)) }
+        break
       default:
         break
     }

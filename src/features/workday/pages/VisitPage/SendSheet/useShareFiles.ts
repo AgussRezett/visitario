@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
+import type { Crop } from '@/domain/crop'
+import { croppedBlob } from '@/features/workday/api/crop-file'
 import { localPhotoBlob } from '@/features/workday/api/photos'
 
 type Entry = Blob | 'error'
@@ -18,8 +20,10 @@ const AUTO_RETRIES = 3
  * What used to get stuck on "Reintentar": a link that failed (expired, or the photo not
  * uploaded yet) was asked again with the same link forever. Now each try looks for the
  * photo on the phone first, a new link is fetched again, and asks for fresh links.
+ *
+ * A cropped photo goes cropped; changing the crop prepares it again.
  */
-export function useShareFiles(ids: readonly string[], urlFor: (id: string) => string | undefined, active: boolean) {
+export function useShareFiles(ids: readonly string[], urlFor: (id: string) => string | undefined, active: boolean, cropFor: (id: string) => Crop | null = () => null) {
   const qc = useQueryClient()
   const [files, setFiles] = useState<Record<string, Entry>>({})
   const [attempt, setAttempt] = useState(0)
@@ -28,27 +32,36 @@ export function useShareFiles(ids: readonly string[], urlFor: (id: string) => st
   /** What was already asked for each photo in this attempt: its link, or "local". */
   const asked = useRef(new Map<string, string>())
   const autoRetries = useRef(0)
+  /** The crop each prepared file has. */
+  const made = useRef(new Map<string, string>())
   const urls = ids.map((id) => urlFor(id) ?? '')
-  const signature = ids.map((id, i) => `${id}=${urls[i]}`).join('|')
+  const crops = ids.map((id) => JSON.stringify(cropFor(id)))
+  const signature = ids.map((id, i) => `${id}=${urls[i]}=${crops[i]}`).join('|')
 
   useEffect(() => {
     if (!active) return
     let alive = true
-    const set = (id: string, entry: Entry) => alive && setFiles((m) => (m[id] instanceof Blob ? m : { ...m, [id]: entry }))
+    const set = (id: string, entry: Entry) => alive && setFiles((m) => (m[id] instanceof Blob && entry === 'error' ? m : { ...m, [id]: entry }))
+    const ready = (id: string, blob: Blob, crop: string) =>
+      croppedBlob(blob, cropFor(id)).then((b) => {
+        made.current.set(id, crop)
+        set(id, b)
+      }, () => set(id, 'error'))
     ids.forEach((id, i) => {
-      if (current.current[id] instanceof Blob) return
+      const crop = crops[i] ?? 'null'
+      if (current.current[id] instanceof Blob && made.current.get(id) === crop) return
       const local = localPhotoBlob(id)
       if (local) {
-        setFiles((m) => ({ ...m, [id]: local }))
+        void ready(id, local, crop)
         return
       }
       const url = urls[i]
-      const key = `${attempt}|${url}`
+      const key = `${attempt}|${url}|${crop}`
       if (!url || asked.current.get(id) === key) return
       asked.current.set(id, key)
       fetch(url, { cache: 'no-store' })
         .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(String(r.status)))))
-        .then((blob) => set(id, blob), () => set(id, 'error'))
+        .then((blob) => ready(id, blob, crop), () => set(id, 'error'))
     })
     const timer = setTimeout(() => {
       if (!alive) return

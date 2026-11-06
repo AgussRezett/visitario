@@ -1187,6 +1187,28 @@ await expectError('Anonymous cannot call has_password', () => asAnon(`select has
   await sys(`update visit set deleted_at = now() where id = any($1::uuid[])`, [[past, pending, mine]])
 }
 
+// Cropping a photo: the merchandiser until approval, a supervisor always; only through the function.
+{
+  await expectError('Agus cannot crop a photo of his approved visit', () => as('agus', `select set_photo_crop($1, '{0.1,0.1,0.8,0.7}')`, [p2]), /approved/)
+  await as('martin', `select set_photo_crop($1, '{0.1,0.2,0.8,0.7}')`, [p2])
+  const c = (await sys(`select crop from photo where id = $1`, [p2]))[0].crop
+  check('Martín crops it, approved and all', Array.isArray(c) && Math.abs(c[1] - 0.2) < 1e-6 && Math.abs(c[3] - 0.7) < 1e-6)
+  await expectError('Not by writing the column', () => as('martin', `update photo set crop = '{0,0,0.5,0.5}' where id = $1`, [p2]))
+  await expectError('A crop must stay inside the picture', () => as('martin', `select set_photo_crop($1, '{0.5,0,0.8,1}')`, [p2]), /check/)
+  await expectError('Another company cannot', () => as('beto', `select set_photo_crop($1, null)`, [p2]), /permission/)
+  await as('martin', `select set_photo_crop($1, '{0,0,1,1}')`, [p2])
+  check('The whole picture is no crop', (await sys(`select crop from photo where id = $1`, [p2]))[0].crop === null)
+  const corner = (await sys(`insert into store (company_id, address) values ($1, 'Recorte 10') returning id`, [panda]))[0].id
+  const day = (await as('agus', `select open_workday($1, '2099-04-01') id`, [panda]))[0].id
+  const open = (await as('agus', `select add_visit($1, p_store => $2) id`, [day, corner]))[0].id
+  const shot = '01926f00-0000-7000-8000-00000000f0c1'
+  await as('agus', `insert into photo (id, company_id, visit_id, kind, taken_at, bytes, width, height, created_by) values ($1, $2, $3, 'storefront', now(), 1000, 1400, 1050, $4)`, [shot, panda, open, agus])
+  await as('agus', `select set_photo_crop($1, '{0,0.25,1,0.5}')`, [shot])
+  const mine = (await sys(`select crop, deleted_at, sort_order from photo where id = $1`, [shot]))[0]
+  check('Agus crops a photo of his open visit, nothing else changes', Math.abs(mine.crop[1] - 0.25) < 1e-6 && mine.deleted_at === null && mine.sort_order === 0)
+  await sys(`update visit set deleted_at = now() where id = $1`, [open])
+}
+
 const carlaMembership = (await sys(`select id from membership where person_id = $1`, [await pid('carla')]))[0].id;
 await expectError('A company cannot lose its last admin', () => as('carla', `update membership set roles = '{supervisor}' where id = $1`, [carlaMembership]), /admin/);
 

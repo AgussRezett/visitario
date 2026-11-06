@@ -55,6 +55,8 @@ export function visitChanges(visit: Pick<Visit, 'id' | 'companyId' | 'store'>) {
       if (drop([photoId]).length) return
       await enqueue({ ...base, kind: 'photo.remove', photoId }, place)
     },
+    /** The part of the photo to show; null shows it whole again. Sent after the photo itself. */
+    cropPhoto: (photoId: string, crop: number[] | null) => enqueue({ ...base, kind: 'photo.crop', photoId, crop }, place),
 
     setMetric: (metricId: number, quantity: number) => enqueue({ ...base, kind: 'metric.set', metricId, quantity }, place),
     setBrand: (brandId: number, on: boolean) => enqueue({ ...base, kind: 'brand.set', brandId, on }, place),

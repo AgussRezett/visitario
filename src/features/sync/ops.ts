@@ -35,6 +35,7 @@ export type Op =
   | (Base & { kind: 'display.remove'; displayId: string })
   | (Base & { kind: 'photo.add'; photoId: string; displayId: string | null; photoKind: Enums<'photo_kind'>; takenAt: string; width: number; height: number; sortOrder: number })
   | (Base & { kind: 'photo.remove'; photoId: string })
+  | (Base & { kind: 'photo.crop'; photoId: string; crop: number[] | null })
   | (Base & { kind: 'metric.set'; metricId: number; quantity: number })
   | (Base & { kind: 'brand.set'; brandId: number; on: boolean })
   | (Base & { kind: 'comment.add'; commentId: string; authorId: string; body: string; displayId: string | null })
@@ -81,6 +82,8 @@ export async function send(op: Op, blob?: Blob) {
       return check(await supabase.from('display').update({ deleted_at: now() }).eq('id', op.displayId).is('deleted_at', null))
     case 'photo.remove':
       return check(await supabase.from('photo').update({ deleted_at: now() }).eq('id', op.photoId).is('deleted_at', null))
+    case 'photo.crop':
+      return check(await supabase.rpc('set_photo_crop', { p_photo: op.photoId, p_crop: op.crop }))
     case 'metric.set':
       return check(
         await supabase
@@ -147,6 +150,8 @@ export function describe(op: Op): string {
       return PHOTO_LABEL[op.photoKind]
     case 'photo.remove':
       return 'Borrar foto'
+    case 'photo.crop':
+      return 'Recorte de foto'
     case 'metric.set':
       return 'Trabajo realizado'
     case 'brand.set':

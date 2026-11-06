@@ -1,13 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
-import { Camera, Cloud, Download, RefreshCw, Share2, Trash2, X, Clock } from 'lucide-react'
+import { Camera, Cloud, Crop as CropIcon, Download, RefreshCw, Share2, Trash2, X, Clock } from 'lucide-react'
+import type { Crop } from '@/domain/crop'
 import { formatTime } from '@/domain/dates'
 import { canShare, share } from '@/lib/share'
 import { useConfirm } from '@/ui/ConfirmDialog'
 import type { Photo } from '@/features/workday/api/queries'
 import { localPhotoBlob } from '@/features/workday/api/photos'
+import { croppedBlob } from '@/features/workday/api/crop-file'
 import { useUploadState } from '@/features/sync/hooks'
 import { useOnline } from '@/lib/online'
 import { PhotoPicker } from '@/features/workday/components/PhotoPicker'
+import { CropSheet } from '@/features/workday/components/CropSheet'
+import { PhotoImage } from '@/features/workday/components/PhotoImage'
 import styles from './PhotoViewer.module.scss'
 
 interface PhotoViewerProps {
@@ -20,10 +24,14 @@ interface PhotoViewerProps {
   onReplace?: (photo: Photo, file: File) => void
   onDelete?: (photo: Photo) => void
   onRetry?: (photo: Photo) => void
+  /** Who may crop gets "Recortar"; null shows the photo whole again. */
+  onCrop?: (photo: Photo, crop: Crop | null) => unknown
+  /** The photo as it is now (its crop may have changed since the viewer opened). */
+  latest?: (id: string) => Photo | undefined
 }
 
 /** Full-screen viewer for the photos of a visit or a display (wireframes A15 / AD12). */
-export function PhotoViewer({ photos, startId, title, subtitle, urlFor, onClose, onReplace, onDelete, onRetry }: PhotoViewerProps) {
+export function PhotoViewer({ photos, startId, title, subtitle, urlFor, onClose, onReplace, onDelete, onRetry, onCrop, latest }: PhotoViewerProps) {
   const ref = useRef<HTMLDialogElement>(null)
   const [index, setIndex] = useState(0)
   const open = startId !== null
@@ -38,15 +46,29 @@ export function PhotoViewer({ photos, startId, title, subtitle, urlFor, onClose,
   }, [open, startId, photos])
 
   const { confirm, dialog } = useConfirm()
-  const photo = photos[index]
+  const listed = photos[index]
+  const photo = (listed && latest?.(listed.id)) ?? listed
   const url = photo ? urlFor(photo.id) : undefined
   const uploadState = useUploadState(photo?.id)
   const failed = uploadState === 'failed'
   const online = useOnline()
+  const [cropping, setCropping] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const saveCrop = async (crop: Crop | null) => {
+    if (!photo || !onCrop) return
+    setSaving(true)
+    try {
+      await onCrop(photo, crop)
+      setCropping(false)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const sharePhoto = async () => {
     if (!photo) return
-    const blob = localPhotoBlob(photo.id) ?? (url ? await fetch(url).then((r) => r.blob()).catch(() => null) : null)
+    const whole = localPhotoBlob(photo.id) ?? (url ? await fetch(url).then((r) => r.blob()).catch(() => null) : null)
+    const blob = whole ? await croppedBlob(whole, photo.crop).catch(() => whole) : null
     const files = blob ? [new File([blob], `${title}.jpg`, { type: 'image/jpeg' })] : undefined
     await share({ title, text: subtitle, files })
   }
@@ -66,7 +88,7 @@ export function PhotoViewer({ photos, startId, title, subtitle, urlFor, onClose,
           </div>
           <div className={styles.stage}>
             {photos.length > 1 ? <button type="button" className={styles.prev} aria-label="Foto anterior" onClick={() => setIndex((i) => (i - 1 + photos.length) % photos.length)} /> : null}
-            {url ? <img src={url} alt={`${title}, foto ${index + 1}`} className={styles.image} /> : <span className={styles.loading}>Cargando…</span>}
+            {url ? <PhotoImage url={url} frame={photo} fit="contain" alt={`${title}, foto ${index + 1}`} className={styles.image} /> : <span className={styles.loading}>Cargando…</span>}
             {photos.length > 1 ? <button type="button" className={styles.next} aria-label="Foto siguiente" onClick={() => setIndex((i) => (i + 1) % photos.length)} /> : null}
           </div>
           {photos.length > 1 ? (
@@ -94,6 +116,11 @@ export function PhotoViewer({ photos, startId, title, subtitle, urlFor, onClose,
             {canShare() ? (
               <button type="button" className={styles.action} onClick={sharePhoto}>
                 <Share2 size={22} aria-hidden />Compartir
+              </button>
+            ) : null}
+            {onCrop && url ? (
+              <button type="button" className={styles.action} onClick={() => setCropping(true)}>
+                <CropIcon size={22} aria-hidden />Recortar
               </button>
             ) : null}
             {onReplace ? (
@@ -127,6 +154,7 @@ export function PhotoViewer({ photos, startId, title, subtitle, urlFor, onClose,
         </div>
       ) : null}
       {dialog}
+      {onCrop ? <CropSheet open={cropping && Boolean(photo)} url={url} photo={photo ?? null} title={title} saving={saving} onClose={() => setCropping(false)} onSave={(c) => void saveCrop(c)} /> : null}
     </dialog>
   )
 }

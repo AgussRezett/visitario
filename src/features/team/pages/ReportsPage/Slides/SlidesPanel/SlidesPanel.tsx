@@ -11,6 +11,8 @@ import { companyQuery } from '@/features/admin/api/company'
 import { photoFile, slideAssetUrl, slidesQuery, type SlideVisit } from '@/features/team/api/slides'
 import { usePhotoUrls } from '@/features/workday/api/photos'
 import { personOption } from '@/features/people/person-options'
+import { useCropPhoto } from '@/features/team/api/mutations'
+import { CropSheet } from '@/features/workday/components/CropSheet'
 import { SlidePreview } from '../SlidePreview'
 import { buildDeck } from '../build-deck'
 import styles from './SlidesPanel.module.scss'
@@ -36,6 +38,9 @@ export function SlidesPanel({ companyId, range, controls }: { companyId: string;
   const [selected, setSelected] = useState<string | null>(null)
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null)
   const [result, setResult] = useState<{ tone: 'ok' | 'warn' | 'error'; text: string } | null>(null)
+  /** The photo being cropped. */
+  const [cropping, setCropping] = useState<string | null>(null)
+  const cropPhoto = useCropPhoto()
 
   const all = useMemo(() => visits.data ?? [], [visits.data])
   const chosen = useMemo(() => (people.length ? all.filter((v) => people.includes(v.merchandiserId)) : all), [all, people])
@@ -62,6 +67,8 @@ export function SlidesPanel({ companyId, range, controls }: { companyId: string;
   const previewed = slides.filter((s) => s.photos.length || s.out.length)
   const page = previewed.slice(0, shown)
   const urlFor = usePhotoUrls(page.flatMap((s) => [...s.photos, ...s.out].map((p) => p.id)))
+  const byId = useMemo(() => new Map(all.flatMap((v) => v.photos.map((p) => [p.id, p] as const))), [all])
+  const croppingPhoto = cropping ? byId.get(cropping) ?? null : null
   const pageUrl = slideAssetUrl(company.data?.slidesPagePath ?? null)
   const coverUrl = slideAssetUrl(company.data?.slidesCoverPath ?? null)
 
@@ -88,7 +95,7 @@ export function SlidesPanel({ companyId, range, controls }: { companyId: string;
       const { missing } = await buildDeck({
         total: chosen.length,
         slides: withPhotos.map((s) => ({ title: slideTitle(s.visit.address, s.visit.customerNumber), date: dayMonth(s.visit.date), photoIds: s.photos.map((p) => p.id) })),
-        coverUrl, pageUrl, fileName: deckFileName(range.from, range.to),
+        coverUrl, pageUrl, fileName: deckFileName(range.from, range.to), cropOf: (id) => byId.get(id)?.crop ?? null,
       }, photoFile, (done, total) => setProgress({ done, total }))
       setResult(missing
         ? { tone: 'warn', text: `Listo, pero ${missing === 1 ? '1 foto no se pudo bajar y quedó afuera' : `${missing} fotos no se pudieron bajar y quedaron afuera`}. Probá de nuevo con buena conexión.` }
@@ -142,7 +149,7 @@ export function SlidesPanel({ companyId, range, controls }: { companyId: string;
             {page.map((s, i) => (
               <SlidePreview key={s.visit.id} number={i + 2} title={slideTitle(s.visit.address, s.visit.customerNumber)} date={dayMonth(s.visit.date)}
                 photos={s.photos} out={s.out} background={pageUrl} urlFor={urlFor} selected={selected} onSelect={setSelected}
-                onMove={(id, d) => move(s.visit.id, id, d)} onToggle={(id) => toggle(s.visit.id, id)} />
+                onMove={(id, d) => move(s.visit.id, id, d)} onToggle={(id) => toggle(s.visit.id, id)} onCrop={setCropping} />
             ))}
           </div>
           {shown < previewed.length ? <Button variant="secondary" onClick={() => setShown((n) => n + PAGE)}>Ver más ({previewed.length - shown})</Button> : null}
@@ -150,6 +157,9 @@ export function SlidesPanel({ companyId, range, controls }: { companyId: string;
       ) : !visits.isPending && !visits.isError ? (
         <Banner tone="info" title={chosen.length ? 'Ninguna activación tiene fotos del después' : 'No hay activaciones en este período'}>Elegí otro período: entran las visitas autorizadas y terminadas con fotos del después.</Banner>
       ) : null}
+      <CropSheet open={Boolean(croppingPhoto)} url={cropping ? urlFor(cropping) : undefined} photo={croppingPhoto} title="Foto del después" saving={cropPhoto.isPending}
+        onClose={() => setCropping(null)}
+        onSave={(crop) => cropping && cropPhoto.mutate({ photoId: cropping, crop }, { onSuccess: () => setCropping(null) })} />
     </div>
   )
 }

@@ -42,6 +42,7 @@ export function DisplaySheet({ visit: v, display: d, index, catalogs, urlFor, ac
       <PhotoThumb
         key={p.id}
         photoId={p.id}
+        frame={p}
         url={urlFor(p.id)}
         caption={formatTime(p.takenAt)}
         label={`Ver foto del ${kind === 'before' ? 'antes' : 'después'}`}

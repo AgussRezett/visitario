@@ -1,0 +1,124 @@
+@use '@/styles/abstracts' as *;
+
+.body {
+  @include flex(column, $gap: space(3), $align: center);
+}
+
+// The whole photo at its own shape; the box marks the part that stays. Its corners reach
+// out of the photo, so the clipping is inside.
+.frame {
+  position: relative;
+  margin: 22px 0;
+  touch-action: none;
+  user-select: none;
+}
+
+.clip {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: $radius-md;
+  background: $color-muted;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+// What stays out of the crop is dimmed by a shadow around it.
+.shade {
+  position: absolute;
+  box-shadow: 0 0 0 9999px rgb(0 0 0 / 0.55);
+}
+
+.box {
+  position: absolute;
+  outline: 2px solid rgba($color-white, 0.95);
+  outline-offset: -1px;
+  cursor: move;
+
+  &:focus-visible {
+    outline: 3px solid $color-focus;
+  }
+}
+
+// Each corner: a visible L of 22 px inside a 44 px area for the finger.
+%corner {
+  position: absolute;
+  @include square($touch-target);
+  touch-action: none;
+
+  &::after {
+    content: '';
+    position: absolute;
+    @include square(22px);
+    border: 0 solid $color-white;
+    filter: drop-shadow(0 0 1px rgb(0 0 0 / 0.7));
+  }
+}
+
+.nw {
+  @extend %corner;
+  top: -22px;
+  left: -22px;
+  cursor: nwse-resize;
+
+  &::after {
+    right: 0;
+    bottom: 0;
+    border-top-width: 4px;
+    border-left-width: 4px;
+  }
+}
+
+.ne {
+  @extend %corner;
+  top: -22px;
+  right: -22px;
+  cursor: nesw-resize;
+
+  &::after {
+    bottom: 0;
+    left: 0;
+    border-top-width: 4px;
+    border-right-width: 4px;
+  }
+}
+
+.sw {
+  @extend %corner;
+  bottom: -22px;
+  left: -22px;
+  cursor: nesw-resize;
+
+  &::after {
+    top: 0;
+    right: 0;
+    border-bottom-width: 4px;
+    border-left-width: 4px;
+  }
+}
+
+.se {
+  @extend %corner;
+  right: -22px;
+  bottom: -22px;
+  cursor: nwse-resize;
+
+  &::after {
+    top: 0;
+    left: 0;
+    border-right-width: 4px;
+    border-bottom-width: 4px;
+  }
+}
+
+.hint {
+  @include text(label);
+  margin: 0;
+  color: $color-ink-muted;
+  text-align: center;
+}

@@ -11,6 +11,8 @@ export interface FakeState {
   profile?: Row
   avatarsUploaded?: string[]
   avatarsRemoved?: string[]
+  /** set_photo_crop calls received (the crop is also kept on the photo row). */
+  crops?: Row[]
   /** Signed photo links (https://photos.test/<id>.jpg); the spec serves them. */
   photoUrls?: boolean
   /** How many times the links were signed. */

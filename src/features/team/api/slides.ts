@@ -1,14 +1,18 @@
 import { queryOptions } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { Range } from '@/domain/report-period'
+import { fromStored, shownAspect, type Crop } from '@/domain/crop'
 
 // The photo presentation: the authorized, finished visits of a period with the "después"
 // of each display, ready to be laid out one slide per visit.
 
 export interface SlidePhoto {
   id: string
-  /** width / height, as uploaded (already upright). */
+  /** width / height of what is shown: the cropped part, or the photo as uploaded (upright). */
   aspect: number
+  width: number
+  height: number
+  crop: Crop | null
 }
 
 export interface SlideVisit {
@@ -33,7 +37,7 @@ interface Row {
   merchandiser: { first_name: string; last_name: string } | null
   store: { address: string; customer_number: string | null; area: string | null; channel_id: number | null; seller_id: number | null } | null
   display: { id: string; sort_order: number; deleted_at: string | null }[]
-  photo: { id: string; kind: string; display_id: string | null; sort_order: number; width: number | null; height: number | null; uploaded_at: string | null; deleted_at: string | null; created_at: string }[]
+  photo: { id: string; kind: string; display_id: string | null; sort_order: number; width: number | null; height: number | null; crop: number[] | null; uploaded_at: string | null; deleted_at: string | null; created_at: string }[]
 }
 
 const SELECT = `
@@ -41,7 +45,7 @@ const SELECT = `
   merchandiser:person!visit_merchandiser_id_fkey (first_name, last_name),
   store:store!visit_company_id_store_id_fkey (address, customer_number, area, channel_id, seller_id),
   display:display!display_company_id_visit_id_fkey (id, sort_order, deleted_at),
-  photo:photo!photo_company_id_visit_id_fkey (id, kind, display_id, sort_order, width, height, uploaded_at, deleted_at, created_at)`
+  photo:photo!photo_company_id_visit_id_fkey (id, kind, display_id, sort_order, width, height, crop, uploaded_at, deleted_at, created_at)`
 
 const PAGE = 500
 
@@ -74,13 +78,16 @@ export const slidesQuery = (companyId: string, range: Range) =>
     },
   })
 
+const slidePhoto = (id: string, width: number | null, height: number | null, crop: Crop | null): SlidePhoto =>
+  width && height ? { id, width, height, crop, aspect: shownAspect(crop, width, height) } : { id, width: 0, height: 0, crop: null, aspect: 4 / 3 }
+
 function toSlideVisit(r: Row): SlideVisit {
   const displays = r.display.filter((d) => !d.deleted_at).sort((a, b) => a.sort_order - b.sort_order)
   const place = new Map(displays.map((d, i) => [d.id, i]))
   const photos = r.photo
     .filter((p) => p.kind === 'after' && !p.deleted_at && p.uploaded_at && p.display_id && place.has(p.display_id))
     .sort((a, b) => (place.get(a.display_id ?? '') ?? 0) - (place.get(b.display_id ?? '') ?? 0) || a.sort_order - b.sort_order || a.created_at.localeCompare(b.created_at))
-    .map((p) => ({ id: p.id, aspect: p.width && p.height ? p.width / p.height : 4 / 3 }))
+    .map((p) => slidePhoto(p.id, p.width, p.height, fromStored(p.crop)))
   return {
     id: r.id, date: r.work_date, merchandiserId: r.merchandiser_id,
     merchandiser: { first: r.merchandiser?.first_name ?? '', last: r.merchandiser?.last_name ?? '' },

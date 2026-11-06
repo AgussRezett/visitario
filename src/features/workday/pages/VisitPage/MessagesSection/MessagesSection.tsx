@@ -90,7 +90,7 @@ export function MessagesSection({ visit: v, templates, firstName, typeName, tags
             <ChevronRight size={20} className={styles.chevron} aria-hidden />
           </button>
           <span className={styles.or}>O copiá solo el texto</span>
-          <SendSheet open={sending} onClose={() => setSending(false)} address={v.store.address} sends={sends} sent={sent} onSent={mark} urlFor={urlFor} />
+          <SendSheet open={sending} onClose={() => setSending(false)} address={v.store.address} sends={sends} sent={sent} onSent={mark} urlFor={urlFor} frameFor={(id) => v.photos.find((p) => p.id === id)} />
         </>
       ) : null}
       {perDisplay ? (

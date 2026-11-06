@@ -35,6 +35,12 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
       const file = state.photoFiles?.[String(body().id)]
       return done(file ? route.fulfill({ contentType: 'application/octet-stream', body: file }) : json({ error: 'not_found' }, 404))
     }
+    if (path.endsWith('/rpc/set_photo_crop')) {
+      const b = body()
+      ;(state.crops ??= []).push(b)
+      for (const v of state.visits) for (const p of (v.photo as Row[] | undefined) ?? []) if (p.id === b.p_photo) p.crop = b.p_crop
+      return done(route.fulfill({ status: 204 }))
+    }
     if (path.endsWith('/rpc/fix_store_location')) {
       const b = body()
       ;(state.locationFixes ??= []).push(b)
