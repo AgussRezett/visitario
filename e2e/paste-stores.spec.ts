@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { pick } from './support/select'
 import { atFakeToday, installFakeSupabase, type FakeState } from './support/fake-supabase'
 
 test.beforeEach(({ page }) => atFakeToday(page))
@@ -23,7 +24,8 @@ test('pasting many stores: all at once, the ones left out stay with why, and a r
   await page.getByRole('button', { name: 'Agregar dirección' }).filter({ visible: true }).first().click()
   const sheet = page.getByRole('dialog', { name: 'Agregar a mi jornada' })
   await sheet.getByRole('radio', { name: 'Pegar varias' }).click()
-  await expect(sheet.getByLabel('Canal de los que no lo indican')).toHaveAttribute('data-value', '10')
+  // The channel is never assumed: it starts unchosen.
+  await expect(sheet.getByLabel('Canal de los que no lo indican')).toHaveAttribute('data-value', '')
   await sheet.getByLabel('Direcciones').fill([
     '1362; José Cubas 2770',
     '1353; Ladines 2774 #Kiosco',
@@ -32,6 +34,9 @@ test('pasting many stores: all at once, the ones left out stay with why, and a r
     '99999',
   ].join('\n'))
   await expect(sheet.getByText('Línea 4 repite la 1: 1362')).toBeVisible()
+  await expect(sheet.getByRole('button', { name: 'Agregar 5 direcciones' })).toBeDisabled()
+  await expect(sheet.getByText('Para agregarlas, elegí el canal')).toBeVisible()
+  await pick(sheet.getByLabel('Canal de los que no lo indican'), 'Autoservicio')
   await sheet.getByRole('button', { name: 'Agregar 5 direcciones' }).click()
 
   const left = sheet.getByRole('status').or(sheet.getByRole('alert')).filter({ hasText: 'Faltan 2' })
@@ -39,7 +44,7 @@ test('pasting many stores: all at once, the ones left out stay with why, and a r
   await expect(left).toContainText('local archivado (Av. Congreso 3576)')
   await expect(left).toContainText('sumá la dirección')
   await expect(sheet.getByLabel('Direcciones')).toHaveValue('525; Congreso 3576\n99999')
-  // New stores without #channel go to Autoservicio; the one that said it keeps its own.
+  // New stores without #channel go to the one chosen (Autoservicio); the one that said it keeps its own.
   expect(state.tagged?.map((t) => t.p_channel)).toEqual([10, 11])
   expect(state.visits).toHaveLength(2)
   await page.screenshot({ path: `test-results/paste-left-${info.project.name}.png` })
@@ -48,4 +53,19 @@ test('pasting many stores: all at once, the ones left out stay with why, and a r
   await sheet.getByRole('button', { name: 'Agregar 2 direcciones' }).click()
   await expect(sheet).toBeHidden()
   expect(state.visits).toHaveLength(4)
+})
+
+test('a new store asks for its channel: one of them, or "Sin canal" on purpose', async ({ page }, info) => {
+  await installFakeSupabase(page, { workday: null, visits: [], uploads: [], catalogs: catalogs() })
+  await page.goto('/s/workday?date=2026-10-12')
+  await page.getByRole('button', { name: /Abrir (mi )?jornada/ }).click()
+  await page.getByRole('button', { name: 'Agregar dirección' }).filter({ visible: true }).first().click()
+  const sheet = page.getByRole('dialog', { name: 'Agregar a mi jornada' })
+  await sheet.getByLabel('Dirección').fill('Moldes 1365')
+  const add = sheet.getByRole('button', { name: 'Agregar a mi jornada' })
+  await expect(sheet.getByLabel('Canal')).toHaveAttribute('data-value', '')
+  await expect(add).toBeDisabled()
+  await page.screenshot({ path: `test-results/channel-unchosen-${info.project.name}.png` })
+  await pick(sheet.getByLabel('Canal'), 'Sin canal')
+  await expect(add).toBeEnabled()
 })
