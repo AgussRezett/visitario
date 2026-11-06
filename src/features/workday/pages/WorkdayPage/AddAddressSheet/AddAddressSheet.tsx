@@ -17,6 +17,7 @@ import type { WorkContext } from '@/features/workday/context'
 import { useCatalogs } from '@/features/workday/api/queries'
 import { useAddVisit, useAddVisits } from '@/features/workday/api/mutations'
 import { geocode, type GeocodeResult } from '@/features/workday/api/geocode'
+import { channelIdOf, channelOptions } from './channel-choice'
 import styles from './AddAddressSheet.module.scss'
 import { useOnline } from '@/lib/online'
 import { MentionTextArea } from '@/features/workday/components/MentionTextArea'
@@ -51,7 +52,7 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
   const [form, setForm] = useState(EMPTY)
   const [pasted, setPasted] = useState('')
   const [outcome, setOutcome] = useState<PasteOutcome | null>(null)
-  /** For the pasted lines without #canal: the company's first channel, unless changed. */
+  /** For the pasted lines without #canal: unchosen until picked (a channel or "Sin canal"). */
   const [defaultChannel, setDefaultChannel] = useState<string | null>(null)
   const catalogs = useCatalogs(ctx.companyId)
   const add = useAddVisit(workdayId)
@@ -94,10 +95,11 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
   const sellers = pickable(catalogs.data?.sellers, null)
   const channels = pickable(catalogs.data?.channels, null)
   const lines = readLines(pasted, sellers, channels)
-  // New stores go to the company's first channel (Autoservicio) unless told otherwise.
-  const firstChannel = channels[0] ? String(channels[0].id) : ''
-  const pastedChannel = defaultChannel ?? firstChannel
-  const formChannel = form.channel ?? firstChannel
+  // A new store's channel is chosen on purpose: a channel, or "Sin canal". Never assumed.
+  const pastedChannel = defaultChannel ?? ''
+  const formChannel = form.channel ?? ''
+  const formNeedsChannel = channels.length > 0 && formChannel === ''
+  const pastedNeedsChannel = channels.length > 0 && pastedChannel === '' && lines.some((l) => l.channelId == null)
   // The same store twice in the list goes in once; say so before adding.
   const twice = [...repeatedLines(lines)].map(([i, first]) => `Línea ${i + 1} repite la ${first + 1}: ${lines[i]?.customerNumber || lines[i]?.address}`)
   // The mention still being typed at the end is not flagged yet.
@@ -133,7 +135,7 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
       customerNumber: form.customerNumber.trim() || undefined,
       task: form.task.trim() || undefined,
       displayTypes: form.displayTypes,
-      channelId: formChannel ? Number(formChannel) : null,
+      channelId: channelIdOf(formChannel),
       sellerId: form.seller,
       area: place?.area ?? null,
       lat: place?.lat ?? null,
@@ -146,7 +148,7 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
   const addPasted = async () => {
     setOutcome(null)
     const sent = lines
-    const rows = sent.map((l) => ({ customerNumber: l.customerNumber, address: l.address, area: l.area, sellerId: l.sellerId, channelId: l.channelId ?? (pastedChannel ? Number(pastedChannel) : null) }))
+    const rows = sent.map((l) => ({ customerNumber: l.customerNumber, address: l.address, area: l.area, sellerId: l.sellerId, channelId: l.channelId ?? channelIdOf(pastedChannel) }))
     const result = pasteOutcome(sent.map((l) => l.text), await addMany.mutateAsync(rows), repeatedLines(sent))
     if (!result.failed.length) return onClose()
     // The lines that did not go in stay, to fix them and try again.
@@ -154,7 +156,7 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
     setOutcome(result)
   }
 
-  const canAddNew = form.address.trim().length >= 3
+  const canAddNew = form.address.trim().length >= 3 && !formNeedsChannel
 
   return (
     <Sheet
@@ -169,7 +171,7 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
           {mode === 'one' ? (
             <Button size="md" disabled={!canAddNew || !online} loading={add.isPending} onClick={addNew}>{forName ? 'Agregar a la jornada' : 'Agregar a mi jornada'}</Button>
           ) : (
-            <Button size="md" disabled={!lines.length || !online} loading={addMany.isPending} onClick={() => void addPasted().catch(() => undefined)}>
+            <Button size="md" disabled={!lines.length || pastedNeedsChannel || !online} loading={addMany.isPending} onClick={() => void addPasted().catch(() => undefined)}>
               Agregar {lines.length || ''} {lines.length === 1 ? 'dirección' : 'direcciones'}
             </Button>
           )}
@@ -225,11 +227,11 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
             </div>
             <div className={styles.pair}>
               {channels.length ? (
-                <Select label="Canal" value={formChannel} onChange={(v) => setForm((f) => ({ ...f, channel: v }))}
-                  options={[{ value: '', label: 'Sin canal' }, ...channels.map((c) => ({ value: String(c.id), label: c.name }))]} />
+                <Select label="Canal" value={formChannel} onChange={(v) => setForm((f) => ({ ...f, channel: v }))} placeholder="Elegí uno" options={channelOptions(channels)} />
               ) : null}
               <SellerPicker sellers={sellers} value={form.seller} onChange={(seller) => setForm((f) => ({ ...f, seller }))} onAddSeller={addSeller} />
             </div>
+            {formNeedsChannel && form.address.trim().length >= 3 ? <p className={styles.help}>Para agregarlo, elegí el canal (o "Sin canal").</p> : null}
             <Field label="Tarea" value={form.task} onChange={set('task')} placeholder="Opcional" />
             {catalogs.data?.displayTypes.length ? (
               <div className={styles.block}>
@@ -277,9 +279,9 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
             </Banner>
           ) : null}
           {channels.length ? (
-            <Select label="Canal de los que no lo indican" value={pastedChannel} onChange={(v) => setDefaultChannel(v)}
-              options={[{ value: '', label: 'Sin canal' }, ...channels.map((c) => ({ value: String(c.id), label: c.name }))]} />
+            <Select label="Canal de los que no lo indican" value={pastedChannel} onChange={(v) => setDefaultChannel(v)} placeholder="Elegí uno" options={channelOptions(channels)} />
           ) : null}
+          {pastedNeedsChannel ? <p className={styles.help}>Para agregarlas, elegí el canal de las que no lo indican con #canal (o "Sin canal").</p> : null}
         </>
       )}
 
