@@ -221,6 +221,8 @@ function VisitBody(props: {
           await actions.replacePhoto(p.id, file)
         }}
         onRetry={(p) => actions.retryPhoto(p.id)}
+        latest={(id) => v.photos.find((p) => p.id === id)}
+        onCrop={isLocked(v) ? undefined : (p, crop) => actions.cropPhoto(p.id, crop)}
         onDelete={isLocked(v) ? undefined : async (p) => {
           onView(null)
           await actions.deletePhoto(p.id)

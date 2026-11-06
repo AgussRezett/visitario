@@ -8,6 +8,7 @@ import type { VisitActions } from '../useVisitActions'
 import type { ViewerState } from '../VisitPage'
 import { DisplaySheet } from '../DisplaySheet'
 import styles from './DisplaysSection.module.scss'
+import { PhotoImage } from '@/features/workday/components/PhotoImage'
 
 interface DisplaysSectionProps {
   visit: Visit
@@ -59,7 +60,7 @@ export function DisplaysSection({ visit: v, catalogs, urlFor, actions, openDispl
             return (
               <li key={d.id}>
                 <button type="button" className={styles.item} onClick={() => setOpenId(d.id)} aria-label={`Exhibición ${i + 1}: ${typeName(d.typeId)}`}>
-                  <span className={styles.thumb}>{url ? <img src={url} alt="" /> : null}</span>
+                  <span className={styles.thumb}>{url ? <PhotoImage url={url} frame={cover} /> : null}</span>
                   <span className={styles.text}>
                     <span className={styles.name}>{[typeName(d.typeId), d.reference].filter(Boolean).join(' · ')}</span>
                     <span className={styles.by}>

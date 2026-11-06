@@ -9,7 +9,7 @@ export const VISIT_SELECT = `
   adder:person!visit_added_by_fkey (first_name),
   store:store!visit_company_id_store_id_fkey (id, name, address, area, customer_number, lat, lng, location_status, channel_id, seller_id),
   display:display!display_company_id_visit_id_fkey (id, display_type_id, reference, source, sort_order, deleted_at),
-  photo:photo!photo_company_id_visit_id_fkey (id, kind, display_id, taken_at, uploaded_at, deleted_at)
+  photo:photo!photo_company_id_visit_id_fkey (id, kind, display_id, taken_at, uploaded_at, deleted_at, width, height, crop)
 `
 
 // The supervisor's lists add who did the visit and when it was reviewed.

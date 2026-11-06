@@ -1,4 +1,5 @@
 import type PptxGenJS from 'pptxgenjs'
+import { cropPixels, type Crop } from '@/domain/crop'
 import { DATE_AREA, TITLE_AREA, TOTAL_AREA, layoutPhotos, type Box } from '@/domain/slides'
 
 // The .pptx itself, built in the browser: the company's backgrounds, the total on the cover,
@@ -17,6 +18,8 @@ export interface Deck {
   coverUrl: string | null
   pageUrl: string | null
   fileName: string
+  /** Each photo's crop: it goes cropped. */
+  cropOf?: (id: string) => Crop | null
 }
 
 const W = 13.333 // inches: PowerPoint's 16:9
@@ -55,7 +58,8 @@ export async function buildDeck(deck: Deck, fileFor: (id: string) => Promise<Blo
   let missing = 0
   onStep(0, ids.length)
   await pool(ids, AT_ONCE, async (id) => {
-    const image = await lighter(() => fileFor(id)).catch(() => lighter(() => fileFor(id))).catch(() => null)
+    const crop = deck.cropOf?.(id) ?? null
+    const image = await lighter(() => fileFor(id), crop).catch(() => lighter(() => fileFor(id), crop)).catch(() => null)
     if (image) images.set(id, image)
     else missing++
     onStep(++done, ids.length)
@@ -87,14 +91,15 @@ function backdrop(slide: PptxGenJS.Slide, data: string) {
   slide.addImage({ data, x: 0, y: 0, w: W, h: H, altText: 'Fondo' })
 }
 
-/** A photo smaller and lighter, upright, as a data URL with its shape. */
-async function lighter(file: () => Promise<Blob>): Promise<{ data: string; aspect: number }> {
+/** A photo (only its cropped part) smaller and lighter, upright, as a data URL with its shape. */
+async function lighter(file: () => Promise<Blob>, crop: Crop | null): Promise<{ data: string; aspect: number }> {
   const bitmap = await createImageBitmap(await file())
-  const scale = Math.min(1, LONG_SIDE / Math.max(bitmap.width, bitmap.height))
+  const { sx, sy, sw, sh } = cropPixels(crop, bitmap.width, bitmap.height)
+  const scale = Math.min(1, LONG_SIDE / Math.max(sw, sh))
   const canvas = document.createElement('canvas')
-  canvas.width = Math.round(bitmap.width * scale)
-  canvas.height = Math.round(bitmap.height * scale)
-  canvas.getContext('2d')?.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+  canvas.width = Math.round(sw * scale)
+  canvas.height = Math.round(sh * scale)
+  canvas.getContext('2d')?.drawImage(bitmap, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height)
   bitmap.close()
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', QUALITY))
   if (!blob) throw new Error('photo')

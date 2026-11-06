@@ -28,7 +28,7 @@ export function ArrivalSection({ visit: v, busy, urlFor, onArrive, onView }: Arr
     >
       <div className={styles.photos}>
         {storefront.map((p) => (
-          <PhotoThumb key={p.id} photoId={p.id} url={urlFor(p.id)} caption="Fachada" done label="Ver la foto de la fachada" onOpen={() => onView(p.id)} className={styles.thumb} />
+          <PhotoThumb key={p.id} photoId={p.id} url={urlFor(p.id)} frame={p} caption="Fachada" done label="Ver la foto de la fachada" onOpen={() => onView(p.id)} className={styles.thumb} />
         ))}
         {!arrived ? (
           <div className={styles.actions}>

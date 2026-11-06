@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { toStored, type Crop } from '@/domain/crop'
 import { supabase } from '@/lib/supabase'
 import { WorkdayError, workdayErrorMessage } from '@/features/workday/api/mutations'
 
@@ -25,6 +26,15 @@ export function useReview() {
       onSettled: refresh,
     }),
   }
+}
+
+/** A supervisor crops a photo (approved visits too); null shows it whole again. */
+export function useCropPhoto() {
+  const refresh = useRefresh()
+  return useMutation({
+    mutationFn: async (p: { photoId: string; crop: Crop | null }) => check((await supabase.rpc('set_photo_crop', { p_photo: p.photoId, p_crop: toStored(p.crop) })).error),
+    onSettled: refresh,
+  })
 }
 
 export function useAssign(companyId: string) {

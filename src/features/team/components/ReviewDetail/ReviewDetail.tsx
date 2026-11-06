@@ -20,7 +20,7 @@ import { Conversation } from '@/features/workday/components/Conversation'
 import { StoreTagsLine } from '@/features/workday/components/StoreTagsLine'
 import { storeTags } from '@/features/workday/store-tags'
 import type { TeamVisit } from '@/features/team/api/queries'
-import { useReview } from '@/features/team/api/mutations'
+import { useCropPhoto, useReview } from '@/features/team/api/mutations'
 import styles from './ReviewDetail.module.scss'
 
 const EVENT_TEXT: Record<string, string> = {
@@ -46,6 +46,7 @@ export function ReviewDetail({ visit: v, meId, draft, readOnly = false, work: gi
   const comments = useQuery({ ...commentsQuery(v.id), enabled: !readOnly })
   const events = useQuery({ ...visitEventsQuery(v.id), enabled: !readOnly })
   const urlFor = usePhotoUrls(v.photos.map((p) => p.id))
+  const cropPhoto = useCropPhoto()
   const [viewer, setViewer] = useState<{ photos: Photo[]; startId: string; title: string } | null>(null)
 
   const typeName = (id: number) => catalogs.data?.displayTypes.find((t) => t.id === id)?.name ?? 'Exhibición'
@@ -103,7 +104,7 @@ export function ReviewDetail({ visit: v, meId, draft, readOnly = false, work: gi
         </div>
         <div className={styles.shots}>
           {shots.map(({ p, caption }) => (
-            <PhotoThumb key={p.id} photoId={p.id} url={urlFor(p.id)} caption={caption} done={p.kind === 'after'} label={`Ver ${caption}`} className={styles.shot}
+            <PhotoThumb key={p.id} photoId={p.id} url={urlFor(p.id)} frame={p} caption={caption} done={p.kind === 'after'} label={`Ver ${caption}`} className={styles.shot}
               onOpen={() => setViewer({ photos: shots.map((s) => s.p), startId: p.id, title: caption })} />
           ))}
           {withoutPhotos.map((d) => (
@@ -155,6 +156,8 @@ export function ReviewDetail({ visit: v, meId, draft, readOnly = false, work: gi
         subtitle={v.store.name ?? v.store.address}
         urlFor={urlFor}
         onClose={() => setViewer(null)}
+        latest={(id) => v.photos.find((p) => p.id === id)}
+        onCrop={readOnly ? undefined : (p, crop) => cropPhoto.mutateAsync({ photoId: p.id, crop })}
       />
     </div>
   )

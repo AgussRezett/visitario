@@ -1,6 +1,7 @@
 import { type QueryClient, queryOptions } from '@tanstack/react-query'
 import { supabase, type Enums } from '@/lib/supabase'
 import { VISIT_SELECT } from './selects'
+import { fromStored, type Crop } from '@/domain/crop'
 import { workdayKeys } from './keys'
 
 // ---- Shapes the screens use (camelCase, already joined)
@@ -25,6 +26,10 @@ export interface Photo {
   displayId: string | null
   takenAt: string
   uploaded: boolean
+  /** The picture's size, and the part of it to show (null: all of it). */
+  width: number
+  height: number
+  crop: Crop | null
 }
 
 export interface Display {
@@ -95,7 +100,7 @@ export type VisitRow = {
   adder: { first_name: string } | null
   store: { id: string; name: string | null; address: string; area: string | null; customer_number: string | null; lat: number | null; lng: number | null; location_status: Enums<'location_status'>; channel_id?: number | null; seller_id?: number | null } | null
   display: { id: string; display_type_id: number; reference: string | null; source: Enums<'display_source'>; sort_order: number; deleted_at: string | null }[]
-  photo: { id: string; kind: Enums<'photo_kind'>; display_id: string | null; taken_at: string; uploaded_at: string | null; deleted_at: string | null }[]
+  photo: { id: string; kind: Enums<'photo_kind'>; display_id: string | null; taken_at: string; uploaded_at: string | null; deleted_at: string | null; width?: number; height?: number; crop?: number[] | null }[]
 }
 
 export function toVisit(r: VisitRow, personId: string): Visit {
@@ -140,7 +145,7 @@ export function toVisit(r: VisitRow, personId: string): Visit {
     photos: r.photo
       .filter((p) => !p.deleted_at)
       .sort((a, b) => a.taken_at.localeCompare(b.taken_at))
-      .map((p) => ({ id: p.id, kind: p.kind, displayId: p.display_id, takenAt: p.taken_at, uploaded: Boolean(p.uploaded_at) })),
+      .map((p) => ({ id: p.id, kind: p.kind, displayId: p.display_id, takenAt: p.taken_at, uploaded: Boolean(p.uploaded_at), width: p.width ?? 0, height: p.height ?? 0, crop: fromStored(p.crop) })),
   }
 }
 
