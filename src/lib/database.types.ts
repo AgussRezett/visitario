@@ -722,6 +722,7 @@ export type Database = {
       photo: {
         Row: {
           bytes: number
+          crop: number[] | null
           company_id: string
           created_at: string
           created_by: string
@@ -740,6 +741,7 @@ export type Database = {
         }
         Insert: {
           bytes: number
+          crop?: number[] | null
           company_id: string
           created_at?: string
           created_by: string
@@ -758,6 +760,7 @@ export type Database = {
         }
         Update: {
           bytes?: number
+          crop?: number[] | null
           company_id?: string
           created_at?: string
           created_by?: string
@@ -2025,6 +2028,10 @@ export type Database = {
       run_purge: { Args: never; Returns: number }
       save_route_plan: {
         Args: { p_by_street: boolean; p_custom?: boolean; p_from_origin: boolean; p_km: number; p_line?: Json; p_minutes?: number; p_mode: string; p_stop_ids: string[]; p_workday: string }
+        Returns: undefined
+      }
+      set_photo_crop: {
+        Args: { p_crop: number[] | null; p_photo: string }
         Returns: undefined
       }
       store_history: {
