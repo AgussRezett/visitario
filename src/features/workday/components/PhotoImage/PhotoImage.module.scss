@@ -1,0 +1,9 @@
+@use '@/styles/abstracts' as *;
+
+// A cropped photo is drawn by an SVG that shows only that part: it fills its box like the
+// <img> it replaces (covering it, or fitting inside it).
+.cropped {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
