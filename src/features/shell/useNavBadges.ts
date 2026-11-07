@@ -3,8 +3,8 @@ import { supabase } from '@/lib/supabase'
 import type { Role } from '@/domain/roles'
 
 /**
- * In-app notices on the navigation: visits waiting for the supervisor's review, and
- * fixes the merchandiser was asked for. Live (features/live), with a slow safety refetch.
+ * In-app notices on the navigation: visits waiting for the supervisor's review and open
+ * novedades, and fixes the merchandiser was asked for. Live (features/live), with a slow safety refetch.
  */
 export function useNavBadges(personId: string, active: { companyId: string; role: Role } | null): Record<string, number> {
   const role = active?.role
@@ -20,7 +20,9 @@ export function useNavBadges(personId: string, active: { companyId: string; role
           ? await base.eq('review_status', 'unreviewed').in('work_status', ['done', 'refused', 'closed'])
           : await base.eq('merchandiser_id', personId).eq('review_status', 'needs_fix')
       if (error) throw error
-      return role === 'supervisor' ? { review: count ?? 0 } : { workday: count ?? 0 }
+      if (role !== 'supervisor') return { workday: count ?? 0 }
+      const issues = await supabase.from('store_issue').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'open').is('deleted_at', null)
+      return { review: count ?? 0, issues: issues.count ?? 0 }
     },
   })
   return badges.data ?? {}

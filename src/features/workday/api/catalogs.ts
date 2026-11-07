@@ -10,6 +10,8 @@ export interface Catalogs {
   /** Inactive ones too (stores keep them); pickers offer only the active. */
   channels: { id: number; name: string; active: boolean; /** The company's number for it (1. Autoservicio). */ number: number }[]
   sellers: { id: number; name: string; personId: string | null; active: boolean }[]
+  /** Kinds of novedad (inactive ones too: old reports keep their name). */
+  issueTypes: { id: number; name: string; active: boolean }[]
   metrics: { id: number; name: string; reportLabel: string | null }[]
   templates: Record<TemplateKind, string>
   /** The company still uses WhatsApp as the bridge: show the copy buttons on the visit. */
@@ -21,6 +23,7 @@ export interface Catalogs {
 interface CatalogsRow {
   brands: { id: number; name: string }[]
   display_types: { id: number; name: string }[]
+  issue_types?: { id: number; name: string; active: boolean }[]
   metrics: { id: number; name: string; report_label: string | null }[]
   templates: { kind: TemplateKind; body: string }[]
   company: { show_whatsapp: boolean; messages_per_display: boolean } | null
@@ -43,6 +46,7 @@ export const catalogsQuery = (companyId: string) =>
         displayTypes: c.display_types ?? [],
         channels: (c.channels ?? []).map((x) => ({ id: x.id, name: x.name, active: x.active, number: x.sort_order })),
         sellers: (c.sellers ?? []).map((x) => ({ id: x.id, name: x.name, personId: x.person_id, active: x.active })),
+        issueTypes: c.issue_types ?? [],
         metrics: (c.metrics ?? []).map((m) => ({ id: m.id, name: m.name, reportLabel: m.report_label })),
         templates: { ...DEFAULT_TEMPLATES, ...own },
         showWhatsapp: c.company?.show_whatsapp ?? true,

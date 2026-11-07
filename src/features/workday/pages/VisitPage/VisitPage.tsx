@@ -21,6 +21,7 @@ import { useVisitActions } from './useVisitActions'
 import { StoreInfo } from './StoreInfo'
 import { LocationSheet } from './LocationSheet'
 import { StoreHistory } from './StoreHistory'
+import { IssuesSection } from './IssuesSection'
 import { PhotoStrip } from './PhotoStrip'
 import { ArrivalSection } from './ArrivalSection'
 import { ConsentSection } from './ConsentSection'
@@ -200,6 +201,7 @@ function VisitBody(props: {
               </div>
             </div>
           </div>
+          {catalogs ? <IssuesSection visit={v} catalogs={catalogs} me={{ id: meId, name: firstName }} /> : null}
           <StoreHistory visitId={v.id} />
           <RemoveStop visit={v} back={back} />
         </div>

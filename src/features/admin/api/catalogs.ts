@@ -2,7 +2,7 @@ import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query
 import { supabase } from '@/lib/supabase'
 import type { ImportMapping } from '@/domain/import'
 
-export type CatalogKind = 'brand' | 'display_type' | 'work_metric' | 'channel' | 'seller'
+export type CatalogKind = 'brand' | 'display_type' | 'work_metric' | 'channel' | 'seller' | 'issue_type'
 
 /** One catalog item. `extra` is the brand's group or the metric's line in the report. */
 export interface CatalogItem {
@@ -18,6 +18,7 @@ export interface AdminCatalogs {
   work_metric: CatalogItem[]
   channel: CatalogItem[]
   seller: CatalogItem[]
+  issue_type: CatalogItem[]
   formats: { id: string; name: string; signature: string; mapping: ImportMapping; lastUsedAt: string | null }[]
 }
 
@@ -26,15 +27,16 @@ export const adminCatalogsQuery = (companyId: string) =>
   queryOptions({
     queryKey: ['admin', 'catalogs', companyId],
     queryFn: async (): Promise<AdminCatalogs> => {
-      const [brands, types, metrics, formats, channels, sellers] = await Promise.all([
+      const [brands, types, metrics, formats, channels, sellers, issueTypes] = await Promise.all([
         supabase.from('brand').select('id, name, group_name, active').eq('company_id', companyId).order('sort_order').order('name'),
         supabase.from('display_type').select('id, name, active').eq('company_id', companyId).order('sort_order').order('name'),
         supabase.from('work_metric').select('id, name, report_label, active').eq('company_id', companyId).order('sort_order').order('name'),
         supabase.from('import_format').select('id, name, signature, mapping, last_used_at').eq('company_id', companyId).order('name'),
         supabase.from('channel').select('id, name, active, sort_order').eq('company_id', companyId).order('sort_order').order('name'),
         supabase.from('seller').select('id, name, active, person_id').eq('company_id', companyId).order('name'),
+        supabase.from('issue_type').select('id, name, active').eq('company_id', companyId).order('sort_order').order('name'),
       ])
-      for (const r of [brands, types, metrics, formats, channels, sellers]) if (r.error) throw r.error
+      for (const r of [brands, types, metrics, formats, channels, sellers, issueTypes]) if (r.error) throw r.error
       return {
         brand: (brands.data ?? []).map((b) => ({ id: b.id, name: b.name, extra: b.group_name, active: b.active })),
         display_type: (types.data ?? []).map((t) => ({ id: t.id, name: t.name, extra: null, active: t.active })),
@@ -42,6 +44,7 @@ export const adminCatalogsQuery = (companyId: string) =>
         // A channel's number is its place in the list (1. Autoservicio), as the company names them.
         channel: (channels.data ?? []).map((c) => ({ id: c.id, name: c.name, extra: c.sort_order ? String(c.sort_order) : null, active: c.active })),
         seller: (sellers.data ?? []).map((x) => ({ id: x.id, name: x.name, extra: x.person_id ? 'Tiene usuario en Visitario' : null, active: x.active })),
+        issue_type: (issueTypes.data ?? []).map((t) => ({ id: t.id, name: t.name, extra: null, active: t.active })),
         formats: (formats.data ?? []).map((f) => ({ id: f.id, name: f.name, signature: f.signature, mapping: f.mapping as unknown as ImportMapping, lastUsedAt: f.last_used_at })),
       }
     },
@@ -77,6 +80,9 @@ async function write(companyId: string, s: CatalogSave) {
   }
   if (s.kind === 'seller') {
     return s.id ? supabase.from('seller').update(base(s)).eq('id', s.id) : supabase.from('seller').insert({ ...base(s), company_id: companyId, name: s.name ?? '' })
+  }
+  if (s.kind === 'issue_type') {
+    return s.id ? supabase.from('issue_type').update(base(s)).eq('id', s.id) : supabase.from('issue_type').insert({ ...base(s), company_id: companyId, name: s.name ?? '' })
   }
   return s.id ? supabase.from('display_type').update(base(s)).eq('id', s.id) : supabase.from('display_type').insert({ ...base(s), company_id: companyId, name: s.name ?? '' })
 }

@@ -39,6 +39,8 @@ export type Op =
   | (Base & { kind: 'metric.set'; metricId: number; quantity: number })
   | (Base & { kind: 'brand.set'; brandId: number; on: boolean })
   | (Base & { kind: 'comment.add'; commentId: string; authorId: string; body: string; displayId: string | null })
+  | (Base & { kind: 'issue.add'; issueId: string; storeId: string; typeId: number; note: string | null })
+  | (Base & { kind: 'issue.remove'; issueId: string })
 
 /** The server refused the change: retrying the same thing will not help. */
 export class PermanentError extends Error {}
@@ -105,6 +107,14 @@ export async function send(op: Op, blob?: Blob) {
             { onConflict: 'id', ignoreDuplicates: true },
           ),
       )
+    case 'issue.add':
+      return check(
+        await supabase
+          .from('store_issue')
+          .upsert({ id: op.issueId, company_id: op.companyId, visit_id: op.visitId, store_id: op.storeId, type_id: op.typeId, note: op.note }, { onConflict: 'id', ignoreDuplicates: true }),
+      )
+    case 'issue.remove':
+      return check(await supabase.rpc('remove_store_issue', { p_issue: op.issueId }))
     case 'photo.add': {
       if (!blob) throw new PermanentError('Falta el archivo de la foto.')
       const form = new FormData()
@@ -158,5 +168,9 @@ export function describe(op: Op): string {
       return 'Marcas trabajadas'
     case 'comment.add':
       return 'Mensaje al supervisor'
+    case 'issue.add':
+      return 'Novedad del local'
+    case 'issue.remove':
+      return 'Quitar novedad'
   }
 }

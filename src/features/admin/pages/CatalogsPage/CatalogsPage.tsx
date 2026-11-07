@@ -81,6 +81,7 @@ export function CatalogsPage() {
           {section('work_metric')}
           {section('channel')}
           {section('seller')}
+          {section('issue_type')}
           <section className={styles.card} aria-label="Formatos de carga guardados">
             <div className={styles.head}><h2 className={styles.heading}>Formatos de carga guardados</h2></div>
             {catalogs.data.formats.length ? (

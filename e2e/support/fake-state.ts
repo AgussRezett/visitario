@@ -11,6 +11,9 @@ export interface FakeState {
   profile?: Row
   avatarsUploaded?: string[]
   avatarsRemoved?: string[]
+  /** Novedades (store_issue rows, with their embeds), and the resolve_store_issue calls. */
+  issues?: Row[]
+  resolved?: Row[]
   /** set_photo_crop calls received (the crop is also kept on the photo row). */
   crops?: Row[]
   /** Signed photo links (https://photos.test/<id>.jpg); the spec serves them. */
@@ -41,7 +44,7 @@ export interface FakeState {
   installOffer?: boolean
   /** A seller's clients (seller_stores). */
   clients?: Row[]
-  catalogs?: Partial<Record<'brand' | 'display_type' | 'work_metric' | 'channel' | 'seller', Row[]>>
+  catalogs?: Partial<Record<'brand' | 'display_type' | 'work_metric' | 'channel' | 'seller' | 'issue_type', Row[]>>
   /** The company's own row and templates. */
   company?: Row
   templates?: Row[]
