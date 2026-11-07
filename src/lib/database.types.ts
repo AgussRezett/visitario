@@ -388,6 +388,33 @@ export type Database = {
           },
         ]
       }
+      issue_type: {
+        Row: {
+          active: boolean
+          company_id: string
+          id: number
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          company_id: string
+          id?: number
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          company_id?: string
+          id?: number
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       import_format: {
         Row: {
           company_id: string
@@ -1000,6 +1027,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      store_issue: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          id: string
+          note: string | null
+          resolution: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: Database["public"]["Enums"]["issue_status"]
+          store_id: string
+          type_id: number
+          updated_at: string
+          version: number
+          visit_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          id: string
+          note?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["issue_status"]
+          store_id: string
+          type_id: number
+          updated_at?: string
+          version?: number
+          visit_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          id?: string
+          note?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["issue_status"]
+          store_id?: string
+          type_id?: number
+          updated_at?: string
+          version?: number
+          visit_id?: string
+        }
+        Relationships: []
       }
       subscription: {
         Row: {
@@ -1987,6 +2068,7 @@ export type Database = {
         Returns: number
       }
       remove_store: { Args: { p_store: string }; Returns: undefined }
+      remove_store_issue: { Args: { p_issue: string }; Returns: undefined }
       report_sync: {
         Args: {
           p_company: string
@@ -2020,6 +2102,10 @@ export type Database = {
           work_date: string
           work_status: Database["public"]["Enums"]["work_status"]
         }[]
+      }
+      resolve_store_issue: {
+        Args: { p_issue: string; p_note?: string; p_resolved?: boolean }
+        Returns: undefined
       }
       resume_visit: {
         Args: { p_id?: string; p_visit: string; p_workday: string }
@@ -2220,6 +2306,7 @@ export type Database = {
       location_status: "verified" | "approximate" | "unverified"
       invitation_status: "pending" | "accepted" | "declined" | "canceled"
       membership_status: "invited" | "active" | "declined" | "disabled"
+      issue_status: "open" | "resolved"
       photo_kind: "storefront" | "before" | "after"
       plan_kind: "free" | "pilot" | "team" | "internal"
       rapport_kind: "welcoming" | "restricted" | "indifferent" | "unwilling"
@@ -2373,6 +2460,7 @@ export const Constants = {
       location_status: ["verified", "approximate", "unverified"],
       invitation_status: ["pending", "accepted", "declined", "canceled"],
       membership_status: ["invited", "active", "declined", "disabled"],
+      issue_status: ["open", "resolved"],
       photo_kind: ["storefront", "before", "after"],
       plan_kind: ["free", "pilot", "team", "internal"],
       rapport_kind: ["welcoming", "restricted", "indifferent", "unwilling"],

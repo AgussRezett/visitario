@@ -1209,6 +1209,42 @@ await expectError('Anonymous cannot call has_password', () => asAnon(`select has
   await sys(`update visit set deleted_at = now() where id = $1`, [open])
 }
 
+// Novedades: reported from a visit, seen by whoever sees the visit, resolved by a supervisor or admin.
+{
+  const types = await as('lucia', `select id, name from issue_type order by sort_order`)
+  check('Every company starts with the usual kinds of novedad', types.length === 7 && types[0].name === 'Necesita pedido'
+    && (await sys(`select count(*)::int n from issue_type where company_id = $1`, [other]))[0].n === 7)
+  check('…and they travel with the catalogs', ((await as('lucia', `select company_catalogs($1) c`, [panda]))[0].c.issue_types ?? []).length === 7)
+  const order = types[0].id
+  const shop = (await sys(`insert into store (company_id, address) values ($1, 'Novedad 100') returning id`, [panda]))[0].id
+  const day = (await as('lucia', `select open_workday($1, '2099-05-01') id`, [panda]))[0].id
+  const visit = (await as('lucia', `select add_visit($1, p_store => $2) id`, [day, shop]))[0].id
+  const issue = '01926f00-0000-7000-8000-0000000015a1'
+  const send = () => as('lucia', `insert into store_issue (id, company_id, store_id, visit_id, type_id, note) values ($1, $2, $3, $4, $5, '  2 cajas de SKYY 750 ') on conflict (id) do nothing`, [issue, panda, s1, visit, order])
+  await send()
+  await send()
+  const row = (await sys(`select * from store_issue where id = $1`, [issue]))[0]
+  check('Lucía reports it: hers, open, of the visit’s store (whatever the phone said), sent twice once',
+    row.created_by === await pid('lucia') && row.status === 'open' && row.store_id === shop && row.note === '2 cajas de SKYY 750'
+    && (await sys(`select count(*)::int n from store_issue where visit_id = $1`, [visit]))[0].n === 1)
+  check('Lucía and the admin see it', (await as('lucia', `select id from store_issue`)).length === 1 && (await as('carla', `select id from store_issue where id = $1`, [issue])).length === 1)
+  check('Not Martín (another team), nor another company', (await as('martin', `select id from store_issue where id = $1`, [issue])).length === 0 && (await as('beto', `select id from store_issue`)).length === 0)
+  await expectError('Another company cannot report on a Panda visit', () => as('beto', `insert into store_issue (id, company_id, store_id, visit_id, type_id) values (gen_random_uuid(), $1, $2, $3, $4)`, [panda, shop, visit, order]), /permission|policy/)
+  await expectError('Nobody edits it directly', () => as('lucia', `update store_issue set status = 'resolved' where id = $1`, [issue]), /permission/)
+  await expectError('An activador does not resolve it', () => as('lucia', `select resolve_store_issue($1)`, [issue]), /supervisor/)
+  await expectError('Martín cannot resolve what he does not see', () => as('martin', `select resolve_store_issue($1)`, [issue]), /not found/)
+  await as('carla', `select resolve_store_issue($1, true, 'Pedido cargado')`, [issue])
+  const done = (await sys(`select status::text s, resolved_by = $2 who, resolution from store_issue where id = $1`, [issue, await pid('carla')]))[0]
+  check('The admin resolves it, with who and a note', done.s === 'resolved' && done.who === true && done.resolution === 'Pedido cargado')
+  await as('lucia', `select remove_store_issue($1)`, [issue])
+  check('Resolved, Lucía can no longer take it back', (await sys(`select deleted_at from store_issue where id = $1`, [issue]))[0].deleted_at === null)
+  await as('carla', `select resolve_store_issue($1, false)`, [issue])
+  check('Opened again, without who resolved it', (await sys(`select status::text s, resolved_by from store_issue where id = $1`, [issue]))[0].s === 'open')
+  await as('lucia', `select remove_store_issue($1)`, [issue])
+  check('Open, Lucía takes it back', (await sys(`select deleted_at is not null d from store_issue where id = $1`, [issue]))[0].d === true)
+  await sys(`update visit set deleted_at = now() where id = $1`, [visit])
+}
+
 const carlaMembership = (await sys(`select id from membership where person_id = $1`, [await pid('carla')]))[0].id;
 await expectError('A company cannot lose its last admin', () => as('carla', `update membership set roles = '{supervisor}' where id = $1`, [carlaMembership]), /admin/);
 
