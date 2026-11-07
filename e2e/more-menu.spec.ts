@@ -17,7 +17,8 @@ test('phones show at most 5 tabs; the rest are one tap away under "Más"', async
 
   await more.click()
   const sheet = page.getByRole('dialog', { name: 'Más secciones' })
-  await expect(sheet.getByRole('link')).toHaveCount(2)
+  await expect(sheet.getByRole('link')).toHaveCount(3)
+  await expect(sheet.getByRole('link', { name: /Novedades/ })).toBeVisible()
   await page.screenshot({ path: `test-results/more-menu-${info.project.name}.png` })
   await sheet.getByRole('link', { name: /Mapa de puntos/ }).click()
   await expect(sheet).toBeHidden()

@@ -58,6 +58,18 @@ export function visitChanges(visit: Pick<Visit, 'id' | 'companyId' | 'store'>) {
     /** The part of the photo to show; null shows it whole again. Sent after the photo itself. */
     cropPhoto: (photoId: string, crop: number[] | null) => enqueue({ ...base, kind: 'photo.crop', photoId, crop }, place),
 
+    /** A novedad of the store for the supervisor (a new order, no stock...). */
+    reportIssue: async (typeId: number, note: string) => {
+      const issueId = uuidv7()
+      await enqueue({ ...base, kind: 'issue.add', issueId, storeId: visit.store.id, typeId, note: note.trim() || null }, place, { id: issueId })
+      return issueId
+    },
+    /** One still on the phone is simply dropped; one on the server is taken back there. */
+    removeIssue: async (issueId: string) => {
+      if (drop([issueId]).length) return
+      await enqueue({ ...base, kind: 'issue.remove', issueId }, place)
+    },
+
     setMetric: (metricId: number, quantity: number) => enqueue({ ...base, kind: 'metric.set', metricId, quantity }, place),
     setBrand: (brandId: number, on: boolean) => enqueue({ ...base, kind: 'brand.set', brandId, on }, place),
 

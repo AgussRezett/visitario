@@ -107,7 +107,7 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
       const c = state.catalogs
       const active = (rows: Row[] | undefined) => (rows ?? []).filter((r) => r.active !== false)
       return json({
-        brands: active(c?.brand), metrics: active(c?.work_metric), channels: c?.channel ?? [], sellers: c?.seller ?? [],
+        brands: active(c?.brand), metrics: active(c?.work_metric), channels: c?.channel ?? [], sellers: c?.seller ?? [], issue_types: c?.issue_type ?? [],
         display_types: c ? active(c.display_type) : [{ id: 1, name: 'Puntera' }, { id: 3, name: 'Góndola' }],
         templates: state.templates ?? [],
         company: state.company ? { show_whatsapp: state.company.show_whatsapp ?? true, messages_per_display: state.company.messages_per_display ?? false } : null,

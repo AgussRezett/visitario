@@ -1,4 +1,4 @@
-import { BarChart3, Building2, CalendarDays, FileText, Inbox, LayoutGrid, MapPin, MapPinned, MessageSquareText, Route, Store, Tags, Users, type LucideIcon } from 'lucide-react'
+import { BarChart3, Building2, CalendarDays, FileText, Inbox, LayoutGrid, MapPin, MapPinned, Megaphone, MessageSquareText, Route, Store, Tags, Users, type LucideIcon } from 'lucide-react'
 import type { Role } from '@/domain/roles'
 
 export interface Section {
@@ -28,6 +28,7 @@ export const SECTIONS: Record<Role, Section[]> = {
     { slug: 'review', label: 'Revisión', title: 'Revisión', icon: Inbox, stage: 3, summary: 'Aprobar visitas o pedir correcciones con un comentario.' },
     { slug: 'assign', label: 'Asignar', title: 'Asignar jornadas', icon: CalendarDays, stage: 3, summary: 'Armar y publicar la jornada de cada activador.' },
     { slug: 'stores', label: 'Directorio', title: 'Directorio', icon: Store, stage: 5, summary: 'Los comercios de la empresa con su historial de visitas.' },
+    { slug: 'issues', label: 'Novedades', title: 'Novedades', icon: Megaphone, stage: 7, summary: 'Lo que los activadores vieron en los locales: pedidos, falta de stock, precios.', more: true },
     { slug: 'map', label: 'Mapa', title: 'Mapa de puntos', icon: MapPinned, stage: 7, summary: 'Los puntos de venta en el mapa, por vendedor, última visita, canal o trato.', more: true },
     { slug: 'reports', label: 'Reportes', title: 'Reportes', icon: BarChart3, stage: 6, summary: 'El período en números: tendencias, activadores, cobertura y estimados; y los informes del día.', more: true },
   ],

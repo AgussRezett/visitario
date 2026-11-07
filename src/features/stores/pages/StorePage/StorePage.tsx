@@ -25,6 +25,7 @@ import { RapportLevel } from '@/features/reputation/components/RapportLevel'
 import { EditSheet } from './EditSheet'
 import { storeTags } from '@/features/workday/store-tags'
 import { ReputationCard } from './ReputationCard'
+import { IssuesCard } from './IssuesCard'
 import { MergeSheet } from './MergeSheet'
 import { LocationCard } from './LocationCard'
 import styles from './StorePage.module.scss'
@@ -107,6 +108,7 @@ export function StorePage({ storeId, from }: { storeId: string; from?: string })
             <div><dt>Alta</dt><dd>{originText(s.source, s.createdAt, s.createdByName)}</dd></div>
           </dl>
           <ReputationCard reputation={reputation} visits={list} />
+          <IssuesCard storeId={s.id} typeName={(id) => (catalogs.data?.issueTypes ?? []).find((t) => t.id === id)?.name ?? 'Novedad'} />
           {usual.length ? (
             <div className={styles.card}>
               <span className={styles.label}>Exhibiciones habituales</span>

@@ -1,0 +1,49 @@
+@use '@/styles/abstracts' as *;
+
+.page {
+  @include flex(column, $gap: space(3));
+  padding: space(4) space(5) space(6);
+
+  @include up(lg) {
+    gap: space(4);
+    max-width: 960px;
+    padding: space(6) space(8);
+  }
+}
+
+.titles {
+  @include flex(column, $gap: space(0.5));
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+.title {
+  @include heading(title);
+
+  @include up(lg) {
+    @include heading(display);
+  }
+}
+
+.intro {
+  @include text(label);
+  margin: space(1) 0 0;
+  color: $color-ink-muted;
+}
+
+.filters {
+  @include flex(row, $gap: space(2));
+  flex-wrap: wrap;
+}
+
+.list {
+  @include flex(column, $gap: space(3));
+
+  @include up(lg) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}

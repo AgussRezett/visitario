@@ -13,7 +13,7 @@ import { isMyEcho, type Change } from '@/domain/realtime'
  * depends on an event arriving.
  */
 
-const TABLES = ['visit', 'photo', 'display', 'workday', 'comment'] as const
+const TABLES = ['visit', 'photo', 'display', 'workday', 'comment', 'store_issue'] as const
 /** Several changes in a row (a visit with its photos) become one refetch. */
 const QUIET_MS = 1_200
 
@@ -44,6 +44,7 @@ export function useLive(qc: QueryClient, companyId: string | null, personId: str
         void qc.invalidateQueries({ queryKey: ['team'] })
         void qc.invalidateQueries({ queryKey: ['operation'] })
         void qc.invalidateQueries({ queryKey: ['stores', 'visits'] })
+        void qc.invalidateQueries({ queryKey: ['issues'] })
       }, QUIET_MS)
     }
     let channel: RealtimeChannel = supabase.channel(`live:${companyId}`)

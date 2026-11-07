@@ -39,6 +39,13 @@ export const KINDS: Record<
     max: 80,
     extra: { label: 'Usuario', placeholder: '', help: '', empty: 'Sin usuario', readOnly: true },
   },
+  issue_type: {
+    title: 'Tipos de novedad',
+    one: 'tipo de novedad',
+    fresh: 'Nuevo tipo de novedad',
+    intro: 'Lo que un activador puede reportar desde un local para el supervisor (Necesita pedido, Falta de stock…).',
+    max: 60,
+  },
   work_metric: {
     title: 'Números de trabajo',
     one: 'número de trabajo',
