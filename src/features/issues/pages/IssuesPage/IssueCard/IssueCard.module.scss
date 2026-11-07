@@ -1,0 +1,74 @@
+@use '@/styles/abstracts' as *;
+
+.card {
+  @include surface;
+  @include flex(column, $gap: space(2));
+  padding: space(4);
+}
+
+.top {
+  @include flex(row, $gap: space(2), $align: center, $justify: space-between);
+}
+
+.type {
+  @include text(label);
+  padding: space(1) space(2.5);
+  border-radius: $radius-full;
+  background: $color-fix-soft;
+  color: $color-fix-ink;
+  font-weight: $weight-bold;
+}
+
+.when,
+.by,
+.meta {
+  @include text(small);
+  color: $color-ink-subtle;
+}
+
+.store {
+  @include flex(column, $gap: space(0.5));
+}
+
+.place {
+  @include text(base);
+  font-weight: $weight-bold;
+  overflow-wrap: anywhere;
+}
+
+.note {
+  @include text(base);
+  margin: 0;
+  padding: space(2) space(3);
+  border-left: 3px solid $color-line;
+  color: $color-ink;
+  overflow-wrap: anywhere;
+}
+
+.resolved {
+  @include flex(row, $gap: space(1.5), $align: center);
+  @include text(label);
+  margin: 0;
+  color: $color-done-ink;
+}
+
+// Phones: one button per line, full width. Wider: in a row, the visit link at the end.
+.actions {
+  @include flex(column, $gap: space(2));
+  margin-top: space(1);
+
+  @include up(sm) {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+}
+
+.visit {
+  align-self: flex-start;
+
+  @include up(sm) {
+    align-self: auto;
+    margin-left: auto;
+  }
+}

@@ -1,0 +1,51 @@
+@use '@/styles/abstracts' as *;
+
+.card {
+  @include surface;
+  @include flex(column, $gap: space(2));
+  padding: space(4);
+}
+
+.label {
+  @include eyebrow;
+}
+
+.list {
+  @include flex(column);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  @include flex(column, $gap: space(0.5));
+  padding: space(2) 0;
+
+  & + & {
+    border-top: 1px solid $color-line;
+  }
+}
+
+.name {
+  @include text(label);
+  font-weight: $weight-bold;
+}
+
+.note {
+  @include text(label);
+  color: $color-ink;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  @include text(small);
+  color: $color-ink-subtle;
+
+  &[data-open] {
+    color: $color-fix-ink;
+  }
+}
+
+.all {
+  align-self: flex-start;
+}

@@ -1,0 +1,126 @@
+@use '@/styles/abstracts' as *;
+
+.card {
+  @include surface;
+  @include flex(column, $gap: space(3));
+  padding: space(4);
+}
+
+.head {
+  @include flex(row, $gap: space(2.5), $align: flex-start);
+  color: $color-ink;
+}
+
+.titles {
+  @include flex(column, $gap: space(0.5));
+}
+
+.title {
+  @include text(base);
+  font-weight: $weight-bold;
+}
+
+.sub,
+.help {
+  @include text(label);
+  margin: 0;
+  color: $color-ink-subtle;
+}
+
+.list {
+  @include flex(column);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  @include flex(row, $gap: space(2), $align: flex-start);
+  padding: space(2.5) 0;
+
+  & + & {
+    border-top: 1px solid $color-line;
+  }
+}
+
+.text {
+  @include flex(column, $gap: space(0.5));
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  @include text(base);
+  font-weight: $weight-semibold;
+}
+
+.note {
+  @include text(label);
+  color: $color-ink;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  @include text(small);
+  color: $color-ink-subtle;
+
+  &[data-state='pending'] {
+    color: $color-pending-ink;
+  }
+
+  &[data-state='resolved'] {
+    color: $color-done-ink;
+  }
+}
+
+.remove {
+  @include center;
+  @include square($touch-target);
+  flex-shrink: 0;
+  border: 0;
+  border-radius: $radius-md;
+  background: transparent;
+  color: $color-ink-subtle;
+  cursor: pointer;
+
+  @include hover {
+    background: $color-muted;
+    color: $color-refused-ink;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-focus;
+  }
+}
+
+.form {
+  @include flex(column, $gap: space(4));
+}
+
+.types {
+  @include flex(row, $gap: space(2));
+  flex-wrap: wrap;
+}
+
+.type {
+  @include text(label);
+  min-height: $touch-target;
+  padding: space(2) space(3.5);
+  border: 1px solid $color-control;
+  border-radius: $radius-full;
+  background: $color-card;
+  color: $color-ink;
+  font-weight: $weight-semibold;
+  cursor: pointer;
+
+  &[aria-checked='true'] {
+    border-color: $color-forest;
+    background: $color-forest;
+    color: $color-on-forest;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-focus;
+    outline-offset: 2px;
+  }
+}
