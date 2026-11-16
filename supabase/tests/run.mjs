@@ -1276,6 +1276,34 @@ await expectError('Anonymous cannot call has_password', () => asAnon(`select has
   await sys(`update visit set deleted_at = now() where id = $1`, [visit])
 }
 
+// Pedidos de activación: the seller asks, the supervisor schedules it in a day or dismisses it.
+{
+  const client = (await sys(`insert into store (company_id, address, seller_id) values ($1, 'Pedido de Nora 20', $2) returning id`, [panda, noraSeller]))[0].id
+  const req = (await as('nora', `select request_activation($1, 'Lanzamiento Aperol') id`, [client]))[0].id
+  const again = (await as('nora', `select request_activation($1, 'Lanzamiento Aperol Spritz') id`, [client]))[0].id
+  const row = (await sys(`select * from activation_request where id = $1`, [req]))[0]
+  check('The seller asks to activate a client; asking again keeps one request', again === req && row.status === 'open' && row.note === 'Lanzamiento Aperol Spritz' && row.requested_by === await pid('nora'))
+  await expectError('Only the client’s seller asks', () => as('agus', `select request_activation($1)`, [client]), /seller/)
+  await expectError('Nobody writes it directly', () => as('nora', `update activation_request set status = 'scheduled' where id = $1`, [req]))
+  check('The seller and the supervisor see it', (await as('nora', `select id from activation_request`)).length >= 1 && (await as('martin', `select id from activation_request where id = $1`, [req])).length === 1)
+  check('…not an activador, nor another company', (await as('lucia', `select id from activation_request where id = $1`, [req])).length === 0 && (await as('beto', `select id from activation_request`)).length === 0)
+  await expectError('A seller does not schedule it', () => as('nora', `select schedule_activation_request($1, $2, '2099-07-01')`, [req, agus]), /supervisor/)
+  const stop = (await as('martin', `select schedule_activation_request($1, $2, '2099-07-01') id`, [req, agus]))[0].id
+  const visit = (await sys(`select store_id, merchandiser_id, work_date::text d, task from visit where id = $1`, [stop]))[0]
+  const done = (await sys(`select status::text s, visit_id, scheduled_for::text d, scheduled_merchandiser, answered_by from activation_request where id = $1`, [req]))[0]
+  check('The supervisor schedules it: a stop in Agustín’s day with the seller’s note', visit.store_id === client && visit.merchandiser_id === agus && visit.d === '2099-07-01'
+    && visit.task === 'Pedido de Nora: Lanzamiento Aperol Spritz' && done.s === 'scheduled' && done.visit_id === stop && done.d === '2099-07-01' && done.answered_by === await pid('martin'))
+  await expectError('Already answered', () => as('martin', `select dismiss_activation_request($1)`, [req]), /already/)
+  await as('martin', `update visit set deleted_at = now() where id = $1`, [stop])
+  check('The stop taken out of the day: the request is open again', (await sys(`select status::text s, visit_id from activation_request where id = $1`, [req]))[0].s === 'open')
+  await as('martin', `select dismiss_activation_request($1, 'Ya se activó la semana pasada')`, [req])
+  check('…or dismissed, with a reason', (await sys(`select status::text s, answer from activation_request where id = $1`, [req]))[0].answer === 'Ya se activó la semana pasada')
+  const next = (await as('nora', `select request_activation($1) id`, [client]))[0].id
+  check('After an answer the seller can ask again', next !== req)
+  await as('nora', `select cancel_activation_request($1)`, [next])
+  check('…and take it back while open', (await sys(`select deleted_at is not null d from activation_request where id = $1`, [next]))[0].d === true)
+}
+
 const carlaMembership = (await sys(`select id from membership where person_id = $1`, [await pid('carla')]))[0].id;
 await expectError('A company cannot lose its last admin', () => as('carla', `update membership set roles = '{supervisor}' where id = $1`, [carlaMembership]), /admin/);
 
