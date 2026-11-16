@@ -1304,6 +1304,44 @@ await expectError('Anonymous cannot call has_password', () => asAnon(`select has
   check('…and take it back while open', (await sys(`select deleted_at is not null d from activation_request where id = $1`, [next]))[0].d === true)
 }
 
+// Stage B of the seller: their visits (with an order or not), coverage and target.
+{
+  const client = (await sys(`insert into store (company_id, address, seller_id) values ($1, 'Cliente de Nora 30', $2) returning id`, [panda, noraSeller]))[0].id
+  const id = '01926f00-0000-7000-8000-0000000016a1'
+  const lines = JSON.stringify([{ qty: 2, item: ' SKYY 750 caja x6 ' }, { qty: 1, item: '' }, { qty: 3, item: 'Aperol 1 L' }])
+  await as('nora', `select record_seller_visit($1, $2, 'order', 'ignored', 'Pasar el jueves', $3::jsonb)`, [id, client, lines])
+  await as('nora', `select record_seller_visit($1, $2, 'order', null, null, $3::jsonb)`, [id, client, lines])
+  const v = (await sys(`select * from seller_visit where id = $1`, [id]))[0]
+  check('The seller records a visit with an order: lines tidied, sent twice once', v.outcome === 'order' && v.reason === null && v.seller_id === noraSeller
+    && v.order_lines.length === 2 && v.order_lines[0].item === 'SKYY 750 caja x6' && v.note === 'Pasar el jueves'
+    && (await sys(`select count(*)::int n from seller_visit where store_id = $1`, [client]))[0].n === 1)
+  await expectError('A wrong quantity is refused', () => as('nora', `select record_seller_visit(gen_random_uuid(), $1, 'order', null, null, '[{"qty": 0, "item": "x"}]'::jsonb)`, [client]), /quantity/)
+  await expectError('Not someone else’s client', () => as('agus', `select record_seller_visit(gen_random_uuid(), $1, 'no_order', 'Tiene stock')`, [client]), /seller/)
+  await expectError('Nobody writes it directly', () => as('nora', `update seller_visit set outcome = 'closed' where id = $1`, [id]))
+  await as('nora', `select record_seller_visit(gen_random_uuid(), $1, 'no_order', 'Tiene stock', null, '[{"qty": 1, "item": "x"}]'::jsonb)`, [client])
+  check('Without an order: the reason, no lines', (await sys(`select reason, jsonb_array_length(order_lines) n from seller_visit where store_id = $1 and outcome = 'no_order'`, [client]))[0].n === 0)
+  check('The seller and the bosses see the visits; not an activador nor another company',
+    (await as('nora', `select id from seller_visit where store_id = $1`, [client])).length === 2 && (await as('martin', `select id from seller_visit where store_id = $1`, [client])).length === 2
+    && (await as('lucia', `select id from seller_visit`)).length === 0 && (await as('beto', `select id from seller_visit`)).length === 0)
+  const mine = (await as('nora', `select * from seller_stores($1) where id = $2`, [panda, client]))[0]
+  check('“Mis clientes” says when the seller last went', mine.my_last_outcome === 'no_order' && mine.my_last_visit !== null)
+
+  await expectError('A seller does not set targets', () => as('nora', `select set_seller_target($1, 40)`, [noraSeller]), /target/)
+  await as('martin', `select set_seller_target($1, 40)`, [noraSeller])
+  const today = (await sys(`select (now() at time zone 'America/Argentina/Buenos_Aires')::date::text d`))[0].d
+  const cov = (await as('martin', `select * from seller_coverage($1, $2, $2)`, [panda, today])).find((r) => r.seller_id === noraSeller)
+  check('Coverage per seller: target, visits, orders, clients visited', cov?.monthly_target === 40 && cov.visits === 2 && cov.orders === 1 && cov.no_orders === 1 && cov.visited_clients === 1 && cov.clients >= 1)
+  const own = await as('nora', `select seller_id from seller_coverage($1, $2, $2)`, [panda, today])
+  check('A seller sees only their own coverage', own.length === 1 && own[0].seller_id === noraSeller)
+  check('…another company, nothing', (await as('beto', `select * from seller_coverage($1, $2, $2)`, [panda, today])).length === 0)
+
+  await as('agus', `select remove_seller_visit($1)`, [id])
+  check('Only who recorded it takes it back', (await sys(`select deleted_at from seller_visit where id = $1`, [id]))[0].deleted_at === null)
+  await as('nora', `select remove_seller_visit($1)`, [id])
+  check('…the same day', (await sys(`select deleted_at is not null d from seller_visit where id = $1`, [id]))[0].d === true)
+  await sys(`update seller set monthly_target = null where id = $1`, [noraSeller])
+}
+
 const carlaMembership = (await sys(`select id from membership where person_id = $1`, [await pid('carla')]))[0].id;
 await expectError('A company cannot lose its last admin', () => as('carla', `update membership set roles = '{supervisor}' where id = $1`, [carlaMembership]), /admin/);
 
