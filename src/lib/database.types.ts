@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      activation_request: {
+        Row: {
+          answer: string | null
+          answered_at: string | null
+          answered_by: string | null
+          company_id: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          note: string | null
+          requested_by: string
+          scheduled_for: string | null
+          scheduled_merchandiser: string | null
+          status: Database["public"]["Enums"]["activation_request_status"]
+          store_id: string
+          updated_at: string
+          version: number
+          visit_id: string | null
+        }
+        Insert: {
+          answer?: string | null
+          answered_at?: string | null
+          answered_by?: string | null
+          company_id: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          note?: string | null
+          requested_by: string
+          scheduled_for?: string | null
+          scheduled_merchandiser?: string | null
+          status?: Database["public"]["Enums"]["activation_request_status"]
+          store_id: string
+          updated_at?: string
+          version?: number
+          visit_id?: string | null
+        }
+        Update: {
+          answer?: string | null
+          answered_at?: string | null
+          answered_by?: string | null
+          company_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          note?: string | null
+          requested_by?: string
+          scheduled_for?: string | null
+          scheduled_merchandiser?: string | null
+          status?: Database["public"]["Enums"]["activation_request_status"]
+          store_id?: string
+          updated_at?: string
+          version?: number
+          visit_id?: string | null
+        }
+        Relationships: []
+      }
       ai_usage: {
         Row: {
           captures: number
@@ -1757,6 +1814,16 @@ export type Database = {
       }
     }
     Functions: {
+      cancel_activation_request: { Args: { p_request: string }; Returns: undefined }
+      dismiss_activation_request: {
+        Args: { p_answer?: string; p_request: string }
+        Returns: undefined
+      }
+      request_activation: { Args: { p_note?: string; p_store: string }; Returns: string }
+      schedule_activation_request: {
+        Args: { p_date: string; p_merchandiser: string; p_request: string }
+        Returns: string
+      }
       add_visit: {
         Args: {
           p_address?: string
@@ -2298,6 +2365,7 @@ export type Database = {
       }
     }
     Enums: {
+      activation_request_status: "open" | "scheduled" | "dismissed"
       comment_kind: "fix_request" | "reply" | "note"
       company_kind: "distributor" | "brand" | "agency" | "personal"
       consent_kind: "yes" | "with_objection" | "refused" | "closed"
@@ -2452,6 +2520,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      activation_request_status: ["open", "scheduled", "dismissed"],
       comment_kind: ["fix_request", "reply", "note"],
       company_kind: ["distributor", "brand", "agency", "personal"],
       consent_kind: ["yes", "with_objection", "refused", "closed"],

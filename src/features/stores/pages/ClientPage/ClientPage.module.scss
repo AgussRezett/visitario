@@ -114,3 +114,15 @@
   margin: 0;
   color: $color-ink;
 }
+
+// The next activation already planned for this client.
+.next {
+  @include text(label);
+  @include flex(row, $gap: space(2), $align: center);
+  margin: 0;
+  padding: space(3);
+  border-radius: $radius-md;
+  background: $color-lime-soft;
+  color: $color-lime-soft-ink;
+  font-weight: $weight-semibold;
+}

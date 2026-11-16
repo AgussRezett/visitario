@@ -401,7 +401,7 @@ const counts = (await as('martin', `select * from store_directory_counts($1)`, [
 check(`Directory counts and areas (${JSON.stringify(counts)})`, counts.total >= 5 && counts.unverified >= 1 && Array.isArray(counts.areas))
 const carried = (await sys(`select s.id, s.address, (select count(*)::int from visit x where x.store_id = s.id and x.deleted_at is null and x.work_date >= current_date - 30) n from visit v join store s on s.id = v.store_id where v.id = $1`, [v2]))[0]
 const carriedRow = (await as('martin', `select * from store_directory($1)`, [panda])).find(r => r.id === carried.id)
-check(`A pending visit resumed later counts once in the directory (${carriedRow?.visits_30d} of ${carried.n} rows)`, carriedRow?.visits_30d === carried.n - 1)
+check(`A pending visit resumed later counts once in the directory (${carriedRow?.visits_30d} of ${carried.n} rows)`, carriedRow?.visits_30d === Math.max(carried.n - 1, 0))
 // Archiving: out of the directory and the searches, back when restored
 const lili = (await as('martin', `select * from store_directory($1, 'mas ahorro')`, [panda]))[0]
 await expectError('A merchandiser cannot archive a store', async () => {
@@ -744,7 +744,7 @@ check('…someone who is not a seller sees none', (await as('agus', `select coun
   await sys(`insert into photo (id, company_id, visit_id, kind, taken_at, uploaded_at, bytes, width, height, created_by) values (gen_random_uuid(), $1, $2, 'storefront', now(), now(), 1, 1, 1, $3)`, [panda, vMap, agus])
   await sys(`update visit set work_status = 'done', finished_at = now() where id = $1`, [vMap])
   const point = (await as('nora', `select * from store_map($1)`, [panda]))[0]
-  check('Map: the last activation, its counts and the reputation', point.visits_30d >= 1 && point.last_merchandiser === 'Agustín' && Number(point.rapport) === 3)
+  check('Map: the last activation, its counts and the reputation', point.last_visit_status === 'done' && point.last_merchandiser === 'Agustín' && Number(point.rapport) === 3)
   const h = (await as('nora', `select client_history($1, $2) j`, [panda, tagged]))[0].j
   check('Client history: the point and its activations, for its seller', h.store.id === tagged && h.visits.some((v) => v.id === vMap && v.merchandiser === 'Agustín Rezett'))
   const other = (await as('nora', `select id from store where company_id = $1 and id <> $2 limit 1`, [panda, tagged]))[0]
@@ -1243,6 +1243,65 @@ await expectError('Anonymous cannot call has_password', () => asAnon(`select has
   await as('lucia', `select remove_store_issue($1)`, [issue])
   check('Open, Lucía takes it back', (await sys(`select deleted_at is not null d from store_issue where id = $1`, [issue]))[0].d === true)
   await sys(`update visit set deleted_at = now() where id = $1`, [visit])
+}
+
+// The seller in the loop: their clients' novedades (they close them) and "después" photos.
+{
+  const [order] = await as('lucia', `select id from issue_type where name = 'Necesita pedido'`)
+  const client = (await sys(`insert into store (company_id, address, seller_id) values ($1, 'Cliente de Nora 10', $2) returning id`, [panda, noraSeller]))[0].id
+  const day = (await as('lucia', `select open_workday($1, '2099-06-01') id`, [panda]))[0].id
+  const visit = (await as('lucia', `select add_visit($1, p_store => $2) id`, [day, client]))[0].id
+  const issue = '01926f00-0000-7000-8000-0000000015b1'
+  await as('lucia', `insert into store_issue (id, company_id, store_id, visit_id, type_id, note) values ($1, $2, $3, $4, $5, 'SKYY 750')`, [issue, panda, client, visit, order.id])
+  check('The client’s seller sees the novedad', (await as('nora', `select id from store_issue where id = $1`, [issue])).length === 1)
+  check('…another seller or another team does not', (await as('martin', `select id from store_issue where id = $1`, [issue])).length === 0)
+  await expectError('A seller cannot resolve someone else’s client', () => as('agus', `select resolve_store_issue($1, true, 'x')`, [issue]))
+  await as('nora', `select resolve_store_issue($1, true, 'Pedido cargado')`, [issue])
+  const done = (await sys(`select status::text s, resolved_by = $2 who, resolution from store_issue where id = $1`, [issue, await pid('nora')]))[0]
+  check('The seller closes it: “Pedido cargado”, by them', done.s === 'resolved' && done.who === true && done.resolution === 'Pedido cargado')
+
+  const shot = '01926f00-0000-7000-8000-00000000f0d1'
+  await as('lucia', `insert into photo (id, company_id, visit_id, kind, display_id, taken_at, bytes, width, height, created_by)
+    select $1, $2, $3, 'storefront', null, now(), 1000, 1400, 1050, $4`, [shot, panda, visit, await pid('lucia')])
+  await sys(`update photo set uploaded_at = now() where id = $1`, [shot])
+  check('An unfinished activation: its photos are not the seller’s yet', (await as('nora', `select id from history_photos($1)`, [[shot]])).length === 0)
+  await sys(`set session_replication_role = replica`)
+  await sys(`update visit set work_status = 'done', consent = 'yes', arrived_at = now(), finished_at = now() where id = $1`, [visit])
+  await sys(`set session_replication_role = origin`)
+  check('Finished, the seller gets its photo links', (await as('nora', `select id from history_photos($1)`, [[shot]])).length === 1)
+  check('…not another company', (await as('beto', `select id from history_photos($1)`, [[shot]])).length === 0)
+  await sys(`update photo set kind = 'after', display_id = (select id from display where visit_id = $2 limit 1) where id = $1 and exists (select 1 from display where visit_id = $2)`, [shot, visit])
+  const h = (await as('nora', `select client_history($1, $2) j`, [panda, client]))[0].j
+  check('The client’s history lists each activation’s photos', Array.isArray(h.visits[0].photos))
+  await sys(`update visit set deleted_at = now() where id = $1`, [visit])
+}
+
+// Pedidos de activación: the seller asks, the supervisor schedules it in a day or dismisses it.
+{
+  const client = (await sys(`insert into store (company_id, address, seller_id) values ($1, 'Pedido de Nora 20', $2) returning id`, [panda, noraSeller]))[0].id
+  const req = (await as('nora', `select request_activation($1, 'Lanzamiento Aperol') id`, [client]))[0].id
+  const again = (await as('nora', `select request_activation($1, 'Lanzamiento Aperol Spritz') id`, [client]))[0].id
+  const row = (await sys(`select * from activation_request where id = $1`, [req]))[0]
+  check('The seller asks to activate a client; asking again keeps one request', again === req && row.status === 'open' && row.note === 'Lanzamiento Aperol Spritz' && row.requested_by === await pid('nora'))
+  await expectError('Only the client’s seller asks', () => as('agus', `select request_activation($1)`, [client]), /seller/)
+  await expectError('Nobody writes it directly', () => as('nora', `update activation_request set status = 'scheduled' where id = $1`, [req]))
+  check('The seller and the supervisor see it', (await as('nora', `select id from activation_request`)).length >= 1 && (await as('martin', `select id from activation_request where id = $1`, [req])).length === 1)
+  check('…not an activador, nor another company', (await as('lucia', `select id from activation_request where id = $1`, [req])).length === 0 && (await as('beto', `select id from activation_request`)).length === 0)
+  await expectError('A seller does not schedule it', () => as('nora', `select schedule_activation_request($1, $2, '2099-07-01')`, [req, agus]), /supervisor/)
+  const stop = (await as('martin', `select schedule_activation_request($1, $2, '2099-07-01') id`, [req, agus]))[0].id
+  const visit = (await sys(`select store_id, merchandiser_id, work_date::text d, task from visit where id = $1`, [stop]))[0]
+  const done = (await sys(`select status::text s, visit_id, scheduled_for::text d, scheduled_merchandiser, answered_by from activation_request where id = $1`, [req]))[0]
+  check('The supervisor schedules it: a stop in Agustín’s day with the seller’s note', visit.store_id === client && visit.merchandiser_id === agus && visit.d === '2099-07-01'
+    && visit.task === 'Pedido de Nora: Lanzamiento Aperol Spritz' && done.s === 'scheduled' && done.visit_id === stop && done.d === '2099-07-01' && done.answered_by === await pid('martin'))
+  await expectError('Already answered', () => as('martin', `select dismiss_activation_request($1)`, [req]), /already/)
+  await as('martin', `update visit set deleted_at = now() where id = $1`, [stop])
+  check('The stop taken out of the day: the request is open again', (await sys(`select status::text s, visit_id from activation_request where id = $1`, [req]))[0].s === 'open')
+  await as('martin', `select dismiss_activation_request($1, 'Ya se activó la semana pasada')`, [req])
+  check('…or dismissed, with a reason', (await sys(`select status::text s, answer from activation_request where id = $1`, [req]))[0].answer === 'Ya se activó la semana pasada')
+  const next = (await as('nora', `select request_activation($1) id`, [client]))[0].id
+  check('After an answer the seller can ask again', next !== req)
+  await as('nora', `select cancel_activation_request($1)`, [next])
+  check('…and take it back while open', (await sys(`select deleted_at is not null d from activation_request where id = $1`, [next]))[0].d === true)
 }
 
 const carlaMembership = (await sys(`select id from membership where person_id = $1`, [await pid('carla')]))[0].id;

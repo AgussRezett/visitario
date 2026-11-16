@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { MapPinned, Navigation } from 'lucide-react'
+import { CalendarClock, MapPinned, Navigation } from 'lucide-react'
 import { daysBetween, formatDayMonth, todayInArgentina } from '@/domain/dates'
 import { mapsSearchUrl } from '@/domain/places'
 import { CONSENT_LABEL } from '@/domain/visit'
@@ -14,6 +14,10 @@ import { useCatalogs } from '@/features/workday/api/queries'
 import { StoreTagsLine } from '@/features/workday/components/StoreTagsLine'
 import { storeTags } from '@/features/workday/store-tags'
 import { clientHistoryQuery } from '@/features/storemap/api'
+import { usePhotoUrls } from '@/features/workday/api/photos'
+import { VisitPhotos } from './VisitPhotos'
+import { ClientIssues } from './ClientIssues'
+import { RequestCard } from './RequestCard'
 import styles from './ClientPage.module.scss'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
@@ -24,6 +28,7 @@ export function ClientPage({ storeId }: { storeId: string }) {
   const history = useQuery({ ...clientHistoryQuery(companyId, storeId), enabled: Boolean(ctx) })
   useDocumentTitle(history.data ? history.data.store.name ?? history.data.store.address : null)
   const catalogs = useCatalogs(companyId).data
+  const urlFor = usePhotoUrls((history.data?.visits ?? []).flatMap((v) => v.photos.map((p) => p.id)))
   if (!ctx) return null
   const back = <BackLink href="/s/clients" label="Mis clientes" />
 
@@ -33,8 +38,11 @@ export function ClientPage({ storeId }: { storeId: string }) {
 
   const { store: s, visits } = history.data
   const today = todayInArgentina()
-  const in30 = visits.filter((v) => daysBetween(v.date, today) <= 30).length
-  const last = visits[0]
+  // Activations already happened; a pending stop of a published day is the next one coming.
+  const done = visits.filter((v) => v.status !== 'pending')
+  const next = visits.filter((v) => v.status === 'pending' && v.date >= today).at(-1)
+  const in30 = done.filter((v) => daysBetween(v.date, today) <= 30).length
+  const last = done[0]
   const tags = storeTags(catalogs, { channelId: s.channelId, sellerId: null })
 
   return (
@@ -49,13 +57,21 @@ export function ClientPage({ storeId }: { storeId: string }) {
       <dl className={styles.stats}>
         <div className={styles.stat}><dt>Activaciones en 30 días</dt><dd>{in30}</dd></div>
         <div className={styles.stat}><dt>Última</dt><dd>{last ? formatDayMonth(last.date) : '—'}</dd></div>
-        <div className={styles.stat}><dt>En total (últimas 30)</dt><dd>{visits.length}</dd></div>
+        <div className={styles.stat}><dt>En total (últimas 30)</dt><dd>{done.length}</dd></div>
       </dl>
+
+      {next ? (
+        <p className={styles.next}><CalendarClock size={18} aria-hidden />Próxima activación: {next.date === today ? 'hoy' : formatDayMonth(next.date)}, con {next.merchandiser.split(' ')[0]}</p>
+      ) : null}
 
       <div className={styles.actions}>
         <Link to="/s/map" search={{ point: s.id }} className={buttonClass('secondary', 'md')}><MapPinned size={18} aria-hidden />Ver en el mapa</Link>
         <a href={mapsSearchUrl(s)} target="_blank" rel="noreferrer" className={buttonClass('secondary', 'md')}><Navigation size={18} aria-hidden />Cómo llegar</a>
       </div>
+
+      <RequestCard storeId={s.id} place={s.name ?? s.address} />
+
+      <ClientIssues storeId={s.id} typeName={(id) => (catalogs?.issueTypes ?? []).find((t) => t.id === id)?.name ?? 'Novedad'} />
 
       <section className={styles.history} aria-label="Historial de activaciones">
         <h2 className={styles.sectionTitle}>Historial</h2>
@@ -75,6 +91,7 @@ export function ClientPage({ storeId }: { storeId: string }) {
                 </p>
                 {v.displays.length ? <p className={styles.detail}>Exhibiciones: {v.displays.join(', ')}</p> : null}
                 {v.metrics.length ? <p className={styles.detail}>{v.metrics.map((m) => `${m.name}: ${m.quantity}`).join(' · ')}</p> : null}
+                <VisitPhotos visit={v} title={s.name ?? s.address} urlFor={urlFor} />
               </li>
             ))}
           </ol>

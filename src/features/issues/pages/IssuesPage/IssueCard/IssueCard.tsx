@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { CheckCircle2, ChevronRight, MessageCircle, RotateCcw } from 'lucide-react'
-import { issueWhen, sellerMessage, whatsappLink } from '@/domain/issues'
+import { CheckCircle2, ChevronRight, CircleSlash, MessageCircle, PackageCheck, RotateCcw } from 'lucide-react'
+import { issueWhen, NOT_MINE, ORDER_TAKEN, sellerMessage, whatsappLink } from '@/domain/issues'
 import { Button, buttonClass } from '@/ui/Button'
 import { Sheet } from '@/ui/Sheet'
 import { TextArea } from '@/ui/TextArea'
@@ -16,10 +16,14 @@ interface IssueCardProps {
   busy: boolean
   onResolve: (note: string) => Promise<unknown>
   onReopen: () => void
+  /** Seen by the store's seller: they close it in one tap and go to their client. */
+  asSeller?: boolean
+  /** Already on the client's page: no link to it. */
+  inClient?: boolean
 }
 
 /** One novedad: what, where, who saw it; to pass it to the seller and mark it resolved. */
-export function IssueCard({ issue: i, typeName, seller, channel, busy, onResolve, onReopen }: IssueCardProps) {
+export function IssueCard({ issue: i, typeName, seller, channel, busy, onResolve, onReopen, asSeller, inClient }: IssueCardProps) {
   const [resolving, setResolving] = useState(false)
   const [note, setNote] = useState('')
   const when = issueWhen(i.createdAt)
@@ -32,19 +36,26 @@ export function IssueCard({ issue: i, typeName, seller, channel, busy, onResolve
         <span className={styles.type}>{typeName}</span>
         <span className={styles.when}>{when}</span>
       </div>
-      <div className={styles.store}>
-        <span className={styles.place}>{place}</span>
-        <span className={styles.meta}>
-          {[i.store.name ? i.store.address : null, i.store.area, i.store.customerNumber && `Cliente ${i.store.customerNumber}`, channel, seller && `vend. ${seller}`].filter(Boolean).join(' · ')}
-        </span>
-      </div>
+      {inClient ? null : (
+        <div className={styles.store}>
+          <span className={styles.place}>{place}</span>
+          <span className={styles.meta}>
+            {[i.store.name ? i.store.address : null, i.store.area, i.store.customerNumber && `Cliente ${i.store.customerNumber}`, channel, !asSeller && seller && `vend. ${seller}`].filter(Boolean).join(' · ')}
+          </span>
+        </div>
+      )}
       {i.note ? <p className={styles.note}>{i.note}</p> : null}
       <span className={styles.by}>Lo reportó {i.by}</span>
       {i.status === 'resolved' ? (
         <p className={styles.resolved}><CheckCircle2 size={16} aria-hidden />Resuelta{i.resolvedBy ? ` por ${i.resolvedBy}` : ''}{i.resolvedAt ? ` el ${issueWhen(i.resolvedAt)}` : ''}{i.resolution ? `: ${i.resolution}` : ''}</p>
       ) : null}
       <div className={styles.actions}>
-        {i.status === 'open' ? (
+        {i.status === 'open' && asSeller ? (
+          <>
+            <Button size="sm" loading={busy} onClick={() => void onResolve(ORDER_TAKEN)}><PackageCheck size={16} aria-hidden />{ORDER_TAKEN}</Button>
+            <Button variant="secondary" size="sm" disabled={busy} onClick={() => void onResolve(NOT_MINE)}><CircleSlash size={16} aria-hidden />{NOT_MINE}</Button>
+          </>
+        ) : i.status === 'open' ? (
           <>
             <a className={buttonClass('secondary', 'sm')} href={whatsappLink(message)} target="_blank" rel="noreferrer"><MessageCircle size={16} aria-hidden />{seller ? 'Mandar al vendedor' : 'Mandar por WhatsApp'}</a>
             <Button size="sm" onClick={() => { setNote(''); setResolving(true) }}><CheckCircle2 size={16} aria-hidden />Marcar resuelta</Button>
@@ -52,7 +63,11 @@ export function IssueCard({ issue: i, typeName, seller, channel, busy, onResolve
         ) : (
           <Button variant="secondary" size="sm" loading={busy} onClick={onReopen}><RotateCcw size={16} aria-hidden />Volver a abrir</Button>
         )}
-        <Link to="/review/$visitId" params={{ visitId: i.visitId }} search={{ from: '/s/issues' }} className={buttonClass('ghost', 'sm', styles.visit)}>Ver la visita<ChevronRight size={16} aria-hidden /></Link>
+        {inClient ? null : asSeller ? (
+          <Link to="/s/clients/$storeId" params={{ storeId: i.store.id }} className={buttonClass('ghost', 'sm', styles.visit)}>Ver el cliente<ChevronRight size={16} aria-hidden /></Link>
+        ) : (
+          <Link to="/review/$visitId" params={{ visitId: i.visitId }} search={{ from: '/s/issues' }} className={buttonClass('ghost', 'sm', styles.visit)}>Ver la visita<ChevronRight size={16} aria-hidden /></Link>
+        )}
       </div>
 
       <Sheet open={resolving} onClose={() => setResolving(false)} title="Marcar resuelta" subtitle={`${typeName} · ${place}`}
