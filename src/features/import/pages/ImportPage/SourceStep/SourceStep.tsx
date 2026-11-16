@@ -50,16 +50,16 @@ export function SourceStep({ companyId, tags, onAddSeller, draft, formats, onCan
     }
   }
 
-  /** A capture or photo of the list, read by AI: straight to the review. */
+  /** A capture or photo of the list, transcribed by AI: to the review when the columns are clear. */
   const openCapture = async (file: File | undefined) => {
     if (!file) return
     setError(null)
     setCapturing(true)
     try {
-      const { rows, unreadable } = await readCapture(file, companyId)
-      const d = withCapture(draft, file.name, rows, unreadable)
-      if ((d.sheets[0]?.table.length ?? 0) < 2) throw new CaptureError('No encontramos locales en la captura. Probá con una más nítida, o pegá el texto.')
-      onRead(d, 3)
+      const d = withCapture(draft, file.name, await readCapture(file, companyId))
+      const { columns, hasHeader } = d.mapping
+      if ((d.sheets[0]?.table.length ?? 0) < (hasHeader ? 2 : 1)) throw new CaptureError('No encontramos locales en la captura. Probá con una más nítida, o pegá el texto.')
+      onRead(d, columns.includes('address') || columns.includes('customer_number') ? 3 : 2)
     } catch (e) {
       setError(e instanceof CaptureError ? e.message : 'No pudimos leer la captura. Revisá la conexión y probá de nuevo.')
     } finally {

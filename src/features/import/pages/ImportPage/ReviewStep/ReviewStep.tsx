@@ -141,7 +141,7 @@ export function ReviewStep({ companyId, draft, rows, people, names, tags, date, 
       ) : null}
       {draft.capture ? (
         <Banner tone="info" icon={<Sparkles size={18} aria-hidden />} title="Leído de una captura con IA">
-          La IA solo propone filas: revisá las direcciones contra la captura.
+          La IA solo copió lo que se ve y Visitario eligió qué es cada columna: revisá las direcciones contra la captura.
           {draft.capture.unreadable ? ` No pudo leer ${draft.capture.unreadable === 1 ? '1 fila: agregala' : `${draft.capture.unreadable} filas: agregalas`} a mano.` : ''}
         </Banner>
       ) : null}

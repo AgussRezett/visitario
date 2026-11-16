@@ -70,7 +70,28 @@ describe('guessing the columns', () => {
   })
 
   it('without titles, guesses from the content', () => {
-    expect(guessMapping(panda.slice(1), false)).toEqual(['customer_number', 'ignore', 'address', 'ignore', 'ignore', 'ignore'])
+    // The area repeats down the column; names that also repeat further right are left alone.
+    expect(guessMapping(panda.slice(1), false)).toEqual(['customer_number', 'ignore', 'address', 'area', 'ignore', 'ignore'])
+  })
+
+  it('the titles of a sales list: route as area, chain as name, PDVID as number, the day ignored', () => {
+    expect(guessMapping([['CADENA', 'PDVID', 'DIRECCIÓN', 'VENDEDOR'], ['Kiosco Sur', '10001', 'Larrea 100', 'ANA GA.']], true))
+      .toEqual(['name', 'customer_number', 'address', 'seller'])
+    expect(guessMapping([['COD', 'DOMICILIO', 'RUTA DE VENTA', 'VENDEDOR', 'DIA'], ['10', 'Muñiz 10', 'ALMAGRO 1', 'ANA GA.', 'MIERCOLES']], true))
+      .toEqual(['customer_number', 'address', 'area', 'seller', 'ignore'])
+    expect(guessMapping([['CLIENTE', 'VENDEDOR', 'DIRECCION', 'DIA DE VISITA', 'BARRIO'], ['10', 'ANA GA.', 'Muñiz 10', 'LUNES', 'BELGRANO']], true))
+      .toEqual(['customer_number', 'seller', 'address', 'ignore', 'area'])
+  })
+
+  it('without titles: "ANA GA." is a seller, repeated words an area, weekdays nothing', () => {
+    const rows = [
+      ['ANA GA.', 'CUENCA 100', 'VIERNES', 'VILLA DEVOTO'],
+      ['LEO PI.', 'HABANA 200', 'VIERNES', 'VILLA DEVOTO'],
+      ['ANA GA.', 'BARZANA 300', 'VIERNES', 'VILLA URQUIZA'],
+      ['LEO PI.', 'MONROE 400', 'VIERNES', 'VILLA URQUIZA'],
+    ]
+    expect(looksLikeHeader(rows)).toBe(false)
+    expect(guessMapping(rows, false)).toEqual(['seller', 'address', 'ignore', 'area'])
   })
 
   it('a field is used once: the second address column is ignored', () => {

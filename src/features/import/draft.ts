@@ -3,7 +3,7 @@ import {
   classify, guessMapping, linesToRows, looksLikeHeader, matchPerson, normalize, signatureOf, toRows,
   type ImportField, type ImportMapping, type ImportRow, type Person, type PersonMatch, type RowStatus, type StoreMatch, type Table,
 } from '@/domain/import'
-import { captureToTable, type CaptureRow } from '@/domain/capture'
+import { transcriptToTable, type Transcript } from '@/domain/capture'
 import type { Mentionable } from '@/domain/mentions'
 import type { Sheet } from './api/read-file'
 import type { SavedFormat } from './api/import'
@@ -50,12 +50,13 @@ export function withSheets(d: Draft, fileName: string | null, sheets: Sheet[], s
   return { ...d, fileName, sheets, sheet, lines: null, mapping, format, formatName: format?.name ?? d.formatName, edits: {}, skipped: [], capture: null }
 }
 
-/** Rows read from a capture: their columns are already known, and nothing to save as a format. */
-export function withCapture(d: Draft, fileName: string, rows: Partial<CaptureRow>[], unreadable: number): Draft {
-  const { table, columns } = captureToTable(rows)
+/** A capture transcribed by AI: its columns guessed like a sheet's, and nothing to save as a format. */
+export function withCapture(d: Draft, fileName: string, transcript: Transcript): Draft {
+  const { table, hasHeader, columns } = transcriptToTable(transcript)
   return {
     ...d, fileName, sheets: [{ name: 'Captura', table }], sheet: 0, lines: null, format: null, saveFormat: false,
-    mapping: { ...emptyMapping(), hasHeader: true, columns, aliases: d.mapping.aliases }, edits: {}, skipped: [], capture: { unreadable },
+    mapping: { ...emptyMapping(), hasHeader, columns, aliases: d.mapping.aliases }, edits: {}, skipped: [],
+    capture: { unreadable: transcript.unreadable },
   }
 }
 
