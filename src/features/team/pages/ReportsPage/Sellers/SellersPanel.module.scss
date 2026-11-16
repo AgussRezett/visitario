@@ -1,0 +1,100 @@
+@use '@/styles/abstracts' as *;
+
+.panel {
+  @include flex(column, $gap: space(4));
+}
+
+.bar {
+  @include flex(row, $gap: space(2), $align: flex-end);
+  flex-wrap: wrap;
+}
+
+.help {
+  @include text(label);
+  margin: 0;
+  color: $color-ink-muted;
+}
+
+.list {
+  @include flex(column, $gap: space(3));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  @include up(lg) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
+.row {
+  @include surface;
+  @include flex(column, $gap: space(3));
+  padding: space(4);
+}
+
+.who {
+  @include flex(row, $gap: space(2), $align: center);
+  flex-wrap: wrap;
+}
+
+.name {
+  @include text(base);
+  font-weight: $weight-bold;
+}
+
+.no-user {
+  @include text(small);
+  @include flex(row, $gap: space(1), $align: center);
+  padding: space(0.5) space(2);
+  border-radius: $radius-full;
+  background: $color-muted;
+  color: $color-ink-muted;
+}
+
+// Five small figures: a row of three and two on the phone, one row wider.
+.figures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: space(3) space(2);
+  margin: 0;
+
+  @include up(sm) {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  dt {
+    @include text(small);
+    color: $color-ink-muted;
+  }
+
+  dd {
+    @include heading(heading);
+    margin: 0;
+
+    small {
+      @include text(small);
+      color: $color-ink-muted;
+      font-weight: $weight-semibold;
+    }
+  }
+}
+
+.meter {
+  height: 8px;
+  overflow: hidden;
+  border-radius: $radius-full;
+  background: $color-muted;
+
+  span {
+    display: block;
+    height: 100%;
+    border-radius: $radius-full;
+    background: $color-forest;
+  }
+}
+
+.target {
+  align-self: flex-start;
+}

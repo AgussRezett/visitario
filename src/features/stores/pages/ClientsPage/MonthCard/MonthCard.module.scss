@@ -1,0 +1,48 @@
+@use '@/styles/abstracts' as *;
+
+.card {
+  @include surface;
+  @include flex(column, $gap: space(2.5));
+  padding: space(4);
+}
+
+.label {
+  @include eyebrow;
+}
+
+.figures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: space(2);
+}
+
+.figure {
+  @include flex(column, $gap: space(0.5));
+  @include text(small);
+  color: $color-ink-muted;
+
+  b {
+    @include heading(heading);
+    color: $color-ink;
+  }
+}
+
+.target {
+  @include text(label);
+  color: $color-ink;
+  font-weight: $weight-semibold;
+}
+
+.bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: $radius-full;
+  background: $color-muted;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: $radius-full;
+  background: $color-forest;
+}

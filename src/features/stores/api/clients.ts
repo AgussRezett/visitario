@@ -11,6 +11,8 @@ export interface Client {
   channelId: number | null
   lastVisit: { date: string; status: Enums<'work_status'>; review: Enums<'review_status'>; by: string } | null
   visits30d: number
+  /** The seller's own last visit to it. */
+  mine: { date: string; outcome: Enums<'seller_visit_outcome'> } | null
 }
 
 /** My stores as a seller (only mine; the database checks it). */
@@ -31,6 +33,7 @@ export const clientsQuery = (companyId: string) =>
           ? { date: r.last_visit_date, status: r.last_visit_status, review: r.last_visit_review, by: r.last_merchandiser ?? '' }
           : null,
         visits30d: r.visits_30d,
+        mine: r.my_last_visit && r.my_last_outcome ? { date: r.my_last_visit, outcome: r.my_last_outcome } : null,
       }))
     },
   })

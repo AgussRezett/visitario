@@ -126,3 +126,13 @@
   color: $color-lime-soft-ink;
   font-weight: $weight-semibold;
 }
+
+// The seller's main action here: full width on the phone.
+.record {
+  width: 100%;
+
+  @include up(lg) {
+    width: auto;
+    align-self: flex-start;
+  }
+}

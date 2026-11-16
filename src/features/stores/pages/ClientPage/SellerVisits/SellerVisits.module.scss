@@ -1,0 +1,88 @@
+@use '@/styles/abstracts' as *;
+
+.section {
+  @include flex(column, $gap: space(2));
+}
+
+.title {
+  @include heading(heading);
+  margin: 0;
+}
+
+.list {
+  @include flex(column, $gap: space(2));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  @include surface;
+  @include flex(column, $gap: space(1.5));
+  padding: space(3) space(4);
+}
+
+.head {
+  @include flex(row, $gap: space(2), $align: center, $justify: space-between);
+}
+
+.outcome {
+  @include text(label);
+  padding: space(0.5) space(2.5);
+  border-radius: $radius-full;
+  background: $color-muted;
+  color: $color-ink;
+  font-weight: $weight-bold;
+
+  &[data-outcome='order'] {
+    background: $color-lime-soft;
+    color: $color-lime-soft-ink;
+  }
+}
+
+.when {
+  @include text(small);
+  color: $color-ink-muted;
+}
+
+.text,
+.note {
+  @include text(label);
+  color: $color-ink;
+  overflow-wrap: anywhere;
+}
+
+.note {
+  color: $color-ink-muted;
+}
+
+.lines {
+  @include text(label);
+  margin: 0;
+  padding-left: space(4);
+  color: $color-ink;
+}
+
+.actions {
+  @include flex(row, $gap: space(2), $align: center);
+  justify-content: space-between;
+
+  &:empty {
+    display: none;
+  }
+}
+
+.remove {
+  @include center;
+  @include square($touch-target);
+  margin-left: auto;
+  border: 0;
+  border-radius: $radius-md;
+  background: transparent;
+  color: $color-ink-subtle;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid $color-focus;
+  }
+}

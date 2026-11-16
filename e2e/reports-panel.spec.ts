@@ -96,7 +96,7 @@ test('the reports panel: the period in figures, against the one before, by perso
 test('the day’s reports are one tab away, and old links with a date open them', async ({ page }) => {
   await installFakeSupabase(page, state(), 'supervisor')
   await page.goto('/s/reports?date=2026-10-07')
-  await expect(page.getByRole('radio', { name: 'Informes del día' })).toHaveAttribute('aria-checked', 'true')
+  await expect(page.getByRole('radio', { name: 'Del día' })).toHaveAttribute('aria-checked', 'true')
   await expect(page.getByRole('heading', { name: 'Miércoles 7 de octubre' })).toBeVisible()
   await page.getByRole('radio', { name: 'Panel' }).click()
   await expect(page.getByRole('list', { name: 'Indicadores del período' })).toBeVisible()

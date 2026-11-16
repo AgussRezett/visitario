@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      seller_visit: {
+        Row: {
+          company_id: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          note: string | null
+          order_lines: Json
+          outcome: Database["public"]["Enums"]["seller_visit_outcome"]
+          person_id: string
+          reason: string | null
+          seller_id: number
+          store_id: string
+          updated_at: string
+          version: number
+          visited_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          deleted_at?: string | null
+          id: string
+          note?: string | null
+          order_lines?: Json
+          outcome: Database["public"]["Enums"]["seller_visit_outcome"]
+          person_id: string
+          reason?: string | null
+          seller_id: number
+          store_id: string
+          updated_at?: string
+          version?: number
+          visited_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          note?: string | null
+          order_lines?: Json
+          outcome?: Database["public"]["Enums"]["seller_visit_outcome"]
+          person_id?: string
+          reason?: string | null
+          seller_id?: number
+          store_id?: string
+          updated_at?: string
+          version?: number
+          visited_at?: string
+        }
+        Relationships: []
+      }
       activation_request: {
         Row: {
           answer: string | null
@@ -959,6 +1010,7 @@ export type Database = {
           active: boolean
           company_id: string
           id: number
+          monthly_target: number | null
           name: string
           person_id: string | null
           sort_order: number
@@ -1814,6 +1866,28 @@ export type Database = {
       }
     }
     Functions: {
+      record_seller_visit: {
+        Args: { p_id: string; p_lines?: Json; p_note?: string; p_outcome: Database["public"]["Enums"]["seller_visit_outcome"]; p_reason?: string; p_store: string }
+        Returns: string
+      }
+      remove_seller_visit: { Args: { p_id: string }; Returns: undefined }
+      seller_coverage: {
+        Args: { p_company: string; p_from: string; p_to: string }
+        Returns: {
+          activated_clients: number
+          clients: number
+          closed: number
+          has_user: boolean
+          monthly_target: number | null
+          name: string
+          no_orders: number
+          orders: number
+          seller_id: number
+          visited_clients: number
+          visits: number
+        }[]
+      }
+      set_seller_target: { Args: { p_seller: number; p_target: number }; Returns: undefined }
       cancel_activation_request: { Args: { p_request: string }; Returns: undefined }
       dismiss_activation_request: {
         Args: { p_answer?: string; p_request: string }
@@ -2289,6 +2363,8 @@ export type Database = {
           last_visit_date: string
           last_visit_review: Database["public"]["Enums"]["review_status"]
           last_visit_status: Database["public"]["Enums"]["work_status"]
+          my_last_outcome: Database["public"]["Enums"]["seller_visit_outcome"] | null
+          my_last_visit: string | null
           name: string
           visits_30d: number
         }[]
@@ -2365,6 +2441,7 @@ export type Database = {
       }
     }
     Enums: {
+      seller_visit_outcome: "order" | "no_order" | "closed"
       activation_request_status: "open" | "scheduled" | "dismissed"
       comment_kind: "fix_request" | "reply" | "note"
       company_kind: "distributor" | "brand" | "agency" | "personal"
@@ -2520,6 +2597,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      seller_visit_outcome: ["order", "no_order", "closed"],
       activation_request_status: ["open", "scheduled", "dismissed"],
       comment_kind: ["fix_request", "reply", "note"],
       company_kind: ["distributor", "brand", "agency", "personal"],

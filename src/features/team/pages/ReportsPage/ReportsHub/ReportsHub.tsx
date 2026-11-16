@@ -9,10 +9,11 @@ import { useWorkContext } from '@/features/workday/context'
 import { AnalyticsPanel } from '../Panel/AnalyticsPanel'
 import { DailyReports } from '../ReportsPage'
 import { SlidesPanel } from '../Slides'
+import { SellersPanel } from '../Sellers'
 import styles from './ReportsHub.module.scss'
 
 export interface ReportsSearch {
-  view?: 'panel' | 'daily' | 'slides'
+  view?: 'panel' | 'daily' | 'slides' | 'sellers'
   period?: PeriodPreset
   from?: string
   to?: string
@@ -59,14 +60,16 @@ export function ReportsHub({ search }: { search: ReportsSearch }) {
       <header className={styles.top}>
         <div className={styles.titles}>
           <span className={styles.eyebrow}>Reportes de {ctx.companyName}</span>
-          <h1 className={styles.title}>{view === 'daily' ? 'Informes del día' : view === 'slides' ? 'Presentación de fotos' : `Del ${rangeLabel(range)}`}</h1>
+          <h1 className={styles.title}>{view === 'daily' ? 'Informes del día' : view === 'slides' ? 'Presentación de fotos' : view === 'sellers' ? `Vendedores · ${rangeLabel(range)}` : `Del ${rangeLabel(range)}`}</h1>
         </div>
         <Segmented label="Vista" value={view} onChange={(v) => go(v === 'panel' ? { view: undefined, date: undefined } : { view: v })}
-          options={[{ value: 'panel', label: 'Panel' }, { value: 'slides', label: 'Presentación' }, { value: 'daily', label: 'Informes del día' }]} />
+          options={[{ value: 'panel', label: 'Panel' }, { value: 'sellers', label: 'Vendedores' }, { value: 'slides', label: 'Presentación' }, { value: 'daily', label: 'Del día' }]} />
       </header>
       {view === 'panel'
         ? <AnalyticsPanel companyId={ctx.companyId} range={range} today={today} compare={compare} controls={controls} />
-        : view === 'slides'
+        : view === 'sellers'
+          ? <SellersPanel companyId={ctx.companyId} range={range} controls={controls} />
+          : view === 'slides'
           ? <SlidesPanel key={`${range.from}:${range.to}`} companyId={ctx.companyId} range={range} controls={controls} />
           : <DailyReports date={search.date} />}
     </div>
