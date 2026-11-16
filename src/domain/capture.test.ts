@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { titleMerchandiser, transcriptToTable, type Transcript } from './capture'
+import { titleMerchandiser, transcriptToLines, transcriptToTable, type Transcript } from './capture'
 import { toRows } from './import'
 
 const read = (t: Partial<Transcript>) => transcriptToTable({ title: '', headers: [], rows: [], unreadable: 0, ...t })
@@ -65,6 +65,17 @@ describe('a capture transcribed by AI', () => {
     const t = { title: 'RUTA AGUSTIN', headers: ['CADENA', 'PDVID', 'DIRECCIÓN', 'VENDEDOR'], rows: [['KIOSCO SUR', '10001', 'LARREA 100', 'ANA GA.']] }
     expect(read(t).columns).toEqual(['name', 'customer_number', 'address', 'seller', 'merchandiser'])
     expect(rowsOf(t)[0]).toMatchObject({ name: 'Kiosco Sur', customerNumber: '10001', address: 'Larrea 100', merchandiser: 'AGUSTIN' })
+  })
+
+  it('as lines to paste into a day: sellers only when the catalog has them', () => {
+    const t = {
+      title: '',
+      unreadable: 0,
+      headers: ['COD', 'DOMICILIO', 'RUTA DE VENTA', 'VENDEDOR', 'DIA'],
+      rows: [['10', 'MUÑIZ 10', 'ALMAGRO 1', 'ANA GA.', 'MIERCOLES'], ['', 'CASTRO 20', 'ALMAGRO 1', 'NADIE NA.', 'MIERCOLES'], ['30', '', '', '', '']],
+    }
+    expect(transcriptToLines(t, [{ id: 1, name: 'Ana Ga' }])).toEqual(['10; Muñiz 10; Almagro @Ana Ga', 'Castro 20; Almagro', '30'])
+    expect(transcriptToLines({ title: '', headers: [], rows: [], unreadable: 2 }, [])).toEqual([])
   })
 
   it('empty rows are dropped; nothing readable is an empty table', () => {
