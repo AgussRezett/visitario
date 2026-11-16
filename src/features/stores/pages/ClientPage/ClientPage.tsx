@@ -1,12 +1,13 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { CalendarClock, MapPinned, Navigation } from 'lucide-react'
+import { CalendarClock, ClipboardCheck, MapPinned, Navigation } from 'lucide-react'
 import { daysBetween, formatDayMonth, todayInArgentina } from '@/domain/dates'
 import { mapsSearchUrl } from '@/domain/places'
 import { CONSENT_LABEL } from '@/domain/visit'
 import { BackLink } from '@/ui/BackLink'
 import { Banner } from '@/ui/Banner'
-import { buttonClass } from '@/ui/Button'
+import { Button, buttonClass } from '@/ui/Button'
 import { Skeleton } from '@/ui/Skeleton'
 import { StatusChip } from '@/ui/StatusChip'
 import { useWorkContext } from '@/features/workday/context'
@@ -18,6 +19,10 @@ import { usePhotoUrls } from '@/features/workday/api/photos'
 import { VisitPhotos } from './VisitPhotos'
 import { ClientIssues } from './ClientIssues'
 import { RequestCard } from './RequestCard'
+import { VisitSheet } from './VisitSheet'
+import { SellerVisits } from './SellerVisits'
+import { sellerVisitsQuery } from '@/features/stores/api/seller-visits'
+import { itemSuggestions } from '@/domain/seller-visits'
 import styles from './ClientPage.module.scss'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
@@ -28,6 +33,8 @@ export function ClientPage({ storeId }: { storeId: string }) {
   const history = useQuery({ ...clientHistoryQuery(companyId, storeId), enabled: Boolean(ctx) })
   useDocumentTitle(history.data ? history.data.store.name ?? history.data.store.address : null)
   const catalogs = useCatalogs(companyId).data
+  const mine = useQuery(sellerVisitsQuery(storeId))
+  const [visiting, setVisiting] = useState(false)
   const urlFor = usePhotoUrls((history.data?.visits ?? []).flatMap((v) => v.photos.map((p) => p.id)))
   if (!ctx) return null
   const back = <BackLink href="/s/clients" label="Mis clientes" />
@@ -64,10 +71,16 @@ export function ClientPage({ storeId }: { storeId: string }) {
         <p className={styles.next}><CalendarClock size={18} aria-hidden />Próxima activación: {next.date === today ? 'hoy' : formatDayMonth(next.date)}, con {next.merchandiser.split(' ')[0]}</p>
       ) : null}
 
+      <Button onClick={() => setVisiting(true)} className={styles.record}><ClipboardCheck size={20} aria-hidden />Registrar visita</Button>
+      <VisitSheet open={visiting} storeId={s.id} place={s.name ?? s.address} onClose={() => setVisiting(false)}
+        suggestions={itemSuggestions((mine.data ?? []).flatMap((v) => v.lines), (catalogs?.brands ?? []).map((b) => b.name))} />
+
       <div className={styles.actions}>
         <Link to="/s/map" search={{ point: s.id }} className={buttonClass('secondary', 'md')}><MapPinned size={18} aria-hidden />Ver en el mapa</Link>
         <a href={mapsSearchUrl(s)} target="_blank" rel="noreferrer" className={buttonClass('secondary', 'md')}><Navigation size={18} aria-hidden />Cómo llegar</a>
       </div>
+
+      <SellerVisits storeId={s.id} store={s} me={ctx.firstName} />
 
       <RequestCard storeId={s.id} place={s.name ?? s.address} />
 

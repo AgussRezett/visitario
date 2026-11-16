@@ -3,6 +3,11 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ChevronRight, MapPinned, Search, Store } from 'lucide-react'
 import { formatDayMonth, todayInArgentina } from '@/domain/dates'
+import { rangeFor } from '@/domain/report-period'
+import { OUTCOME_LABEL } from '@/domain/seller-visits'
+import { Segmented } from '@/ui/Segmented'
+import { coverageQuery } from '@/features/stores/api/seller-visits'
+import { MonthCard } from './MonthCard'
 import { normalize } from '@/domain/import'
 import { Banner } from '@/ui/Banner'
 import { buttonClass } from '@/ui/Button'
@@ -25,11 +30,19 @@ export function ClientsPage() {
   const clients = useQuery({ ...clientsQuery(companyId), enabled: Boolean(ctx) })
   const catalogs = useCatalogs(companyId).data
   const [query, setQuery] = useState('')
+  const [show, setShow] = useState<'all' | 'pending'>('all')
+  const today = todayInArgentina()
+  const month = rangeFor('month', today)
+  const coverage = useQuery({ ...coverageQuery(companyId, month), enabled: Boolean(ctx) })
+  const monthName = new Intl.DateTimeFormat('es-AR', { month: 'long', timeZone: 'UTC' }).format(new Date(`${today}T12:00:00Z`))
   if (!ctx) return null
 
   const q = normalize(query)
   const all = clients.data ?? []
-  const shown = q.length >= 2 ? all.filter((c) => matches(c, q)) : all
+  // "Por visitar": clients the seller has not been to this month.
+  const pending = (c: Client) => !c.mine || c.mine.date < month.from
+  const shown = (q.length >= 2 ? all.filter((c) => matches(c, q)) : all).filter((c) => show === 'all' || pending(c))
+  const mine = coverage.data?.[0]
   const activated = all.filter((c) => c.visits30d > 0).length
 
   return (
@@ -40,6 +53,13 @@ export function ClientsPage() {
         {all.length ? <p className={styles.lead}>{activated} de {all.length} con activaciones en los últimos 30 días.</p> : null}
         {all.length ? <Link to="/s/map" className={buttonClass('secondary', 'md', styles.mapLink)}><MapPinned size={18} aria-hidden />Ver en el mapa</Link> : null}
       </header>
+
+      {mine && all.length ? <MonthCard month={monthName} coverage={mine} /> : null}
+
+      {all.length ? (
+        <Segmented label="Qué clientes ver" value={show} onChange={setShow}
+          options={[{ value: 'all', label: 'Todos' }, { value: 'pending', label: `Por visitar este mes · ${all.filter(pending).length}` }]} />
+      ) : null}
 
       {all.length > 6 ? (
         <label className={styles.search}>
@@ -59,7 +79,7 @@ export function ClientsPage() {
           <p className={styles.lead}>Cuando un admin o supervisor te asigne comercios en el directorio, los vas a ver acá con sus activaciones.</p>
         </section>
       ) : !shown.length ? (
-        <p className={styles.lead}>Ningún cliente coincide.</p>
+        <p className={styles.lead}>{show === 'pending' && !q ? 'Visitaste a todos tus clientes este mes.' : 'Ningún cliente coincide.'}</p>
       ) : (
         <ul className={styles.list}>
           {shown.map((c) => (
@@ -69,6 +89,7 @@ export function ClientsPage() {
                 <span className={styles.name}>{c.name ?? c.address}</span>
                 <span className={styles.meta}>{[c.name ? c.address : null, c.customerNumber && `Cliente ${c.customerNumber}`, c.area].filter(Boolean).join(' · ')}</span>
                 <StoreTagsLine tags={{ channel: storeTags(catalogs, { channelId: c.channelId, sellerId: null }).channel, seller: null }} />
+                <span className={styles.meta}>{c.mine ? `Tu visita: ${when(c.mine.date)} · ${OUTCOME_LABEL[c.mine.outcome]}` : 'Todavía no lo visitaste'}</span>
               </span>
               <span className={styles.last}>
                 {c.lastVisit ? (

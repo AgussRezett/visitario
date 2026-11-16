@@ -15,6 +15,10 @@ export interface FakeState {
   issues?: Row[]
   /** Pedidos de activación (with their embeds), the store new ones point to, and the schedule calls. */
   requests?: Row[]
+  /** The seller's visits, the coverage rows and the targets set. */
+  sellerVisits?: Row[]
+  coverage?: Row[]
+  targets?: Row[]
   requestStore?: Row
   scheduled?: Row[]
   resolved?: Row[]
