@@ -1,31 +1,74 @@
 import { describe, expect, it } from 'vitest'
-import { captureToTable } from './capture'
+import { titleMerchandiser, transcriptToTable, type Transcript } from './capture'
 import { toRows } from './import'
 
-describe('a capture read by AI', () => {
-  const read = [
-    { customer_number: '12345', name: 'Mas Ahorro', address: ' Tres Arroyos  762 ', area: 'Paternal', merchandiser: 'Agus', task: '' },
-    { customer_number: '', name: '', address: 'Amenábar 1260', area: 'Belgrano', merchandiser: 'Lucía', task: 'Armar puntera' },
-    { customer_number: '', name: 'TOTAL', address: '', area: '', merchandiser: '', task: '' },
-  ]
+const read = (t: Partial<Transcript>) => transcriptToTable({ title: '', headers: [], rows: [], unreadable: 0, ...t })
+const rowsOf = (t: Partial<Transcript>) => {
+  const { table, columns, hasHeader } = read(t)
+  return toRows(table, columns, hasHeader)
+}
 
-  it('becomes a table with titles; empty columns and rows without a place are left out', () => {
-    const { table, columns } = captureToTable(read)
-    expect(columns).toEqual(['customer_number', 'name', 'address', 'area', 'merchandiser', 'task'])
-    expect(table).toHaveLength(3)
-    expect(table[1]).toEqual(['12345', 'Mas Ahorro', 'Tres Arroyos 762', 'Paternal', 'Agus', ''])
-    expect(captureToTable([{ address: 'Moldes 1365' }]).columns).toEqual(['address'])
+describe('a capture transcribed by AI', () => {
+  it('a spreadsheet with titles: the app decides what each column is', () => {
+    const t = {
+      headers: ['CLIENTE', 'VENDEDOR', 'DIRECCION', 'DIA DE VISITA', 'BARRIO'],
+      rows: [['101', 'ANA GA.', 'CUENCA 100', 'LUNES', 'BELGRANO'], ['102', 'LEO PI.', ' AV. MONROE  200 ', 'MARTES', 'COGHLAN']],
+    }
+    expect(read(t).columns).toEqual(['customer_number', 'seller', 'address', 'ignore', 'area'])
+    expect(rowsOf(t)[1]).toMatchObject({ line: 3, customerNumber: '102', seller: 'LEO PI.', address: 'Av. Monroe 200', area: 'Coghlan' })
   })
 
-  it('reads like any imported sheet', () => {
-    const { table, columns } = captureToTable(read)
-    expect(toRows(table, columns, true)).toMatchObject([
-      { line: 2, customerNumber: '12345', address: 'Tres Arroyos 762', merchandiser: 'Agus' },
-      { line: 3, address: 'Amenábar 1260', area: 'Belgrano', task: 'Armar puntera' },
-    ])
+  it('a sales route keeps only its neighbourhood', () => {
+    const t = { headers: ['COD', 'DOMICILIO', 'RUTA DE VENTA', 'VENDEDOR', 'DIA'], rows: [['10', 'MUÑIZ 10', 'ALMAGRO 1', 'ANA GA.', 'MIERCOLES']] }
+    expect(rowsOf(t)[0]).toMatchObject({ customerNumber: '10', address: 'Muñiz 10', area: 'Almagro', seller: 'ANA GA.' })
   })
 
-  it('nothing readable', () => {
-    expect(captureToTable([])).toEqual({ table: [[]], columns: [] })
+  it('a card of labels and values, with empty labels left empty', () => {
+    const t = { headers: ['DOMICILIO', 'COD', 'RUTA DE VENTA', 'CIUDAD/PARTIDO'], rows: [['CONDE 700', '3300', '', '']] }
+    expect(rowsOf(t)).toEqual([expect.objectContaining({ customerNumber: '3300', address: 'Conde 700', area: '' })])
+  })
+
+  it('without titles, from the content; nothing is filled in that the capture does not show', () => {
+    const t = {
+      rows: [
+        ['ANA GA.', 'CUENCA 100', 'VIERNES', 'VILLA DEVOTO'],
+        ['LEO PI.', 'HABANA 200', 'VIERNES', 'VILLA DEVOTO'],
+        ['ANA GA.', 'BARZANA 300', 'VIERNES', 'VILLA URQUIZA'],
+        ['LEO PI.', 'MONROE 400', 'VIERNES', 'VILLA URQUIZA'],
+      ],
+    }
+    const rows = rowsOf(t)
+    expect(read(t)).toMatchObject({ hasHeader: false, columns: ['seller', 'address', 'ignore', 'area'] })
+    expect(rows).toHaveLength(4)
+    expect(rows[0]).toMatchObject({ line: 1, customerNumber: '', name: '', seller: 'ANA GA.', address: 'Cuenca 100', area: 'Villa Devoto', merchandiser: '' })
+  })
+
+  it('a made-up title gives way to what the column plainly holds', () => {
+    // A model wrote "NOMBRE" over the sellers of a list that had no titles.
+    const t = { headers: ['NOMBRE', 'DIRECCIÓN', 'DÍA', 'BARRIO'], rows: [['ANA GA.', 'CUENCA 100', 'VIERNES', 'VILLA DEVOTO'], ['LEO PI.', 'HABANA 200', 'VIERNES', 'VILLA DEVOTO']] }
+    expect(read(t).columns).toEqual(['seller', 'address', 'ignore', 'area'])
+    expect(rowsOf(t)[0]).toMatchObject({ name: '', seller: 'ANA GA.', address: 'Cuenca 100' })
+  })
+
+  it('without titles, a sales route column is its neighbourhood too', () => {
+    const rows = [['10', 'BULNES 100', 'PALERMO 6', 'ANA GA.', 'MIERCOLES'], ['11', 'JUNCAL 200', 'PALERMO 6', 'ANA GA.', 'MIERCOLES'], ['12', 'CABELLO 300', 'PALERMO 6', 'ANA GA.', 'MIERCOLES']]
+    expect(read({ rows }).columns).toEqual(['customer_number', 'address', 'area', 'seller', 'ignore'])
+    expect(rowsOf({ rows }).map((r) => r.area)).toEqual(['Palermo', 'Palermo', 'Palermo'])
+    expect(rowsOf({ rows })[2]).toMatchObject({ customerNumber: '12', address: 'Cabello 300', seller: 'ANA GA.' })
+  })
+
+  it('a title naming the merchandiser assigns every row', () => {
+    expect(titleMerchandiser('RUTA AGUSTIN')).toBe('AGUSTIN')
+    expect(titleMerchandiser('Repositor: Lucía')).toBe('Lucía')
+    expect(titleMerchandiser('RUTA DE VENTA')).toBe('')
+    expect(titleMerchandiser('Lista del lunes')).toBe('')
+    const t = { title: 'RUTA AGUSTIN', headers: ['CADENA', 'PDVID', 'DIRECCIÓN', 'VENDEDOR'], rows: [['KIOSCO SUR', '10001', 'LARREA 100', 'ANA GA.']] }
+    expect(read(t).columns).toEqual(['name', 'customer_number', 'address', 'seller', 'merchandiser'])
+    expect(rowsOf(t)[0]).toMatchObject({ name: 'Kiosco Sur', customerNumber: '10001', address: 'Larrea 100', merchandiser: 'AGUSTIN' })
+  })
+
+  it('empty rows are dropped; nothing readable is an empty table', () => {
+    expect(read({ headers: ['DOMICILIO'], rows: [['', ''], ['MOLDES 1365']] }).table).toEqual([['DOMICILIO'], ['MOLDES 1365']])
+    expect(read({})).toEqual({ table: [], hasHeader: false, columns: [] })
   })
 })

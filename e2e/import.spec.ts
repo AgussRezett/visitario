@@ -133,12 +133,14 @@ const PIXEL = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQ
 
 test('a capture read by AI goes straight to the review, split by merchandiser', async ({ page }, info) => {
   const state = team({
+    // Only what the capture shows, copied as is: the app decides what each column holds.
     capture: {
       unreadable: 1,
+      headers: ['COD', 'COMERCIO', 'DOMICILIO', 'BARRIO', 'REPOSITOR', 'DIA', 'TAREA'],
       rows: [
-        { customer_number: '20003', name: 'Autoservicio 4', address: 'Dirección vieja 3', area: '', merchandiser: 'Lucia', task: '' },
-        { customer_number: '', name: '', address: 'Cabildo 2245', area: 'Belgrano', merchandiser: 'Diego', task: 'Armar puntera' },
-        { customer_number: '', name: 'TOTAL', address: '', area: '', merchandiser: '', task: '' },
+        ['20003', 'Autoservicio 4', 'Dirección vieja 3', '', 'Lucia', 'VIERNES', ''],
+        ['', '', 'Cabildo 2245', 'Belgrano', 'Diego', 'VIERNES', 'Armar puntera'],
+        ['', 'TOTAL', '', '', '', '', ''],
       ],
     },
   })
@@ -158,6 +160,26 @@ test('a capture read by AI goes straight to the review, split by merchandiser', 
   await expect(page.getByText(/Se agregaron 2 locales/)).toBeVisible()
   expect(state.visits.map((v) => v.merchandiser_id).sort()).toEqual(['p2', 'p3'])
   expect(state.formats ?? []).toHaveLength(0) // a capture is not a format to remember
+})
+
+test('a capture without titles: the route in its title says whose day it is', async ({ page }) => {
+  const state = team({
+    capture: {
+      title: 'RUTA LUCIA',
+      rows: [
+        ['20003', 'Dirección vieja 3', 'ALMAGRO 1', 'ANA GA.', 'MIERCOLES'],
+        ['', 'Cabildo 2245', 'ALMAGRO 1', 'ANA GA.', 'MIERCOLES'],
+        ['', 'Amenábar 1260', 'ALMAGRO 1', 'LEO PI.', 'MIERCOLES'],
+      ],
+    },
+  })
+  await installFakeSupabase(page, state, 'supervisor')
+  await page.goto(`/s/import?date=${FRIDAY}`)
+  await page.getByLabel('Subir captura').setInputFiles({ name: 'captura.jpg', mimeType: 'image/jpeg', buffer: PIXEL })
+  await expect(page.getByRole('heading', { name: 'Revisá antes de guardar' })).toBeVisible()
+  await page.getByRole('button', { name: 'Agregar 3 a la jornada de Lucía' }).click()
+  await expect(page.getByText(/Se agregaron 3 locales/)).toBeVisible()
+  expect(state.visits.map((v) => v.merchandiser_id)).toEqual(['p2', 'p2', 'p2'])
 })
 
 test('reading a capture without the feature on says so and stays put', async ({ page }) => {

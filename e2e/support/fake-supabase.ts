@@ -212,7 +212,8 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
     }
     if (path.endsWith('/functions/v1/read-capture')) {
       if (!state.capture || state.capture.status) return json({ error: 'fake' }, state.capture?.status ?? 503)
-      return json({ rows: state.capture.rows ?? [], unreadable: state.capture.unreadable ?? 0, model: 'fake' })
+      const { title = '', headers = [], rows = [], unreadable = 0 } = state.capture
+      return json({ title, headers, rows, unreadable, model: 'fake' })
     }
     if (path.endsWith('/daily_metrics')) return json((state.dailyMetrics ?? []).filter((r) => matches(r, url.searchParams)))
     if (path.endsWith('/route_plan')) return json(state.routePlan && matches(state.routePlan, url.searchParams) ? state.routePlan : null)
