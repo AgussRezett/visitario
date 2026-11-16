@@ -1,0 +1,51 @@
+@use '@/styles/abstracts' as *;
+
+.card {
+  @include surface;
+  @include flex(column, $gap: space(2.5));
+  padding: space(4);
+}
+
+.state {
+  @include text(label);
+  @include flex(row, $gap: space(2), $align: flex-start);
+  margin: 0;
+  color: $color-pending-ink;
+  font-weight: $weight-semibold;
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  &[data-tone='ok'] {
+    color: $color-done-ink;
+  }
+
+  &[data-tone='off'] {
+    color: $color-ink-muted;
+  }
+}
+
+.note {
+  @include text(label);
+  margin: 0;
+  padding: space(2) space(3);
+  border-left: 3px solid $color-line;
+  color: $color-ink;
+  overflow-wrap: anywhere;
+}
+
+.cancel {
+  align-self: flex-start;
+}
+
+.help {
+  @include text(label);
+  margin: 0;
+  color: $color-ink-muted;
+}
+
+.form {
+  @include flex(column, $gap: space(3));
+}
