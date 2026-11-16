@@ -5,6 +5,9 @@
  */
 import { tidyText } from './text'
 import { extractMentions, type Mentionable } from './mentions'
+import { isAddress, isNumber, looksLikeHeader, normalize } from './import-columns'
+
+export { guessField, guessMapping, looksLikeHeader, normalize } from './import-columns'
 
 export type ImportField = 'customer_number' | 'name' | 'address' | 'area' | 'merchandiser' | 'seller' | 'channel' | 'task' | 'ignore'
 
@@ -52,16 +55,6 @@ export interface Person {
   /** The person importing, when they are also a merchandiser. */
   me?: boolean
 }
-
-/** Same as private.normalize in the database: lower case, no accents or punctuation. */
-export const normalize = (t: string) =>
-  t
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[.,;:]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
 
 /** A spreadsheet cell as text (customer numbers often come as numbers). */
 export function cellText(value: unknown): string {
@@ -144,55 +137,6 @@ export function parseLine(line: string): Pick<ImportRow, 'customerNumber' | 'add
   const address = rest.find(isAddress) ?? rest.find((p) => /[a-zñ]/i.test(p)) ?? ''
   const area = rest.find((p) => p !== address && /[a-zñ]/i.test(p)) ?? ''
   return { customerNumber: customerNumber.replace(/\D/g, ''), address, area }
-}
-
-const KEYWORDS: [ImportField, RegExp][] = [
-  ['merchandiser', /\b(repositor|activador|promotor|merchandiser|repo)\b/],
-  // In the activation messages the seller is "Responsable".
-  ['seller', /\b(vendedor|vendedora|responsable|preventista)\b/],
-  ['channel', /\b(canal|tipo de cliente)\b/],
-  ['customer_number', /\b(nro|numero|cod|codigo|id)\b|n°|^(cliente|cuenta|nro cliente)$/],
-  ['address', /\b(direccion|domicilio|calle|dir|ubicacion)\b/],
-  ['area', /\b(localidad|barrio|zona|partido|ciudad)\b/],
-  ['name', /\b(razon social|nombre|comercio|local|fantasia|pdv|punto de venta)\b/],
-  ['task', /\b(tarea|accion|observacion|observaciones|actividad|que hacer)\b/],
-]
-
-const isNumber = (s: string) => /^\d{2,12}$/.test(s)
-const isAddress = (s: string) => /[a-zñ].*\s\d{1,5}\b/i.test(s)
-
-/** What a column holds, from its title, else from what is in it. */
-export function guessField(header: string, samples: string[]): ImportField {
-  const h = normalize(header)
-  if (h) for (const [field, re] of KEYWORDS) if (re.test(h)) return field
-  const filled = samples.filter(Boolean)
-  if (!filled.length) return 'ignore'
-  const share = (test: (s: string) => boolean) => filled.filter(test).length / filled.length
-  if (share(isAddress) >= 0.6) return 'address'
-  if (share(isNumber) >= 0.8) return 'customer_number'
-  return 'ignore'
-}
-
-/** Titles in the first row: a title names a known field, or the row has no numbers where the next one does. */
-export function looksLikeHeader(table: Table): boolean {
-  const [first, second] = table
-  if (!first) return false
-  if (first.some((c) => KEYWORDS.some(([, re]) => re.test(normalize(c))))) return true
-  const hasDigits = (r: string[]) => r.some((c) => /\d/.test(c))
-  return Boolean(second) && !hasDigits(first) && hasDigits(second ?? [])
-}
-
-/** One field per column; a field already taken by a column to the left stays ignored. */
-export function guessMapping(table: Table, hasHeader: boolean): ImportField[] {
-  const width = table[0]?.length ?? 0
-  const body = (hasHeader ? table.slice(1) : table).slice(0, 30)
-  const used = new Set<ImportField>()
-  return Array.from({ length: width }, (_, i) => {
-    const field = guessField(hasHeader ? (table[0]?.[i] ?? '') : '', body.map((r) => r[i] ?? ''))
-    if (field === 'ignore' || used.has(field)) return 'ignore'
-    used.add(field)
-    return field
-  })
 }
 
 /** Recognises the same spreadsheet next time: its column titles, normalized. */
