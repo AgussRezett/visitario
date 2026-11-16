@@ -4,7 +4,8 @@
 // the import review, like a spreadsheet.
 //   POST multipart: `file` (JPEG/PNG/WebP, ≤ 6 MB) + `company` (uuid)
 //   → { title, headers, rows: string[][], unreadable, model }
-// Only supervisors and admins, of companies on a paid or pilot plan, up to a monthly cap.
+// Merchandisers (into their day), supervisors and admins, of companies on a paid or pilot
+// plan, up to a monthly cap per company.
 // Reads with Cloudflare Workers AI (CLOUDFLARE_ACCOUNT_ID + CLOUDFLARE_AI_TOKEN), or with
 // Claude (ANTHROPIC_API_KEY); with neither it answers 503 and the app says it is not on yet.
 import { createClient } from 'npm:@supabase/supabase-js@2'
@@ -18,13 +19,14 @@ const corsHeaders = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
-const monthlyCap = Number(Deno.env.get('AI_MONTHLY_CAPTURES') ?? '300')
+const monthlyCap = Number(Deno.env.get('AI_MONTHLY_CAPTURES') ?? '1000')
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
 const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
 const TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 const PLANS = new Set(['pilot', 'team', 'internal'])
+const ROLES = new Set(['merchandiser', 'supervisor', 'admin'])
 
 function toBase64(bytes: Uint8Array) {
   let binary = ''
@@ -48,14 +50,14 @@ Deno.serve(async (req) => {
     return json({ error: 'invalid' }, 400)
   }
 
-  // Who may: a supervisor or admin of that company, on a plan that includes it, under the cap.
+  // Who may: anyone who plans days in that company, on a plan that includes it, under the cap.
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
   const { data: person } = await admin.from('person').select('id').eq('auth_user_id', auth.user.id).maybeSingle()
   const { data: member } = person
     ? await admin.from('membership').select('roles').eq('company_id', company).eq('person_id', person.id).eq('status', 'active').maybeSingle()
     : { data: null }
   const roles = (member?.roles ?? []) as string[]
-  if (!roles.includes('supervisor') && !roles.includes('admin')) return json({ error: 'forbidden' }, 403)
+  if (!roles.some((r) => ROLES.has(r))) return json({ error: 'forbidden' }, 403)
   const { data: plan } = await admin.from('subscription').select('plan, status').eq('company_id', company).maybeSingle()
   if (!plan || plan.status !== 'active' || !PLANS.has(plan.plan)) return json({ error: 'plan' }, 402)
   const month = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 7) + '-01' // Argentina
