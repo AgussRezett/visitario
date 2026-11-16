@@ -17,6 +17,7 @@ import { clientHistoryQuery } from '@/features/storemap/api'
 import { usePhotoUrls } from '@/features/workday/api/photos'
 import { VisitPhotos } from './VisitPhotos'
 import { ClientIssues } from './ClientIssues'
+import { RequestCard } from './RequestCard'
 import styles from './ClientPage.module.scss'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 
@@ -67,6 +68,8 @@ export function ClientPage({ storeId }: { storeId: string }) {
         <Link to="/s/map" search={{ point: s.id }} className={buttonClass('secondary', 'md')}><MapPinned size={18} aria-hidden />Ver en el mapa</Link>
         <a href={mapsSearchUrl(s)} target="_blank" rel="noreferrer" className={buttonClass('secondary', 'md')}><Navigation size={18} aria-hidden />Cómo llegar</a>
       </div>
+
+      <RequestCard storeId={s.id} place={s.name ?? s.address} />
 
       <ClientIssues storeId={s.id} typeName={(id) => (catalogs?.issueTypes ?? []).find((t) => t.id === id)?.name ?? 'Novedad'} />
 

@@ -13,6 +13,10 @@ export interface FakeState {
   avatarsRemoved?: string[]
   /** Novedades (store_issue rows, with their embeds), and the resolve_store_issue calls. */
   issues?: Row[]
+  /** Pedidos de activación (with their embeds), the store new ones point to, and the schedule calls. */
+  requests?: Row[]
+  requestStore?: Row
+  scheduled?: Row[]
   resolved?: Row[]
   /** set_photo_crop calls received (the crop is also kept on the photo row). */
   crops?: Row[]

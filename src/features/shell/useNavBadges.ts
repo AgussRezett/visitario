@@ -27,8 +27,11 @@ export function useNavBadges(personId: string, active: { companyId: string; role
           : await base.eq('merchandiser_id', personId).eq('review_status', 'needs_fix')
       if (error) throw error
       if (role !== 'supervisor') return { workday: count ?? 0 }
-      const issues = await openIssues()
-      return { review: count ?? 0, issues: issues.count ?? 0 }
+      const [issues, requests] = await Promise.all([
+        openIssues(),
+        supabase.from('activation_request').select('id', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'open').is('deleted_at', null),
+      ])
+      return { review: count ?? 0, issues: issues.count ?? 0, assign: requests.count ?? 0 }
     },
   })
   return badges.data ?? {}

@@ -18,6 +18,7 @@ import { memberPendingQuery, teamDayQuery } from '@/features/team/api/queries'
 import { useAssign } from '@/features/team/api/mutations'
 import { PendingSheet } from './PendingSheet'
 import { StopRow } from './StopRow'
+import { RequestsBoard } from './RequestsBoard'
 import { storeTags } from '@/features/workday/store-tags'
 import { useDayOperations } from '@/features/operation/api'
 import { OperationsBoard } from '@/features/operation/components/OperationsBoard'
@@ -107,6 +108,7 @@ export function AssignPage({ date: requested, person, imported }: AssignSearch) 
       )}
 
       <Refreshing active={team.isPlaceholderData}>
+        <RequestsBoard companyId={ctx.companyId} member={selected} date={date} />
         <OperationsBoard companyId={ctx.companyId} meId={ctx.personId} ops={ops.data ?? []} />
         {selected ? <MemberPlan key={`${selected.personId}-${date}`} ctx={ctx} member={selected} date={date} /> : null}
       </Refreshing>
