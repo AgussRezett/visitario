@@ -1,0 +1,10 @@
+@use '@/styles/abstracts' as *;
+
+.section {
+  @include flex(column, $gap: space(2));
+}
+
+.title {
+  @include heading(heading);
+  margin: 0;
+}

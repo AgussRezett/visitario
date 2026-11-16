@@ -1,0 +1,21 @@
+@use '@/styles/abstracts' as *;
+
+// A row of square tiles that scrolls sideways when there are many.
+.strip {
+  display: flex;
+  gap: space(2);
+  margin-top: space(1);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.thumb {
+  flex: 0 0 auto;
+  width: 88px;
+  height: 88px;
+
+  @include up(lg) {
+    width: 112px;
+    height: 112px;
+  }
+}
