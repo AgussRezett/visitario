@@ -69,3 +69,29 @@ test('a new store asks for its channel: one of them, or "Sin canal" on purpose',
   await pick(sheet.getByLabel('Canal'), 'Sin canal')
   await expect(add).toBeEnabled()
 })
+
+const PIXEL = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64')
+
+test('the merchandiser reads a capture into the list, checks it and adds it', async ({ page }, info) => {
+  const state: FakeState = {
+    workday: null, visits: [], uploads: [], catalogs: catalogs(),
+    // Only what the capture shows, copied as is: Visitario decides what each column holds.
+    capture: { headers: ['COD', 'DOMICILIO', 'BARRIO', 'VENDEDOR', 'DIA'], rows: [['1362', 'JOSE CUBAS 2770', 'VILLA DEVOTO', 'FLORENCIA', 'VIERNES'], ['', 'LADINES 2774', 'VILLA DEVOTO', 'OTRO VE.', 'VIERNES']], unreadable: 1 },
+  }
+  await installFakeSupabase(page, state)
+  await page.goto('/s/workday?date=2026-10-12')
+  await page.getByRole('button', { name: /Abrir (mi )?jornada/ }).click()
+  await page.getByRole('button', { name: 'Agregar dirección' }).filter({ visible: true }).first().click()
+  const sheet = page.getByRole('dialog', { name: 'Agregar a mi jornada' })
+  await sheet.getByRole('radio', { name: 'Pegar varias' }).click()
+  await sheet.getByLabel('Leer una captura').setInputFiles({ name: 'captura.png', mimeType: 'image/png', buffer: PIXEL })
+  await expect(sheet.getByText(/Leímos 2 locales: revisalos contra la captura/)).toBeVisible()
+  await expect(sheet.getByText(/No pudo leer 1 fila: sumala a mano/)).toBeVisible()
+  // The seller in the catalog goes as a mention; the one that is not is left out, not guessed.
+  await expect(sheet.getByLabel('Direcciones')).toHaveValue('1362; Jose Cubas 2770; Villa Devoto @Florencia\nLadines 2774; Villa Devoto')
+  await page.screenshot({ path: `test-results/paste-capture-${info.project.name}.png` })
+  await pick(sheet.getByLabel('Canal de los que no lo indican'), 'Autoservicio')
+  await sheet.getByRole('button', { name: 'Agregar 2 direcciones' }).click()
+  await expect(sheet).toBeHidden()
+  expect(state.visits).toHaveLength(2)
+})

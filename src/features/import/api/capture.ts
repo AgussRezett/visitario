@@ -7,7 +7,7 @@ export class CaptureError extends Error {}
 
 const MESSAGES: Record<number, string> = {
   402: 'La carga desde una captura es parte del plan pago.',
-  403: 'Solo supervisores y administradores pueden cargar desde una captura.',
+  403: 'Tu usuario no puede leer capturas en esta empresa.',
   429: 'Ya se usaron todas las capturas de este mes.',
   503: 'La lectura de capturas con IA todavía no está activada.',
 }

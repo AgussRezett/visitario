@@ -28,6 +28,7 @@ import { useDayOverlaps } from '@/features/workday/api/overlaps'
 import { OverlapNote } from '@/features/workday/components/OverlapNote'
 import { pastedHelp, readLines } from './paste-lines'
 import { DirectoryResults } from './DirectoryResults'
+import { CaptureButton } from './CaptureButton'
 import { outcomeText, pasteOutcome, repeatedLines, type PasteOutcome } from './paste-results'
 
 interface AddAddressSheetProps {
@@ -256,6 +257,8 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
               <ul className={styles.repeated}>{outcome.failed.map((f, i) => <li key={i}><b>{f.text}</b> — {f.reason}</li>)}</ul>
             </Banner>
           ) : null}
+          {/* Self-employed accounts have no plan with AI. */}
+          {ctx.personal ? null : <CaptureButton companyId={ctx.companyId} sellers={sellers} disabled={!online} onRead={(read) => setPasted((p) => [p.trim(), ...read].filter(Boolean).join('\n'))} />}
           <MentionTextArea
             label="Direcciones"
             value={pasted}

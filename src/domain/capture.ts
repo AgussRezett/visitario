@@ -3,7 +3,8 @@
 // column holds is guessed here, with the same rules as a spreadsheet, so nothing the
 // capture does not show can reach the import.
 import { guessMapping, normalize } from './import-columns'
-import type { ImportField, Table } from './import'
+import { toRows, type ImportField, type Table } from './import'
+import type { Mentionable } from './mentions'
 
 export interface Transcript {
   /** A title above the list ("RUTA AGUSTIN"), as written. */
@@ -48,4 +49,18 @@ export function transcriptToTable(t: Transcript): { table: Table; hasHeader: boo
     columns = [...columns, 'merchandiser']
   }
   return { table, hasHeader, columns }
+}
+
+/**
+ * A capture as lines to paste into a day ("564; Av. Federico Lacroze 3265; Belgrano @Mirko Ra"),
+ * for the merchandiser to check before adding. A seller goes as a mention only when the
+ * catalog has that name ("MIRKO RA." is "Mirko Ra"); otherwise it is left out, not guessed.
+ */
+export function transcriptToLines(t: Transcript, sellers: readonly Mentionable[]): string[] {
+  const { table, columns, hasHeader } = transcriptToTable(t)
+  const known = new Map(sellers.map((s) => [normalize(s.name), s.name]))
+  return toRows(table, columns, hasHeader).map((r) => {
+    const seller = r.seller ? known.get(normalize(r.seller)) : undefined
+    return [r.customerNumber, r.address, r.area].filter(Boolean).join('; ') + (seller ? ` @${seller}` : '')
+  })
 }
