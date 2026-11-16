@@ -66,3 +66,58 @@ test('the client\'s page shows the next activation, the open novedades and how e
   await history.getByRole('button', { name: 'Después 2 de 2' }).click()
   await expect(page.getByRole('dialog', { name: 'Coto Cabildo' })).toBeVisible()
 })
+
+test('the seller asks to activate a client, and can take it back', async ({ page }, info) => {
+  const s: FakeState = {
+    workday: null, visits: [], uploads: [], memberships: seller, catalogs: catalogs(), requestStore: store,
+    clientHistory: { s1: { store: { ...store, lat: null, lng: null }, visits: [] } },
+  }
+  await installFakeSupabase(page, s, 'seller')
+  await page.goto('/s/clients/s1')
+  const card = page.getByRole('region', { name: 'Pedido de activación' })
+  await card.getByRole('button', { name: 'Pedir una activación' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Pedir una activación' })
+  await sheet.getByLabel('¿Para qué? (opcional)').fill('Lanzamiento de Aperol')
+  await page.screenshot({ path: `test-results/seller-request-${info.project.name}.png` })
+  await sheet.getByRole('button', { name: 'Mandar al supervisor' }).click()
+  await expect(sheet).toBeHidden()
+  await expect.poll(() => s.requests?.[0]).toMatchObject({ store_id: 's1', note: 'Lanzamiento de Aperol', status: 'open' })
+  await expect(card.getByText(/Pediste una activación el .*Esperando al supervisor/)).toBeVisible()
+  await expect(card.getByText('Lanzamiento de Aperol')).toBeVisible()
+
+  await card.getByRole('button', { name: 'Quitar el pedido' }).click()
+  await expect.poll(() => s.requests?.[0]?.deleted_at).toBeTruthy()
+  await expect(card.getByRole('button', { name: 'Pedir una activación' })).toBeVisible()
+})
+
+test('the supervisor adds a seller\'s request to the day being planned, or dismisses it with a reason', async ({ page }, info) => {
+  const supervisor = [{ id: 'm1', company_id: 'c1', roles: ['supervisor'], status: 'active', starts_on: '2026-10-01', company: { name: 'Panda', kind: 'distributor' } }]
+  const request = (id: string, place: Row, note: string | null): Row => ({
+    id, store_id: place.id, company_id: 'c1', note, status: 'open', created_at: `${day(-1)}T13:00:00Z`, deleted_at: null, scheduled_for: null, answer: null,
+    asker: { first_name: 'Florencia', last_name: 'Paz' }, assignee: null, store: place,
+  })
+  const s: FakeState = {
+    workday: null, visits: [], uploads: [], memberships: supervisor, catalogs: catalogs(),
+    people: [{ id: 'p2', first_name: 'Lucía', last_name: 'Gómez' }], workdays: [],
+    requests: [request('r1', store, 'Lanzamiento de Aperol'), request('r2', { ...store, id: 's2', name: null, address: 'Moldes 1365' }, null)],
+  }
+  await installFakeSupabase(page, s, 'supervisor')
+  const tomorrow = day(1)
+  await page.goto(`/s/assign?date=${tomorrow}&person=p2`)
+
+  const board = page.getByRole('region', { name: 'Pedidos de vendedores' })
+  await expect(board.getByRole('heading', { name: 'Pedidos de vendedores · 2' })).toBeVisible()
+  await expect(board).toContainText('Lo pidió Florencia Paz')
+  await page.screenshot({ path: `test-results/assign-requests-${info.project.name}.png`, fullPage: true })
+  await board.getByRole('button', { name: /^Sumar a Lucía el / }).first().click()
+  await expect.poll(() => s.scheduled?.[0]).toMatchObject({ p_request: 'r1', p_merchandiser: 'p2', p_date: tomorrow })
+  await expect(board.getByRole('heading', { name: 'Pedidos de vendedores · 1' })).toBeVisible()
+
+  await board.getByRole('button', { name: 'Descartar' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Descartar el pedido' })
+  await sheet.getByLabel('Motivo para el vendedor (opcional)').fill('Ya se activó la semana pasada')
+  await sheet.getByRole('button', { name: 'Descartar' }).click()
+  await expect.poll(() => s.requests?.[1]?.status).toBe('dismissed')
+  expect(s.requests?.[1]?.answer).toBe('Ya se activó la semana pasada')
+  await expect(board).toHaveCount(0)
+})
