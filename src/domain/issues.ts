@@ -21,6 +21,10 @@ export function sellerMessage(i: IssueForMessage, seller: string | null): string
   ].filter(Boolean).join('\n')
 }
 
+/** The seller's one-tap answers, kept as the resolution note. */
+export const ORDER_TAKEN = 'Pedido cargado'
+export const NOT_MINE = 'No corresponde'
+
 /** A link that opens WhatsApp with the text, to pick the chat (no number needed). */
 export const whatsappLink = (text: string) => `https://wa.me/?text=${encodeURIComponent(text)}`
 

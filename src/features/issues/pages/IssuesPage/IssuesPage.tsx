@@ -36,13 +36,18 @@ export function IssuesPage({ tab = 'open' }: IssuesSearch) {
   const typeOptions = [...new Set(all.map((i) => i.typeId))].map((id) => ({ value: String(id), label: typeOf(id) }))
   const peopleOptions = [...new Map(all.map((i) => [i.createdBy, i.by])).entries()].map(([id, name]) => personOption(id, name, ''))
   if (!ctx) return null
+  const asSeller = ctx.role === 'seller'
 
   return (
     <div className={styles.page}>
       <header className={styles.titles}>
         <span className={styles.eyebrow}>{ctx.companyName}</span>
-        <h1 className={styles.title}>Novedades</h1>
-        <p className={styles.intro}>Lo que los activadores vieron en los locales: pedidos, falta de stock, precios. Pasale al vendedor lo suyo y marcalas resueltas.</p>
+        <h1 className={styles.title}>{asSeller ? 'Novedades de mis clientes' : 'Novedades'}</h1>
+        <p className={styles.intro}>
+          {asSeller
+            ? 'Lo que los activadores vieron en tus clientes: pedidos, falta de stock, precios. Cuando lo resuelvas, marcalo y el supervisor se entera.'
+            : 'Lo que los activadores vieron en los locales: pedidos, falta de stock, precios. Pasale al vendedor lo suyo y marcalas resueltas.'}
+        </p>
       </header>
 
       <Segmented label="Qué ver" value={tab} onChange={(t) => void navigate({ to: '/s/issues', search: { tab: t === 'open' ? undefined : t }, replace: true })}
@@ -61,7 +66,7 @@ export function IssuesPage({ tab = 'open' }: IssuesSearch) {
         <div className={styles.list}>{[0, 1, 2].map((i) => <Skeleton key={i} height={160} />)}</div>
       ) : !shown.length && !issues.isError ? (
         <Banner tone="info" title={tab === 'open' ? 'No hay novedades abiertas' : 'Todavía no hay novedades resueltas'}>
-          {tab === 'open' ? 'Cuando un activador reporte algo desde una visita, aparece acá.' : 'Las que marques resueltas quedan acá.'}
+          {tab === 'open' ? (asSeller ? 'Cuando un activador reporte algo de uno de tus clientes, aparece acá.' : 'Cuando un activador reporte algo desde una visita, aparece acá.') : 'Las que marques resueltas quedan acá.'}
         </Banner>
       ) : (
         <div className={styles.list}>
@@ -69,7 +74,7 @@ export function IssuesPage({ tab = 'open' }: IssuesSearch) {
             const seller = catalogs.data?.sellers.find((s) => s.id === i.store.sellerId)?.name ?? null
             const channel = catalogs.data?.channels.find((c) => c.id === i.store.channelId)?.name ?? null
             return (
-              <IssueCard key={i.id} issue={i} typeName={typeOf(i.typeId)} seller={seller} channel={channel} busy={resolve.isPending && resolve.variables?.id === i.id}
+              <IssueCard key={i.id} issue={i} typeName={typeOf(i.typeId)} seller={seller} channel={channel} asSeller={asSeller} busy={resolve.isPending && resolve.variables?.id === i.id}
                 onResolve={(note) => resolve.mutateAsync({ id: i.id, resolved: true, note })}
                 onReopen={() => resolve.mutate({ id: i.id, resolved: false })} />
             )

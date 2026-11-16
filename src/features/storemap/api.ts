@@ -1,3 +1,4 @@
+import { fromStored, type Crop } from '@/domain/crop'
 import { queryOptions } from '@tanstack/react-query'
 import { supabase, type Enums } from '@/lib/supabase'
 import type { MapPoint } from '@/domain/store-map'
@@ -38,6 +39,8 @@ export interface ClientVisit {
   merchandiser: string
   displays: string[]
   metrics: { name: string; quantity: number }[]
+  /** The "después" of a finished activation, with their size and crop. */
+  photos: { id: string; width: number; height: number; crop: Crop | null }[]
 }
 
 export interface ClientHistory {
@@ -45,9 +48,11 @@ export interface ClientHistory {
   visits: ClientVisit[]
 }
 
+type VisitRow = Omit<ClientVisit, 'photos'> & { photos?: { id: string; width: number | null; height: number | null; crop: number[] | null }[] }
+
 interface HistoryRow {
   store: { id: string; name: string | null; address: string; area: string | null; customer_number: string | null; lat: number | null; lng: number | null; channel_id: number | null; seller_id: number | null }
-  visits: ClientVisit[]
+  visits: VisitRow[]
 }
 
 /** A client's profile and its last activations; null when it is not mine to see. */
@@ -62,7 +67,10 @@ export const clientHistoryQuery = (companyId: string, storeId: string) =>
       const s = h.store
       return {
         store: { id: s.id, name: s.name, address: s.address, area: s.area, customerNumber: s.customer_number, lat: s.lat, lng: s.lng, channelId: s.channel_id, sellerId: s.seller_id },
-        visits: h.visits ?? [],
+        visits: (h.visits ?? []).map((v) => ({
+          ...v,
+          photos: (v.photos ?? []).map((p) => ({ id: p.id, width: p.width ?? 0, height: p.height ?? 0, crop: fromStored(p.crop) })),
+        })),
       }
     },
   })

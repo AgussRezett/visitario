@@ -21,6 +21,7 @@ export const SECTIONS: Record<Role, Section[]> = {
   ],
   seller: [
     { slug: 'clients', label: 'Clientes', title: 'Mis clientes', icon: Store, stage: 7, summary: 'Tus clientes con su canal y la última activación.' },
+    { slug: 'issues', label: 'Novedades', title: 'Novedades de mis clientes', icon: Megaphone, stage: 7, summary: 'Lo que los activadores vieron en tus clientes: pedidos, falta de stock, precios.' },
     { slug: 'map', label: 'Mapa', title: 'Mapa de clientes', icon: MapPinned, stage: 7, summary: 'Los puntos de venta en el mapa, por vendedor, última visita, canal o trato.' },
   ],
   supervisor: [
