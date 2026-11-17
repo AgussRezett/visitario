@@ -1,0 +1,69 @@
+@use '@/styles/abstracts' as *;
+
+// The goals as cards: the whole card is the radio's label.
+.goals {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(2);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  @include text(label);
+  margin-bottom: space(2);
+  font-weight: $weight-bold;
+}
+
+.goal {
+  @include flex(column, $gap: space(1));
+  @include transition-colors;
+  min-height: $touch-target + space(8);
+  padding: space(3);
+  border: 1.5px solid $color-control;
+  border-radius: $radius-md;
+  background: $color-card;
+  cursor: pointer;
+
+  @include hover {
+    border-color: $color-forest;
+  }
+
+  &:focus-within {
+    outline: 2px solid $color-focus;
+    outline-offset: 2px;
+  }
+
+  &[data-on] {
+    border-color: $color-forest;
+    background: $color-lime-soft;
+
+    @include dark {
+      border-color: $color-lime;
+      background: $color-muted;
+    }
+  }
+}
+
+.radio {
+  @include visually-hidden;
+}
+
+.goal-name {
+  @include text(base);
+  font-weight: $weight-bold;
+}
+
+.goal-help {
+  @include text(label);
+  color: $color-ink-muted;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: space(3);
+  align-items: end;
+}

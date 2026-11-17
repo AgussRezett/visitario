@@ -1,0 +1,79 @@
+@use '@/styles/abstracts' as *;
+
+.result {
+  @include flex(column, $gap: space(3));
+}
+
+.totals {
+  @include text(base);
+  margin: 0;
+  color: $color-ink-muted;
+
+  b {
+    color: $color-ink;
+  }
+}
+
+.stops {
+  list-style: none;
+  border: 1px solid $color-line;
+  border-radius: $radius-lg;
+  background: $color-card;
+
+  li + li {
+    border-top: 1px solid $color-line;
+  }
+}
+
+.stop {
+  @include flex(row, $gap: space(3), $align: center);
+  min-height: $touch-target + space(4);
+  padding: space(2) space(2) space(2) space(3);
+}
+
+.n {
+  @include center;
+  @include square(28px);
+  @include text(label);
+  flex-shrink: 0;
+  border-radius: $radius-sm;
+  background: $color-forest;
+  font-weight: $weight-extrabold;
+  color: $color-on-forest;
+}
+
+.what {
+  @include flex(column, $gap: space(0.5));
+  flex: 1;
+  min-width: 0;
+}
+
+.place {
+  overflow-wrap: anywhere;
+  font-weight: $weight-bold;
+}
+
+.why {
+  @include text(label);
+  color: $color-ink-muted;
+}
+
+.assign {
+  @include flex(column, $gap: space(3));
+
+  @include up(sm) {
+    flex-direction: row;
+    align-items: flex-end;
+
+    > :first-child {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+}
+
+.help {
+  @include text(label);
+  margin: 0;
+  color: $color-ink-subtle;
+}
