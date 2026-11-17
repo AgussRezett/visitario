@@ -1,4 +1,5 @@
 import { pick } from './support/select'
+import { readFiles } from './support/read-files'
 import { expect, test } from '@playwright/test'
 import { installFakeSupabase, type FakeState } from './support/fake-supabase'
 
@@ -146,9 +147,9 @@ test('a capture read by AI goes straight to the review, split by merchandiser', 
   })
   await installFakeSupabase(page, state, 'supervisor')
   await page.goto(`/s/import?date=${FRIDAY}`)
-  await expect(page.getByLabel('Subir captura')).toBeAttached()
+  await expect(page.getByLabel('Elegir archivos')).toBeAttached()
   await page.screenshot({ path: `test-results/import-source-capture-${info.project.name}.png`, fullPage: true })
-  await page.getByLabel('Subir captura').setInputFiles({ name: 'captura_excel.png', mimeType: 'image/png', buffer: PIXEL })
+  await readFiles(page, [{ name: 'captura_excel.png', mimeType: 'image/png', buffer: PIXEL }])
 
   await expect(page.getByRole('heading', { name: 'Revisá antes de guardar' })).toBeVisible()
   await expect(page.getByText('Leído de una captura con IA')).toBeVisible()
@@ -175,7 +176,7 @@ test('a capture without titles: the route in its title says whose day it is', as
   })
   await installFakeSupabase(page, state, 'supervisor')
   await page.goto(`/s/import?date=${FRIDAY}`)
-  await page.getByLabel('Subir captura').setInputFiles({ name: 'captura.jpg', mimeType: 'image/jpeg', buffer: PIXEL })
+  await readFiles(page, [{ name: 'captura.jpg', mimeType: 'image/jpeg', buffer: PIXEL }])
   await expect(page.getByRole('heading', { name: 'Revisá antes de guardar' })).toBeVisible()
   await page.getByRole('button', { name: 'Agregar 3 a la jornada de Lucía' }).click()
   await expect(page.getByText(/Se agregaron 3 locales/)).toBeVisible()
@@ -185,7 +186,7 @@ test('a capture without titles: the route in its title says whose day it is', as
 test('reading a capture without the feature on says so and stays put', async ({ page }) => {
   await installFakeSupabase(page, team({ capture: { status: 402 } }), 'supervisor')
   await page.goto(`/s/import?date=${FRIDAY}`)
-  await page.getByLabel('Subir captura').setInputFiles({ name: 'captura.png', mimeType: 'image/png', buffer: PIXEL })
+  await readFiles(page, [{ name: 'captura.png', mimeType: 'image/png', buffer: PIXEL }])
   await expect(page.getByText('La lectura con IA no está incluida en el plan de tu empresa.')).toBeVisible()
   await expect(page.getByRole('heading', { name: '¿De dónde salen los locales?' })).toBeVisible()
 })

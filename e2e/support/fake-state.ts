@@ -91,7 +91,9 @@ export interface FakeState {
   pastVisits?: Record<string, Row>
   /** What reading a capture with AI answers: its transcript, or an error status. */
   /** A PDF with indications, as read-brief answers: the pages' text and the AI's reading. */
-  brief?: { pages?: string[]; brief?: Row; status?: number; error?: string }
+  brief?: { pages?: string[]; brief?: Row; status?: number; error?: string; sent?: Row }
+  /** Several captures read at once: each read takes the next one (then `capture`). */
+  captures?: NonNullable<FakeState['capture']>[]
   capture?: { title?: string; headers?: string[]; rows?: string[][]; unreadable?: number; status?: number }
   /** Armar recorrido: zones drawn, what stores have pending, and routes added to a day. */
   routeZones?: Row[]
