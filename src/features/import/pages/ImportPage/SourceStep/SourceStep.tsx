@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { FileSpreadsheet, ImageUp, Upload } from 'lucide-react'
+import { FileSpreadsheet, Upload } from 'lucide-react'
 import { parsePasted } from '@/domain/import'
-import { quotaLeft, quotaText } from '@/domain/ai-quota'
+import { mergeTranscripts, transcriptToLines } from '@/domain/capture'
 import { formatDayMonth, todayInArgentina } from '@/domain/dates'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
@@ -10,9 +9,10 @@ import type { Mentionable } from '@/domain/mentions'
 import { MentionTextArea } from '@/features/workday/components/MentionTextArea'
 import { FileError, readSpreadsheet } from '@/features/import/api/read-file'
 import type { SavedFormat } from '@/features/import/api/import'
-import { CaptureError, aiQuotaQuery, readCapture, useRefreshQuota } from '@/features/import/api/capture'
+import { CaptureError } from '@/features/import/api/capture'
+import type { FilesReading } from '@/features/import/api/read-files'
 import { withBrief, withCapture, withSheets, type Draft } from '@/features/import/draft'
-import { BriefForm } from '@/features/import/components/BriefForm'
+import { AiReader } from '@/features/import/components/AiReader'
 import type { Person } from '@/domain/import'
 import { StepFrame } from '../StepFrame'
 import styles from './SourceStep.module.scss'
@@ -32,15 +32,11 @@ interface SourceStepProps {
   onRead: (d: Draft, next: 2 | 3) => void
 }
 
-/** Step 1: a spreadsheet file or pasted text. */
+/** Step 1: a spreadsheet file, files read by AI, or pasted text. */
 export function SourceStep({ companyId, tags, onAddSeller, draft, people, formats, onCancel, onRead }: SourceStepProps) {
   const [pasted, setPasted] = useState('')
   const [reading, setReading] = useState(false)
-  const [capturing, setCapturing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const quota = useQuery(aiQuotaQuery(companyId))
-  const refreshQuota = useRefreshQuota(companyId)
-  const closed = quota.data ? quotaLeft(quota.data).left === 0 : false
 
   const open = async (file: File | undefined) => {
     if (!file) return
@@ -59,22 +55,26 @@ export function SourceStep({ companyId, tags, onAddSeller, draft, people, format
     }
   }
 
-  /** A capture or photo of the list, transcribed by AI: to the review when the columns are clear. */
-  const openCapture = async (file: File | undefined) => {
-    if (!file) return
-    setError(null)
-    setCapturing(true)
-    try {
-      const d = withCapture(draft, file.name, await readCapture(file, companyId))
-      const { columns, hasHeader } = d.mapping
-      if ((d.sheets[0]?.table.length ?? 0) < (hasHeader ? 2 : 1)) throw new CaptureError('No encontramos locales en la captura. Probá con una más nítida, o pegá el texto.')
-      onRead(d, columns.includes('address') || columns.includes('customer_number') ? 3 : 2)
-    } catch (e) {
-      setError(e instanceof CaptureError ? e.message : 'No pudimos leer la captura. Revisá la conexión y probá de nuevo.')
-    } finally {
-      setCapturing(false)
-      void refreshQuota()
+  /** Files read by AI: to the review when the columns are clear. */
+  const readWithAi = (r: FilesReading, names: string[]) => {
+    const name = names.join(', ')
+    if (r.kind === 'brief') {
+      onRead(withBrief(draft, name, r.brief, tags.sellers), 3)
+      return null
     }
+    const merged = mergeTranscripts(r.transcripts)
+    if (merged) {
+      const d = withCapture(draft, name, merged)
+      const { columns, hasHeader } = d.mapping
+      if ((d.sheets[0]?.table.length ?? 0) < (hasHeader ? 2 : 1)) throw new CaptureError('No encontramos locales. Probá con capturas más nítidas, o pegá el texto.')
+      onRead(d, columns.includes('address') || columns.includes('customer_number') ? 3 : 2)
+      return null
+    }
+    // Different lists: each one's stores as lines, one after the other.
+    const read = parsePasted(r.transcripts.flatMap((t) => transcriptToLines(t, tags.sellers)).join('\n'))
+    if (read.kind !== 'lines' || !read.lines.length) throw new CaptureError('No encontramos locales. Probá con capturas más nítidas, o pegá el texto.')
+    onRead({ ...draft, fileName: name, sheets: [], lines: read.lines, format: null, edits: {}, skipped: [], capture: null, brief: null }, 3)
+    return null
   }
 
   const usePasted = () => {
@@ -109,20 +109,12 @@ export function SourceStep({ companyId, tags, onAddSeller, draft, people, format
           <span className={styles.dropHelp}>La planilla de ruteo como te llega: elegís qué hay en cada columna en el paso siguiente.</span>
         </label>
 
-        <label className={styles.drop} data-busy={capturing || undefined} data-disabled={closed || undefined}>
-          <input type="file" accept="image/*" className={styles.file} onChange={(e) => void openCapture(e.target.files?.[0])} disabled={capturing || reading || closed} aria-label="Subir captura" />
-          <span className={styles.dropIcon}><ImageUp size={22} aria-hidden /></span>
-          <span className={styles.dropTitle}>{capturing ? 'Leyendo la captura…' : 'Desde una captura'}<span className={styles.ai}>IA</span></span>
-          <span className={styles.dropHelp}>{capturing ? 'La IA está leyendo las direcciones. Tarda unos segundos.' : 'Subí la foto o captura de tu Excel o del mensaje, y la IA lee las direcciones.'}</span>
-          {quota.data && !capturing ? <span className={styles.quota} data-closed={closed || undefined}>{quotaText(quota.data)}</span> : null}
-        </label>
-
-        <BriefForm
+        <AiReader
           companyId={companyId}
           catalog={{ sellers: tags.sellers, people: people.map((p) => ({ personId: p.id, firstName: p.firstName, lastName: p.lastName })) }}
-          disabled={reading || capturing}
+          disabled={reading}
           placeholder="Ej.: Mañana Lucía hace estos locales. Todos son de Pablo, menos el de Olaguer que es de Mirko. Que avise si falta algo."
-          onRead={(b, name) => onRead(withBrief(draft, name, b, tags.sellers), 3)}
+          onRead={readWithAi}
         />
 
         <div className={styles.paste}>

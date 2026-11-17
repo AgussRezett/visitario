@@ -52,7 +52,7 @@ export function AiUsage({ companyId, perPerson, onPerPerson, cardClass, headingC
         onChange={(v) => onPerPerson(v === NO_LIMIT ? null : Number(v))}
         options={[...PER_PERSON.map((n) => ({ value: n, label: `${n} usos` })), { value: NO_LIMIT, label: 'Sin límite' }]}
       />
-      <p className={helpClass}>Leer una captura o pedir un recorrido escrito es un uso. Así nadie usa solo todo el mes; cada uno ve cuántos le quedan.</p>
+      <p className={helpClass}>Leer una captura o un PDF, o pedir un recorrido escrito, es un uso. Así nadie usa solo todo el mes; cada uno ve cuántos le quedan.</p>
 
       {people.length ? (
         <ul className={styles.people} aria-label="Quién la usó este mes">

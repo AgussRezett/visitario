@@ -1,7 +1,7 @@
 @use '@/styles/abstracts' as *;
 
-// A dashed card like the capture's; once a PDF is chosen it opens for the indications.
-.brief {
+// A dashed card to pick files; with files chosen it opens for the list and the indications.
+.reader {
   @include flex(column, $gap: space(3));
   position: relative;
   flex-shrink: 0;
@@ -19,7 +19,6 @@
 .pick {
   @include flex(row, $gap: space(3.5), $align: center);
   min-height: $touch-target;
-  padding-right: space(8);
   cursor: pointer;
 
   &:focus-within {
@@ -79,11 +78,54 @@
   color: $color-ink-muted;
 }
 
-.clear {
+.body {
+  @include flex(column, $gap: space(3));
+}
+
+.quota {
+  @include text(label);
+  font-weight: $weight-bold;
+  color: $color-forest;
+
+  @include dark {
+    color: $color-lime;
+  }
+
+  &[data-closed] {
+    color: $color-fix-ink;
+  }
+}
+
+.files {
+  @include flex(column, $gap: space(1));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chosen {
+  @include flex(row, $gap: space(2), $align: center);
+  min-height: $touch-target;
+  padding-left: space(3);
+  border-radius: $radius-md;
+  background: $color-muted;
+  color: $color-ink-muted;
+}
+
+.name {
+  @include text(label);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: $weight-bold;
+  color: $color-ink;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.remove {
   @include flex(row, $align: center, $justify: center);
-  position: absolute;
-  top: space(2);
-  right: space(2);
+  flex-shrink: 0;
   width: $touch-target;
   height: $touch-target;
   border: 0;
@@ -93,14 +135,10 @@
   cursor: pointer;
 
   @include hover {
-    background: $color-muted;
+    background: $color-card;
   }
 
   &:focus-visible {
     outline: 2px solid $color-focus;
   }
-}
-
-.body {
-  @include flex(column, $gap: space(3));
 }
