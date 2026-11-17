@@ -1,0 +1,65 @@
+@use '@/styles/abstracts' as *;
+
+.month {
+  @include flex(column, $gap: space(2));
+}
+
+.count {
+  @include text(base);
+  color: $color-ink-muted;
+
+  b {
+    @include heading(title);
+    margin-right: space(1);
+    color: $color-ink;
+  }
+}
+
+// The month used: lime while there is room, amber past 70 %, the fix color past 90 %.
+.bar {
+  height: space(2.5);
+  overflow: hidden;
+  border-radius: $radius-full;
+  background: $color-muted;
+
+  span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: $color-lime;
+    transition: width 0.3s ease;
+  }
+
+  &[data-level='mid'] span {
+    background: $color-pending;
+  }
+
+  &[data-level='high'] span {
+    background: $color-fix;
+  }
+}
+
+.people {
+  list-style: none;
+
+  li + li {
+    border-top: 1px solid $color-line;
+  }
+}
+
+.person {
+  @include flex(row, $gap: space(3), $align: baseline, $justify: space-between);
+  padding-block: space(2.5);
+}
+
+.name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: $weight-bold;
+}
+
+.uses {
+  @include text(label);
+  flex-shrink: 0;
+  color: $color-ink-subtle;
+}
