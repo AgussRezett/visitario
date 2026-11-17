@@ -43,8 +43,8 @@ Respondé solo este JSON, sin texto antes ni después:
 {"goal": null, "seller_ids": [], "channel_ids": [], "areas": [], "zone_id": null, "min_rapport": null, "stale_days": null, "count": null, "mode": null, "merchandiser": null, "date": null, "unknown": []}
 
 - min_rapport: "welcoming" (buena onda, reciben bien), "restricted" o "indifferent"; null si no lo pide.
-- stale_days: días sin activar que pide ("este mes" o "hace un mes" son 30); null si no lo pide.
-- count: cuántos locales; mode: "walking" (a pie) o "driving" (en auto); merchandiser: el nombre del activador tal como lo dijo; date: el día en formato AAAA-MM-DD ("mañana", "el martes").
+- stale_days: días sin activar que pide ("este mes" o "hace un mes" son 30); "never" si pide locales nunca activados o sin visitas; null si no lo pide.
+- count: cuántos locales, el número exacto que pide; mode: "walking" (a pie) o "driving" (en auto); merchandiser: el nombre del activador tal como lo dijo; date: el día en formato AAAA-MM-DD ("mañana", "el martes").
 - Dejá null o vacío todo lo que el pedido no dice. No agregues filtros por tu cuenta.
 - Si nombra algo que no está en las listas (un vendedor, una zona, un barrio que no existen), no lo reemplaces por otro: escribilo en "unknown".`
 

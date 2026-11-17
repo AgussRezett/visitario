@@ -10,6 +10,8 @@ interface PlanResultProps {
   plan: PlannedRoute
   today: string
   onRemove: (id: string) => void
+  /** Fewer stores fit than were asked for. */
+  short: { asked: number; unlocated: number } | null
   people: { personId: string; firstName: string; lastName: string }[]
   personId: string
   onPerson: (id: string) => void
@@ -23,13 +25,19 @@ interface PlanResultProps {
 const kmText = (km: number) => `${km.toLocaleString('es-AR', { maximumFractionDigits: 1 })} km`
 
 /** The route chosen: totals, each stop with why it is there, and into whose day. */
-export function PlanResult({ plan, today, onRemove, people, personId, onPerson, dayLabel, onAdd, adding, added, error }: PlanResultProps) {
+export function PlanResult({ plan, today, onRemove, short, people, personId, onPerson, dayLabel, onAdd, adding, added, error }: PlanResultProps) {
   const who = people.find((p) => p.personId === personId)
   return (
     <section className={styles.result} aria-label="Recorrido propuesto">
       <p className={styles.totals}>
         <b>{plan.stops.length} locales</b> · {kmText(plan.km)}{plan.minutes !== null ? ` · ${plan.minutes} min de traslado` : ' en línea recta'}
       </p>
+      {short ? (
+        <Banner tone="info">
+          Pediste {short.asked}, pero con estos filtros {plan.stops.length === 1 ? 'hay 1 local' : `hay ${plan.stops.length} locales`} en el mapa.
+          {short.unlocated ? ` Otros ${short.unlocated} cumplen pero no tienen ubicación: ubicalos desde el Directorio para que entren.` : ' Para sumar más, sacá algún filtro.'}
+        </Banner>
+      ) : null}
       <ol className={styles.stops}>
         {plan.stops.map((s, i) => (
           <li key={s.id} className={styles.stop}>

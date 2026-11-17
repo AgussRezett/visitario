@@ -1,4 +1,4 @@
-import { GOALS, STOP_COUNTS, type PlanFilters, type PlanGoal } from '@/domain/route-plan'
+import { GOALS, NEVER, countOptions, type PlanFilters, type PlanGoal } from '@/domain/route-plan'
 import { toIds } from '@/domain/filters'
 import type { TravelMode } from '@/domain/route'
 import { MultiSelect, Select } from '@/ui/Select'
@@ -32,8 +32,10 @@ const RAPPORT_MIN = [
 const STALE = [
   { value: 'any', label: 'Cualquiera' },
   ...[7, 15, 30, 60].map((d) => ({ value: String(d), label: `Más de ${d} días` })),
+  { value: 'never', label: 'Nunca activados' },
 ]
-const num = (v: string) => (v === 'any' ? null : Number(v))
+const num = (v: string) => (v === 'any' ? null : v === 'never' ? NEVER : Number(v))
+const staleValue = (d: number | null) => (d === null ? 'any' : d === NEVER ? 'never' : String(d))
 
 /** What the route is for and which stores may go. */
 export function PlanSetup({ goal, onGoal, filters: f, onFilters: set, count, onCount, mode, onMode, sellers, channels, areas }: PlanSetupProps) {
@@ -57,8 +59,8 @@ export function PlanSetup({ goal, onGoal, filters: f, onFilters: set, count, onC
         <MultiSelect label="Canal" values={f.channelIds.map(String)} onChange={(v) => set({ channelIds: toIds(v) })} allLabel="Todos" noun="canales"
           options={[...channels.map((c) => ({ value: String(c.id), label: c.name })), { value: '0', label: 'Sin canal' }]} />
         <Select label="Trato" value={f.minRapport === null ? 'any' : String(f.minRapport)} onChange={(v) => set({ minRapport: num(v) })} options={RAPPORT_MIN} />
-        <Select label="Sin activar hace" value={f.staleDays === null ? 'any' : String(f.staleDays)} onChange={(v) => set({ staleDays: num(v) })} options={STALE} />
-        <Select label="Locales" value={count} onChange={(v) => onCount(Number(v))} options={STOP_COUNTS.map((n) => ({ value: n, label: `${n} locales` }))} />
+        <Select label="Sin activar hace" value={staleValue(f.staleDays)} onChange={(v) => set({ staleDays: num(v) })} options={STALE} />
+        <Select label="Locales" value={count} onChange={(v) => onCount(Number(v))} options={countOptions(count).map((n) => ({ value: n, label: `${n} locales` }))} />
       </div>
       <Segmented label="Cómo se mueve" value={mode} onChange={onMode} options={[{ value: 'walking', label: 'A pie' }, { value: 'driving', label: 'En auto' }]} />
       <Switch checked={f.includePlanned} onChange={(on) => set({ includePlanned: on })}>

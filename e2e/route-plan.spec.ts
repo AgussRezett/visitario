@@ -84,7 +84,7 @@ test('Asignar and the map lead to it', async ({ page }) => {
 test('a route asked for in words: the AI fills in the form, only with what the lists have', async ({ page }, info) => {
   const s = state()
   // The AI's answer, with a seller and a zone that exist, and one person that does not.
-  s.planRequest = { plan: { goal: 'overdue', seller_ids: [1], zone_id: 'z1', min_rapport: null, stale_days: 30, count: 6, mode: 'walking', merchandiser: 'Pedro', unknown: [] } }
+  s.planRequest = { plan: { goal: 'overdue', seller_ids: [1], zone_id: 'z1', min_rapport: null, stale_days: 30, count: 7, mode: 'walking', merchandiser: 'Pedro', unknown: [] } }
   await installFakeSupabase(page, s, 'supervisor')
   await page.goto('/s/plan?date=2026-11-20')
   await expect(page.getByText('Te quedan 30 usos de IA hoy.')).toBeVisible()
@@ -96,6 +96,7 @@ test('a route asked for in words: the AI fills in the form, only with what the l
   await expect(read).toContainText('Vendedor: Mirko Ra')
   await expect(read).toContainText('Zona: Palermo')
   await expect(read).toContainText('Sin activar hace más de 30 días')
+  await expect(read).toContainText('7 locales') // as asked, not rounded to a usual count
   await expect(read).toContainText('No encontramos el activador "Pedro": lo dejamos afuera.')
   await expect(page.getByText('Te quedan 29 usos de IA hoy.')).toBeVisible()
   expect(s.planRequest.asked?.[0]).toContain('Mirko')
@@ -103,7 +104,13 @@ test('a route asked for in words: the AI fills in the form, only with what the l
   await expect(page.getByText('5 locales cumplen los filtros')).toBeVisible()
   await page.screenshot({ path: `test-results/route-plan-ai-${info.project.name}.png`, fullPage: true })
   await page.getByRole('button', { name: 'Armar recorrido' }).click()
-  await expect(page.getByRole('region', { name: 'Recorrido propuesto' }).getByText(/^5 locales/)).toBeVisible()
+  const result = page.getByRole('region', { name: 'Recorrido propuesto' })
+  await expect(result.getByText(/^5 locales/)).toBeVisible()
+  // Fewer fit than asked: said, not hidden.
+  await expect(result.getByText('Pediste 7, pero con estos filtros hay 5 locales en el mapa.', { exact: false })).toBeVisible()
+  // The zone picker is a normal control, not stretched.
+  const box = await page.getByRole('combobox', { name: 'Zona' }).boundingBox()
+  expect(box?.height ?? 0).toBeLessThan(64)
 })
 
 test('a written request without the AI on says so, and the form still works', async ({ page }) => {

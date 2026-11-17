@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { Route as RouteIcon } from 'lucide-react'
 import { addDays, formatLongDate, todayInArgentina } from '@/domain/dates'
-import { chooseStops, eligible, type PlanGoal } from '@/domain/route-plan'
+import { chooseStops, eligible, unlocated, type PlanGoal } from '@/domain/route-plan'
 import type { UnderstoodPlan } from '@/domain/plan-request'
 import { areasOf } from '@/domain/store-map'
 import type { TravelMode } from '@/domain/route'
@@ -58,6 +58,8 @@ export function PlanRoutePage({ date: wanted, person }: PlanSearch) {
   const [plan, setPlan] = useState<PlannedRoute | null>(null)
   const [busy, setBusy] = useState(false)
   const [added, setAdded] = useState<string | null>(null)
+  /** When fewer stores fit than were asked for: how many were asked, and how many fit but are not on the map. */
+  const [short, setShort] = useState<{ asked: number; unlocated: number } | null>(null)
 
   const sellers = useMemo(() => [...(catalogs?.sellers ?? [])].sort((a, b) => a.name.localeCompare(b.name, 'es')).map((s) => ({ id: s.id, name: s.name, personId: s.personId })), [catalogs])
   const channels = useMemo(() => (catalogs?.channels ?? []).map((c) => ({ id: c.id, name: c.name })), [catalogs])
@@ -71,9 +73,10 @@ export function PlanRoutePage({ date: wanted, person }: PlanSearch) {
     setPlan(null)
     setAdded(null)
   }
-  const build = async (stops = chooseStops(fit, goal, count, today)) => {
+  const build = async (stops = chooseStops(fit, goal, count, today), fresh = true) => {
     setBusy(true)
     setAdded(null)
+    if (fresh) setShort(stops.length < count ? { asked: count, unlocated: unlocated(cands, { ...filters, zone: ring }, today) } : null)
     try {
       setPlan(stops.length ? await orderStops(stops, mode) : null)
     } finally {
@@ -140,7 +143,7 @@ export function PlanRoutePage({ date: wanted, person }: PlanSearch) {
             </Suspense>
           )}
           {plan ? (
-            <PlanResult plan={plan} today={today} onRemove={(id) => void build(plan.stops.filter((s) => s.id !== id))}
+            <PlanResult plan={plan} today={today} onRemove={(id) => void build(plan.stops.filter((s) => s.id !== id), false)} short={short}
               people={team.data ?? []} personId={personId} onPerson={setPersonId} dayLabel={dayLabel}
               onAdd={() => void add().catch(() => undefined)} adding={addRoute.isPending} added={added} error={addRoute.error?.message ?? null} />
           ) : !busy && fit.length < 2 && points.data ? (

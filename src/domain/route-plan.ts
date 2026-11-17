@@ -34,7 +34,7 @@ export interface PlanFilters {
   channelIds: number[]
   /** Only stores rated at least this well (0 to 3); unrated ones stay out. */
   minRapport: number | null
-  /** Only stores not activated in more than this many days (never activated count). */
+  /** Only stores not activated in more than this many days (never activated count); NEVER: only those never activated. */
   staleDays: number | null
   /** Also stores already in someone's day that date. */
   includePlanned: boolean
@@ -43,7 +43,12 @@ export interface PlanFilters {
 export const NO_PLAN_FILTERS: PlanFilters = { zone: null, areas: [], sellerIds: [], channelIds: [], minRapport: null, staleDays: null, includePlanned: false }
 
 /** The route function solves up to 25 stops by streets. */
+export const MAX_STOPS = 25
 export const STOP_COUNTS = [6, 8, 10, 12, 15, 20, 25] as const
+/** The usual counts, and the one asked for if it is another ("14 locales"). */
+export const countOptions = (count: number) => [...new Set([...STOP_COUNTS, count])].sort((a, b) => a - b)
+/** Only stores never activated. */
+export const NEVER = Number.POSITIVE_INFINITY
 
 type Located = Candidate & { lat: number; lng: number }
 
@@ -65,14 +70,23 @@ export function eligible(cands: readonly Candidate[], f: PlanFilters, today: str
   return cands.filter((c): c is Located => {
     if (c.lat === null || c.lng === null) return false
     if (f.zone && f.zone.length >= 3 && !inZone(c.lng, c.lat, f.zone)) return false
-    if (!f.includePlanned && c.plannedFor) return false
-    if (f.minRapport !== null && (c.rapport === null || c.rapport < f.minRapport)) return false
-    if (f.staleDays !== null) {
-      const d = daysSince(c, today)
-      if (d !== null && d <= f.staleDays) return false
-    }
-    return matchesAny(c.area, f.areas, '') && matchesAny(c.sellerId, f.sellerIds, 0) && matchesAny(c.channelId, f.channelIds, 0)
+    return fits(c, f, today)
   })
+}
+
+/** Stores the filters would take but that are not on the map yet (no zone can hold them). */
+export const unlocated = (cands: readonly Candidate[], f: PlanFilters, today: string) =>
+  f.zone && f.zone.length >= 3 ? 0 : cands.filter((c) => (c.lat === null || c.lng === null) && fits(c, f, today)).length
+
+/** Whether the filters other than the zone take a store. */
+function fits(c: Candidate, f: PlanFilters, today: string): boolean {
+  if (!f.includePlanned && c.plannedFor) return false
+  if (f.minRapport !== null && (c.rapport === null || c.rapport < f.minRapport)) return false
+  if (f.staleDays !== null) {
+    const d = daysSince(c, today)
+    if (d !== null && d <= f.staleDays) return false
+  }
+  return matchesAny(c.area, f.areas, '') && matchesAny(c.sellerId, f.sellerIds, 0) && matchesAny(c.channelId, f.channelIds, 0)
 }
 
 /** How much a store serves the goal, 0 to 1. */
