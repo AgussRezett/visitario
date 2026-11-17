@@ -12,11 +12,11 @@ describe('what is left of the AI', () => {
   })
 
   it('says it in one line', () => {
-    expect(quotaText(q(10, 1000, 29, 30))).toBe('Te queda 1 captura hoy.')
-    expect(quotaText(q(10, 1000, 5, 30))).toBe('Te quedan 25 capturas hoy.')
-    expect(quotaText(q(995, 1000, 0, null))).toBe('Quedan 5 capturas este mes en tu empresa.')
-    expect(quotaText(q(10, 1000, 30, 30))).toBe('Ya usaste tus capturas de hoy: mañana se renuevan.')
-    expect(quotaText(q(1000, 1000, 0, 30))).toBe('Tu empresa usó todas las capturas del mes: se renuevan el 1.')
+    expect(quotaText(q(10, 1000, 29, 30))).toBe('Te queda 1 uso de IA hoy.')
+    expect(quotaText(q(10, 1000, 5, 30))).toBe('Te quedan 25 usos de IA hoy.')
+    expect(quotaText(q(995, 1000, 0, null))).toBe('Quedan 5 usos de IA este mes en tu empresa.')
+    expect(quotaText(q(10, 1000, 30, 30))).toBe('Ya usaste la IA todo lo permitido por hoy: mañana se renueva.')
+    expect(quotaText(q(1000, 1000, 0, 30))).toBe('Tu empresa usó toda la IA del mes: se renueva el 1.')
     expect(quotaText(q(0, 0, 0, 30))).toBe('La lectura con IA no está incluida en el plan de tu empresa.')
   })
 

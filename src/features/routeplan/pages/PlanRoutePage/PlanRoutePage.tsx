@@ -4,6 +4,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { Route as RouteIcon } from 'lucide-react'
 import { addDays, formatLongDate, todayInArgentina } from '@/domain/dates'
 import { chooseStops, eligible, type PlanGoal } from '@/domain/route-plan'
+import type { UnderstoodPlan } from '@/domain/plan-request'
 import { areasOf } from '@/domain/store-map'
 import type { TravelMode } from '@/domain/route'
 import { Banner } from '@/ui/Banner'
@@ -19,6 +20,7 @@ import { orderStops, type PlannedRoute } from '@/features/routeplan/order'
 import { PlanSetup, type SetupFilters } from './PlanSetup'
 import { ZoneControls } from './ZoneControls'
 import { PlanResult } from './PlanResult'
+import { AiRequest } from './AiRequest'
 import styles from './PlanRoutePage.module.scss'
 
 const PlanMap = lazy(() => import('@/features/routeplan/components/PlanMap/PlanMap'))
@@ -78,6 +80,18 @@ export function PlanRoutePage({ date: wanted, person }: PlanSearch) {
       setBusy(false)
     }
   }
+  // A written request fills in the form, as a whole: what it does not say goes back to all.
+  const apply = (u: UnderstoodPlan) => {
+    changed()
+    if (u.goal) setGoal(u.goal)
+    setFilters({ ...SETUP, sellerIds: u.sellerIds, channelIds: u.channelIds, areas: u.areas, minRapport: u.minRapport, staleDays: u.staleDays })
+    setZoneId(u.zoneId ?? ALL)
+    if (u.count) setCount(u.count)
+    if (u.mode) setMode(u.mode)
+    if (u.personId) setPersonId(u.personId)
+    if (u.date && u.date !== date) void navigate({ to: '/s/plan', search: { date: u.date, person: u.personId ?? (personId || undefined) } })
+  }
+  const areas = areasOf(points.data ?? [])
   const dayLabel = formatLongDate(date).toLowerCase()
   const add = async () => {
     if (!plan) return
@@ -97,6 +111,8 @@ export function PlanRoutePage({ date: wanted, person }: PlanSearch) {
       <div className={styles.layout}>
         <section className={styles.setup} aria-label="Qué recorrido armar">
           <Field label="Día" type="date" value={date} onChange={(e) => { if (e.target.value) { changed(); void navigate({ to: '/s/plan', search: { date: e.target.value, person: personId || undefined } }) } }} />
+          <AiRequest companyId={companyId} today={today} onApply={apply}
+            catalog={{ sellers, channels, zones: zones.data ?? [], areas, people: team.data ?? [] }} />
           <ZoneControls
             zones={zones.data ?? []} zoneId={zoneId} onZone={(id) => { changed(); setZoneId(id) }} draft={draft}
             onDraw={() => { changed(); setDraft([]) }} onUndo={() => setDraft((d) => (d ? d.slice(0, -1) : d))} onCancel={() => setDraft(null)}
@@ -107,7 +123,7 @@ export function PlanRoutePage({ date: wanted, person }: PlanSearch) {
           <PlanSetup
             goal={goal} onGoal={(g) => { changed(); setGoal(g) }} filters={filters} onFilters={(p) => { changed(); setFilters((f) => ({ ...f, ...p })) }}
             count={count} onCount={(n) => { changed(); setCount(n) }} mode={mode} onMode={(m) => { changed(); setMode(m) }}
-            sellers={sellers} channels={channels} areas={areasOf(points.data ?? [])}
+            sellers={sellers} channels={channels} areas={areas}
           />
           <p className={styles.fit} role="status">{points.data ? `${fit.length} ${fit.length === 1 ? 'local cumple' : 'locales cumplen'} los filtros` : ''}</p>
           <Button size="lg" onClick={() => void build()} disabled={fit.length < 2 || Boolean(draft)} loading={busy} className={styles.build}>

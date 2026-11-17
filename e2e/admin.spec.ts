@@ -233,14 +233,14 @@ test('company and plan: billing shows, settings save, data exports', async ({ pa
   await page.screenshot({ path: `test-results/company-${info.project.name}.png`, fullPage: true })
 
   // AI: the month against its limit, who used it, and each person's day
-  const ai = page.getByRole('region', { name: 'Capturas con IA' })
+  const ai = page.getByRole('region', { name: 'Uso de IA' })
   await expect(ai.getByText('de 1000 este mes')).toBeVisible()
-  await expect(ai.getByRole('progressbar', { name: 'Capturas usadas este mes' })).toHaveAttribute('aria-valuenow', '37')
+  await expect(ai.getByRole('progressbar', { name: 'Usos de IA este mes' })).toHaveAttribute('aria-valuenow', '37')
   await expect(ai.getByText('25 este mes · 3 hoy')).toBeVisible()
   await expect(ai.getByText('Agustín Rezett')).toBeVisible()
   await ai.scrollIntoViewIfNeeded()
   await ai.screenshot({ path: `test-results/company-ai-${info.project.name}.png` })
-  await pick(ai.getByLabel('Por persona, por día'), '20 capturas')
+  await pick(ai.getByLabel('Por persona, por día'), '20 usos')
   await expect.poll(() => state.company?.ai_daily_per_person).toBe(20)
   await pick(ai.getByLabel('Por persona, por día'), 'Sin límite')
   await expect.poll(() => state.company?.ai_daily_per_person).toBeNull()

@@ -1402,6 +1402,9 @@ await expectError('A company cannot lose its last admin', () => as('carla', `upd
   await expectError('A supervisor does not see the company AI usage', () => as('martin', `select company_ai_usage($1)`, [panda]), /admin/)
   check('Uses are seen by the company admin only', (await as('carla', `select count(*)::int n from ai_event where company_id = $1`, [panda]))[0].n >= 2
     && (await as('martin', `select * from ai_event`)).length === 0 && (await as('beto', `select * from ai_event`)).length === 0)
+  await sys(`select record_ai_usage($1, 1, $2, 'plan')`, [panda, lucia])
+  check('A route request is logged as a use of AI, apart from captures', (await sys(`select feature from ai_event where person_id = $1 order by id desc limit 1`, [lucia]))[0].feature === 'plan')
+  await expectError('Only known uses', () => sys(`select record_ai_usage($1, 1, $2, 'chat')`, [panda, lucia]))
   await expectError('The app cannot log or ask on its own', () => as('carla', `select ai_allow($1, null)`, [panda]))
   await expectError('…nor write the log', () => as('carla', `insert into ai_event (company_id) values ($1)`, [panda]))
 }

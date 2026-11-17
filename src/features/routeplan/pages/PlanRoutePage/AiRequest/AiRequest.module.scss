@@ -1,0 +1,40 @@
+@use '@/styles/abstracts' as *;
+
+// The written request, set apart from the filters it fills in.
+.box {
+  @include flex(column, $gap: space(3));
+  padding: space(4);
+  border: 1.5px solid $color-lime;
+  border-radius: $radius-lg;
+  background: $color-lime-soft;
+
+  @include dark {
+    background: $color-muted;
+  }
+}
+
+.ask {
+  align-self: flex-start;
+}
+
+.chips {
+  @include flex(row, $gap: space(1.5));
+  flex-wrap: wrap;
+  margin-top: space(2);
+  list-style: none;
+}
+
+.chip {
+  @include text(label);
+  padding: space(1) space(2.5);
+  border-radius: $radius-full;
+  background: $color-card;
+  font-weight: $weight-bold;
+  color: $color-ink;
+}
+
+.unknown {
+  @include text(label);
+  margin-top: space(2);
+  font-weight: $weight-bold;
+}

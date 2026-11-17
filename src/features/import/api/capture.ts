@@ -11,9 +11,9 @@ export class CaptureError extends Error {}
 const MESSAGES: Record<string, string> = {
   plan: 'La lectura con IA no está incluida en el plan de tu empresa.',
   forbidden: 'Tu usuario no puede leer capturas en esta empresa.',
-  limit: 'Tu empresa usó todas las capturas con IA del mes: se renuevan el 1. Mientras tanto, pegá el texto.',
-  limit_person: 'Ya usaste tus capturas con IA de hoy: mañana se renuevan. Mientras tanto, pegá el texto.',
-  limit_platform: 'Por hoy se terminaron las capturas con IA de Visitario: mañana se renuevan. Mientras tanto, pegá el texto.',
+  limit: 'Tu empresa usó toda la IA del mes: se renueva el 1. Mientras tanto, pegá el texto.',
+  limit_person: 'Ya usaste la IA todo lo permitido por hoy: mañana se renueva. Mientras tanto, pegá el texto.',
+  limit_platform: 'Por hoy se terminó la IA de Visitario: mañana se renueva. Mientras tanto, pegá el texto.',
   not_configured: 'La lectura de capturas con IA todavía no está activada.',
 }
 const BY_STATUS: Record<number, string> = { 402: 'plan', 403: 'forbidden', 429: 'limit', 503: 'not_configured' }

@@ -3,6 +3,7 @@ import { reportFacts } from './fake-reports'
 import { handleIssues } from './fake-issues'
 import { handleRequests } from './fake-requests'
 import { handleSellerVisits } from './fake-seller-visits'
+import { handlePlanner } from './fake-planner'
 import type { Request, Route } from '@playwright/test'
 import { COMPANY, type FakeState, type Row } from './fake-supabase'
 
@@ -25,6 +26,7 @@ export async function handleAdmin({ path, url, req, route, state, json, body }: 
   if (await handleIssues({ path, url, req, route, state, json, body })) return true
   if (await handleRequests({ path, url, method: req.method(), route, state, json, body })) return true
   if (await handleSellerVisits({ path, url, method: req.method(), route, state, json, body })) return true
+  if (await handlePlanner({ path, url, method: req.method(), route, state, json, body })) return true
     // ---- The route of the day, and fixing where a store is
     if (path.endsWith('/rpc/save_route_plan')) {
       const b = body()

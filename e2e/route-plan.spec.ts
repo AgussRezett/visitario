@@ -80,3 +80,39 @@ test('Asignar and the map lead to it', async ({ page }) => {
   await expect(page).toHaveURL(/\/s\/plan\?date=2026-11-20/)
   await expect(page.getByRole('heading', { name: 'Armar recorrido' })).toBeVisible()
 })
+
+test('a route asked for in words: the AI fills in the form, only with what the lists have', async ({ page }, info) => {
+  const s = state()
+  // The AI's answer, with a seller and a zone that exist, and one person that does not.
+  s.planRequest = { plan: { goal: 'overdue', seller_ids: [1], zone_id: 'z1', min_rapport: null, stale_days: 30, count: 6, mode: 'walking', merchandiser: 'Pedro', unknown: [] } }
+  await installFakeSupabase(page, s, 'supervisor')
+  await page.goto('/s/plan?date=2026-11-20')
+  await expect(page.getByText('Te quedan 30 usos de IA hoy.')).toBeVisible()
+  await page.getByLabel('Pedilo con IA').fill('6 locales de Mirko en Palermo sin activar este mes, a pie, para Pedro')
+  await page.getByRole('button', { name: 'Entender el pedido' }).click()
+
+  const read = page.getByRole('status').filter({ hasText: 'Entendí esto' })
+  await expect(read).toContainText('Objetivo: Los más atrasados')
+  await expect(read).toContainText('Vendedor: Mirko Ra')
+  await expect(read).toContainText('Zona: Palermo')
+  await expect(read).toContainText('Sin activar hace más de 30 días')
+  await expect(read).toContainText('No encontramos el activador "Pedro": lo dejamos afuera.')
+  await expect(page.getByText('Te quedan 29 usos de IA hoy.')).toBeVisible()
+  expect(s.planRequest.asked?.[0]).toContain('Mirko')
+  // The form now says it: the zone, the seller's stores in it (s6 is already planned).
+  await expect(page.getByText('5 locales cumplen los filtros')).toBeVisible()
+  await page.screenshot({ path: `test-results/route-plan-ai-${info.project.name}.png`, fullPage: true })
+  await page.getByRole('button', { name: 'Armar recorrido' }).click()
+  await expect(page.getByRole('region', { name: 'Recorrido propuesto' }).getByText(/^5 locales/)).toBeVisible()
+})
+
+test('a written request without the AI on says so, and the form still works', async ({ page }) => {
+  const s = state()
+  s.planRequest = { status: 429, error: 'limit_person' }
+  await installFakeSupabase(page, s, 'supervisor')
+  await page.goto('/s/plan?date=2026-11-20')
+  await page.getByLabel('Pedilo con IA').fill('los más atrasados de Ruth')
+  await page.getByRole('button', { name: 'Entender el pedido' }).click()
+  await expect(page.getByText('Ya usaste la IA todo lo permitido por hoy: mañana se renueva. Mientras tanto, elegí los filtros a mano.')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Armar recorrido' })).toBeEnabled()
+})
