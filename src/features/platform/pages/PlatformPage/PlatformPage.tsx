@@ -46,7 +46,7 @@ export function PlatformPage() {
             <div className={styles.kpi}><span className={styles.kpiLabel}>Usuarios activos</span><b>{t.activePeople}</b></div>
             <div className={styles.kpi}><span className={styles.kpiLabel}>Fotos</span><b>{formatBytes(t.photoBytes)}</b><span className={styles.kpiNote}>de {formatBytes(FREE_TIER.photoBytes)} gratis</span></div>
             <div className={styles.kpi}><span className={styles.kpiLabel}>Base de datos</span><b>{formatBytes(t.dbBytes)}</b><span className={styles.kpiNote}>de {formatBytes(FREE_TIER.dbBytes)} gratis</span></div>
-            <div className={styles.kpi}><span className={styles.kpiLabel}>Capturas con IA</span><b>{t.aiCaptures}</b><span className={styles.kpiNote}>este mes · {formatUsd(t.aiCostThousandths)}</span></div>
+            <div className={styles.kpi}><span className={styles.kpiLabel}>Capturas con IA</span><b>{t.aiCaptures}</b><span className={styles.kpiNote}>este mes · {formatUsd(t.aiCostThousandths)} · hoy {t.aiCapturesToday} de {FREE_TIER.aiCapturesPerDay} gratis</span></div>
           </>
         ) : totals.isError ? null : [0, 1, 2, 3].map((i) => <Skeleton key={i} height={88} />)}
       </section>

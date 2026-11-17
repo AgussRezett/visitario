@@ -1,17 +1,30 @@
 import { FunctionsHttpError } from '@supabase/supabase-js'
+import { queryOptions, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { Transcript } from '@/domain/capture'
+import type { AiQuota } from '@/domain/ai-quota'
 import { compressPhoto } from '@/features/workday/api/photos'
 
 export class CaptureError extends Error {}
 
-const MESSAGES: Record<number, string> = {
-  402: 'La carga desde una captura es parte del plan pago.',
-  403: 'Tu usuario no puede leer capturas en esta empresa.',
-  429: 'Ya se usaron todas las capturas de este mes.',
-  503: 'La lectura de capturas con IA todavía no está activada.',
+// What the server answers, by its error code (or its status when it gives none).
+const MESSAGES: Record<string, string> = {
+  plan: 'La lectura con IA no está incluida en el plan de tu empresa.',
+  forbidden: 'Tu usuario no puede leer capturas en esta empresa.',
+  limit: 'Tu empresa usó todas las capturas con IA del mes: se renuevan el 1. Mientras tanto, pegá el texto.',
+  limit_person: 'Ya usaste tus capturas con IA de hoy: mañana se renuevan. Mientras tanto, pegá el texto.',
+  limit_platform: 'Por hoy se terminaron las capturas con IA de Visitario: mañana se renuevan. Mientras tanto, pegá el texto.',
+  not_configured: 'La lectura de capturas con IA todavía no está activada.',
 }
+const BY_STATUS: Record<number, string> = { 402: 'plan', 403: 'forbidden', 429: 'limit', 503: 'not_configured' }
 const FAILED = 'No pudimos leer la captura. Probá con una más nítida, o pegá el texto.'
+
+async function errorCode(error: unknown): Promise<string> {
+  if (!(error instanceof FunctionsHttpError)) return ''
+  const res = error.context as Response
+  const body = (await res.json().catch(() => null)) as { error?: string } | null
+  return body?.error && MESSAGES[body.error] ? body.error : BY_STATUS[res.status] ?? ''
+}
 
 /**
  * Sends a capture of the routing list to be transcribed by AI: its title, column titles and
@@ -26,9 +39,25 @@ export async function readCapture(file: File, companyId: string): Promise<Transc
   form.append('file', new File([blob], 'captura.jpg', { type: 'image/jpeg' }))
   form.append('company', companyId)
   const { data, error } = await supabase.functions.invoke<Partial<Transcript>>('read-capture', { body: form })
-  if (error) {
-    const status = error instanceof FunctionsHttpError ? (error.context as Response).status : 0
-    throw new CaptureError(MESSAGES[status] ?? FAILED)
-  }
+  if (error) throw new CaptureError(MESSAGES[await errorCode(error)] ?? FAILED)
   return { title: data?.title ?? '', headers: data?.headers ?? [], rows: data?.rows ?? [], unreadable: data?.unreadable ?? 0 }
+}
+
+/** What is left of the AI for me in this company: its month and my day. */
+export const aiQuotaQuery = (companyId: string) =>
+  queryOptions({
+    queryKey: ['ai-quota', companyId],
+    staleTime: 60_000,
+    queryFn: async (): Promise<AiQuota | null> => {
+      const { data, error } = await supabase.rpc('ai_quota', { p_company: companyId })
+      if (error) throw error
+      const r = data?.[0]
+      return r ? { monthUsed: r.month_used, monthLimit: r.month_limit, myToday: r.my_today, myDailyLimit: r.my_daily_limit } : null
+    },
+  })
+
+/** After a capture, read what is left again. */
+export function useRefreshQuota(companyId: string) {
+  const qc = useQueryClient()
+  return () => qc.invalidateQueries({ queryKey: ['ai-quota', companyId] })
 }

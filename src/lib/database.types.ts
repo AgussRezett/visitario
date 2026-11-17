@@ -122,6 +122,33 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_event: {
+        Row: {
+          at: string
+          company_id: string
+          cost_usd_thousandths: number
+          feature: string
+          id: number
+          person_id: string | null
+        }
+        Insert: {
+          at?: string
+          company_id: string
+          cost_usd_thousandths?: number
+          feature?: string
+          id?: never
+          person_id?: string | null
+        }
+        Update: {
+          at?: string
+          company_id?: string
+          cost_usd_thousandths?: number
+          feature?: string
+          id?: never
+          person_id?: string | null
+        }
+        Relationships: []
+      }
       ai_usage: {
         Row: {
           captures: number
@@ -280,6 +307,7 @@ export type Database = {
       }
       company: {
         Row: {
+          ai_daily_per_person: number | null
           created_at: string
           geocoding_scope: Database["public"]["Enums"]["geocoding_scope"]
           id: string
@@ -301,6 +329,7 @@ export type Database = {
           version: number
         }
         Insert: {
+          ai_daily_per_person?: number | null
           created_at?: string
           geocoding_scope?: Database["public"]["Enums"]["geocoding_scope"]
           id?: string
@@ -322,6 +351,7 @@ export type Database = {
           version?: number
         }
         Update: {
+          ai_daily_per_person?: number | null
           created_at?: string
           geocoding_scope?: Database["public"]["Enums"]["geocoding_scope"]
           id?: string
@@ -1193,6 +1223,7 @@ export type Database = {
       }
       subscription: {
         Row: {
+          ai_monthly_limit: number | null
           auto_debit: boolean
           company_id: string
           currency: string
@@ -1205,6 +1236,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_monthly_limit?: number | null
           auto_debit?: boolean
           company_id: string
           currency?: string
@@ -1217,6 +1249,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_monthly_limit?: number | null
           auto_debit?: boolean
           company_id?: string
           currency?: string
@@ -1866,6 +1899,19 @@ export type Database = {
       }
     }
     Functions: {
+      ai_allow: {
+        Args: { p_company: string; p_person: string; p_platform_daily?: number | null }
+        Returns: string | null
+      }
+      ai_quota: {
+        Args: { p_company: string }
+        Returns: { month_used: number; month_limit: number; my_today: number; my_daily_limit: number | null }[]
+      }
+      company_ai_usage: { Args: { p_company: string }; Returns: Json }
+      platform_set_ai_limit: {
+        Args: { p_company: string; p_limit: number | null }
+        Returns: undefined
+      }
       record_seller_visit: {
         Args: { p_id: string; p_lines?: Json; p_note?: string; p_outcome: Database["public"]["Enums"]["seller_visit_outcome"]; p_reason?: string; p_store: string }
         Returns: string
@@ -2153,6 +2199,8 @@ export type Database = {
           status: Database["public"]["Enums"]["subscription_status"]
           support_until: string
           visits_30d: number
+          ai_limit: number
+          ai_custom_limit: number | null
         }[]
       }
       platform_create_company: {
@@ -2182,6 +2230,7 @@ export type Database = {
         Returns: {
           active_people: number
           ai_captures: number
+          ai_captures_today: number
           ai_cost_usd_thousandths: number
           db_bytes: number
           photo_bytes: number
@@ -2205,7 +2254,7 @@ export type Database = {
         }[]
       }
       record_ai_usage: {
-        Args: { p_company: string; p_cost_thousandths: number }
+        Args: { p_company: string; p_cost_thousandths: number; p_person?: string | null }
         Returns: number
       }
       remove_store: { Args: { p_store: string }; Returns: undefined }

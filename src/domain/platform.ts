@@ -22,6 +22,9 @@ export interface PlatformCompany {
   photoBytes: number
   aiCaptures: number
   aiCostThousandths: number
+  /** AI captures a month it may use, and the number Visitario set (null: the plan's). */
+  aiLimit: number
+  aiCustomLimit: number | null
   /** Until when my support session for this company is open, if it is. */
   supportUntil: string | null
 }
@@ -33,10 +36,13 @@ export interface PlatformTotals {
   dbBytes: number
   aiCaptures: number
   aiCostThousandths: number
+  aiCapturesToday: number
 }
 
 /** What the free tiers give: R2 for photos, Supabase for the database. */
-export const FREE_TIER = { photoBytes: 10e9, dbBytes: 500e6 } as const
+// AI: Cloudflare's 10,000 neurons a day, about 180 captures; read-capture stops at 170
+// (AI_PLATFORM_DAILY), the number shown here.
+export const FREE_TIER = { photoBytes: 10e9, dbBytes: 500e6, aiCapturesPerDay: 170 } as const
 
 export const PLAN_SHORT: Record<PlanKind, string> = { free: 'Gratuito', pilot: 'Piloto', team: 'Equipo', internal: 'Interno' }
 export const STATUS_LABEL: Record<SubscriptionStatus, string> = { active: 'Activa', expired: 'Vencida', canceled: 'Cancelada' }

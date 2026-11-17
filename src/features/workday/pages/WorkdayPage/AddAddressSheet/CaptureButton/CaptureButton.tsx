@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { ImageUp } from 'lucide-react'
 import { transcriptToLines } from '@/domain/capture'
+import { quotaLeft, quotaText } from '@/domain/ai-quota'
 import type { Mentionable } from '@/domain/mentions'
 import { Banner } from '@/ui/Banner'
-import { CaptureError, readCapture } from '@/features/import/api/capture'
+import { CaptureError, aiQuotaQuery, readCapture, useRefreshQuota } from '@/features/import/api/capture'
 import styles from './CaptureButton.module.scss'
 
 interface CaptureButtonProps {
@@ -18,6 +20,10 @@ interface CaptureButtonProps {
 export function CaptureButton({ companyId, sellers, disabled, onRead }: CaptureButtonProps) {
   const [reading, setReading] = useState(false)
   const [note, setNote] = useState<{ tone: 'info' | 'error'; text: string } | null>(null)
+  const quota = useQuery(aiQuotaQuery(companyId))
+  const refreshQuota = useRefreshQuota(companyId)
+  const closed = quota.data ? quotaLeft(quota.data).left === 0 : false
+  const off = disabled || closed
 
   const read = async (file: File | undefined) => {
     if (!file) return
@@ -36,17 +42,18 @@ export function CaptureButton({ companyId, sellers, disabled, onRead }: CaptureB
       setNote({ tone: 'error', text: e instanceof CaptureError ? e.message : 'No pudimos leer la captura. Revisá la conexión y probá de nuevo.' })
     } finally {
       setReading(false)
+      void refreshQuota()
     }
   }
 
   return (
     <>
-      <label className={styles.capture} data-busy={reading || undefined} data-disabled={disabled || undefined}>
+      <label className={styles.capture} data-busy={reading || undefined} data-disabled={off || undefined}>
         <input
           type="file"
           accept="image/*"
           className={styles.file}
-          disabled={disabled || reading}
+          disabled={off || reading}
           aria-label="Leer una captura"
           onChange={(e) => {
             void read(e.target.files?.[0])
@@ -60,6 +67,7 @@ export function CaptureButton({ companyId, sellers, disabled, onRead }: CaptureB
             <span className={styles.ai}>IA</span>
           </span>
           <span className={styles.help}>{reading ? 'Tarda unos segundos.' : 'Del Excel o del mensaje: las direcciones aparecen abajo para revisar.'}</span>
+          {quota.data && !reading ? <span className={styles.quota} data-closed={closed || undefined}>{quotaText(quota.data)}</span> : null}
         </span>
       </label>
       {note ? <Banner tone={note.tone}>{note.text}</Banner> : null}

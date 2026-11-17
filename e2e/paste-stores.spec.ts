@@ -86,6 +86,8 @@ test('the merchandiser reads a capture into the list, checks it and adds it', as
   await sheet.getByRole('radio', { name: 'Pegar varias' }).click()
   await sheet.getByLabel('Leer una captura').setInputFiles({ name: 'captura.png', mimeType: 'image/png', buffer: PIXEL })
   await expect(sheet.getByText(/Leímos 2 locales: revisalos contra la captura/)).toBeVisible()
+  // What is left of my day, after this one
+  await expect(sheet.getByText('Te quedan 29 capturas hoy.')).toBeVisible()
   await expect(sheet.getByText(/No pudo leer 1 fila: sumala a mano/)).toBeVisible()
   // The seller in the catalog goes as a mention; the one that is not is left out, not guessed.
   await expect(sheet.getByLabel('Direcciones')).toHaveValue('1362; Jose Cubas 2770; Villa Devoto @Florencia\nLadines 2774; Villa Devoto')
@@ -94,4 +96,15 @@ test('the merchandiser reads a capture into the list, checks it and adds it', as
   await sheet.getByRole('button', { name: 'Agregar 2 direcciones' }).click()
   await expect(sheet).toBeHidden()
   expect(state.visits).toHaveLength(2)
+})
+
+test('when the day is used up, the capture says so and does not open', async ({ page }) => {
+  await installFakeSupabase(page, { workday: null, visits: [], uploads: [], catalogs: catalogs(), capture: { rows: [] }, aiQuota: { month_used: 40, month_limit: 1000, my_today: 30, my_daily_limit: 30 } })
+  await page.goto('/s/workday?date=2026-10-12')
+  await page.getByRole('button', { name: /Abrir (mi )?jornada/ }).click()
+  await page.getByRole('button', { name: 'Agregar dirección' }).filter({ visible: true }).first().click()
+  const sheet = page.getByRole('dialog', { name: 'Agregar a mi jornada' })
+  await sheet.getByRole('radio', { name: 'Pegar varias' }).click()
+  await expect(sheet.getByText('Ya usaste tus capturas de hoy: mañana se renuevan.')).toBeVisible()
+  await expect(sheet.getByLabel('Leer una captura')).toBeDisabled()
 })

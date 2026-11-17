@@ -5,7 +5,7 @@ import { installFakeSupabase, type FakeState, type Row } from './support/fake-su
 const company = (id: string, name: string, extra: Row = {}): Row => ({
   id, name, kind: 'distributor', created_at: '2026-10-01T12:00:00-03:00', plan: 'pilot', status: 'active', ends_on: null,
   members: 8, invited: 0, admins: 'Carla López', visits_30d: 412, last_activity_at: new Date().toISOString(),
-  photos: 9800, photo_bytes: 2_100_000_000, ai_captures: 104, ai_cost_usd_thousandths: 210, support_until: null, ...extra,
+  photos: 9800, photo_bytes: 2_100_000_000, ai_captures: 104, ai_cost_usd_thousandths: 210, support_until: null, ai_limit: 1000, ai_custom_limit: null, ...extra,
 })
 
 const platform = (): FakeState => ({
@@ -86,6 +86,26 @@ test('support: a reason opens a read-only look at the company, on record', async
   await page.emulateMedia({ colorScheme: 'dark' })
   await page.waitForTimeout(400) // the theme's color transitions
   await page.screenshot({ path: `test-results/platform-support-dark-${info.project.name}.png`, fullPage: true })
+})
+
+test('the super admin sets how many AI captures a company gets a month', async ({ page }, info) => {
+  const state = platform()
+  await installFakeSupabase(page, state)
+  await page.goto('/platform')
+  await expect(page.getByText('hoy 12 de 170 gratis')).toBeVisible()
+  await page.getByRole('button', { name: /^Panda/ }).first().click()
+  const sheet = page.getByRole('dialog', { name: 'Panda' })
+  await expect(sheet.getByText('104 de 1000 · USD 0,21')).toBeVisible()
+  await sheet.getByLabel('Límite del mes').fill('300')
+  await page.screenshot({ path: `test-results/platform-ai-limit-${info.project.name}.png` })
+  await sheet.getByRole('button', { name: 'Guardar límite' }).click()
+  await expect(sheet.getByText('Límite guardado.')).toBeVisible()
+  expect(state.platform?.companies.find((c) => c.id === 'c1')).toMatchObject({ ai_custom_limit: 300, ai_limit: 300 })
+  await expect(sheet.getByText('104 de 300 · USD 0,21')).toBeVisible()
+  // Empty: back to the plan's
+  await sheet.getByLabel('Límite del mes').fill('')
+  await sheet.getByRole('button', { name: 'Guardar límite' }).click()
+  await expect.poll(() => state.platform?.companies.find((c) => c.id === 'c1')?.ai_custom_limit).toBeNull()
 })
 
 test('without a support session there is nothing to see', async ({ page }) => {

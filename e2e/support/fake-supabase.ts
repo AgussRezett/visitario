@@ -213,8 +213,12 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
     if (path.endsWith('/functions/v1/read-capture')) {
       if (!state.capture || state.capture.status) return json({ error: 'fake' }, state.capture?.status ?? 503)
       const { title = '', headers = [], rows = [], unreadable = 0 } = state.capture
+      const q = (state.aiQuota ??= { month_used: 0, month_limit: 1000, my_today: 0, my_daily_limit: 30 })
+      Object.assign(q, { month_used: q.month_used + 1, my_today: q.my_today + 1 })
       return json({ title, headers, rows, unreadable, model: 'fake' })
     }
+    if (path.endsWith('/rpc/ai_quota')) return json([state.aiQuota ?? { month_used: 0, month_limit: 1000, my_today: 0, my_daily_limit: 30 }])
+    if (path.endsWith('/rpc/company_ai_usage')) return json(state.aiUsage ?? { people: [], days: [] })
     if (path.endsWith('/daily_metrics')) return json((state.dailyMetrics ?? []).filter((r) => matches(r, url.searchParams)))
     if (path.endsWith('/route_plan')) return json(state.routePlan && matches(state.routePlan, url.searchParams) ? state.routePlan : null)
     if (path.endsWith('/functions/v1/geocode')) {

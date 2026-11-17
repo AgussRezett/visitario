@@ -91,6 +91,9 @@ export interface FakeState {
   pastVisits?: Record<string, Row>
   /** What reading a capture with AI answers: its transcript, or an error status. */
   capture?: { title?: string; headers?: string[]; rows?: string[][]; unreadable?: number; status?: number }
+  /** What is left of the AI (ai_quota), and the company's use by person and day (admins). */
+  aiQuota?: { month_used: number; month_limit: number; my_today: number; my_daily_limit: number | null }
+  aiUsage?: { people: { name: string; month: number; today: number }[]; days: { day: string; captures: number }[] }
   /** Reputation: store_reputation rows and rapport_facts rows (by week). */
   reputation?: Row[]
   rapportFacts?: Row[]

@@ -77,3 +77,18 @@
   @include text(label);
   color: $color-ink-muted;
 }
+
+// What is left: quiet while there is room, in the fix color once it is used up.
+.quota {
+  @include text(label);
+  font-weight: $weight-bold;
+  color: $color-forest;
+
+  @include dark {
+    color: $color-lime;
+  }
+
+  &[data-closed] {
+    color: $color-fix-ink;
+  }
+}

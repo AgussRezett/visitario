@@ -18,11 +18,12 @@ const STATES = (['active', 'expired', 'canceled'] as const).map((s) => ({ value:
 
 /** One company: its numbers, its plan, and a support session to look at it read-only. */
 export function CompanySheet({ company, onClose }: { company: PlatformCompany | null; onClose: () => void }) {
-  const { setPlan, startSupport } = usePlatform()
+  const { setPlan, setAiLimit, startSupport } = usePlatform()
   const [plan, setPlanKind] = useState<PlanKind>('pilot')
   const [status, setStatus] = useState<SubscriptionStatus>('active')
   const [endsOn, setEndsOn] = useState('')
   const [reason, setReason] = useState('')
+  const [aiLimit, setAiLimitText] = useState('')
 
   useEffect(() => {
     if (!company) return
@@ -30,6 +31,8 @@ export function CompanySheet({ company, onClose }: { company: PlatformCompany | 
     setStatus(company.status ?? 'active')
     setEndsOn(company.endsOn ?? '')
     setReason('')
+    setAiLimitText(company.aiCustomLimit == null ? '' : String(company.aiCustomLimit))
+    setAiLimit.reset()
     setPlan.reset()
     startSupport.reset()
     // eslint-disable-next-line react-hooks/exhaustive-deps -- a new company starts a new form
@@ -39,12 +42,15 @@ export function CompanySheet({ company, onClose }: { company: PlatformCompany | 
   const personal = company.kind === 'personal'
   const changed = plan !== company.plan || status !== company.status || endsOn !== (company.endsOn ?? '')
   const open = supportOpen(company, new Date())
+  const aiValue = aiLimit.trim() === '' ? null : Number(aiLimit)
+  const aiValid = aiValue === null || (Number.isInteger(aiValue) && aiValue >= 0 && aiValue <= 100000)
+  const aiChanged = aiValue !== company.aiCustomLimit
   const facts: [string, string][] = [
     ['Usuarios', peopleLabel(company)],
     ['Admin', company.admins ?? 'Sin admin'],
     ['Visitas, últimos 30 días', String(company.visits30d)],
     ['Fotos', company.photos ? `${company.photos} · ${formatBytes(company.photoBytes)}` : 'Ninguna'],
-    ['Capturas con IA este mes', `${company.aiCaptures} · ${formatUsd(company.aiCostThousandths)}`],
+    ['Capturas con IA este mes', `${company.aiCaptures} de ${company.aiLimit} · ${formatUsd(company.aiCostThousandths)}`],
     ['Última actividad', company.lastActivityAt ? `${formatDayMonth(todayInArgentina(new Date(company.lastActivityAt)))} · ${formatTime(company.lastActivityAt)}` : 'Todavía nada'],
   ]
 
@@ -76,6 +82,20 @@ export function CompanySheet({ company, onClose }: { company: PlatformCompany | 
           </>
         )}
       </section>
+
+      {personal ? null : (
+        <section className={styles.block} aria-labelledby="ai-title">
+          <h3 id="ai-title" className={styles.heading}>Capturas con IA por mes</h3>
+          <Field label="Límite del mes" type="number" inputMode="numeric" min={0} max={100000} value={aiLimit} onChange={(e) => setAiLimitText(e.target.value)}
+            placeholder={`El del plan: ${company.plan === 'free' ? 0 : 1000}`} help="Vacío: el del plan (1000; el gratuito, ninguna). 0 la apaga. Cada persona tiene además su límite por día, que fija el admin de la empresa." />
+          {setAiLimit.error ? <Banner tone="error">{setAiLimit.error.message}</Banner> : null}
+          {setAiLimit.isSuccess && !aiChanged ? <Banner tone="ok">Límite guardado.</Banner> : null}
+          <Button variant="secondary" size="md" disabled={!aiChanged || !aiValid} loading={setAiLimit.isPending}
+            onClick={() => setAiLimit.mutate({ companyId: company.id, limit: aiValue })}>
+            <Save size={18} aria-hidden />Guardar límite
+          </Button>
+        </section>
+      )}
 
       <section className={styles.block} aria-labelledby="support-title">
         <h3 id="support-title" className={styles.heading}>Soporte</h3>
