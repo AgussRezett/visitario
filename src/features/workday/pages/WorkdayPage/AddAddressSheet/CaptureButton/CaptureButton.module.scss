@@ -2,10 +2,12 @@
 
 // The whole row is the file input's label: tap anywhere to pick the capture.
 .capture {
-  @include flex(row, $gap: space(3), $align: center);
+  @include flex(row, $gap: space(3.5), $align: center);
   @include transition-colors;
-  min-height: $touch-target + space(4);
-  padding: space(3) space(4);
+  // The sheet's body is a column that shrinks its children: this row keeps its height.
+  flex-shrink: 0;
+  min-height: $touch-target + space(6);
+  padding: space(4);
   border: 1.5px dashed $color-control;
   border-radius: $radius-lg;
   background: $color-card;
@@ -48,12 +50,15 @@
 }
 
 .text {
-  @include flex(column, $gap: space(0.5));
+  @include flex(column, $gap: space(1));
+  flex: 1;
   min-width: 0;
 }
 
 .title {
+  @include flex(row, $align: center);
   @include text(base);
+  flex-wrap: wrap;
   font-weight: $weight-bold;
 }
 
