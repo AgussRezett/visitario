@@ -95,6 +95,8 @@ export interface FakeState {
   routeZones?: Row[]
   routeCandidates?: Row[]
   addedToDay?: { workday: string; stores: string[] }[]
+  /** A written route request: the AI's answer, or an error. */
+  planRequest?: { plan?: Row; status?: number; error?: string; asked?: string[] }
   /** What is left of the AI (ai_quota), and the company's use by person and day (admins). */
   aiQuota?: { month_used: number; month_limit: number; my_today: number; my_daily_limit: number | null }
   aiUsage?: { people: { name: string; month: number; today: number }[]; days: { day: string; captures: number }[] }

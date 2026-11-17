@@ -87,7 +87,7 @@ test('the merchandiser reads a capture into the list, checks it and adds it', as
   await sheet.getByLabel('Leer una captura').setInputFiles({ name: 'captura.png', mimeType: 'image/png', buffer: PIXEL })
   await expect(sheet.getByText(/Leímos 2 locales: revisalos contra la captura/)).toBeVisible()
   // What is left of my day, after this one
-  await expect(sheet.getByText('Te quedan 29 capturas hoy.')).toBeVisible()
+  await expect(sheet.getByText('Te quedan 29 usos de IA hoy.')).toBeVisible()
   await expect(sheet.getByText(/No pudo leer 1 fila: sumala a mano/)).toBeVisible()
   // The seller in the catalog goes as a mention; the one that is not is left out, not guessed.
   await expect(sheet.getByLabel('Direcciones')).toHaveValue('1362; Jose Cubas 2770; Villa Devoto @Florencia\nLadines 2774; Villa Devoto')
@@ -105,6 +105,6 @@ test('when the day is used up, the capture says so and does not open', async ({ 
   await page.getByRole('button', { name: 'Agregar dirección' }).filter({ visible: true }).first().click()
   const sheet = page.getByRole('dialog', { name: 'Agregar a mi jornada' })
   await sheet.getByRole('radio', { name: 'Pegar varias' }).click()
-  await expect(sheet.getByText('Ya usaste tus capturas de hoy: mañana se renuevan.')).toBeVisible()
+  await expect(sheet.getByText('Ya usaste la IA todo lo permitido por hoy: mañana se renueva.')).toBeVisible()
   await expect(sheet.getByLabel('Leer una captura')).toBeDisabled()
 })
