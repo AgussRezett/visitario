@@ -1,10 +1,11 @@
 import { lazy, Suspense, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { SlidersHorizontal, Search, X } from 'lucide-react'
+import { Route as RouteIcon, SlidersHorizontal, Search, X } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
 import { todayInArgentina } from '@/domain/dates'
 import { applyFilters, areasOf, colorsFor, insights, NO_FILTERS, NONE_COLOR, painter, rankByPoints, zoneOf, type ColorBy, type MapFilters } from '@/domain/store-map'
 import { Banner } from '@/ui/Banner'
-import { Button } from '@/ui/Button'
+import { Button, buttonClass } from '@/ui/Button'
 import { Segmented } from '@/ui/Segmented'
 import { MultiSelect } from '@/ui/Select'
 import { toIds } from '@/domain/filters'
@@ -92,6 +93,7 @@ export function StoreMapPage({ point }: { point?: string }) {
         <span className={styles.eyebrow}>{ctx.companyName}{asSeller ? ' · vendedor' : ''}</span>
         <h1 className={styles.title}>{asSeller ? 'Mapa de mis clientes' : 'Mapa de puntos de venta'}</h1>
         {data.data ? <p className={styles.lead}>{shown.length === all.length ? `${all.length} puntos` : `${shown.length} de ${all.length} puntos`}</p> : null}
+        {role === 'supervisor' || role === 'admin' ? <Link to="/s/plan" className={buttonClass('secondary', 'md')}><RouteIcon size={18} aria-hidden />Armar recorrido</Link> : null}
       </header>
 
       <section className={styles.controls} aria-label="Filtros del mapa">

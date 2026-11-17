@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { CalendarPlus, Check, ClipboardPaste, FileUp, History, Plus, Send, Users } from 'lucide-react'
+import { CalendarPlus, Check, ClipboardPaste, FileUp, History, Plus, Route as RouteIcon, Send, Users } from 'lucide-react'
 import { addDays, formatLongDate, todayInArgentina } from '@/domain/dates'
 import { planLabel, type TeamMember } from '@/domain/team'
 import { PersonAvatar } from '@/features/people/PersonAvatar'
@@ -71,6 +71,9 @@ export function AssignPage({ date: requested, person, imported }: AssignSearch) 
           <Field label="Fecha" type="date" value={date} onChange={(e) => e.target.value && go({ date: e.target.value })} className={styles.dateField} />
           <Button variant="secondary" size="md" onClick={() => navigate({ to: '/s/import', search: { date, person: selected?.personId } })} className={styles.importButton}>
             <FileUp size={18} aria-hidden />Importar planilla
+          </Button>
+          <Button variant="secondary" size="md" onClick={() => navigate({ to: '/s/plan', search: { date, person: selected?.personId } })}>
+            <RouteIcon size={18} aria-hidden />Armar recorrido
           </Button>
           <Button variant="secondary" size="md" onClick={() => setCreating(true)}>
             <Users size={18} aria-hidden />Armar operativo
