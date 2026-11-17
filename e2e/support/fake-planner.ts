@@ -3,7 +3,7 @@ import type { FakeState, Row } from './fake-state'
 
 const QUOTA = { month_used: 0, month_limit: 1000, my_today: 0, my_daily_limit: 30 }
 
-/** Armar recorrido and the AI's limits: zones, candidates, routes into a day, written requests. */
+/** Armar recorrido and the AI's limits: zones, candidates, routes into a day, written requests, PDFs read. */
 export async function handlePlanner({ path, url, method, route, state, json, body }: {
   path: string; url: URL; method: string; route: Route; state: FakeState; json: (b: unknown, s?: number) => Promise<void>; body: () => Row
 }): Promise<true | undefined> {
@@ -38,6 +38,13 @@ export async function handlePlanner({ path, url, method, route, state, json, bod
     const q = (state.aiQuota ??= { ...QUOTA })
     Object.assign(q, { month_used: q.month_used + 1, my_today: q.my_today + 1 })
     return done(json({ plan: r.plan }))
+  }
+  if (path.endsWith('/functions/v1/read-brief')) {
+    const r = state.brief
+    if (!r || r.status) return done(json({ error: r?.error ?? 'not_configured' }, r?.status ?? 503))
+    const q = (state.aiQuota ??= { ...QUOTA })
+    Object.assign(q, { month_used: q.month_used + 1, my_today: q.my_today + 1 })
+    return done(json({ pages: r.pages, brief: r.brief }))
   }
   if (path.endsWith('/rpc/ai_quota')) return done(json([state.aiQuota ?? QUOTA]))
   if (path.endsWith('/rpc/company_ai_usage')) return done(json(state.aiUsage ?? { people: [], days: [] }))
