@@ -54,7 +54,8 @@ test('a PDF and a capture with indications, at once: the files order, each selle
   await page.screenshot({ path: `test-results/read-files-chosen-${info.project.name}.png` })
   await sheet.getByRole('button', { name: 'Leer los 2 archivos' }).click()
 
-  await expect(sheet.getByLabel('Direcciones')).toHaveValue('Gorriti 4100 @Ana Lo\nHonduras 3900 @Ana Lo\nAv. Santa Fe 3200 @Beto Su\n564; Thames 1500 @Ana Lo')
+  // The deck's "#120" goes as the client number.
+  await expect(sheet.getByLabel('Direcciones')).toHaveValue('120; Gorriti 4100 @Ana Lo\n4471; Honduras 3900 @Ana Lo\n118; Av. Santa Fe 3200 @Beto Su\n564; Thames 1500 @Ana Lo')
   // The AI got every page, named, and what was written.
   expect(state.brief?.sent).toMatchObject({ text: indications, pages: [{ label: 'PDF pág. 1' }, {}, {}, {}, {}, { label: 'la captura', text: 'COD | DOMICILIO\n564 | THAMES 1500' }] })
   const understood = sheet.getByRole('list', { name: 'Lo que entendimos' })
@@ -65,10 +66,13 @@ test('a PDF and a capture with indications, at once: the files order, each selle
   await expect(sheet.getByText('Te quedan 28 usos de IA hoy.')).toBeVisible()
   await page.screenshot({ path: `test-results/read-files-${info.project.name}.png` })
 
+  // A line fixed by hand keeps its task.
+  const list = sheet.getByLabel('Direcciones')
+  await list.fill((await list.inputValue()).replace('118; Av. Santa Fe 3200', '118; Santa Fe 3200; Palermo'))
   await pick(sheet.getByLabel('Canal de los que no lo indican'), 'Autoservicio')
   await sheet.getByRole('button', { name: 'Agregar 4 direcciones' }).click()
   await expect(sheet).toBeHidden()
-  expect(state.visits.map((v) => v.task)).toEqual([`${TASK} · PDF págs. 2 y 3 · #120`, `${TASK} · PDF pág. 4 · #4471`, `${TASK} · PDF pág. 5 · #118`, TASK])
+  expect(state.visits.map((v) => v.task)).toEqual([`${TASK} · PDF págs. 2 y 3`, `${TASK} · PDF pág. 4`, `${TASK} · PDF pág. 5`, TASK])
 })
 
 test('several captures without indications go in as lines, one after the other', async ({ page }) => {
@@ -109,5 +113,6 @@ test('the supervisor imports a PDF with indications: for whom and which day, fro
   // In the PDF's order, for Diego, on the day the indications said.
   expect((state.stores ?? []).map((s) => s.address)).toEqual(['Gorriti 4100', 'Honduras 3900', 'Av. Santa Fe 3200'])
   expect(state.visits.map((v) => [v.store_id, v.merchandiser_id, v.work_date])).toEqual((state.stores ?? []).map((s) => [s.id, 'p3', '2026-10-16']))
-  expect(state.visits[0]?.task).toBe(`${TASK} · PDF págs. 2 y 3 · #120`)
+  expect((state.stores ?? []).map((s) => s.customer_number)).toEqual(['120', '4471', '118'])
+  expect(state.visits[0]?.task).toBe(`${TASK} · PDF págs. 2 y 3`)
 })
