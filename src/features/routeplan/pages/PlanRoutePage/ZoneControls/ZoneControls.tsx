@@ -50,8 +50,10 @@ export function ZoneControls({ zones, zoneId, onZone, draft, onDraw, onUndo, onC
 
   return (
     <div className={styles.row}>
-      <Select label="Zona" value={zoneId} onChange={onZone} className={styles.pick}
-        options={[{ value: ALL, label: 'Toda la empresa' }, ...zones.map((z) => ({ value: z.id, label: z.name }))]} />
+      <div className={styles.pick}>
+        <Select label="Zona" value={zoneId} onChange={onZone}
+          options={[{ value: ALL, label: 'Toda la empresa' }, ...zones.map((z) => ({ value: z.id, label: z.name }))]} />
+      </div>
       {zoneId !== ALL ? (
         <Button variant="ghost" size="md" onClick={() => onRemove(zoneId)} aria-label="Borrar esta zona"><Trash2 size={18} aria-hidden /></Button>
       ) : null}
