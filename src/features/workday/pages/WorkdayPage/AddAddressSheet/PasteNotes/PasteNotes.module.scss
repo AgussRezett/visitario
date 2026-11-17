@@ -1,0 +1,7 @@
+@use '@/styles/abstracts' as *;
+
+.repeated {
+  @include flex(column, $gap: space(1));
+  margin: 0;
+  padding-left: space(4);
+}

@@ -1,0 +1,1 @@
+export { PasteNotes } from './PasteNotes'

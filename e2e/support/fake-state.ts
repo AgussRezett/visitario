@@ -90,6 +90,8 @@ export interface FakeState {
   storeHistory?: Row[]
   pastVisits?: Record<string, Row>
   /** What reading a capture with AI answers: its transcript, or an error status. */
+  /** A PDF with indications, as read-brief answers: the pages' text and the AI's reading. */
+  brief?: { pages?: string[]; brief?: Row; status?: number; error?: string }
   capture?: { title?: string; headers?: string[]; rows?: string[][]; unreadable?: number; status?: number }
   /** Armar recorrido: zones drawn, what stores have pending, and routes added to a day. */
   routeZones?: Row[]

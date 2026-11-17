@@ -28,8 +28,10 @@ import { useDayOverlaps } from '@/features/workday/api/overlaps'
 import { OverlapNote } from '@/features/workday/components/OverlapNote'
 import { pastedHelp, readLines } from './paste-lines'
 import { DirectoryResults } from './DirectoryResults'
-import { CaptureButton } from './CaptureButton'
-import { outcomeText, pasteOutcome, repeatedLines, type PasteOutcome } from './paste-results'
+import { PasteSources } from './PasteSources'
+import { pasteOutcome, repeatedLines, type PasteOutcome } from './paste-results'
+import { PasteNotes } from './PasteNotes'
+import { briefLines, type UnderstoodBrief } from '@/domain/brief'
 
 interface AddAddressSheetProps {
   open: boolean
@@ -52,6 +54,9 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
   const [picked, setPicked] = useState<string | null>(null)
   const [form, setForm] = useState(EMPTY)
   const [pasted, setPasted] = useState('')
+  /** Read from a PDF: each line's task, and what was understood. */
+  const [tasks, setTasks] = useState<Record<string, string>>({})
+  const [brief, setBrief] = useState<UnderstoodBrief | null>(null)
   const [outcome, setOutcome] = useState<PasteOutcome | null>(null)
   /** For the pasted lines without #canal: unchosen until picked (a channel or "Sin canal"). */
   const [defaultChannel, setDefaultChannel] = useState<string | null>(null)
@@ -64,6 +69,8 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
       setQuery('')
       setForm(EMPTY)
       setPasted('')
+      setTasks({})
+      setBrief(null)
       setOutcome(null)
       setDefaultChannel(null)
       add.reset()
@@ -149,12 +156,21 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
   const addPasted = async () => {
     setOutcome(null)
     const sent = lines
-    const rows = sent.map((l) => ({ customerNumber: l.customerNumber, address: l.address, area: l.area, sellerId: l.sellerId, channelId: l.channelId ?? channelIdOf(pastedChannel) }))
+    const rows = sent.map((l) => ({ customerNumber: l.customerNumber, address: l.address, area: l.area, sellerId: l.sellerId, channelId: l.channelId ?? channelIdOf(pastedChannel), task: tasks[l.text] }))
     const result = pasteOutcome(sent.map((l) => l.text), await addMany.mutateAsync(rows), repeatedLines(sent))
     if (!result.failed.length) return onClose()
     // The lines that did not go in stay, to fix them and try again.
     setPasted(result.failed.map((f) => f.text).join('\n'))
     setOutcome(result)
+  }
+
+  // The PDF's stores go below what is already there, in the PDF's order, each with its task.
+  const addLines = (read: string[]) => setPasted((p) => [p.trim(), ...read].filter(Boolean).join('\n'))
+  const readPdf = (b: UnderstoodBrief) => {
+    const read = briefLines(b, sellers)
+    addLines(read.map((l) => l.text))
+    setTasks((t) => ({ ...t, ...Object.fromEntries(read.map((l) => [l.text, l.task])) }))
+    setBrief(b)
   }
 
   const canAddNew = form.address.trim().length >= 3 && !formNeedsChannel
@@ -251,14 +267,8 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
         </>
       ) : (
         <>
-          {outcome ? (
-            <Banner tone="warn" title={`${outcomeText(outcome)}. ${outcome.failed.length === 1 ? 'Falta 1' : `Faltan ${outcome.failed.length}`}:`}>
-              <p>Te dejamos {outcome.failed.length === 1 ? 'esa línea' : 'esas líneas'} arriba: corregilas y tocá Agregar de nuevo.</p>
-              <ul className={styles.repeated}>{outcome.failed.map((f, i) => <li key={i}><b>{f.text}</b> — {f.reason}</li>)}</ul>
-            </Banner>
-          ) : null}
           {/* Self-employed accounts have no plan with AI. */}
-          {ctx.personal ? null : <CaptureButton companyId={ctx.companyId} sellers={sellers} disabled={!online} onRead={(read) => setPasted((p) => [p.trim(), ...read].filter(Boolean).join('\n'))} />}
+          {ctx.personal ? null : <PasteSources companyId={ctx.companyId} sellers={sellers} disabled={!online} day={date} brief={brief} onLines={addLines} onBrief={readPdf} />}
           <MentionTextArea
             label="Direcciones"
             value={pasted}
@@ -270,17 +280,7 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
             placeholder={'Una por línea. Nro. de cliente y zona, si los tenés:\n20114; Amenábar 1260; Belgrano @vendedor\nMoldes 1365'}
             help={pastedHelp(lines, true)}
           />
-          {unknown.length ? <Banner tone="warn">No encontramos {unknown.join(', ')}. Elegilos de la lista que aparece al escribir @ o #; si no están, se cargan en Catálogos.</Banner> : null}
-          {twice.length ? (
-            <Banner tone="info" title={twice.length === 1 ? 'Hay una línea repetida: se agrega una vez' : `Hay ${twice.length} líneas repetidas: se agregan una vez`}>
-              <ul className={styles.repeated}>{twice.map((r) => <li key={r}>{r}</li>)}</ul>
-            </Banner>
-          ) : null}
-          {repeated.length ? (
-            <Banner tone="warn" title={repeated.length === 1 ? 'Una dirección ya está en otra jornada' : `${repeated.length} direcciones ya están en otras jornadas`}>
-              <ul className={styles.repeated}>{repeated.map((r) => <li key={r}>{r}</li>)}</ul>
-            </Banner>
-          ) : null}
+          <PasteNotes outcome={outcome} unknown={unknown} twice={twice} repeated={repeated} />
           {channels.length ? (
             <Select label="Canal de los que no lo indican" value={pastedChannel} onChange={(v) => setDefaultChannel(v)} placeholder="Elegí uno" options={channelOptions(channels)} />
           ) : null}

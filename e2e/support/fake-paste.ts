@@ -20,7 +20,9 @@ export function addVisits(state: FakeState, b: Row, addVisit: (b: Row) => string
     const already = found ? state.visits.find((v) => v.store_id === found.id && (v.workday_id ?? 'w1') === workdayId) : undefined
     if (already) return { ...base, visit_id: already.id, store_id: found?.id, matched_by: byNumber ? 'customer' : 'address' }
     const visitId = addVisit({ p_workday: b.p_workday, p_store: found?.id, p_address: address })
-    const storeId = String(state.visits.find((v) => v.id === visitId)?.store_id)
+    const visit = state.visits.find((v) => v.id === visitId)
+    if (visit && r.task) visit.task = r.task
+    const storeId = String(visit?.store_id)
     if (!found) stores.push({ id: storeId, address, customer_number: num || null, area: r.area ?? null })
     if (r.channel || r.seller) (state.tagged ??= []).push({ p_store: storeId, p_channel: r.channel ?? null, p_seller: r.seller ?? null })
     return { ...base, visit_id: visitId, store_id: storeId, matched_by: found ? (byNumber ? 'customer' : 'address') : null, created: true }

@@ -43,6 +43,16 @@ const RAPPORT: Record<string, { min: number; label: string }> = {
 
 const list = (v: unknown): unknown[] => (Array.isArray(v) ? v : [])
 const text = (v: unknown) => (typeof v === 'string' ? v.trim().slice(0, 60) : '')
+/** A merchandiser as written ("lucia", "Diego Paz"), when the team has exactly that name. */
+export function findPerson<P extends { firstName: string; lastName: string }>(said: string, people: readonly P[]): P | null {
+  const n = normalize(said)
+  if (!n) return null
+  return people.find((p) => normalize(`${p.firstName} ${p.lastName}`).startsWith(n) || normalize(p.firstName) === n.split(' ')[0]) ?? null
+}
+
+/** A day as AAAA-MM-DD, never one already gone. */
+export const comingDate = (v: unknown, today: string) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && v >= today ? v : null)
+
 const nearest = (n: number, options: readonly number[]) => options.reduce((a, b) => (Math.abs(b - n) < Math.abs(a - n) ? b : a))
 
 /** The AI's answer, kept only where it names what the lists have. */
@@ -72,12 +82,12 @@ export function understand(raw: unknown, cat: PlanCatalog, today: string): Under
   const mode = r.mode === 'walking' || r.mode === 'driving' ? r.mode : null
   if (mode) chips.push(mode === 'walking' ? 'A pie' : 'En auto')
 
-  const said = normalize(text(r.merchandiser))
-  const person = said ? cat.people.find((p) => normalize(`${p.firstName} ${p.lastName}`).startsWith(said) || normalize(p.firstName) === said.split(' ')[0]) ?? null : null
+  const said = text(r.merchandiser)
+  const person = findPerson(said, cat.people)
   if (person) chips.push(`Para: ${person.firstName} ${person.lastName}`)
   else if (said) unknown.push(`el activador "${text(r.merchandiser)}"`)
 
-  const date = typeof r.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(r.date) && r.date >= today ? r.date : null
+  const date = comingDate(r.date, today)
   if (date) chips.push(`Día: ${formatLongDate(date).toLowerCase()}`)
 
   return {

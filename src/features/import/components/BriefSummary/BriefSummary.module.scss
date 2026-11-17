@@ -1,0 +1,22 @@
+@use '@/styles/abstracts' as *;
+
+.chips {
+  @include flex(row, $gap: space(1.5));
+  flex-wrap: wrap;
+  margin: space(2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  @include text(label);
+  padding: space(1) space(2.5);
+  border-radius: $radius-full;
+  background: $color-card;
+  font-weight: $weight-bold;
+}
+
+.task {
+  @include text(label);
+  margin-top: space(2);
+}
