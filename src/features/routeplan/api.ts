@@ -1,3 +1,4 @@
+import { FunctionsHttpError } from '@supabase/supabase-js'
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { Candidate } from '@/domain/route-plan'
@@ -78,4 +79,26 @@ export function useAddRoute(companyId: string) {
     },
     onSettled: () => Promise.all([qc.invalidateQueries({ queryKey: ['team'] }), qc.invalidateQueries({ queryKey: ['route-candidates', companyId] })]),
   })
+}
+
+export class PlanRequestError extends Error {}
+
+const REQUEST_ERRORS: Record<string, string> = {
+  plan: 'La IA no está incluida en el plan de tu empresa.',
+  forbidden: 'Pedir recorridos con IA es para supervisores y administradores.',
+  limit: 'Tu empresa usó toda la IA del mes: se renueva el 1. Mientras tanto, elegí los filtros a mano.',
+  limit_person: 'Ya usaste la IA todo lo permitido por hoy: mañana se renueva. Mientras tanto, elegí los filtros a mano.',
+  limit_platform: 'Por hoy se terminó la IA de Visitario: mañana se renueva. Mientras tanto, elegí los filtros a mano.',
+  not_configured: 'La IA todavía no está activada.',
+}
+
+/** A route asked for in words, as the AI read it (checked afterwards against the lists). */
+export async function askPlan(companyId: string, text: string, today: string): Promise<unknown> {
+  const { data, error } = await supabase.functions.invoke<{ plan: unknown }>('plan-request', { body: { company: companyId, text, today } })
+  if (error) {
+    const res = error instanceof FunctionsHttpError ? (error.context as Response) : null
+    const code = ((await res?.json().catch(() => null)) as { error?: string } | null)?.error ?? ''
+    throw new PlanRequestError(REQUEST_ERRORS[code] ?? 'No pudimos entender el pedido. Probá de nuevo, o elegí los filtros a mano.')
+  }
+  return data?.plan ?? null
 }
