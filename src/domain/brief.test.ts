@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { briefLines, briefPages, stopTask, transcriptText, understandBrief, whereText, type BriefCatalog } from './brief'
+import { briefLines, briefPages, stopTask, taskKey, transcriptText, understandBrief, whereText, type BriefCatalog } from './brief'
 
 // A deck like the ones that arrive (made up): a cover, then a slide or two per store; and a capture.
 const DECK = ['LOCALES DE VISITA PALERMO', 'Gorriti 4100 #120 03/11', 'Gorriti 4100 #120 03/11', 'Honduras 3900 #4471 03/11', 'Av. Santa Fe 3200 #118 03/11']
@@ -33,13 +33,14 @@ describe('visits from files and written indications', () => {
       ],
       task: 'Avisar si falta algo y ordenar como en el PDF', date: '2026-11-17', merchandiser: 'lucia',
     }, PAGES, cat, TODAY)
-    expect(b.stops.map((s) => [s.address, s.customerNumber, s.area, s.ref, s.where, s.sellerId])).toEqual([
-      ['Gorriti 4100', '', '', '#120', 'PDF págs. 2 y 3', 1],
-      ['Honduras 3900', '', '', '#4471', 'PDF pág. 4', 1],
-      ['Av. Santa Fe 3200', '', '', '#118', 'PDF pág. 5', 2],
-      ['Thames 1500', '564', 'Palermo', '', '', 1],
+    // The deck's "#120" is the client number, as a capture's column is.
+    expect(b.stops.map((s) => [s.address, s.customerNumber, s.area, s.where, s.sellerId])).toEqual([
+      ['Gorriti 4100', '120', '', 'PDF págs. 2 y 3', 1],
+      ['Honduras 3900', '4471', '', 'PDF pág. 4', 1],
+      ['Av. Santa Fe 3200', '118', '', 'PDF pág. 5', 2],
+      ['Thames 1500', '564', 'Palermo', '', 1],
     ])
-    expect(b).toMatchObject({ date: '2026-11-17', personId: 'p1', dropped: 0, unknown: [] })
+    expect(b).toMatchObject({ date: '2026-11-17', personId: 'p1', dropped: 0, unknown: [], conflicts: [] })
     expect(b.chips).toEqual(['4 locales, en el orden de los archivos', 'Ana Lo: 3', 'Beto Su: 1', 'Para: Lucía Gómez', 'Día: martes 17 de noviembre'])
   })
 
@@ -52,9 +53,16 @@ describe('visits from files and written indications', () => {
       ],
       date: '2026-11-01', merchandiser: 'Pedro', unknown: ['vendedor Carla'],
     }, PAGES, cat, TODAY)
-    expect(b.stops).toEqual([{ address: 'Honduras 3900', customerNumber: '', area: '', ref: '', pages: [4], where: 'PDF pág. 4', sellerId: null }])
+    expect(b.stops).toEqual([{ address: 'Honduras 3900', customerNumber: '', area: '', pages: [4], where: 'PDF pág. 4', sellerId: null }])
     expect(b).toMatchObject({ dropped: 2, date: null, personId: null, task: '' })
     expect(b.unknown).toEqual(['vendedor Carla', 'el activador "Pedro"'])
+  })
+
+  it('one number, one store: a number repeated on another address stays on the first and is said', () => {
+    const pages = briefPages([{ kind: 'pdf', pages: ['Cabildo 1236 #551', 'Olaguer y Feliu 2439 #551'] }])
+    const b = understandBrief({ stops: [{ page: 2, address: 'Olaguer y Feliu 2439', customer_number: '#551' }, { page: 1, address: 'Cabildo 1236', customer_number: '551' }] }, pages, cat, TODAY)
+    expect(b.stops.map((s) => [s.address, s.customerNumber])).toEqual([['Cabildo 1236', '551'], ['Olaguer y Feliu 2439', '']])
+    expect(b.conflicts).toEqual(['#551 en Olaguer y Feliu 2439 (también está en Cabildo 1236)'])
   })
 
   it('an answer that is not one is nothing', () => {
@@ -70,8 +78,10 @@ describe('visits from files and written indications', () => {
     const [, capture] = b.stops
     expect(capture && stopTask('', capture)).toBe('')
     expect(briefLines(b, cat.sellers)).toEqual([
-      { text: 'Gorriti 4100 @Ana Lo', task: 'Reponer · PDF pág. 2 · #120' },
-      { text: '564; Thames 1500; Palermo', task: 'Reponer' },
+      { text: '120; Gorriti 4100 @Ana Lo', key: 'gorriti 4100', task: 'Reponer · PDF pág. 2' },
+      { text: '564; Thames 1500; Palermo', key: 'thames 1500', task: 'Reponer' },
     ])
+    // The task follows the address, even with the line fixed by hand.
+    expect(taskKey('Av. Gorriti 4100')).toBe(taskKey('Gorriti 4100'))
   })
 })

@@ -43,9 +43,9 @@ Listas de la empresa (usá solo estos ids y nombres):
 ${lists}
 
 Respondé solo este JSON, sin texto antes ni después:
-{"stops": [{"page": 2, "address": "", "customer_number": "", "area": "", "ref": "", "seller_id": null}], "task": "", "date": null, "merchandiser": null, "unknown": []}
+{"stops": [{"page": 2, "address": "", "customer_number": "", "area": "", "seller_id": null}], "task": "", "date": null, "merchandiser": null, "unknown": []}
 
-- stops: cada local, en el orden en que aparecen. "page" es el número de la página donde está. "address" es la calle y altura copiadas tal cual, sin números de referencia, barrio ni fechas. "customer_number" es el número de cliente si está en una columna o etiqueta de cliente/código; si no, "". "area" es el barrio o la zona si está escrito; si no, "". "ref" es un número que acompaña a la dirección en un título (por ejemplo "#553"), o "". Si un local aparece en varias páginas, ponelo una vez por página.
+- stops: cada local, en el orden en que aparecen. "page" es el número de la página donde está. "address" es la calle y altura copiadas tal cual, sin el número de cliente, barrio ni fechas. "customer_number" es el número de cliente: el de una columna de cliente/código, o el número que acompaña a la dirección en un título ("Cabildo 1130 #553" → "553"); si no hay, "". "area" es el barrio o la zona si está escrito; si no, "". Si un local aparece en varias páginas, ponelo una vez por página.
 - No agregues locales que no estén en el texto. Ignorá portadas, títulos y fechas.
 - seller_id: el vendedor de ese local según las indicaciones ("todos son de X, menos el de Y que es de Z") o según la columna de vendedor, con el id de la lista; null si no lo dicen.
 - task: lo que piden hacer en cada local, corto y con sus palabras ("Avisar si falta algo y ordenar como en el PDF"); "" si no piden nada.
