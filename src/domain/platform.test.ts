@@ -4,7 +4,7 @@ import { companyLine, formatUsd, peopleLabel, platformError, supportOpen, toSupp
 const panda: PlatformCompany = {
   id: 'c1', name: 'Panda', kind: 'distributor', createdAt: '2026-10-01', plan: 'pilot', status: 'active', endsOn: null,
   members: 8, invited: 1, admins: 'Carla López', visits30d: 120, lastActivityAt: null, photos: 300, photoBytes: 2_100_000_000,
-  aiCaptures: 104, aiCostThousandths: 210, supportUntil: null,
+  aiCaptures: 104, aiCostThousandths: 210, aiLimit: 1000, aiCustomLimit: null, supportUntil: null,
 }
 
 describe('platform', () => {

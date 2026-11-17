@@ -212,7 +212,9 @@ test('templates: write with Spanish data, preview on a real visit, save, hide Wh
 
 test('company and plan: billing shows, settings save, data exports', async ({ page }, info) => {
   const state = company({
-    company: { id: 'c1', name: 'Panda', kind: 'distributor', geocoding_scope: 'caba', show_whatsapp: true, photo_retention_months: 12, logo_version: null, shift_start: '09:00:00', shift_end: '14:00:00' },
+    company: { id: 'c1', name: 'Panda', kind: 'distributor', geocoding_scope: 'caba', show_whatsapp: true, photo_retention_months: 12, logo_version: null, shift_start: '09:00:00', shift_end: '14:00:00', ai_daily_per_person: 30 },
+    aiQuota: { month_used: 37, month_limit: 1000, my_today: 0, my_daily_limit: 30 },
+    aiUsage: { people: [{ name: 'Lucía Gómez', month: 25, today: 3 }, { name: 'Agustín Rezett', month: 12, today: 0 }], days: [{ day: '2026-11-16', captures: 37 }] },
     subscription: { company_id: 'c1', plan: 'pilot', status: 'active', ends_on: '2026-11-30', next_billing_on: '2026-12-01', auto_debit: false, payment_method_summary: null, estimated_amount_cents: null, currency: 'ARS' },
     usage: { active_people: 7, photo_bytes: 2_100_000_000, photos: 9800, visits_this_month: 412, stores: 230, ai_captures_this_month: 0 },
     visits: [visitRow('v1', 0, 'Tres Arroyos 762', { notes: 'Faltó "SKYY"; volver' })],
@@ -229,6 +231,19 @@ test('company and plan: billing shows, settings save, data exports', async ({ pa
   await expect(page.getByText('2,1 GB')).toBeVisible()
   await expect(page.getByText('A definir')).toBeVisible()
   await page.screenshot({ path: `test-results/company-${info.project.name}.png`, fullPage: true })
+
+  // AI: the month against its limit, who used it, and each person's day
+  const ai = page.getByRole('region', { name: 'Capturas con IA' })
+  await expect(ai.getByText('de 1000 este mes')).toBeVisible()
+  await expect(ai.getByRole('progressbar', { name: 'Capturas usadas este mes' })).toHaveAttribute('aria-valuenow', '37')
+  await expect(ai.getByText('25 este mes · 3 hoy')).toBeVisible()
+  await expect(ai.getByText('Agustín Rezett')).toBeVisible()
+  await ai.scrollIntoViewIfNeeded()
+  await ai.screenshot({ path: `test-results/company-ai-${info.project.name}.png` })
+  await pick(ai.getByLabel('Por persona, por día'), '20 capturas')
+  await expect.poll(() => state.company?.ai_daily_per_person).toBe(20)
+  await pick(ai.getByLabel('Por persona, por día'), 'Sin límite')
+  await expect.poll(() => state.company?.ai_daily_per_person).toBeNull()
 
   const hours = page.getByRole('region', { name: 'Horario de trabajo' })
   await hours.getByLabel('Desde').fill('08:30')

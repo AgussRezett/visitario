@@ -186,6 +186,6 @@ test('reading a capture without the feature on says so and stays put', async ({ 
   await installFakeSupabase(page, team({ capture: { status: 402 } }), 'supervisor')
   await page.goto(`/s/import?date=${FRIDAY}`)
   await page.getByLabel('Subir captura').setInputFiles({ name: 'captura.png', mimeType: 'image/png', buffer: PIXEL })
-  await expect(page.getByText('La carga desde una captura es parte del plan pago.')).toBeVisible()
+  await expect(page.getByText('La lectura con IA no está incluida en el plan de tu empresa.')).toBeVisible()
   await expect(page.getByRole('heading', { name: '¿De dónde salen los locales?' })).toBeVisible()
 })

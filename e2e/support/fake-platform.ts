@@ -50,19 +50,25 @@ export async function handlePlatform({ path, state, json, body }: Ctx): Promise<
   if (state.platform) {
     const pl = state.platform
     if (path.endsWith('/rpc/platform_companies')) return send(pl.companies)
-    if (path.endsWith('/rpc/platform_totals')) return send([{ active_people: 11, photos: 900, photo_bytes: 2_600_000_000, db_bytes: 38_000_000, ai_captures: 104, ai_cost_usd_thousandths: 210 }])
+    if (path.endsWith('/rpc/platform_totals')) return send([{ active_people: 11, photos: 900, photo_bytes: 2_600_000_000, db_bytes: 38_000_000, ai_captures: 104, ai_cost_usd_thousandths: 210, ai_captures_today: 12 }])
     if (path.endsWith('/rpc/platform_new_company')) {
       const b = body()
       if (pl.companies.some((c) => String(c.name).toLowerCase() === String(b.p_name).toLowerCase())) return send({ message: 'A company with that name already exists', code: '23505' }, 409)
       ;(pl.created ??= []).push(b)
       const id = `new-${pl.companies.length}`
-      pl.companies.push({ id, name: b.p_name, kind: b.p_kind, created_at: new Date().toISOString(), plan: b.p_plan, status: 'active', ends_on: b.p_ends_on, members: 0, invited: 0, admins: null, visits_30d: 0, last_activity_at: null, photos: 0, photo_bytes: 0, ai_captures: 0, ai_cost_usd_thousandths: 0, support_until: null })
+      pl.companies.push({ id, name: b.p_name, kind: b.p_kind, created_at: new Date().toISOString(), plan: b.p_plan, status: 'active', ends_on: b.p_ends_on, members: 0, invited: 0, admins: null, visits_30d: 0, last_activity_at: null, photos: 0, photo_bytes: 0, ai_captures: 0, ai_cost_usd_thousandths: 0, support_until: null, ai_limit: b.p_plan === 'free' ? 0 : 1000, ai_custom_limit: null })
       return send(id)
     }
     if (path.endsWith('/rpc/platform_set_plan')) {
       const b = body()
       const c = pl.companies.find((x) => x.id === b.p_company)
       if (c) Object.assign(c, { plan: b.p_plan, status: b.p_status, ends_on: b.p_ends_on })
+      return send(null)
+    }
+    if (path.endsWith('/rpc/platform_set_ai_limit')) {
+      const b = body()
+      const c = pl.companies.find((x) => x.id === b.p_company)
+      if (c) Object.assign(c, { ai_custom_limit: b.p_limit, ai_limit: b.p_limit ?? (c.plan === 'free' ? 0 : 1000) })
       return send(null)
     }
     if (path.endsWith('/rpc/start_support')) {

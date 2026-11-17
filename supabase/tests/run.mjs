@@ -1345,6 +1345,39 @@ await expectError('Anonymous cannot call has_password', () => asAnon(`select has
 const carlaMembership = (await sys(`select id from membership where person_id = $1`, [await pid('carla')]))[0].id;
 await expectError('A company cannot lose its last admin', () => as('carla', `update membership set roles = '{supervisor}' where id = $1`, [carlaMembership]), /admin/);
 
+// ---- AI limits: a month per company (Visitario), a day per person (the admin), a day for the platform
+{
+  const lucia = await pid('lucia')
+  check('A pilot company may use AI; a free one may not', (await sys(`select ai_allow($1, $2) a, ai_allow($3, null) b`, [panda, agus, other]))[0].a === null
+    && (await sys(`select ai_allow($1, null) b`, [other]))[0].b === 'plan')
+  await as('carla', `update company set ai_daily_per_person = 2 where id = $1`, [panda])
+  await as('martin', `update company set ai_daily_per_person = 99 where id = $1`, [panda])
+  check('Only the admin sets the captures per person per day', (await sys(`select ai_daily_per_person n from company where id = $1`, [panda]))[0].n === 2)
+  await sys(`select record_ai_usage($1, 1, $2)`, [panda, agus])
+  await sys(`select record_ai_usage($1, 1, $2)`, [panda, agus])
+  check('Two captures today: Agus reached his day, Lucía did not', (await sys(`select ai_allow($1, $2) a, ai_allow($1, $3) l`, [panda, agus, lucia]))[0].a === 'person_day'
+    && (await sys(`select ai_allow($1, $2) l`, [panda, lucia]))[0].l === null)
+  check('The platform day closes everyone', (await sys(`select ai_allow($1, $2, 1) l`, [panda, lucia]))[0].l === 'platform_day')
+  const q = (await as('agus', `select * from ai_quota($1)`, [panda]))[0]
+  check(`Each one sees what is left (${JSON.stringify(q)})`, q?.my_today === 2 && q?.my_daily_limit === 2 && q?.month_limit === 1000 && q?.month_used >= 2)
+  check('Another company sees no quota', (await as('beto', `select * from ai_quota($1)`, [panda])).length === 0)
+  await expectError('Only Visitario sets the monthly limit', () => as('carla', `select platform_set_ai_limit($1, 5000)`, [panda]), /Visitario/)
+  await as('agus', `select platform_set_ai_limit($1, 3)`, [panda])
+  check('Visitario lowers the month: it is used up', (await sys(`select ai_allow($1, $2) l`, [panda, lucia]))[0].l === 'month')
+  const listed = (await as('agus', `select ai_limit, ai_custom_limit from platform_companies() where id = $1`, [panda]))[0]
+  check('The platform list shows the limit set', listed?.ai_limit === 3 && listed?.ai_custom_limit === 3)
+  await as('agus', `select platform_set_ai_limit($1, null)`, [panda])
+  check('Back to the plan', (await sys(`select private.ai_month_limit($1) n`, [panda]))[0].n === 1000)
+  check('Today on the platform', (await as('agus', `select ai_captures_today n from platform_totals()`))[0].n >= 2)
+  const usage = (await as('carla', `select company_ai_usage($1) u`, [panda]))[0].u
+  check(`The admin sees who used it and when (${JSON.stringify(usage.people)})`, usage.people.some((p) => p.name.startsWith('Agus') && p.month === 2 && p.today === 2) && usage.days.length >= 1)
+  await expectError('A supervisor does not see the company AI usage', () => as('martin', `select company_ai_usage($1)`, [panda]), /admin/)
+  check('Uses are seen by the company admin only', (await as('carla', `select count(*)::int n from ai_event where company_id = $1`, [panda]))[0].n >= 2
+    && (await as('martin', `select * from ai_event`)).length === 0 && (await as('beto', `select * from ai_event`)).length === 0)
+  await expectError('The app cannot log or ask on its own', () => as('carla', `select ai_allow($1, null)`, [panda]))
+  await expectError('…nor write the log', () => as('carla', `insert into ai_event (company_id) values ($1)`, [panda]))
+}
+
 console.log('\nQuery plan for visits as supervisor:');
 await db.exec(`set role authenticated; select set_config('request.jwt.claim.sub', '${U.martin}', false);`);
 for (const row of (await db.query(`explain select id from visit where work_date = '2026-10-09'`)).rows) console.log('  ' + row['QUERY PLAN']);
