@@ -31,7 +31,7 @@ import { DirectoryResults } from './DirectoryResults'
 import { PasteSources } from './PasteSources'
 import { pasteOutcome, repeatedLines, type PasteOutcome } from './paste-results'
 import { PasteNotes } from './PasteNotes'
-import { briefLines, type UnderstoodBrief } from '@/domain/brief'
+import { briefLines, taskKey, type UnderstoodBrief } from '@/domain/brief'
 
 interface AddAddressSheetProps {
   open: boolean
@@ -156,7 +156,7 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
   const addPasted = async () => {
     setOutcome(null)
     const sent = lines
-    const rows = sent.map((l) => ({ customerNumber: l.customerNumber, address: l.address, area: l.area, sellerId: l.sellerId, channelId: l.channelId ?? channelIdOf(pastedChannel), task: tasks[l.text] }))
+    const rows = sent.map((l) => ({ customerNumber: l.customerNumber, address: l.address, area: l.area, sellerId: l.sellerId, channelId: l.channelId ?? channelIdOf(pastedChannel), task: tasks[taskKey(l.address)] }))
     const result = pasteOutcome(sent.map((l) => l.text), await addMany.mutateAsync(rows), repeatedLines(sent))
     if (!result.failed.length) return onClose()
     // The lines that did not go in stay, to fix them and try again.
@@ -169,7 +169,7 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
   const readPdf = (b: UnderstoodBrief) => {
     const read = briefLines(b, sellers)
     addLines(read.map((l) => l.text))
-    setTasks((t) => ({ ...t, ...Object.fromEntries(read.map((l) => [l.text, l.task])) }))
+    setTasks((t) => ({ ...t, ...Object.fromEntries(read.map((l) => [l.key, l.task])) }))
     setBrief(b)
   }
 
