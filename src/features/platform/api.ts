@@ -38,6 +38,8 @@ export const platformCompaniesQuery = queryOptions({
       photoBytes: Number(r.photo_bytes),
       aiCaptures: r.ai_captures,
       aiCostThousandths: r.ai_cost_usd_thousandths,
+      aiLimit: r.ai_limit,
+      aiCustomLimit: r.ai_custom_limit,
       supportUntil: r.support_until,
     }))
   },
@@ -56,6 +58,7 @@ export const platformTotalsQuery = queryOptions({
       dbBytes: Number(r?.db_bytes ?? 0),
       aiCaptures: r?.ai_captures ?? 0,
       aiCostThousandths: r?.ai_cost_usd_thousandths ?? 0,
+      aiCapturesToday: r?.ai_captures_today ?? 0,
     }
   },
 })
@@ -118,6 +121,15 @@ export function usePlatform() {
     onSuccess: refresh,
   })
 
+  /** A company's AI captures a month; null goes back to its plan's. */
+  const setAiLimit = useMutation({
+    mutationFn: async (p: { companyId: string; limit: number | null }) => {
+      const { error } = await supabase.rpc('platform_set_ai_limit', { p_company: p.companyId, p_limit: p.limit })
+      if (error) throw fail(error)
+    },
+    onSuccess: refresh,
+  })
+
   const startSupport = useMutation({
     mutationFn: async (p: { companyId: string; reason: string }) => {
       const { data, error } = await supabase.rpc('start_support', { p_company: p.companyId, p_reason: p.reason.trim() })
@@ -127,5 +139,5 @@ export function usePlatform() {
     onSuccess: refresh,
   })
 
-  return { create, setPlan, startSupport }
+  return { create, setPlan, setAiLimit, startSupport }
 }

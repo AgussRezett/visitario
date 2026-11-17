@@ -20,6 +20,8 @@ export interface CompanySettings {
   /** The photo presentation's backgrounds (files in the "slides" bucket). */
   slidesCoverPath: string | null
   slidesPagePath: string | null
+  /** AI captures each person may use a day (null: no limit). */
+  aiDailyPerPerson: number | null
 }
 
 export const companyQuery = (companyId: string) =>
@@ -28,7 +30,7 @@ export const companyQuery = (companyId: string) =>
     queryFn: async (): Promise<CompanySettings> => {
       const { data, error } = await supabase
         .from('company')
-        .select('id, name, kind, geocoding_scope, show_whatsapp, messages_per_display, photo_retention_months, logo_version, shift_start, shift_end, slides_cover_path, slides_page_path')
+        .select('id, name, kind, geocoding_scope, show_whatsapp, messages_per_display, photo_retention_months, logo_version, shift_start, shift_end, slides_cover_path, slides_page_path, ai_daily_per_person')
         .eq('id', companyId)
         .single()
       if (error) throw error
@@ -45,6 +47,7 @@ export const companyQuery = (companyId: string) =>
         shiftEnd: data.shift_end.slice(0, 5),
         slidesCoverPath: data.slides_cover_path,
         slidesPagePath: data.slides_page_path,
+        aiDailyPerPerson: data.ai_daily_per_person,
       }
     },
   })
@@ -57,6 +60,7 @@ export interface CompanyChange {
   photoRetentionMonths?: number
   shiftStart?: string
   shiftEnd?: string
+  aiDailyPerPerson?: number | null
 }
 
 export function useCompanyUpdate(companyId: string) {
@@ -65,7 +69,7 @@ export function useCompanyUpdate(companyId: string) {
     mutationFn: async (c: CompanyChange) => {
       const { error } = await supabase
         .from('company')
-        .update({ name: c.name, geocoding_scope: c.geocodingScope, show_whatsapp: c.showWhatsapp, messages_per_display: c.messagesPerDisplay, photo_retention_months: c.photoRetentionMonths, shift_start: c.shiftStart, shift_end: c.shiftEnd })
+        .update({ name: c.name, geocoding_scope: c.geocodingScope, show_whatsapp: c.showWhatsapp, messages_per_display: c.messagesPerDisplay, photo_retention_months: c.photoRetentionMonths, shift_start: c.shiftStart, shift_end: c.shiftEnd, ai_daily_per_person: c.aiDailyPerPerson })
         .eq('id', companyId)
       if (error) throw new Error('No pudimos guardar el cambio. Probá de nuevo.')
     },
@@ -75,6 +79,7 @@ export function useCompanyUpdate(companyId: string) {
         qc.invalidateQueries({ queryKey: ['catalogs', companyId] }),
         qc.invalidateQueries({ queryKey: ['me'] }),
         qc.invalidateQueries({ queryKey: ['team', 'shifts', companyId] }),
+        qc.invalidateQueries({ queryKey: ['ai-quota', companyId] }),
       ]),
   })
 }

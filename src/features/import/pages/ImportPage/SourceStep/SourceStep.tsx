@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { FileSpreadsheet, ImageUp, Upload } from 'lucide-react'
 import { parsePasted } from '@/domain/import'
+import { quotaLeft, quotaText } from '@/domain/ai-quota'
 import { formatDayMonth, todayInArgentina } from '@/domain/dates'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
@@ -8,7 +10,7 @@ import type { Mentionable } from '@/domain/mentions'
 import { MentionTextArea } from '@/features/workday/components/MentionTextArea'
 import { FileError, readSpreadsheet } from '@/features/import/api/read-file'
 import type { SavedFormat } from '@/features/import/api/import'
-import { CaptureError, readCapture } from '@/features/import/api/capture'
+import { CaptureError, aiQuotaQuery, readCapture, useRefreshQuota } from '@/features/import/api/capture'
 import { withCapture, withSheets, type Draft } from '@/features/import/draft'
 import { StepFrame } from '../StepFrame'
 import styles from './SourceStep.module.scss'
@@ -32,6 +34,9 @@ export function SourceStep({ companyId, tags, onAddSeller, draft, formats, onCan
   const [reading, setReading] = useState(false)
   const [capturing, setCapturing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const quota = useQuery(aiQuotaQuery(companyId))
+  const refreshQuota = useRefreshQuota(companyId)
+  const closed = quota.data ? quotaLeft(quota.data).left === 0 : false
 
   const open = async (file: File | undefined) => {
     if (!file) return
@@ -64,6 +69,7 @@ export function SourceStep({ companyId, tags, onAddSeller, draft, formats, onCan
       setError(e instanceof CaptureError ? e.message : 'No pudimos leer la captura. Revisá la conexión y probá de nuevo.')
     } finally {
       setCapturing(false)
+      void refreshQuota()
     }
   }
 
@@ -99,11 +105,12 @@ export function SourceStep({ companyId, tags, onAddSeller, draft, formats, onCan
           <span className={styles.dropHelp}>La planilla de ruteo como te llega: elegís qué hay en cada columna en el paso siguiente.</span>
         </label>
 
-        <label className={styles.drop} data-busy={capturing || undefined}>
-          <input type="file" accept="image/*" className={styles.file} onChange={(e) => void openCapture(e.target.files?.[0])} disabled={capturing || reading} aria-label="Subir captura" />
+        <label className={styles.drop} data-busy={capturing || undefined} data-disabled={closed || undefined}>
+          <input type="file" accept="image/*" className={styles.file} onChange={(e) => void openCapture(e.target.files?.[0])} disabled={capturing || reading || closed} aria-label="Subir captura" />
           <span className={styles.dropIcon}><ImageUp size={22} aria-hidden /></span>
           <span className={styles.dropTitle}>{capturing ? 'Leyendo la captura…' : 'Desde una captura'}<span className={styles.ai}>IA</span></span>
           <span className={styles.dropHelp}>{capturing ? 'La IA está leyendo las direcciones. Tarda unos segundos.' : 'Subí la foto o captura de tu Excel o del mensaje, y la IA lee las direcciones.'}</span>
+          {quota.data && !capturing ? <span className={styles.quota} data-closed={closed || undefined}>{quotaText(quota.data)}</span> : null}
         </label>
 
         <div className={styles.paste}>

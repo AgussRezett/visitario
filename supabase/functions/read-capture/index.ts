@@ -4,8 +4,10 @@
 // the import review, like a spreadsheet.
 //   POST multipart: `file` (JPEG/PNG/WebP, ≤ 6 MB) + `company` (uuid)
 //   → { title, headers, rows: string[][], unreadable, model }
-// Merchandisers (into their day), supervisors and admins, of companies on a paid or pilot
-// plan, up to a monthly cap per company.
+// Merchandisers (into their day), supervisors and admins, within the limits (ai_allow): the
+// company's month (Visitario sets it; none on the free plan), the person's day (the company
+// admin sets it) and the platform's day (AI_PLATFORM_DAILY: the provider's free allowance).
+// Every capture is logged with who read it.
 // Reads with Cloudflare Workers AI (CLOUDFLARE_ACCOUNT_ID + CLOUDFLARE_AI_TOKEN), or with
 // Claude (ANTHROPIC_API_KEY); with neither it answers 503 and the app says it is not on yet.
 import { createClient } from 'npm:@supabase/supabase-js@2'
@@ -19,13 +21,17 @@ const corsHeaders = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
-const monthlyCap = Number(Deno.env.get('AI_MONTHLY_CAPTURES') ?? '1000')
+// Cloudflare's free allowance is 10,000 neurons a day, about 180 captures: stay under it.
+const platformDaily = Number(Deno.env.get('AI_PLATFORM_DAILY') ?? (provider === 'cloudflare' ? '170' : '0')) || null
+// Why a capture is not allowed, as the app tells it apart.
+const REFUSED: Record<string, [number, string]> = {
+  plan: [402, 'plan'], month: [429, 'limit'], person_day: [429, 'limit_person'], platform_day: [429, 'limit_platform'],
+}
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
 const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
 const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 
 const TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
-const PLANS = new Set(['pilot', 'team', 'internal'])
 const ROLES = new Set(['merchandiser', 'supervisor', 'admin'])
 
 function toBase64(bytes: Uint8Array) {
@@ -50,23 +56,22 @@ Deno.serve(async (req) => {
     return json({ error: 'invalid' }, 400)
   }
 
-  // Who may: anyone who plans days in that company, on a plan that includes it, under the cap.
+  // Who may: anyone who plans days in that company, within its limits.
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
   const { data: person } = await admin.from('person').select('id').eq('auth_user_id', auth.user.id).maybeSingle()
   const { data: member } = person
     ? await admin.from('membership').select('roles').eq('company_id', company).eq('person_id', person.id).eq('status', 'active').maybeSingle()
     : { data: null }
   const roles = (member?.roles ?? []) as string[]
-  if (!roles.some((r) => ROLES.has(r))) return json({ error: 'forbidden' }, 403)
-  const { data: plan } = await admin.from('subscription').select('plan, status').eq('company_id', company).maybeSingle()
-  if (!plan || plan.status !== 'active' || !PLANS.has(plan.plan)) return json({ error: 'plan' }, 402)
-  const month = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 7) + '-01' // Argentina
-  const { data: usage } = await admin.from('ai_usage').select('captures').eq('company_id', company).eq('month', month).maybeSingle()
-  if ((usage?.captures ?? 0) >= monthlyCap) return json({ error: 'limit' }, 429)
+  if (!person || !roles.some((r) => ROLES.has(r))) return json({ error: 'forbidden' }, 403)
+  const { data: refused, error: checkError } = await admin.rpc('ai_allow', { p_company: company, p_person: person.id, p_platform_daily: platformDaily })
+  if (checkError) return json({ error: 'ai_failed' }, 502)
+  const [status, code] = refused ? REFUSED[refused] ?? [429, 'limit'] : [0, '']
+  if (status) return json({ error: code }, status)
 
   try {
     const reading = await readImage(toBase64(new Uint8Array(await file.arrayBuffer())), file.type)
-    await admin.rpc('record_ai_usage', { p_company: company, p_cost_thousandths: Math.ceil(reading.cost) })
+    await admin.rpc('record_ai_usage', { p_company: company, p_cost_thousandths: Math.ceil(reading.cost), p_person: person.id })
     if (!reading.transcript) return json({ error: 'ai_incomplete' }, 502)
     return json({ ...reading.transcript, model: reading.model })
   } catch (e) {

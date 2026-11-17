@@ -13,6 +13,7 @@ import { Switch } from '@/ui/Switch'
 import { useWorkContext } from '@/features/workday/context'
 import { companyQuery, exportCsv, saveFile, subscriptionQuery, usageQuery, useCompanyUpdate } from '@/features/admin/api/company'
 import { SupportLog } from './SupportLog'
+import { AiUsage } from './AiUsage'
 import { SlidesTemplate } from './SlidesTemplate'
 import styles from './CompanyPage.module.scss'
 
@@ -123,6 +124,9 @@ export function CompanyPage() {
             <span className={styles.help}>Puente mientras el supervisor no revise en Visitario.</span>
           </Switch>
         </section>
+
+        <AiUsage companyId={ctx.companyId} perPerson={c ? c.aiDailyPerPerson : undefined} onPerPerson={(n) => update.mutate({ aiDailyPerPerson: n })}
+          cardClass={styles.card} headingClass={styles.heading} helpClass={styles.help} />
 
         {c ? <SlidesTemplate company={c} cardClass={styles.card} headingClass={styles.heading} helpClass={styles.help} /> : null}
 
