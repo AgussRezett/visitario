@@ -42,9 +42,12 @@ export async function handlePlanner({ path, url, method, route, state, json, bod
   if (path.endsWith('/functions/v1/read-brief')) {
     const r = state.brief
     if (!r || r.status) return done(json({ error: r?.error ?? 'not_configured' }, r?.status ?? 503))
+    // A PDF alone gives its pages, no AI; the pages with the indications give the reading.
+    if ((route.request().headers()['content-type'] ?? '').startsWith('multipart/')) return done(json({ pages: r.pages }))
+    r.sent = body()
     const q = (state.aiQuota ??= { ...QUOTA })
     Object.assign(q, { month_used: q.month_used + 1, my_today: q.my_today + 1 })
-    return done(json({ pages: r.pages, brief: r.brief }))
+    return done(json({ brief: r.brief }))
   }
   if (path.endsWith('/rpc/ai_quota')) return done(json([state.aiQuota ?? QUOTA]))
   if (path.endsWith('/rpc/company_ai_usage')) return done(json(state.aiUsage ?? { people: [], days: [] }))

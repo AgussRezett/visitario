@@ -36,26 +36,6 @@
     cursor: progress;
     opacity: 0.7;
   }
-
-  &[data-disabled] {
-    cursor: not-allowed;
-    opacity: 0.6;
-  }
-}
-
-// What is left of the AI: quiet while there is room, in the fix color once it is used up.
-.quota {
-  @include text(label);
-  font-weight: $weight-bold;
-  color: $color-forest;
-
-  @include dark {
-    color: $color-lime;
-  }
-
-  &[data-closed] {
-    color: $color-fix-ink;
-  }
 }
 
 .file {
@@ -133,15 +113,4 @@
     grid-column: 2;
     grid-row: 1 / span 2;
   }
-}
-
-.ai {
-  @include text(tiny);
-  margin-left: space(2);
-  padding: 1px space(2);
-  border-radius: $radius-full;
-  background: $color-lime-soft;
-  font-weight: $weight-extrabold;
-  color: $color-lime-soft-ink;
-  vertical-align: middle;
 }

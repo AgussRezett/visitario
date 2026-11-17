@@ -211,8 +211,9 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
       return json({ workdays: plans.size, visits: rows.length, stores })
     }
     if (path.endsWith('/functions/v1/read-capture')) {
-      if (!state.capture || state.capture.status) return json({ error: 'fake' }, state.capture?.status ?? 503)
-      const { title = '', headers = [], rows = [], unreadable = 0 } = state.capture
+      const capture = state.captures?.shift() ?? state.capture
+      if (!capture || capture.status) return json({ error: 'fake' }, capture?.status ?? 503)
+      const { title = '', headers = [], rows = [], unreadable = 0 } = capture
       const q = (state.aiQuota ??= { month_used: 0, month_limit: 1000, my_today: 0, my_daily_limit: 30 })
       Object.assign(q, { month_used: q.month_used + 1, my_today: q.my_today + 1 })
       return json({ title, headers, rows, unreadable, model: 'fake' })

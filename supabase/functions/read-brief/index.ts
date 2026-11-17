@@ -1,11 +1,14 @@
-// Visits sent as a PDF (a slide per store, with photos) and written indications ("todos son
-// de Pablo Fo, menos Olaguer y Feliu que es de Mirko Ra; decime si falta algo"). The PDF's
-// text is read here, page by page, and AI says which stores it lists and what the indications
-// ask: seller per store, the task, the day, for whom. The app keeps only addresses that are in
-// the PDF as written, in the PDF's order (src/domain/brief.ts). Nothing is saved here.
-//   POST multipart: `file` (PDF ≤ 10 MB) + `company` + `text` (indications) + `today`
-//   → { pages: string[], brief }
-// Merchandiser, supervisor or admin, within the AI limits: one use, like a capture.
+// Visits read by AI from what arrives: captures, photos and PDFs (a slide per store), with
+// optional written indications ("todos son de Pablo Fo, menos Olaguer y Feliu que es de Mirko
+// Ra; decime si falta algo"). Two steps, so the app can read several files at once:
+//   1. POST multipart `file` (PDF ≤ 10 MB) + `company` → { pages: string[] }: the PDF's text,
+//      page by page. No AI, no use spent. (Captures are transcribed by read-capture.)
+//   2. POST JSON { company, pages: [{ label, text }], text, today } → { brief }: AI says which
+//      stores the pages list and what the indications ask (seller per store, task, day, for
+//      whom). One use. The app keeps only addresses written that way, in the pages' order
+//      (src/domain/brief.ts). Nothing is saved here.
+// (2.13 sent the PDF and the indications together, `text` in the form: still answered.)
+// Merchandiser, supervisor or admin, within the AI limits.
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { getDocumentProxy } from 'npm:unpdf@1.4.0'
 
@@ -30,8 +33,9 @@ const REFUSED: Record<string, [number, string]> = {
 const ROLES = new Set(['merchandiser', 'supervisor', 'admin'])
 const WEEKDAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
 const MAX_PAGES = 40
+const MAX_TEXT = 24_000
 
-const prompt = (today: string, lists: string) => `Te pasan las visitas del día de un activador de góndolas: el texto de un PDF, página por página, y las indicaciones escritas que le mandaron. Devolvé los locales a visitar y lo que piden las indicaciones, en JSON.
+const prompt = (today: string, lists: string) => `Te pasan las visitas de un activador de góndolas: el texto de lo que le mandaron (PDF página por página, y capturas de listas ya transcriptas), y a veces indicaciones escritas. Devolvé los locales a visitar y lo que piden las indicaciones, en JSON.
 
 Hoy es ${WEEKDAYS[new Date(`${today}T12:00:00Z`).getUTCDay()]} ${today}.
 
@@ -39,15 +43,26 @@ Listas de la empresa (usá solo estos ids y nombres):
 ${lists}
 
 Respondé solo este JSON, sin texto antes ni después:
-{"stops": [{"page": 2, "address": "", "ref": "", "seller_id": null}], "task": "", "date": null, "merchandiser": null, "unknown": []}
+{"stops": [{"page": 2, "address": "", "customer_number": "", "area": "", "ref": "", "seller_id": null}], "task": "", "date": null, "merchandiser": null, "unknown": []}
 
-- stops: cada local que el PDF muestra, en el orden del PDF. "page" es el número de página. "address" es la calle y altura copiadas tal cual del PDF, sin el número de referencia ni fechas. "ref" es el número que acompaña a la dirección (por ejemplo "#553"), o "". Si un local aparece en varias páginas, ponelo una vez por página.
-- No agregues locales que no estén en el PDF. Ignorá portadas, títulos y fechas.
-- seller_id: el vendedor de ese local según las indicaciones ("todos son de X, menos el de Y que es de Z"), con el id de la lista; null si no lo dicen.
+- stops: cada local, en el orden en que aparecen. "page" es el número de la página donde está. "address" es la calle y altura copiadas tal cual, sin números de referencia, barrio ni fechas. "customer_number" es el número de cliente si está en una columna o etiqueta de cliente/código; si no, "". "area" es el barrio o la zona si está escrito; si no, "". "ref" es un número que acompaña a la dirección en un título (por ejemplo "#553"), o "". Si un local aparece en varias páginas, ponelo una vez por página.
+- No agregues locales que no estén en el texto. Ignorá portadas, títulos y fechas.
+- seller_id: el vendedor de ese local según las indicaciones ("todos son de X, menos el de Y que es de Z") o según la columna de vendedor, con el id de la lista; null si no lo dicen.
 - task: lo que piden hacer en cada local, corto y con sus palabras ("Avisar si falta algo y ordenar como en el PDF"); "" si no piden nada.
 - date: el día de las visitas en formato AAAA-MM-DD ("mañana", "el martes"); null si no lo dicen.
 - merchandiser: el nombre del activador si las indicaciones lo nombran; null si no.
 - Si nombran un vendedor o una persona que no está en las listas, no lo reemplaces por otro: escribilo en "unknown".`
+
+async function pdfPages(file: File): Promise<string[]> {
+  const pdf = await getDocumentProxy(new Uint8Array(await file.arrayBuffer()))
+  const pages: string[] = []
+  for (let i = 1; i <= Math.min(pdf.numPages, MAX_PAGES); i++) {
+    const content = await (await pdf.getPage(i)).getTextContent()
+    const lines = content.items.map((it) => ('str' in it ? it.str + (it.hasEOL ? '\n' : '') : '')).join('')
+    pages.push(lines.replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').trim().slice(0, 1200))
+  }
+  return pages
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -56,17 +71,12 @@ Deno.serve(async (req) => {
   const token = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '')
   const { data: auth } = await createClient(supabaseUrl, anonKey, { auth: { persistSession: false } }).auth.getUser(token)
   if (!auth.user) return json({ error: 'unauthorized' }, 401)
-  if (!cfAccount || !cfToken) return json({ error: 'not_configured' }, 503)
 
-  const form = await req.formData().catch(() => null)
-  const file = form?.get('file')
-  const company = String(form?.get('company') ?? '')
-  const text = String(form?.get('text') ?? '').trim().slice(0, 1500)
-  const sent = String(form?.get('today') ?? '')
-  const today = /^\d{4}-\d{2}-\d{2}$/.test(sent) ? sent : new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10)
-  if (!(file instanceof File) || file.type !== 'application/pdf' || file.size > 10_000_000 || !/^[0-9a-f-]{36}$/.test(company)) {
-    return json({ error: 'invalid' }, 400)
-  }
+  const isForm = (req.headers.get('content-type') ?? '').startsWith('multipart/form-data')
+  const form = isForm ? await req.formData().catch(() => null) : null
+  const body = isForm ? null : ((await req.json().catch(() => null)) as Record<string, unknown> | null)
+  const company = String(form?.get('company') ?? body?.company ?? '')
+  if (!/^[0-9a-f-]{36}$/.test(company)) return json({ error: 'invalid' }, 400)
 
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
   const { data: person } = await admin.from('person').select('id').eq('auth_user_id', auth.user.id).maybeSingle()
@@ -76,20 +86,33 @@ Deno.serve(async (req) => {
   const roles = (member?.roles ?? []) as string[]
   if (!person || !roles.some((r) => ROLES.has(r))) return json({ error: 'forbidden' }, 403)
 
-  // The PDF's text, a page each: nothing of AI yet, so a PDF without text costs no use.
-  let pages: string[]
-  try {
-    const pdf = await getDocumentProxy(new Uint8Array(await file.arrayBuffer()))
-    pages = []
-    for (let i = 1; i <= Math.min(pdf.numPages, MAX_PAGES); i++) {
-      const content = await (await pdf.getPage(i)).getTextContent()
-      const lines = content.items.map((it) => ('str' in it ? it.str + (it.hasEOL ? '\n' : '') : '')).join('')
-      pages.push(lines.replace(/[ \t]+/g, ' ').replace(/ *\n */g, '\n').trim().slice(0, 1200))
+  // Step 1: a PDF's text, a page each.
+  let labelled: { label: string; text: string }[]
+  let pages: string[] = []
+  if (form) {
+    const file = form.get('file')
+    if (!(file instanceof File) || file.type !== 'application/pdf' || file.size > 10_000_000) return json({ error: 'invalid' }, 400)
+    try {
+      pages = await pdfPages(file)
+    } catch {
+      return json({ error: 'unreadable' }, 422)
     }
-  } catch {
-    return json({ error: 'unreadable' }, 422)
+    if (pages.join('').replace(/\s/g, '').length < 5) return json({ error: 'no_text' }, 422)
+    if (!form.has('text')) return json({ pages })
+    labelled = pages.map((text, i) => ({ label: `PDF pág. ${i + 1}`, text }))
+  } else {
+    labelled = (Array.isArray(body?.pages) ? body.pages : []).slice(0, 80).map((p) => {
+      const o = (p && typeof p === 'object' ? p : {}) as Record<string, unknown>
+      return { label: String(o.label ?? '').slice(0, 40), text: String(o.text ?? '').slice(0, 4000) }
+    })
+    if (!labelled.some((p) => p.text.trim())) return json({ error: 'invalid' }, 400)
   }
-  if (pages.join('').replace(/\s/g, '').length < 5) return json({ error: 'no_text' }, 422)
+
+  // Step 2: what the pages list and the indications ask.
+  if (!cfAccount || !cfToken) return json({ error: 'not_configured' }, 503)
+  const text = String(form?.get('text') ?? body?.text ?? '').trim().slice(0, 1500)
+  const sent = String(form?.get('today') ?? body?.today ?? '')
+  const today = /^\d{4}-\d{2}-\d{2}$/.test(sent) ? sent : new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10)
 
   const { data: refused, error: checkError } = await admin.rpc('ai_allow', { p_company: company, p_person: person.id, p_platform_daily: platformDaily })
   if (checkError) return json({ error: 'ai_failed' }, 502)
@@ -107,13 +130,13 @@ Deno.serve(async (req) => {
     `Vendedores (id=nombre): ${(sellers.data ?? []).map((s) => `${s.id}=${s.name}`).join('; ') || 'ninguno'}`,
     `Activadores: ${names.join('; ') || 'ninguno'}`,
   ].join('\n')
-  const user = `PDF:\n${pages.map((p, i) => `--- Página ${i + 1} ---\n${p || '(sin texto)'}`).join('\n')}\n\nIndicaciones:\n${text || '(ninguna)'}`
+  const user = `${labelled.map((p, i) => `--- Página ${i + 1} (${p.label}) ---\n${p.text || '(sin texto)'}`).join('\n').slice(0, MAX_TEXT)}\n\nIndicaciones:\n${text || '(ninguna)'}`
 
   const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${cfAccount}/ai/v1/chat/completions`, {
     method: 'POST',
-    signal: AbortSignal.timeout(60_000),
+    signal: AbortSignal.timeout(90_000),
     headers: { Authorization: `Bearer ${cfToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model, temperature: 0, max_tokens: 2500, messages: [{ role: 'system', content: prompt(today, lists) }, { role: 'user', content: user }] }),
+    body: JSON.stringify({ model, temperature: 0, max_tokens: 6000, messages: [{ role: 'system', content: prompt(today, lists) }, { role: 'user', content: user }] }),
   }).catch(() => null)
   if (!res?.ok) {
     console.error('cloudflare', res?.status, (await res?.text())?.slice(0, 500))
@@ -136,5 +159,5 @@ Deno.serve(async (req) => {
     }
   }
   if (!brief || typeof brief !== 'object') return json({ error: 'ai_incomplete' }, 502)
-  return json({ pages, brief })
+  return json(form ? { pages, brief } : { brief })
 })

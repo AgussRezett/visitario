@@ -64,15 +64,19 @@ export function withCapture(d: Draft, fileName: string, transcript: Transcript):
 }
 
 /**
- * A PDF with indications: its stores in the PDF's order, each with its seller and its task
- * (what to do, and the PDF's pages to look at), for the merchandiser the indications name.
+ * Files read with AI (PDFs, or captures with indications): their stores in the files' order,
+ * each with its seller and its task (what to do, and the PDF's pages to look at), for the
+ * merchandiser the indications name.
  */
 export function withBrief(d: Draft, fileName: string, b: UnderstoodBrief, sellers: readonly Mentionable[]): Draft {
   const sellerOf = (id: number | null) => sellers.find((x) => x.id === id)?.name ?? ''
-  const table: Table = [['Dirección', 'Vendedor', 'Tarea'], ...b.stops.map((s) => [s.address, sellerOf(s.sellerId), stopTask(b.task, s)])]
+  const table: Table = [
+    ['Nro. cliente', 'Dirección', 'Barrio', 'Vendedor', 'Tarea'],
+    ...b.stops.map((s) => [s.customerNumber, s.address, s.area, sellerOf(s.sellerId), stopTask(b.task, s)]),
+  ]
   return {
-    ...d, fileName, sheets: [{ name: 'PDF', table }], sheet: 0, lines: null, format: null, saveFormat: false,
-    mapping: { ...emptyMapping(), hasHeader: true, columns: ['address', 'seller', 'task'], aliases: d.mapping.aliases },
+    ...d, fileName, sheets: [{ name: 'Leído con IA', table }], sheet: 0, lines: null, format: null, saveFormat: false,
+    mapping: { ...emptyMapping(), hasHeader: true, columns: ['customer_number', 'address', 'area', 'seller', 'task'], aliases: d.mapping.aliases },
     fallback: b.personId ?? d.fallback, edits: {}, skipped: [], capture: null, brief: b,
   }
 }

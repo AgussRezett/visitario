@@ -64,3 +64,20 @@ export function transcriptToLines(t: Transcript, sellers: readonly Mentionable[]
     return [r.customerNumber, r.address, r.area].filter(Boolean).join('; ') + (seller ? ` @${seller}` : '')
   })
 }
+
+/**
+ * Several captures of the same list (the Excel scrolled down, page by page) as one: the same
+ * column titles, rows one after the other. Null when they are different lists.
+ */
+export function mergeTranscripts(ts: readonly Transcript[]): Transcript | null {
+  const [first] = ts
+  if (!first) return null
+  const key = (t: Transcript) => t.headers.map(normalize).join('|')
+  if (ts.some((t) => key(t) !== key(first) || (t.headers.length === 0 && t.rows[0]?.length !== first.rows[0]?.length))) return null
+  return {
+    title: ts.every((t) => normalize(t.title) === normalize(first.title)) ? first.title : '',
+    headers: first.headers,
+    rows: ts.flatMap((t) => t.rows),
+    unreadable: ts.reduce((n, t) => n + t.unreadable, 0),
+  }
+}

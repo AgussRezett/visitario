@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import { pick } from './support/select'
+import { readFiles } from './support/read-files'
 import { atFakeToday, installFakeSupabase, type FakeState } from './support/fake-supabase'
 
 test.beforeEach(({ page }) => atFakeToday(page))
@@ -84,8 +85,8 @@ test('the merchandiser reads a capture into the list, checks it and adds it', as
   await page.getByRole('button', { name: 'Agregar dirección' }).filter({ visible: true }).first().click()
   const sheet = page.getByRole('dialog', { name: 'Agregar a mi jornada' })
   await sheet.getByRole('radio', { name: 'Pegar varias' }).click()
-  await sheet.getByLabel('Leer una captura').setInputFiles({ name: 'captura.png', mimeType: 'image/png', buffer: PIXEL })
-  await expect(sheet.getByText(/Leímos 2 locales: revisalos contra la captura/)).toBeVisible()
+  await readFiles(sheet, [{ name: 'captura.png', mimeType: 'image/png', buffer: PIXEL }])
+  await expect(sheet.getByText(/Leímos 2 locales: revisalos contra los archivos/)).toBeVisible()
   // What is left of my day, after this one
   await expect(sheet.getByText('Te quedan 29 usos de IA hoy.')).toBeVisible()
   await expect(sheet.getByText(/No pudo leer 1 fila: sumala a mano/)).toBeVisible()
@@ -106,5 +107,5 @@ test('when the day is used up, the capture says so and does not open', async ({ 
   const sheet = page.getByRole('dialog', { name: 'Agregar a mi jornada' })
   await sheet.getByRole('radio', { name: 'Pegar varias' }).click()
   await expect(sheet.getByText('Ya usaste la IA todo lo permitido por hoy: mañana se renueva.')).toBeVisible()
-  await expect(sheet.getByLabel('Leer una captura')).toBeDisabled()
+  await expect(sheet.getByLabel('Elegir archivos')).toBeDisabled()
 })

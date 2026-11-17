@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { titleMerchandiser, transcriptToLines, transcriptToTable, type Transcript } from './capture'
+import { mergeTranscripts, titleMerchandiser, transcriptToLines, transcriptToTable, type Transcript } from './capture'
 import { toRows } from './import'
 
 const read = (t: Partial<Transcript>) => transcriptToTable({ title: '', headers: [], rows: [], unreadable: 0, ...t })
@@ -81,5 +81,16 @@ describe('a capture transcribed by AI', () => {
   it('empty rows are dropped; nothing readable is an empty table', () => {
     expect(read({ headers: ['DOMICILIO'], rows: [['', ''], ['MOLDES 1365']] }).table).toEqual([['DOMICILIO'], ['MOLDES 1365']])
     expect(read({})).toEqual({ table: [], hasHeader: false, columns: [] })
+  })
+})
+
+describe('several captures of one list', () => {
+  const t = (headers: string[], rows: string[][], title = '', unreadable = 0) => ({ title, headers, rows, unreadable })
+  it('the same columns go one after the other; different lists do not merge', () => {
+    expect(mergeTranscripts([t(['COD', 'DOMICILIO'], [['1', 'A 100']], 'RUTA ANA', 1), t(['cod', 'domicilio'], [['2', 'B 200']], 'RUTA ANA')]))
+      .toEqual(t(['COD', 'DOMICILIO'], [['1', 'A 100'], ['2', 'B 200']], 'RUTA ANA', 1))
+    expect(mergeTranscripts([t(['COD'], [['1']], 'RUTA ANA'), t(['COD'], [['2']], 'RUTA LEO')])?.title).toBe('')
+    expect(mergeTranscripts([t(['COD', 'DOMICILIO'], []), t(['DIRECCION'], [])])).toBeNull()
+    expect(mergeTranscripts([])).toBeNull()
   })
 })
