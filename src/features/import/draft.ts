@@ -4,6 +4,7 @@ import {
   type ImportField, type ImportMapping, type ImportRow, type Person, type PersonMatch, type RowStatus, type StoreMatch, type Table,
 } from '@/domain/import'
 import { transcriptToTable, type Transcript } from '@/domain/capture'
+import { stopTask, type UnderstoodBrief } from '@/domain/brief'
 import type { Mentionable } from '@/domain/mentions'
 import type { Sheet } from './api/read-file'
 import type { SavedFormat } from './api/import'
@@ -27,13 +28,15 @@ export interface Draft {
   skipped: number[]
   /** Read from a capture by AI: how many rows it could not read. */
   capture: { unreadable: number } | null
+  /** Read by AI from a PDF with indications: what was understood, to say it back. */
+  brief: UnderstoodBrief | null
 }
 
 const emptyMapping = (): ImportMapping => ({ hasHeader: true, columns: [], scope: 'caba', aliases: {} })
 
 export const emptyDraft = (fallback: string | null): Draft => ({
   fileName: null, sheets: [], sheet: 0, lines: null, mapping: emptyMapping(), format: null,
-  saveFormat: true, formatName: '', fallback, edits: {}, skipped: [], capture: null,
+  saveFormat: true, formatName: '', fallback, edits: {}, skipped: [], capture: null, brief: null,
 })
 
 export const tableOf = (d: Draft): Table => d.sheets[d.sheet]?.table ?? []
@@ -47,7 +50,7 @@ export function withSheets(d: Draft, fileName: string | null, sheets: Sheet[], s
   const mapping: ImportMapping = format
     ? { ...format.mapping, aliases: format.mapping.aliases ?? {} }
     : { ...emptyMapping(), hasHeader, columns: guessMapping(table, hasHeader) }
-  return { ...d, fileName, sheets, sheet, lines: null, mapping, format, formatName: format?.name ?? d.formatName, edits: {}, skipped: [], capture: null }
+  return { ...d, fileName, sheets, sheet, lines: null, mapping, format, formatName: format?.name ?? d.formatName, edits: {}, skipped: [], capture: null, brief: null }
 }
 
 /** A capture transcribed by AI: its columns guessed like a sheet's, and nothing to save as a format. */
@@ -56,7 +59,21 @@ export function withCapture(d: Draft, fileName: string, transcript: Transcript):
   return {
     ...d, fileName, sheets: [{ name: 'Captura', table }], sheet: 0, lines: null, format: null, saveFormat: false,
     mapping: { ...emptyMapping(), hasHeader, columns, aliases: d.mapping.aliases }, edits: {}, skipped: [],
-    capture: { unreadable: transcript.unreadable },
+    capture: { unreadable: transcript.unreadable }, brief: null,
+  }
+}
+
+/**
+ * A PDF with indications: its stores in the PDF's order, each with its seller and its task
+ * (what to do, and the PDF's pages to look at), for the merchandiser the indications name.
+ */
+export function withBrief(d: Draft, fileName: string, b: UnderstoodBrief, sellers: readonly Mentionable[]): Draft {
+  const sellerOf = (id: number | null) => sellers.find((x) => x.id === id)?.name ?? ''
+  const table: Table = [['Dirección', 'Vendedor', 'Tarea'], ...b.stops.map((s) => [s.address, sellerOf(s.sellerId), stopTask(b.task, s)])]
+  return {
+    ...d, fileName, sheets: [{ name: 'PDF', table }], sheet: 0, lines: null, format: null, saveFormat: false,
+    mapping: { ...emptyMapping(), hasHeader: true, columns: ['address', 'seller', 'task'], aliases: d.mapping.aliases },
+    fallback: b.personId ?? d.fallback, edits: {}, skipped: [], capture: null, brief: b,
   }
 }
 

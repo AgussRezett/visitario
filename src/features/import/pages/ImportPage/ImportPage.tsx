@@ -44,11 +44,12 @@ export function ImportPage({ date: requested, person }: ImportSearch) {
 
   const toAssign = (imported?: number) => navigate({ to: '/s/assign', search: { date, person: draft.fallback ?? undefined, imported } })
   const read = (d: Draft, next: 2 | 3) => {
+    if (d.brief?.date) setDate(d.brief.date)
     setDraft({ ...d, fallback: d.fallback ?? people[0]?.id ?? null, formatName: d.formatName || `${ctx.companyName} diaria`.trim() })
     setStep(next)
   }
 
-  if (step === 1) return <SourceStep companyId={ctx.companyId} tags={tags} onAddSeller={canAdd ? (name) => newSeller.mutateAsync(name) : undefined} draft={draft} formats={formats.data ?? []} onCancel={() => void toAssign()} onRead={read} />
+  if (step === 1) return <SourceStep companyId={ctx.companyId} tags={tags} onAddSeller={canAdd ? (name) => newSeller.mutateAsync(name) : undefined} draft={draft} people={people} formats={formats.data ?? []} onCancel={() => void toAssign()} onRead={read} />
   if (step === 2) {
     return (
       <ColumnsStep

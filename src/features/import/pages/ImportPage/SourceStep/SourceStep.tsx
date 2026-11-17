@@ -11,7 +11,9 @@ import { MentionTextArea } from '@/features/workday/components/MentionTextArea'
 import { FileError, readSpreadsheet } from '@/features/import/api/read-file'
 import type { SavedFormat } from '@/features/import/api/import'
 import { CaptureError, aiQuotaQuery, readCapture, useRefreshQuota } from '@/features/import/api/capture'
-import { withCapture, withSheets, type Draft } from '@/features/import/draft'
+import { withBrief, withCapture, withSheets, type Draft } from '@/features/import/draft'
+import { BriefForm } from '@/features/import/components/BriefForm'
+import type { Person } from '@/domain/import'
 import { StepFrame } from '../StepFrame'
 import styles from './SourceStep.module.scss'
 
@@ -22,6 +24,8 @@ interface SourceStepProps {
   /** Admins add a seller from the @ list. */
   onAddSeller?: (name: string) => Promise<Mentionable>
   draft: Draft
+  /** The team, for the merchandiser a PDF's indications name. */
+  people: Person[]
   formats: SavedFormat[]
   onCancel: () => void
   /** The draft is ready: go to the columns, or straight to the review when nothing needs mapping. */
@@ -29,7 +33,7 @@ interface SourceStepProps {
 }
 
 /** Step 1: a spreadsheet file or pasted text. */
-export function SourceStep({ companyId, tags, onAddSeller, draft, formats, onCancel, onRead }: SourceStepProps) {
+export function SourceStep({ companyId, tags, onAddSeller, draft, people, formats, onCancel, onRead }: SourceStepProps) {
   const [pasted, setPasted] = useState('')
   const [reading, setReading] = useState(false)
   const [capturing, setCapturing] = useState(false)
@@ -75,7 +79,7 @@ export function SourceStep({ companyId, tags, onAddSeller, draft, formats, onCan
 
   const usePasted = () => {
     const read = parsePasted(pasted)
-    if (read.kind === 'lines') onRead({ ...draft, fileName: null, sheets: [], lines: read.lines, format: null, edits: {}, skipped: [], capture: null }, 3)
+    if (read.kind === 'lines') onRead({ ...draft, fileName: null, sheets: [], lines: read.lines, format: null, edits: {}, skipped: [], capture: null, brief: null }, 3)
     else {
       const d = withSheets(draft, null, [{ name: 'Texto pegado', table: read.table }], 0, formats)
       onRead(d, d.format ? 3 : 2)
@@ -112,6 +116,14 @@ export function SourceStep({ companyId, tags, onAddSeller, draft, formats, onCan
           <span className={styles.dropHelp}>{capturing ? 'La IA está leyendo las direcciones. Tarda unos segundos.' : 'Subí la foto o captura de tu Excel o del mensaje, y la IA lee las direcciones.'}</span>
           {quota.data && !capturing ? <span className={styles.quota} data-closed={closed || undefined}>{quotaText(quota.data)}</span> : null}
         </label>
+
+        <BriefForm
+          companyId={companyId}
+          catalog={{ sellers: tags.sellers, people: people.map((p) => ({ personId: p.id, firstName: p.firstName, lastName: p.lastName })) }}
+          disabled={reading || capturing}
+          placeholder="Ej.: Mañana Lucía hace estos locales. Todos son de Pablo, menos el de Olaguer que es de Mirko. Que avise si falta algo."
+          onRead={(b, name) => onRead(withBrief(draft, name, b, tags.sellers), 3)}
+        />
 
         <div className={styles.paste}>
           <MentionTextArea

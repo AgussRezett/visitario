@@ -81,6 +81,8 @@ export interface PastedRow {
   area?: string | null
   channelId?: number | null
   sellerId?: number | null
+  /** What to do there (read from a PDF's indications). */
+  task?: string
 }
 
 /** Several pasted stores in one call: each line on its own, with the reason when one fails. */
@@ -95,6 +97,7 @@ export function useAddVisits(workdayId: string) {
             customer_number: r.customerNumber || null,
             address: r.address || null,
             area: r.area || null,
+            task: r.task || null,
             channel: r.channelId ?? null,
             seller: r.sellerId ?? null,
           })),

@@ -18,6 +18,7 @@ import { useLocate } from '@/features/import/locate'
 import { PeopleBox } from '../PeopleBox'
 import { StepFrame } from '../StepFrame'
 import { RowResult } from './RowResult'
+import { BriefSummary } from '@/features/import/components/BriefSummary'
 import styles from './ReviewStep.module.scss'
 
 interface ReviewStepProps {
@@ -145,6 +146,7 @@ export function ReviewStep({ companyId, draft, rows, people, names, tags, date, 
           {draft.capture.unreadable ? ` No pudo leer ${draft.capture.unreadable === 1 ? '1 fila: agregala' : `${draft.capture.unreadable} filas: agregalas`} a mano.` : ''}
         </Banner>
       ) : null}
+      {draft.brief ? <BriefSummary brief={draft.brief} /> : null}
       <p className={styles.help}>Nada se crea ni se asigna hasta que confirmes. Va al borrador del {formatLongDate(date).toLowerCase()}: lo publicás desde Asignar.</p>
       {run.error ? <Banner tone="error">{run.error.message}</Banner> : null}
       {matches.error ? <Banner tone="error">No pudimos buscar en el directorio. Revisá la conexión y volvé a intentar.</Banner> : null}

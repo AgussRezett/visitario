@@ -8,7 +8,7 @@ import { compressPhoto } from '@/features/workday/api/photos'
 export class CaptureError extends Error {}
 
 // What the server answers, by its error code (or its status when it gives none).
-const MESSAGES: Record<string, string> = {
+export const MESSAGES: Record<string, string> = {
   plan: 'La lectura con IA no está incluida en el plan de tu empresa.',
   forbidden: 'Tu usuario no puede leer capturas en esta empresa.',
   limit: 'Tu empresa usó toda la IA del mes: se renueva el 1. Mientras tanto, pegá el texto.',
@@ -19,11 +19,11 @@ const MESSAGES: Record<string, string> = {
 const BY_STATUS: Record<number, string> = { 402: 'plan', 403: 'forbidden', 429: 'limit', 503: 'not_configured' }
 const FAILED = 'No pudimos leer la captura. Probá con una más nítida, o pegá el texto.'
 
-async function errorCode(error: unknown): Promise<string> {
+export async function errorCode(error: unknown, messages: Record<string, string> = MESSAGES): Promise<string> {
   if (!(error instanceof FunctionsHttpError)) return ''
   const res = error.context as Response
   const body = (await res.json().catch(() => null)) as { error?: string } | null
-  return body?.error && MESSAGES[body.error] ? body.error : BY_STATUS[res.status] ?? ''
+  return body?.error && messages[body.error] ? body.error : BY_STATUS[res.status] ?? ''
 }
 
 /**
