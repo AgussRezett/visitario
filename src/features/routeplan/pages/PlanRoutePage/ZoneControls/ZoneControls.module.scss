@@ -1,0 +1,32 @@
+@use '@/styles/abstracts' as *;
+
+.row {
+  @include flex(row, $gap: space(2), $align: flex-end);
+  flex-wrap: wrap;
+}
+
+.pick,
+.name {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+// While drawing: a highlighted block, so it reads as a mode.
+.drawing {
+  @include flex(column, $gap: space(3));
+  padding: space(3.5);
+  border: 1.5px dashed $color-forest;
+  border-radius: $radius-md;
+  background: $color-lime-soft;
+
+  @include dark {
+    border-color: $color-lime;
+    background: $color-muted;
+  }
+}
+
+.help {
+  @include text(label);
+  margin: 0;
+  font-weight: $weight-bold;
+}

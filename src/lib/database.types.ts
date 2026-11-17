@@ -149,6 +149,42 @@ export type Database = {
         }
         Relationships: []
       }
+      route_zone: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          name: string
+          ring: Json
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          name: string
+          ring: Json
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          name?: string
+          ring?: Json
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
       ai_usage: {
         Row: {
           captures: number
@@ -1899,6 +1935,11 @@ export type Database = {
       }
     }
     Functions: {
+      add_stores_to_day: { Args: { p_workday: string; p_stores: string[] }; Returns: number }
+      route_candidates: {
+        Args: { p_company: string; p_date: string }
+        Returns: { store_id: string; open_request: boolean; request_by: string | null; open_issues: number; planned_for: string | null }[]
+      }
       ai_allow: {
         Args: { p_company: string; p_person: string; p_platform_daily?: number | null }
         Returns: string | null

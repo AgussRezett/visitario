@@ -30,6 +30,7 @@ import { Route as AppSCompanyRouteImport } from './../routes/_app/s.company'
 import { Route as AppSImportRouteImport } from './../routes/_app/s.import'
 import { Route as AppSIssuesRouteImport } from './../routes/_app/s.issues'
 import { Route as AppSMapRouteImport } from './../routes/_app/s.map'
+import { Route as AppSPlanRouteImport } from './../routes/_app/s.plan'
 import { Route as AppSReportRouteImport } from './../routes/_app/s.report'
 import { Route as AppSReportsRouteImport } from './../routes/_app/s.reports'
 import { Route as AppSReviewRouteImport } from './../routes/_app/s.review'
@@ -149,6 +150,11 @@ const AppSMapRoute = AppSMapRouteImport.update({
   path: '/s/map',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSPlanRoute = AppSPlanRouteImport.update({
+  id: '/s/plan',
+  path: '/s/plan',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSReportRoute = AppSReportRouteImport.update({
   id: '/s/report',
   path: '/s/report',
@@ -240,6 +246,7 @@ export interface FileRoutesByFullPath {
   '/s/import': typeof AppSImportRoute
   '/s/issues': typeof AppSIssuesRoute
   '/s/map': typeof AppSMapRoute
+  '/s/plan': typeof AppSPlanRoute
   '/s/report': typeof AppSReportRoute
   '/s/reports': typeof AppSReportsRoute
   '/s/review': typeof AppSReviewRoute
@@ -275,6 +282,7 @@ export interface FileRoutesByTo {
   '/s/import': typeof AppSImportRoute
   '/s/issues': typeof AppSIssuesRoute
   '/s/map': typeof AppSMapRoute
+  '/s/plan': typeof AppSPlanRoute
   '/s/report': typeof AppSReportRoute
   '/s/reports': typeof AppSReportsRoute
   '/s/review': typeof AppSReviewRoute
@@ -313,6 +321,7 @@ export interface FileRoutesById {
   '/_app/s/import': typeof AppSImportRoute
   '/_app/s/issues': typeof AppSIssuesRoute
   '/_app/s/map': typeof AppSMapRoute
+  '/_app/s/plan': typeof AppSPlanRoute
   '/_app/s/report': typeof AppSReportRoute
   '/_app/s/reports': typeof AppSReportsRoute
   '/_app/s/review': typeof AppSReviewRoute
@@ -351,6 +360,7 @@ export interface FileRouteTypes {
     | '/s/import'
     | '/s/issues'
     | '/s/map'
+    | '/s/plan'
     | '/s/report'
     | '/s/reports'
     | '/s/review'
@@ -386,6 +396,7 @@ export interface FileRouteTypes {
     | '/s/import'
     | '/s/issues'
     | '/s/map'
+    | '/s/plan'
     | '/s/report'
     | '/s/reports'
     | '/s/review'
@@ -423,6 +434,7 @@ export interface FileRouteTypes {
     | '/_app/s/import'
     | '/_app/s/issues'
     | '/_app/s/map'
+    | '/_app/s/plan'
     | '/_app/s/report'
     | '/_app/s/reports'
     | '/_app/s/review'
@@ -599,6 +611,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSMapRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/s/plan': {
+      id: '/_app/s/plan'
+      path: '/s/plan'
+      fullPath: '/s/plan'
+      preLoaderRoute: typeof AppSPlanRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/s/report': {
       id: '/_app/s/report'
       path: '/s/report'
@@ -727,6 +746,7 @@ interface AppRouteChildren {
   AppSImportRoute: typeof AppSImportRoute
   AppSIssuesRoute: typeof AppSIssuesRoute
   AppSMapRoute: typeof AppSMapRoute
+  AppSPlanRoute: typeof AppSPlanRoute
   AppSReportRoute: typeof AppSReportRoute
   AppSReportsRoute: typeof AppSReportsRoute
   AppSReviewRoute: typeof AppSReviewRoute
@@ -756,6 +776,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSImportRoute: AppSImportRoute,
   AppSIssuesRoute: AppSIssuesRoute,
   AppSMapRoute: AppSMapRoute,
+  AppSPlanRoute: AppSPlanRoute,
   AppSReportRoute: AppSReportRoute,
   AppSReportsRoute: AppSReportsRoute,
   AppSReviewRoute: AppSReviewRoute,

@@ -1345,6 +1345,34 @@ await expectError('Anonymous cannot call has_password', () => asAnon(`select has
 const carlaMembership = (await sys(`select id from membership where person_id = $1`, [await pid('carla')]))[0].id;
 await expectError('A company cannot lose its last admin', () => as('carla', `update membership set roles = '{supervisor}' where id = $1`, [carlaMembership]), /admin/);
 
+// ---- Armar recorrido: zones drawn by bosses, what stores have pending, a route into a day
+{
+  const ring = JSON.stringify([[-58.43, -34.58], [-58.42, -34.58], [-58.42, -34.57], [-58.43, -34.57]])
+  const [{ id: zoneId }] = await as('martin', `insert into route_zone (company_id, name, ring, created_by) values ($1, 'Palermo Norte', $2, $3) returning id`, [panda, ring, martin])
+  await expectError('A merchandiser does not draw zones', () => as('agus', `insert into route_zone (company_id, name, ring, created_by) values ($1, 'Mía', $2, $3)`, [panda, ring, agus]))
+  await expectError('…nor in someone else’s name', () => as('martin', `insert into route_zone (company_id, name, ring, created_by) values ($1, 'Otra', $2, $3)`, [panda, ring, agus]))
+  await expectError('Two zones with the same name', () => as('martin', `insert into route_zone (company_id, name, ring, created_by) values ($1, 'palermo norte ', $2, $3)`, [panda, ring, martin]))
+  check('Everyone in the company sees the zones; another company does not', (await as('agus', `select id from route_zone`)).some((z) => z.id === zoneId)
+    && (await as('beto', `select id from route_zone`)).length === 0)
+  await as('agus', `update route_zone set name = 'Cambiada' where id = $1`, [zoneId])
+  check('A merchandiser cannot rename a zone', (await sys(`select name from route_zone where id = $1`, [zoneId]))[0].name === 'Palermo Norte')
+  await as('martin', `update route_zone set deleted_at = now() where id = $1`, [zoneId])
+  check('A boss puts a zone away', (await sys(`select deleted_at is not null gone from route_zone where id = $1`, [zoneId]))[0].gone)
+  await expectError('Zones are not deleted for real', () => as('martin', `delete from route_zone where id = $1`, [zoneId]))
+
+  const day = '2026-12-01'
+  const [{ plan_workday: wPlan }] = await as('martin', `select plan_workday($1, $2, $3)`, [panda, agus, day])
+  const [{ add_stores_to_day: added }] = await as('martin', `select add_stores_to_day($1, $2)`, [wPlan, [s2, s1, s2]])
+  const stops = await sys(`select store_id from visit where workday_id = $1 and deleted_at is null order by sort_order`, [wPlan])
+  check(`The route goes into the day in order, without repeating (${added})`, added === 2 && stops[0]?.store_id === s2 && stops[1]?.store_id === s1)
+  check('…and adding it again adds nothing', (await as('martin', `select add_stores_to_day($1, $2) n`, [wPlan, [s1]]))[0].n === 0)
+  await expectError('A merchandiser cannot put stores into someone else’s day', () => as('lucia', `select add_stores_to_day($1, $2)`, [wPlan, [s1]]))
+  const cand = await as('martin', `select * from route_candidates($1, $2)`, [panda, day])
+  check(`What is planned that day shows, by whom (${JSON.stringify(cand.find((c) => c.store_id === s1))})`, cand.find((c) => c.store_id === s1)?.planned_for?.startsWith('Agus'))
+  check('Only bosses see the candidates', (await as('agus', `select * from route_candidates($1, $2)`, [panda, day])).length === 0
+    && (await as('beto', `select * from route_candidates($1, $2)`, [panda, day])).length === 0)
+}
+
 // ---- AI limits: a month per company (Visitario), a day per person (the admin), a day for the platform
 {
   const lucia = await pid('lucia')

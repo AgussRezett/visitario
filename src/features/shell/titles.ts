@@ -12,6 +12,7 @@ export function titleFor(pathname: string, role: Role | null = null): string | n
   if (p.startsWith('/s/today/')) return 'Jornada del activador'
   if (p.startsWith('/s/clients/')) return 'Cliente'
   if (p === '/s/import') return 'Importar planilla'
+  if (p === '/s/plan') return 'Armar recorrido'
   const slug = /^\/s\/([^/]+)/.exec(p)?.[1]
   if (slug) return (role ? SECTIONS[role].find((s) => s.slug === slug) : undefined)?.title ?? findSection(slug)?.title ?? null
   if (p.startsWith('/visit/')) return 'Visita'
