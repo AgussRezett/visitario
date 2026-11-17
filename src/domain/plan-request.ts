@@ -5,7 +5,7 @@
  */
 import { formatLongDate } from './dates'
 import { normalize } from './import-columns'
-import { GOALS, STOP_COUNTS, type PlanGoal } from './route-plan'
+import { GOALS, MAX_STOPS, NEVER, type PlanGoal } from './route-plan'
 import type { TravelMode } from './route'
 
 export interface PlanCatalog {
@@ -75,9 +75,10 @@ export function understand(raw: unknown, cat: PlanCatalog, today: string): Under
 
   const rapport = typeof r.min_rapport === 'string' ? RAPPORT[r.min_rapport] : undefined
   if (rapport) chips.push(`Trato: ${rapport.label}`)
-  const stale = typeof r.stale_days === 'number' && r.stale_days > 0 ? nearest(r.stale_days, STALE_DAYS) : null
-  if (stale) chips.push(`Sin activar hace más de ${stale} días`)
-  const count = typeof r.count === 'number' && r.count > 0 ? nearest(r.count, STOP_COUNTS) : null
+  const stale = r.stale_days === 'never' ? NEVER : typeof r.stale_days === 'number' && r.stale_days > 0 ? nearest(r.stale_days, STALE_DAYS) : null
+  if (stale) chips.push(stale === NEVER ? 'Nunca activados' : `Sin activar hace más de ${stale} días`)
+  // As many as asked, up to what a route can hold.
+  const count = typeof r.count === 'number' && r.count >= 1 ? Math.min(Math.round(r.count), MAX_STOPS) : null
   if (count) chips.push(`${count} locales`)
   const mode = r.mode === 'walking' || r.mode === 'driving' ? r.mode : null
   if (mode) chips.push(mode === 'walking' ? 'A pie' : 'En auto')
