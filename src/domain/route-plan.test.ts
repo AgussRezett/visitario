@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { chooseStops, eligible, inZone, NO_PLAN_FILTERS, priority, reasonsFor, startOf, type Candidate } from './route-plan'
+import { chooseStops, countOptions, eligible, inZone, NEVER, NO_PLAN_FILTERS, priority, reasonsFor, startOf, unlocated, type Candidate } from './route-plan'
 
 const TODAY = '2026-11-17'
 // Around Palermo: 0.001° is about 100 m.
@@ -33,7 +33,17 @@ describe('the stores a route may take', () => {
     expect(ids({ zone, sellerIds: [7] })).toEqual(['in', 'rated', 'stale', 'never'])
     expect(ids({ minRapport: 2.5 })).toEqual(['rated'])
     expect(ids({ staleDays: 30 })).toEqual(['stale', 'never'])
+    expect(ids({ staleDays: NEVER })).toEqual(['never'])
     expect(ids({ includePlanned: true })).toContain('planned')
+    // Taken by the filters but not on the map: said, so they can be placed; a zone cannot hold them.
+    expect(unlocated(all, NO_PLAN_FILTERS, TODAY)).toBe(1)
+    expect(unlocated(all, { ...NO_PLAN_FILTERS, sellerIds: [9] }, TODAY)).toBe(0)
+    expect(unlocated(all, { ...NO_PLAN_FILTERS, zone }, TODAY)).toBe(0)
+  })
+
+  it('the count asked for is offered even when it is not one of the usual', () => {
+    expect(countOptions(14)).toEqual([6, 8, 10, 12, 14, 15, 20, 25])
+    expect(countOptions(12)).toEqual([6, 8, 10, 12, 15, 20, 25])
   })
 })
 
