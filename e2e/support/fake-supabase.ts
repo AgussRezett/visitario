@@ -217,6 +217,26 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
       Object.assign(q, { month_used: q.month_used + 1, my_today: q.my_today + 1 })
       return json({ title, headers, rows, unreadable, model: 'fake' })
     }
+    if (path.endsWith('/rpc/route_candidates')) return json(state.routeCandidates ?? [])
+    if (path.endsWith('/rpc/add_stores_to_day')) {
+      const b = body()
+      ;(state.addedToDay ??= []).push({ workday: String(b.p_workday), stores: b.p_stores as string[] })
+      return json((b.p_stores as string[]).length)
+    }
+    if (path.endsWith('/route_zone')) {
+      const zones = (state.routeZones ??= [])
+      if (req.method() === 'POST') {
+        const z = { id: `z${zones.length + 1}`, deleted_at: null, ...body() }
+        zones.push(z)
+        return json(z, 201)
+      }
+      if (req.method() === 'PATCH') {
+        const id = url.searchParams.get('id')?.replace('eq.', '')
+        zones.filter((z) => z.id === id).forEach((z) => Object.assign(z, body()))
+        return route.fulfill({ status: 204 })
+      }
+      return json(zones.filter((z) => !z.deleted_at))
+    }
     if (path.endsWith('/rpc/ai_quota')) return json([state.aiQuota ?? { month_used: 0, month_limit: 1000, my_today: 0, my_daily_limit: 30 }])
     if (path.endsWith('/rpc/company_ai_usage')) return json(state.aiUsage ?? { people: [], days: [] })
     if (path.endsWith('/daily_metrics')) return json((state.dailyMetrics ?? []).filter((r) => matches(r, url.searchParams)))

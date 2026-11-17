@@ -91,6 +91,10 @@ export interface FakeState {
   pastVisits?: Record<string, Row>
   /** What reading a capture with AI answers: its transcript, or an error status. */
   capture?: { title?: string; headers?: string[]; rows?: string[][]; unreadable?: number; status?: number }
+  /** Armar recorrido: zones drawn, what stores have pending, and routes added to a day. */
+  routeZones?: Row[]
+  routeCandidates?: Row[]
+  addedToDay?: { workday: string; stores: string[] }[]
   /** What is left of the AI (ai_quota), and the company's use by person and day (admins). */
   aiQuota?: { month_used: number; month_limit: number; my_today: number; my_daily_limit: number | null }
   aiUsage?: { people: { name: string; month: number; today: number }[]; days: { day: string; captures: number }[] }
