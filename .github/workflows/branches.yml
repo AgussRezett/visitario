@@ -1,0 +1,39 @@
+name: Branches
+
+# Keeps the repo tidy: a branch goes away once its pull request is closed, and old branches
+# without an open pull request are removed when this file changes or by hand.
+on:
+  pull_request:
+    types: [closed]
+  push:
+    branches: [main]
+    paths: [.github/workflows/branches.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  tidy:
+    runs-on: ubuntu-24.04
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Delete the branch of a closed pull request
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: gh api -X DELETE "repos/$REPO/git/refs/heads/${{ github.event.pull_request.head.ref }}" || true
+
+      - name: Delete old branches without an open pull request
+        if: github.event_name != 'pull_request'
+        run: |
+          open=$(gh pr list --repo "$REPO" --state open --limit 200 --json headRefName --jq '.[].headRefName')
+          cutoff=$(date -d '1 hour ago' +%s)
+          gh api --paginate "repos/$REPO/branches?per_page=100" --jq '.[].name' | while read -r branch; do
+            [ "$branch" = main ] && continue
+            echo "$open" | grep -qx "$branch" && continue
+            when=$(gh api "repos/$REPO/commits/$branch" --jq '.commit.committer.date')
+            [ "$(date -d "$when" +%s)" -gt "$cutoff" ] && { echo "keep $branch (pushed in the last hour)"; continue; }
+            gh api -X DELETE "repos/$REPO/git/refs/heads/$branch" && echo "deleted $branch"
+          done

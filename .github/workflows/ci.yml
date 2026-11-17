@@ -5,6 +5,11 @@ on:
   push:
     branches: [main]
 
+# A new push to the same branch cancels the run in progress: only the last one counts.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     runs-on: ubuntu-24.04 # Playwright has no Chromium for 26.04 yet
@@ -25,9 +30,15 @@ jobs:
       - run: npm run test:api
       - run: npm run build
 
+  # Alongside check, not after it, in three parts at once. Only on pull requests: main gets
+  # the same code, already tested in its PR.
   e2e:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04 # Playwright has no Chromium for 26.04 yet
-    needs: check
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     env:
       VITE_SUPABASE_URL: https://mjpzawlyjjlmluozjwap.supabase.co
       VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_-PYMHAnKQvaJgir69lNNmw_GbIpkmK1
@@ -39,9 +50,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+      - run: npm run test:e2e -- --shard=${{ matrix.shard }}/3
       - uses: actions/upload-artifact@v6
         if: failure()
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.shard }}
           path: playwright-report

@@ -4,6 +4,8 @@ export default defineConfig({
   testDir: './e2e',
   // GitHub's runners are slower: a test that fails then passes on retry is reported as flaky, not failed.
   retries: process.env.CI ? 2 : 0,
+  // GitHub's public runners have 4 cores.
+  workers: process.env.CI ? 4 : undefined,
   use: {
     baseURL: 'http://localhost:4173',
     launchOptions: process.env.PW_CHROMIUM_PATH ? { executablePath: process.env.PW_CHROMIUM_PATH } : {},
