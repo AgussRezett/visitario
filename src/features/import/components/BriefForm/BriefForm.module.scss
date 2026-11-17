@@ -1,0 +1,106 @@
+@use '@/styles/abstracts' as *;
+
+// A dashed card like the capture's; once a PDF is chosen it opens for the indications.
+.brief {
+  @include flex(column, $gap: space(3));
+  position: relative;
+  flex-shrink: 0;
+  padding: space(4);
+  border: 1.5px dashed $color-control;
+  border-radius: $radius-lg;
+  background: $color-card;
+
+  &[data-open] {
+    border-style: solid;
+    border-color: $color-forest;
+  }
+}
+
+.pick {
+  @include flex(row, $gap: space(3.5), $align: center);
+  min-height: $touch-target;
+  padding-right: space(8);
+  cursor: pointer;
+
+  &:focus-within {
+    outline: 2px solid $color-focus;
+    outline-offset: 4px;
+    border-radius: $radius-md;
+  }
+
+  &[data-disabled] {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.file {
+  @include visually-hidden;
+}
+
+.icon {
+  @include icon-tile(space(10));
+  flex-shrink: 0;
+  background: $color-lime-soft;
+  color: $color-forest;
+
+  @include dark {
+    background: $color-muted;
+    color: $color-lime;
+  }
+}
+
+.text {
+  @include flex(column, $gap: space(1));
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  @include flex(row, $align: center);
+  @include text(base);
+  flex-wrap: wrap;
+  font-weight: $weight-bold;
+  overflow-wrap: anywhere;
+}
+
+.ai {
+  @include text(tiny);
+  margin-left: space(2);
+  padding: 1px space(2);
+  border-radius: $radius-full;
+  background: $color-lime-soft;
+  font-weight: $weight-extrabold;
+  color: $color-lime-soft-ink;
+}
+
+.help {
+  @include text(label);
+  color: $color-ink-muted;
+}
+
+.clear {
+  @include flex(row, $align: center, $justify: center);
+  position: absolute;
+  top: space(2);
+  right: space(2);
+  width: $touch-target;
+  height: $touch-target;
+  border: 0;
+  border-radius: $radius-full;
+  background: transparent;
+  color: $color-ink-muted;
+  cursor: pointer;
+
+  @include hover {
+    background: $color-muted;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-focus;
+  }
+}
+
+.body {
+  @include flex(column, $gap: space(3));
+}
