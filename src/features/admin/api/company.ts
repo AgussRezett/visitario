@@ -1,3 +1,4 @@
+import { isGrouping, type MessageGrouping } from '@/domain/message-groups'
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import type { Enums } from '@/lib/supabase'
@@ -12,7 +13,8 @@ export interface CompanySettings {
   kind: Enums<'company_kind'>
   geocodingScope: Enums<'geocoding_scope'>
   showWhatsapp: boolean
-  messagesPerDisplay: boolean
+  messagesBefore: MessageGrouping
+  messagesAfter: MessageGrouping
   photoRetentionMonths: number
   logoVersion: number | null
   shiftStart: string
@@ -30,7 +32,7 @@ export const companyQuery = (companyId: string) =>
     queryFn: async (): Promise<CompanySettings> => {
       const { data, error } = await supabase
         .from('company')
-        .select('id, name, kind, geocoding_scope, show_whatsapp, messages_per_display, photo_retention_months, logo_version, shift_start, shift_end, slides_cover_path, slides_page_path, ai_daily_per_person')
+        .select('id, name, kind, geocoding_scope, show_whatsapp, messages_before, messages_after, photo_retention_months, logo_version, shift_start, shift_end, slides_cover_path, slides_page_path, ai_daily_per_person')
         .eq('id', companyId)
         .single()
       if (error) throw error
@@ -40,7 +42,8 @@ export const companyQuery = (companyId: string) =>
         kind: data.kind,
         geocodingScope: data.geocoding_scope,
         showWhatsapp: data.show_whatsapp,
-        messagesPerDisplay: data.messages_per_display,
+        messagesBefore: isGrouping(data.messages_before) ? data.messages_before : 'visit',
+        messagesAfter: isGrouping(data.messages_after) ? data.messages_after : 'visit',
         photoRetentionMonths: data.photo_retention_months,
         logoVersion: data.logo_version,
         shiftStart: data.shift_start.slice(0, 5),
@@ -56,7 +59,8 @@ export interface CompanyChange {
   name?: string
   geocodingScope?: Enums<'geocoding_scope'>
   showWhatsapp?: boolean
-  messagesPerDisplay?: boolean
+  messagesBefore?: MessageGrouping
+  messagesAfter?: MessageGrouping
   photoRetentionMonths?: number
   shiftStart?: string
   shiftEnd?: string
@@ -69,7 +73,7 @@ export function useCompanyUpdate(companyId: string) {
     mutationFn: async (c: CompanyChange) => {
       const { error } = await supabase
         .from('company')
-        .update({ name: c.name, geocoding_scope: c.geocodingScope, show_whatsapp: c.showWhatsapp, messages_per_display: c.messagesPerDisplay, photo_retention_months: c.photoRetentionMonths, shift_start: c.shiftStart, shift_end: c.shiftEnd, ai_daily_per_person: c.aiDailyPerPerson })
+        .update({ name: c.name, geocoding_scope: c.geocodingScope, show_whatsapp: c.showWhatsapp, messages_before: c.messagesBefore, messages_after: c.messagesAfter, photo_retention_months: c.photoRetentionMonths, shift_start: c.shiftStart, shift_end: c.shiftEnd, ai_daily_per_person: c.aiDailyPerPerson })
         .eq('id', companyId)
       if (error) throw new Error('No pudimos guardar el cambio. Probá de nuevo.')
     },

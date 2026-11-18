@@ -1,3 +1,4 @@
+import { isGrouping, type MessageGrouping } from '@/domain/message-groups'
 import { queryOptions, useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { DEFAULT_TEMPLATES, type TemplateKind } from '@/domain/templates'
@@ -17,7 +18,9 @@ export interface Catalogs {
   /** The company still uses WhatsApp as the bridge: show the copy buttons on the visit. */
   showWhatsapp: boolean
   /** One ANTES / DESPUÉS per display instead of one per visit. */
-  messagesPerDisplay: boolean
+  /** How the ANTES and the DESPUÉS go to WhatsApp (see domain/message-groups). */
+  messagesBefore: MessageGrouping
+  messagesAfter: MessageGrouping
 }
 
 interface CatalogsRow {
@@ -26,10 +29,13 @@ interface CatalogsRow {
   issue_types?: { id: number; name: string; active: boolean }[]
   metrics: { id: number; name: string; report_label: string | null }[]
   templates: { kind: TemplateKind; body: string }[]
-  company: { show_whatsapp: boolean; messages_per_display: boolean } | null
+  company: { show_whatsapp: boolean; messages_per_display: boolean; messages_before?: string; messages_after?: string } | null
   channels: { id: number; name: string; active: boolean; sort_order: number }[]
   sellers: { id: number; name: string; person_id: string | null; active: boolean }[]
 }
+
+// The setting, or the old per-display switch while the database answers without it.
+const grouping = (v: string | undefined, perDisplay = false): MessageGrouping => (isGrouping(v) ? v : perDisplay ? 'display' : 'visit')
 
 export const catalogsQuery = (companyId: string) =>
   queryOptions({
@@ -50,7 +56,8 @@ export const catalogsQuery = (companyId: string) =>
         metrics: (c.metrics ?? []).map((m) => ({ id: m.id, name: m.name, reportLabel: m.report_label })),
         templates: { ...DEFAULT_TEMPLATES, ...own },
         showWhatsapp: c.company?.show_whatsapp ?? true,
-        messagesPerDisplay: c.company?.messages_per_display ?? false,
+        messagesBefore: grouping(c.company?.messages_before, c.company?.messages_per_display),
+        messagesAfter: grouping(c.company?.messages_after, c.company?.messages_per_display),
       }
     },
   })

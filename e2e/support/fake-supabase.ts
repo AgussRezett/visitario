@@ -110,7 +110,7 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
         brands: active(c?.brand), metrics: active(c?.work_metric), channels: c?.channel ?? [], sellers: c?.seller ?? [], issue_types: c?.issue_type ?? [],
         display_types: c ? active(c.display_type) : [{ id: 1, name: 'Puntera' }, { id: 3, name: 'Góndola' }],
         templates: state.templates ?? [],
-        company: state.company ? { show_whatsapp: state.company.show_whatsapp ?? true, messages_per_display: state.company.messages_per_display ?? false } : null,
+        company: state.company ? { show_whatsapp: state.company.show_whatsapp ?? true, messages_per_display: state.company.messages_per_display ?? false, messages_before: state.company.messages_before, messages_after: state.company.messages_after } : null,
       })
     }
     const platform = await handlePlatform({ path, state, json, body })

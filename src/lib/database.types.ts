@@ -349,6 +349,8 @@ export type Database = {
           id: string
           kind: Database["public"]["Enums"]["company_kind"]
           logo_version: number | null
+          messages_after: string
+          messages_before: string
           messages_per_display: boolean
           name: string
           owner_person_id: string | null
@@ -371,6 +373,8 @@ export type Database = {
           id?: string
           kind: Database["public"]["Enums"]["company_kind"]
           logo_version?: number | null
+          messages_after?: string
+          messages_before?: string
           messages_per_display?: boolean
           name: string
           owner_person_id?: string | null
@@ -393,6 +397,8 @@ export type Database = {
           id?: string
           kind?: Database["public"]["Enums"]["company_kind"]
           logo_version?: number | null
+          messages_after?: string
+          messages_before?: string
           messages_per_display?: boolean
           name?: string
           owner_person_id?: string | null

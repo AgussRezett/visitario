@@ -1,8 +1,9 @@
 /**
  * Sending a visit to WhatsApp: one share per message, each with its photos and its text.
  * The order is the one the supervisor expects: the storefront with the address, then the
- * ANTES (one per display when the company sends per display), then the DESPUÉS, and last
- * the observations (text only, when the activador wrote any).
+ * ANTES, then the DESPUÉS (each as the company groups it: one for the visit, one per display
+ * or one per kind of display; see message-groups), and last the observations (text only,
+ * when the activador wrote any).
  */
 
 type PhotoKind = 'storefront' | 'before' | 'after'
@@ -27,12 +28,19 @@ export function observationText(notes: string | null | undefined): string | null
   return text ? `Observaciones: ${text}` : null
 }
 
+/** One ANTES or DESPUÉS message: its key and name (see MessageGroup), its displays (null: all) and its text. */
+export interface SendMessage {
+  key: string
+  label: string | null
+  displayIds: string[] | null
+  text: string
+}
+
 export interface SendInput {
   address: string
   photos: readonly { id: string; kind: PhotoKind; displayId: string | null }[]
-  /** One message pair per display; null when the company sends one per visit. */
-  displays: readonly { id: string; label: string; before: string; after: string }[] | null
-  general: { before: string; after: string }
+  before: readonly SendMessage[]
+  after: readonly SendMessage[]
   /** What the activador wrote; nothing to send when empty. */
   notes?: string | null
 }
@@ -40,16 +48,15 @@ export interface SendInput {
 const WORD: Record<'before' | 'after', string> = { before: 'ANTES', after: 'DESPUÉS' }
 
 export function buildSends(input: SendInput): Send[] {
-  const of = (kind: PhotoKind, displayId?: string) =>
-    input.photos.filter((p) => p.kind === kind && (displayId === undefined || p.displayId === displayId)).map((p) => p.id)
-  const sends: Send[] = [{ key: 'storefront', group: 'storefront', title: 'Fachada', label: 'Fachada', photoIds: of('storefront'), text: input.address }]
+  const of = (kind: PhotoKind, displayIds: readonly string[] | null) =>
+    input.photos.filter((p) => p.kind === kind && (displayIds === null || (p.displayId !== null && displayIds.includes(p.displayId)))).map((p) => p.id)
+  const sends: Send[] = [{ key: 'storefront', group: 'storefront', title: 'Fachada', label: 'Fachada', photoIds: of('storefront', null), text: input.address }]
   for (const kind of ['before', 'after'] as const) {
-    if (input.displays) {
-      for (const d of input.displays) {
-        sends.push({ key: `${kind}-${d.id}`, group: kind, title: d.label, label: `${WORD[kind]} · ${d.label}`, photoIds: of(kind, d.id), text: d[kind] })
-      }
-    } else {
-      sends.push({ key: kind, group: kind, title: WORD[kind], label: WORD[kind], photoIds: of(kind), text: input.general[kind] })
+    for (const m of input[kind]) {
+      // The whole visit keeps its old key ("before"), each display too ("before-<id>"): what was sent stays sent.
+      const key = m.label === null ? kind : `${kind}-${m.key}`
+      const title = m.label ?? WORD[kind]
+      sends.push({ key, group: kind, title, label: m.label === null ? WORD[kind] : `${WORD[kind]} · ${m.label}`, photoIds: of(kind, m.displayIds), text: m.text })
     }
   }
   const notes = observationText(input.notes)

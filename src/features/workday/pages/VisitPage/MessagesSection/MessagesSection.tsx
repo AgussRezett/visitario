@@ -7,7 +7,8 @@ import { canShare, useCopy } from '@/lib/share'
 import { Button } from '@/ui/Button'
 import type { Visit } from '@/features/workday/api/queries'
 import { VisitSection } from '@/features/workday/components/VisitSection'
-import { displayMessageValues, messageValues } from '@/features/workday/visit-text'
+import { groupMessageValues } from '@/features/workday/visit-text'
+import type { MessageGrouping } from '@/domain/message-groups'
 import type { StoreTags } from '@/features/workday/store-tags'
 import { SendSheet } from '../SendSheet'
 import { useSent } from '../SendSheet/sent'
@@ -19,8 +20,9 @@ interface MessagesSectionProps {
   firstName: string
   typeName?: (id: number) => string
   tags?: StoreTags
-  /** The company sends one ANTES / DESPUÉS per display. */
-  perDisplay?: boolean
+  /** How the company groups the ANTES and the DESPUÉS: per visit, per display or per kind of display. */
+  before?: MessageGrouping
+  after?: MessageGrouping
   urlFor: (id: string) => string | undefined
 }
 
@@ -33,36 +35,27 @@ interface Item {
 }
 
 /** The ANTES / DESPUÉS messages, while WhatsApp is still the bridge with the supervisor. */
-export function MessagesSection({ visit: v, templates, firstName, typeName, tags, perDisplay = false, urlFor }: MessagesSectionProps) {
+export function MessagesSection({ visit: v, templates, firstName, typeName, tags, before = 'visit', after = 'visit', urlFor }: MessagesSectionProps) {
   const { copied, copy } = useCopy()
   const [sending, setSending] = useState(false)
   const { sent, mark } = useSent(v.id)
   const address: Item = { key: 'address', label: 'Dirección', name: 'Copiar Dirección', text: v.store.address }
-  const values = messageValues(v, firstName, typeName, tags)
   const notesText = observationText(v.notes)
   const notes: Item | null = notesText ? { key: 'notes', label: 'Observaciones', name: 'Copiar Observaciones', text: notesText } : null
-  const general: Item[] = [
-    address,
-    { key: 'before', label: 'ANTES', name: 'Copiar ANTES', text: fillTemplate(templates.before, values) },
-    { key: 'after', label: 'DESPUÉS', name: 'Copiar DESPUÉS', text: fillTemplate(templates.after, values) },
-  ]
-  const byDisplay = perDisplay
-    ? displayMessageValues(v, firstName, typeName, tags).map((d) => ({
-        id: d.id,
-        label: d.label,
-        items: [
-          { key: `before-${d.id}`, label: 'ANTES', name: `Copiar ANTES de ${d.label}`, text: fillTemplate(templates.before, d.values) },
-          { key: `after-${d.id}`, label: 'DESPUÉS', name: `Copiar DESPUÉS de ${d.label}`, text: fillTemplate(templates.after, d.values) },
-        ],
-      }))
-    : []
-  const sends = buildSends({
-    address: v.store.address,
-    photos: v.photos,
-    displays: perDisplay ? byDisplay.map((d) => ({ id: d.id, label: d.label, before: d.items[0]?.text ?? '', after: d.items[1]?.text ?? '' })) : null,
-    general: { before: general[1]?.text ?? '', after: general[2]?.text ?? '' },
-    notes: v.notes,
-  })
+  // The ANTES and the DESPUÉS, each grouped as the company says, with its text filled in.
+  const messages = (kind: 'before' | 'after', grouping: MessageGrouping) =>
+    groupMessageValues(v, firstName, grouping, typeName, tags).map((g) => ({ key: g.key, label: g.label, displayIds: g.displayIds, text: fillTemplate(templates[kind], g.values) }))
+  const antes = { kind: 'before' as const, word: 'ANTES', list: messages('before', before) }
+  const despues = { kind: 'after' as const, word: 'DESPUÉS', list: messages('after', after) }
+  const kinds = [antes, despues]
+  const items = (k: typeof antes | typeof despues): Item[] => k.list.map((m) => ({
+    key: m.label === null ? k.kind : `${k.kind}-${m.key}`,
+    label: m.label ?? k.word,
+    name: m.label === null ? `Copiar ${k.word}` : `Copiar ${k.word} de ${m.label}`,
+    text: m.text,
+  }))
+  const grouped = kinds.some((k) => k.list.length > 1 || k.list[0]?.label)
+  const sends = buildSends({ address: v.store.address, photos: v.photos, before: antes.list, after: despues.list, notes: v.notes })
   const done = sends.filter((s) => sent.has(s.key)).length
 
   const button = (i: Item, size: 'sm' | 'md' = 'sm', wide = false) => (
@@ -77,7 +70,7 @@ export function MessagesSection({ visit: v, templates, firstName, typeName, tags
       state="todo"
       icon={<MessageSquare size={16} />}
       title="Mensajes para WhatsApp"
-      subtitle={`${perDisplay ? 'Dirección · ANTES y DESPUÉS de cada exhibición' : 'Dirección · ANTES · DESPUÉS'}${notes ? ' · Observaciones' : ''}`}
+      subtitle={`Dirección · ${kinds.map((k) => `${k.word}${k.list.length > 1 ? ` (${k.list.length})` : ''}`).join(' · ')}${notes ? ' · Observaciones' : ''}`}
     >
       {canShare() ? (
         <>
@@ -93,24 +86,20 @@ export function MessagesSection({ visit: v, templates, firstName, typeName, tags
           <SendSheet open={sending} onClose={() => setSending(false)} address={v.store.address} sends={sends} sent={sent} onSent={mark} urlFor={urlFor} frameFor={(id) => v.photos.find((p) => p.id === id)} />
         </>
       ) : null}
-      {perDisplay ? (
+      {grouped ? (
         <>
           <div className={styles.address}>{button(address)}{notes ? button(notes, 'sm', true) : null}</div>
-          {byDisplay.length ? (
-            <ul className={styles.displays} aria-label="Mensajes por exhibición">
-              {byDisplay.map((d) => (
-                <li key={d.id} className={styles.display}>
-                  <span className={styles.displayName}>{d.label}</span>
-                  <div className={styles.pair}>{d.items.map((i) => button(i, 'md'))}</div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className={styles.help}>Agregá una exhibición y vas a tener su ANTES y su DESPUÉS para copiar.</p>
-          )}
+          <ul className={styles.displays} aria-label="Mensajes por exhibición">
+            {kinds.map((k) => (
+              <li key={k.kind} className={styles.display}>
+                <span className={styles.displayName}>{k.word}</span>
+                <div className={styles.pair}>{items(k).map((i) => button(i, 'md'))}</div>
+              </li>
+            ))}
+          </ul>
         </>
       ) : (
-        <div className={styles.buttons}>{general.map((i) => button(i))}{notes ? button(notes, 'sm', true) : null}</div>
+        <div className={styles.buttons}>{[address, ...items(antes), ...items(despues)].map((i) => button(i))}{notes ? button(notes, 'sm', true) : null}</div>
       )}
       {!notes ? <p className={styles.help}>Si escribís observaciones en la visita, también las vas a poder copiar y enviar.</p> : null}
     </VisitSection>
