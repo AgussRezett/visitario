@@ -10,9 +10,9 @@ const displays = [
 describe('how many ANTES or DESPUÉS messages', () => {
   it('one per kind of display: three messages, each with all of its displays', () => {
     expect(messageGroups(displays, 'type')).toEqual([
-      { key: 'type-3', label: 'Góndola (3)', displayIds: ['g1', 'g2', 'g3'], displays: '3 Góndola' },
+      { key: 'type-3', label: 'Góndola (3)', displayIds: ['g1', 'g2', 'g3'], displays: 'Góndola' },
       { key: 'type-1', label: 'Puntera', displayIds: ['p'], displays: 'Puntera' },
-      { key: 'type-2', label: 'Primaria (2)', displayIds: ['r1', 'r2'], displays: '2 Primaria' },
+      { key: 'type-2', label: 'Primaria (2)', displayIds: ['r1', 'r2'], displays: 'Primaria' },
     ])
   })
 
