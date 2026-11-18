@@ -21,6 +21,7 @@ import { useVisitActions } from './useVisitActions'
 import { StoreInfo } from './StoreInfo'
 import { LocationSheet } from './LocationSheet'
 import { StoreHistory } from './StoreHistory'
+import { KnownNames } from '@/features/stores/components/KnownNames'
 import { IssuesSection } from './IssuesSection'
 import { PhotoStrip } from './PhotoStrip'
 import { ArrivalSection } from './ArrivalSection'
@@ -163,6 +164,7 @@ function VisitBody(props: {
 
           <div className={styles.columns}>
             <div className={styles.column}>
+              <KnownNames storeId={v.store.id} />
               <div className={styles.arrival}>
                 <ArrivalSection visit={v} urlFor={urlFor} onArrive={actions.arrive} busy={actions.uploading} onView={(id) => onView({ photos: storefront, startId: id, title: 'Fachada' })} />
               </div>
@@ -193,7 +195,7 @@ function VisitBody(props: {
               ) : null}
               {catalogs && catalogs.showWhatsapp !== false ? (
                 <div className={styles.messages}>
-                  <MessagesSection visit={v} templates={catalogs.templates} firstName={firstName} typeName={(id) => catalogs.displayTypes.find((t) => t.id === id)?.name ?? 'Exhibición'} tags={tags} perDisplay={catalogs.messagesPerDisplay} urlFor={urlFor} />
+                  <MessagesSection visit={v} templates={catalogs.templates} firstName={firstName} typeName={(id) => catalogs.displayTypes.find((t) => t.id === id)?.name ?? 'Exhibición'} tags={tags} before={catalogs.messagesBefore} after={catalogs.messagesAfter} urlFor={urlFor} />
                 </div>
               ) : null}
               <div className={styles.finish}>

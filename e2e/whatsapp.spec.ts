@@ -4,6 +4,7 @@ import { installFakeSupabase, visitRow, type FakeState } from './support/fake-su
 const photo = (id: string, kind: string, displayId: string | null) => ({ id, kind, display_id: displayId, taken_at: '2026-10-12T13:00:00Z', uploaded_at: '2026-10-12T13:00:01Z', deleted_at: null })
 const display = (id: string, type: number, order: number) => ({ id, display_type_id: type, reference: null, source: 'found', sort_order: order, deleted_at: null })
 
+const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xd9])
 const state = (): FakeState => ({
   workday: { id: 'w1', company_id: 'c1', work_date: '2026-10-12', status: 'published', created_by: 'p1' },
   visits: [visitRow('v1', 0, 'Altolaguirre 1952', {
@@ -14,6 +15,8 @@ const state = (): FakeState => ({
   })],
   uploads: [],
   photoUrls: true,
+  // The bytes come through the photos function.
+  photoFiles: Object.fromEntries(['f1', 'b1', 'b2', 'a1', 'a1b'].map((id) => [id, JPEG])),
   company: { id: 'c1', name: 'Panda', show_whatsapp: true, messages_per_display: true },
   catalogs: { display_type: [{ id: 1, name: 'Góndola', active: true }, { id: 2, name: 'Puntera', active: true }] },
   templates: [
@@ -39,7 +42,10 @@ async function fakeShare(page: Page) {
       },
     })
   })
-  await page.route('https://photos.test/**', (r) => r.fulfill({ contentType: 'image/jpeg', body: Buffer.from([0xff, 0xd8, 0xff, 0xd9]) }))
+  // Like the real bucket: its links show as images but cannot be read (no CORS).
+  await page.route('https://photos.test/**', (r) => (r.request().resourceType() === 'image'
+    ? r.fulfill({ contentType: 'image/jpeg', body: JPEG })
+    : r.abort('accessdenied')))
 }
 
 const shares = (page: Page) => page.evaluate(() => (window as unknown as { shares: { text?: string; files: string[] }[] }).shares)
@@ -66,8 +72,11 @@ test('the activador sends the visit to WhatsApp one message at a time, with its 
   await sheet.getByRole('button', { name: 'Enviar ANTES · Puntera', exact: true }).click()
   await expect(sheet.getByText('2 de 5 enviados')).toBeVisible()
   await sheet.getByRole('button', { name: 'Enviar ANTES · Puntera', exact: true }).click()
+  // Two photos: one album, the text copied to paste once (WhatsApp would repeat it on each photo).
+  await expect(sheet.getByText('Van 2 fotos juntas y el texto queda copiado: pegalo en la primera, así sale una sola vez.')).toBeVisible()
   await sheet.getByRole('button', { name: 'Enviar DESPUÉS · Góndola', exact: true }).click()
-  await expect.poll(async () => (await shares(page))[3]?.files).toEqual(['DESPUÉS - Góndola.jpg', 'DESPUÉS - Góndola 2.jpg'])
+  await expect.poll(async () => (await shares(page))[3]).toEqual({ files: ['DESPUÉS - Góndola.jpg', 'DESPUÉS - Góndola 2.jpg'] })
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe('DESPUÉS\nTIPO DE EXHIBICION: GÓNDOLA')
   await expect(sheet.getByText('4 de 5 enviados')).toBeVisible()
   await expect(sheet.getByText('Lo que falta se habilita cuando saques sus fotos.')).toBeVisible()
   await page.screenshot({ path: `test-results/whatsapp-sent-${info.project.name}.png` })
@@ -115,16 +124,23 @@ test('without observations there is nothing extra to send', async ({ page }) => 
   await expect(page.getByText('Si escribís observaciones en la visita')).toBeVisible()
 })
 
-test('a photo whose link failed (expired, or still uploading) is fetched again with a fresh link', async ({ page }) => {
+test('photos taken earlier (not on this phone) are sent: their bytes come through the function, not the link', async ({ page }) => {
   await fakeShare(page)
-  // The first link of the storefront photo is dead; the next one works.
-  await page.route('https://photos.test/f1.jpg?sig=1', (r) => r.fulfill({ status: 403, body: 'expired' }))
-  await installFakeSupabase(page, state())
+  // The storefront photo fails once (still uploading, no signal), then comes.
+  const s = state()
+  let tries = 0
+  await page.route('**/functions/v1/photos/file', async (r) => {
+    if ((r.request().postDataJSON() as { id?: string }).id === 'f1' && tries++ === 0) return r.fulfill({ status: 502, body: '{"error":"storage_failed"}' })
+    return r.fallback()
+  })
+  await installFakeSupabase(page, s)
   await page.goto('/visit/v1')
   await page.getByRole('button', { name: /Enviar a WhatsApp/ }).click()
   const sheet = page.getByRole('dialog', { name: 'Enviar a WhatsApp' })
-  // It does not stay on "Reintentar": it asks for new links by itself and gets ready.
+  // It does not stay on "Reintentar": it tries again by itself and gets ready.
   await expect(sheet.getByRole('button', { name: 'Enviar Fachada · Siguiente', exact: true })).toBeVisible({ timeout: 10_000 })
   await sheet.getByRole('button', { name: 'Enviar Fachada · Siguiente', exact: true }).click()
   await expect.poll(() => shares(page)).toEqual([{ text: 'Altolaguirre 1952', files: ['Fachada.jpg'] }])
+  await sheet.getByRole('button', { name: 'Enviar ANTES · Góndola', exact: true }).click()
+  await expect.poll(async () => (await shares(page))[1]?.files).toEqual(['ANTES - Góndola.jpg'])
 })

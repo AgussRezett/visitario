@@ -2,11 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Crop } from '@/domain/crop'
 import { croppedBlob } from '@/features/workday/api/crop-file'
-import { localPhotoBlob } from '@/features/workday/api/photos'
+import { localPhotoBlob, photoFile } from '@/features/workday/api/photos'
 
 type Entry = Blob | 'error'
 
-/** How long to wait for a photo's link before offering to retry (no signal, for example). */
+/** How long to wait for a photo before offering to retry (no signal, for example). */
 const GIVE_UP_MS = 10_000
 /** A photo that failed is tried again by itself a few times (its upload may be finishing). */
 const AUTO_RETRY_MS = 3_000
@@ -15,11 +15,12 @@ const AUTO_RETRIES = 3
 /**
  * The photos' bytes, loaded before the person taps: the phone only opens the share sheet
  * right after a tap, so there is no time to download them then. Photos still on the phone
- * are used as they are; the others are downloaded through their signed link.
+ * are used as they are; the others come through the photos function (photoFile).
  *
- * What used to get stuck on "Reintentar": a link that failed (expired, or the photo not
- * uploaded yet) was asked again with the same link forever. Now each try looks for the
- * photo on the phone first, a new link is fetched again, and asks for fresh links.
+ * What kept every photo taken earlier on "Reintentar": they were read from their signed link,
+ * and the bucket has no CORS, so the browser can show those links but never read them. Only
+ * photos still on the phone could be sent. Now the bytes come through the function, which
+ * the browser can read, with the same permissions.
  *
  * A cropped photo goes cropped; changing the crop prepares it again.
  */
@@ -55,13 +56,11 @@ export function useShareFiles(ids: readonly string[], urlFor: (id: string) => st
         void ready(id, local, crop)
         return
       }
-      const url = urls[i]
-      const key = `${attempt}|${url}|${crop}`
-      if (!url || asked.current.get(id) === key) return
+      // Uploaded (it has a link) and not on the phone: its bytes through the function.
+      const key = `${attempt}|${crop}`
+      if (!urls[i] || asked.current.get(id) === key) return
       asked.current.set(id, key)
-      fetch(url, { cache: 'no-store' })
-        .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(String(r.status)))))
-        .then((blob) => ready(id, blob, crop), () => set(id, 'error'))
+      photoFile(id).then((blob) => ready(id, blob, crop), () => set(id, 'error'))
     })
     const timer = setTimeout(() => {
       if (!alive) return

@@ -9,7 +9,8 @@ import { Switch } from '@/ui/Switch'
 import { TextArea } from '@/ui/TextArea'
 import { useCatalogs } from '@/features/workday/api/queries'
 import { useWorkContext } from '@/features/workday/context'
-import { displayMessageValues, messageValues } from '@/features/workday/visit-text'
+import { groupMessageValues, messageValues } from '@/features/workday/visit-text'
+import { GroupingSettings } from './GroupingSettings'
 import { storeTags } from '@/features/workday/store-tags'
 import { companyQuery, useCompanyUpdate } from '@/features/admin/api/company'
 import { sampleMetricsQuery, sampleVisitsQuery, templatesQuery, useSaveTemplate } from '@/features/admin/api/templates'
@@ -48,10 +49,12 @@ export function TemplatesPage() {
   const metrics = useQuery(sampleMetricsQuery(kind === 'daily_report' ? sameDay.map((v) => v.id) : []))
   const typeName = (id: number) => catalogs.data?.displayTypes.find((t) => t.id === id)?.name ?? 'Exhibición'
 
-  // With one message per display, the preview shows the first display's.
+  // With one message per display or per kind of display, the preview shows the first one.
   const visitValues = (v: NonNullable<typeof visit>) => {
-    const args = [v, v.merchandiserName.split(' ')[0] ?? '', typeName, storeTags(catalogs.data, v.store)] as const
-    return (company.data?.messagesPerDisplay ? displayMessageValues(...args)[0]?.values : undefined) ?? messageValues(...args)
+    const name = v.merchandiserName.split(' ')[0] ?? ''
+    const tags = storeTags(catalogs.data, v.store)
+    const grouping = kind === 'after' ? company.data?.messagesAfter : kind === 'before' ? company.data?.messagesBefore : undefined
+    return (grouping ? groupMessageValues(v, name, grouping, typeName, tags)[0]?.values : undefined) ?? messageValues(v, name, typeName, tags)
   }
   const preview = !visit
     ? ''
@@ -103,12 +106,7 @@ export function TemplatesPage() {
             </Switch>
             <p className={styles.help}>Desactivalos cuando todo el equipo revise en Visitario.</p>
           </div>
-          <div className={styles.whatsapp}>
-            <Switch checked={company.data?.messagesPerDisplay ?? false} disabled={!company.data || updateCompany.isPending} onChange={(on) => updateCompany.mutate({ messagesPerDisplay: on })}>
-              Un ANTES y un DESPUÉS por cada exhibición
-            </Switch>
-            <p className={styles.help}>El activador copia un mensaje por exhibición; {'{exhibiciones}'} muestra solo esa.</p>
-          </div>
+          <GroupingSettings company={company.data} disabled={!company.data || updateCompany.isPending} onChange={(c) => updateCompany.mutate(c)} />
         </section>
 
         <section className={styles.editor} aria-label="Editor">

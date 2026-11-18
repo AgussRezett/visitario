@@ -349,6 +349,8 @@ export type Database = {
           id: string
           kind: Database["public"]["Enums"]["company_kind"]
           logo_version: number | null
+          messages_after: string
+          messages_before: string
           messages_per_display: boolean
           name: string
           owner_person_id: string | null
@@ -371,6 +373,8 @@ export type Database = {
           id?: string
           kind: Database["public"]["Enums"]["company_kind"]
           logo_version?: number | null
+          messages_after?: string
+          messages_before?: string
           messages_per_display?: boolean
           name: string
           owner_person_id?: string | null
@@ -393,6 +397,8 @@ export type Database = {
           id?: string
           kind?: Database["public"]["Enums"]["company_kind"]
           logo_version?: number | null
+          messages_after?: string
+          messages_before?: string
           messages_per_display?: boolean
           name?: string
           owner_person_id?: string | null
@@ -1202,6 +1208,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      store_contact: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          id: string
+          name: string
+          note: string | null
+          role: string | null
+          store_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          id?: string
+          name: string
+          note?: string | null
+          role?: string | null
+          store_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          id?: string
+          name?: string
+          note?: string | null
+          role?: string | null
+          store_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
       }
       store_issue: {
         Row: {

@@ -2,6 +2,7 @@ import { formatDayMonth, formatTime } from '@/domain/dates'
 import { CONSENT_LABEL } from '@/domain/visit'
 import { mapsSearchUrl } from '@/domain/places'
 import { displayLabels } from '@/domain/templates'
+import { messageGroups, type MessageGrouping } from '@/domain/message-groups'
 import type { Visit } from './api/queries'
 import type { StoreTags } from './store-tags'
 
@@ -42,6 +43,13 @@ export function messageValues(v: Visit, merchandiser: string, typeName?: (id: nu
     consent: v.consent ? CONSENT_LABEL[v.consent] : null,
     displays: [...counts].map(([name, n]) => (n > 1 ? `${n} ${name}` : name)).join(', ') || null,
   }
+}
+
+/** One set of values per message, as the company groups them: {exhibiciones} names only its displays. */
+export function groupMessageValues(v: Visit, merchandiser: string, grouping: MessageGrouping, typeName?: (id: number) => string, tags?: StoreTags) {
+  const base = messageValues(v, merchandiser, typeName, tags)
+  const displays = v.displays.map((d) => ({ id: d.id, typeId: d.typeId, name: typeName?.(d.typeId) ?? 'Exhibición' }))
+  return messageGroups(displays, grouping).map((g) => ({ ...g, values: { ...base, displays: g.displays ?? base.displays } }))
 }
 
 /** One set of values per display: {exhibiciones} names only that one. */

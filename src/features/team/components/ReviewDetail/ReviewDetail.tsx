@@ -157,6 +157,7 @@ export function ReviewDetail({ visit: v, meId, draft, readOnly = false, work: gi
         urlFor={urlFor}
         onClose={() => setViewer(null)}
         latest={(id) => v.photos.find((p) => p.id === id)}
+        captionFor={(p) => shots.find((s) => s.p.id === p.id)?.caption}
         onCrop={readOnly ? undefined : (p, crop) => cropPhoto.mutateAsync({ photoId: p.id, crop })}
       />
     </div>

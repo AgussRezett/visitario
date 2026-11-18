@@ -2,7 +2,7 @@
 // an app's card, a photo of a printed sheet) with AI: its title, column titles and cells, as
 // they are. The app decides what each column holds. Nothing is saved here: the rows go to
 // the import review, like a spreadsheet.
-//   POST multipart: `file` (JPEG/PNG/WebP, ≤ 6 MB) + `company` (uuid)
+//   POST multipart: `file` (JPEG/PNG/WebP, ≤ 6 MB; up to 4 slices of one long capture) + `company` (uuid)
 //   → { title, headers, rows: string[][], unreadable, model }
 // Merchandisers (into their day), supervisors and admins, within the limits (ai_allow): the
 // company's month (Visitario sets it; none on the free plan), the person's day (the company
@@ -50,9 +50,10 @@ Deno.serve(async (req) => {
   if (!provider) return json({ error: 'not_configured' }, 503)
 
   const form = await req.formData().catch(() => null)
-  const file = form?.get('file')
+  // One capture; a long one (a scrolled list) comes in up to 4 overlapping slices, top to bottom.
+  const files = (form?.getAll('file') ?? []).slice(0, 4)
   const company = String(form?.get('company') ?? '')
-  if (!(file instanceof File) || !TYPES.has(file.type) || file.size > 6_000_000 || !/^[0-9a-f-]{36}$/.test(company)) {
+  if (!files.length || files.some((f) => !(f instanceof File) || !TYPES.has(f.type) || f.size > 6_000_000) || !/^[0-9a-f-]{36}$/.test(company)) {
     return json({ error: 'invalid' }, 400)
   }
 
@@ -70,7 +71,8 @@ Deno.serve(async (req) => {
   if (status) return json({ error: code }, status)
 
   try {
-    const reading = await readImage(toBase64(new Uint8Array(await file.arrayBuffer())), file.type)
+    const images = await Promise.all((files as File[]).map(async (f) => ({ data: toBase64(new Uint8Array(await f.arrayBuffer())), type: f.type })))
+    const reading = await readImage(images)
     await admin.rpc('record_ai_usage', { p_company: company, p_cost_thousandths: Math.ceil(reading.cost), p_person: person.id })
     if (!reading.transcript) return json({ error: 'ai_incomplete' }, 502)
     return json({ ...reading.transcript, model: reading.model })

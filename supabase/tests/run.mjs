@@ -209,6 +209,18 @@ const staleStore = (await sys(`select store_id from visit where id = $1`, [vStal
 const vFresh = (await as('agus', `select add_visit($1, p_store => $2) id`, [wNext, staleStore]))[0].id
 const sameStore = (await sys(`select (select store_id from visit where id = $1) = (select store_id from visit where id = $2) same`, [vStale, vFresh]))[0].same
 check('…until the same store has a newer visit of mine', sameStore && !(await as('agus', `select visit_id from resumable_visits($1, '2026-10-14')`, [panda])).some(r => r.visit_id === vStale))
+{
+  // A visit the supervisor already approved is not offered, and dismissing the rest skips it (it is locked).
+  const vOk = (await as('agus', `select add_visit($1, p_address => 'Ciudad de la Paz 353') id`, [wOwn]))[0].id
+  const vLeft = (await as('agus', `select add_visit($1, p_address => 'Ciudad de la Paz 561') id`, [wOwn]))[0].id
+  // As in production: a closed visit the supervisor approved (set directly, past the review flow's guards).
+  await sys(`set session_replication_role = replica`)
+  await sys(`update visit set work_status = 'closed', consent = 'closed', finished_at = now(), review_status = 'approved', reviewed_at = now() where id = $1`, [vOk])
+  await sys(`set session_replication_role = origin`)
+  const offered = (await as('agus', `select visit_id from resumable_visits($1, '2026-10-14')`, [panda])).map((r) => r.visit_id)
+  check('An approved visit is not offered to resume', !offered.includes(vOk) && offered.includes(vLeft))
+  check('Dismissing with an approved one among them does not fail: the rest are dismissed', (await as('agus', `select dismiss_resumable($1) n`, [[vOk, vLeft]]))[0].n === 1)
+}
 check('Only the last 7 days are offered', (await as('agus', `select visit_id from resumable_visits($1, '2026-12-01')`, [panda])).length === 0);
 
 // ---- The storefront photo decides whether the visit started
@@ -388,6 +400,13 @@ check('Admin turns on one ANTES / DESPUÉS per display', (await as('agus', `sele
 await as('martin', `update company set messages_per_display = false where id = $1`, [panda])
 check('…a supervisor cannot turn it off', (await sys(`select messages_per_display m from company where id = $1`, [panda]))[0].m === true)
 await sys(`update company set messages_per_display = false where id = $1`, [panda])
+check('ANTES and DESPUÉS go one per visit by default', JSON.stringify(await sys(`select messages_before b, messages_after a from company where id = $1`, [panda])) === '[{"b":"visit","a":"visit"}]')
+await as('carla', `update company set messages_before = 'visit', messages_after = 'type' where id = $1`, [panda])
+check('Admin sends the DESPUÉS one per kind of display, the ANTES one per visit', (await as('lucia', `select company_catalogs($1) -> 'company' c`, [panda]))[0]?.c?.messages_after === 'type')
+await as('martin', `update company set messages_after = 'visit' where id = $1`, [panda])
+check('…a supervisor cannot change it', (await sys(`select messages_after a from company where id = $1`, [panda]))[0].a === 'type')
+await expectError('Only the three ways', () => sys(`update company set messages_before = 'brand' where id = $1`, [panda]))
+await sys(`update company set messages_after = 'visit' where id = $1`, [panda])
 await expectError('The company kind is not editable by the admin', () => as('carla', `update company set kind = 'brand' where id = $1`, [panda]))
 check('Admin reads the plan; the subscription is not editable from the app', (await as('carla', `select plan::text p from subscription where company_id = $1`, [panda]))[0]?.p === 'pilot')
 await expectError('…not even by its admin', () => as('carla', `update subscription set plan = 'team' where company_id = $1`, [panda]))
@@ -473,7 +492,26 @@ await sys(`update visit set work_status = 'in_progress', consent = 'yes', arrive
 await sys(`update visit set work_status = 'done', review_status = 'approved' where id = $1`, [vMergeA])
 await expectError('A merchandiser cannot merge stores', () => as('agus', `select merge_stores($1, $2)`, [dupKeep, dupDrop]), /supervisors/)
 await expectError('Another company cannot merge Panda’s stores', () => as('beto', `select merge_stores($1, $2)`, [dupKeep, dupDrop]))
+{
+  console.log('\nKnown names of a store');
+  await as('lucia', `insert into store_contact (store_id, name, role) values ($1, '  Don Julio ', 'Dueño')`, [dupDrop])
+  const [c] = await sys(`select * from store_contact where store_id = $1`, [dupDrop])
+  check('A merchandiser adds a name: trimmed, with its company and who added it', c?.name === 'Don Julio' && c?.company_id === panda && c?.created_by === await pid('lucia'))
+  check('The supervisor sees it', (await as('martin', `select name from store_contact where store_id = $1`, [dupDrop])).length === 1)
+  check('Another company does not', (await as('beto', `select name from store_contact`)).length === 0)
+  await expectError('…nor adds names to Panda’s stores', () => as('beto', `insert into store_contact (store_id, name) values ($1, 'Intruso')`, [dupDrop]))
+  await as('martin', `update store_contact set role = 'Dueño, va de mañana' where id = $1`, [c.id])
+  check('Anyone fixes it, and who did is kept', (await sys(`select updated_by = $2 ok from store_contact where id = $1`, [c.id, await pid('martin')]))[0].ok)
+  await as('beto', `update store_contact set name = 'Otro' where id = $1`, [c.id])
+  check('…but not another company', (await sys(`select name from store_contact where id = $1`, [c.id]))[0].name === 'Don Julio')
+  await expectError('A name cannot be empty', () => as('lucia', `insert into store_contact (store_id, name) values ($1, '   ')`, [dupDrop]))
+  await expectError('…nor change its store', () => as('lucia', `update store_contact set store_id = $2 where id = $1`, [c.id, dupKeep]))
+  await as('lucia', `insert into store_contact (store_id, name) values ($1, 'Marta')`, [dupDrop])
+  await as('lucia', `update store_contact set deleted_at = now() where name = 'Marta'`)
+  check('Removing keeps it, out of the list', (await sys(`select deleted_at is not null gone from store_contact where name = 'Marta'`))[0].gone)
+}
 check('Merging moves every visit, even an approved one', (await as('martin', `select merge_stores($1, $2) n`, [dupKeep, dupDrop]))[0].n === 1 && (await sys(`select store_id = $2 ok from visit where id = $1`, [vMergeA, dupKeep]))[0].ok)
+check('…and its known names', (await sys(`select count(*)::int n from store_contact where store_id = $1`, [dupKeep]))[0].n === 2)
 const merged = (await sys(`select (select deleted_at is not null and merged_into = $1 from store where id = $2) gone, customer_number, area, name, location_status::text loc from store where id = $1`, [dupKeep, dupDrop]))[0]
 check(`The one that stays takes what only the duplicate had (${JSON.stringify(merged)})`, merged.gone && merged.customer_number === '20577' && merged.area === 'Belgrano' && merged.name === 'Lili' && merged.loc === 'verified')
 await expectError('An approved visit still cannot be moved by hand', () => as('martin', `update visit set store_id = $2 where id = $1`, [vMergeA, s1]), /pending|locked/)
