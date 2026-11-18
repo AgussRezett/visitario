@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Camera, Check, CheckCircle2, LoaderCircle, NotebookPen, RotateCw, Send as SendIcon } from 'lucide-react'
 import clsx from 'clsx'
-import { isReady, nextSend, shareFileName, type Send, type SendGroup } from '@/domain/share-queue'
+import { albumCaption, isReady, nextSend, shareFileName, type Send, type SendGroup } from '@/domain/share-queue'
 import { copyText, share } from '@/lib/share'
 import { Button } from '@/ui/Button'
 import { Sheet } from '@/ui/Sheet'
@@ -50,9 +50,10 @@ export function SendSheet({ open, onClose, address, sends, sent, onSent, urlFor,
       const blob = files[id]
       return blob instanceof Blob ? [new File([blob], shareFileName(s, i), { type: 'image/jpeg' })] : []
     })
-    // Copied too: some WhatsApp versions drop the text that comes with photos.
+    // Copied too: some WhatsApp versions drop the text that comes with photos. With several photos
+    // WhatsApp repeats the text on each one, so they go alone, as one album, and the text is pasted once.
     void copyText(s.text)
-    void share({ text: s.text, files: shared }).then((ok) => {
+    void share({ text: albumCaption(shared.length) ? undefined : s.text, files: shared }).then((ok) => {
       if (!ok) return
       onSent(s.key)
       setAnnounce(`Enviado: ${s.label}`)
@@ -62,6 +63,9 @@ export function SendSheet({ open, onClose, address, sends, sent, onSent, urlFor,
   const nextState = next ? stateOf(next) : null
   const footer = next ? (
     <div className={styles.footer}>
+      {next.text && albumCaption(next.photoIds.length) ? (
+        <p className={styles.note}>Van {next.photoIds.length} fotos juntas y el texto queda copiado: pegalo en la primera, así sale una sola vez.</p>
+      ) : null}
       <Button size="lg" className={styles.main} loading={nextState === 'loading'} onClick={() => send(next)}>
         {nextState === 'error' ? <RotateCw size={20} aria-hidden /> : <SendIcon size={20} aria-hidden />}
         {nextState === 'loading' ? 'Preparando fotos…' : nextState === 'error' ? 'Reintentar fotos' : `Enviar ${next.label}`}

@@ -47,6 +47,9 @@ export interface SendInput {
 
 const WORD: Record<'before' | 'after', string> = { before: 'ANTES', after: 'DESPUÉS' }
 
+/** With more than one photo the text goes apart: WhatsApp would repeat it on every photo. */
+export const albumCaption = (photos: number) => photos > 1
+
 export function buildSends(input: SendInput): Send[] {
   const of = (kind: PhotoKind, displayIds: readonly string[] | null) =>
     input.photos.filter((p) => p.kind === kind && (displayIds === null || (p.displayId !== null && displayIds.includes(p.displayId)))).map((p) => p.id)
