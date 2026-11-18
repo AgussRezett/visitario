@@ -5,7 +5,7 @@ import { formatTime } from '@/domain/dates'
 import { canShare, share } from '@/lib/share'
 import { useConfirm } from '@/ui/ConfirmDialog'
 import type { Photo } from '@/features/workday/api/queries'
-import { localPhotoBlob } from '@/features/workday/api/photos'
+import { localPhotoBlob, photoFile } from '@/features/workday/api/photos'
 import { croppedBlob } from '@/features/workday/api/crop-file'
 import { useUploadState } from '@/features/sync/hooks'
 import { useOnline } from '@/lib/online'
@@ -67,7 +67,8 @@ export function PhotoViewer({ photos, startId, title, subtitle, urlFor, onClose,
 
   const sharePhoto = async () => {
     if (!photo) return
-    const whole = localPhotoBlob(photo.id) ?? (url ? await fetch(url).then((r) => r.blob()).catch(() => null) : null)
+    // The bucket's links can be shown but not read: the bytes come through the photos function.
+    const whole = localPhotoBlob(photo.id) ?? (url ? await photoFile(photo.id).catch(() => null) : null)
     const blob = whole ? await croppedBlob(whole, photo.crop).catch(() => whole) : null
     const files = blob ? [new File([blob], `${title}.jpg`, { type: 'image/jpeg' })] : undefined
     await share({ title, text: subtitle, files })

@@ -104,6 +104,17 @@ export function usePreparePhoto() {
   return { prepare, preparing: preparing > 0 }
 }
 
+/**
+ * A photo's file, through Visitario's photos function: the bucket only lets the browser show
+ * its links (an <img>), not read them (no CORS), so the bytes come this way, with the same
+ * permissions. Sharing and the PowerPoint need the bytes.
+ */
+export async function photoFile(id: string): Promise<Blob> {
+  const { data, error } = await supabase.functions.invoke<Blob>('photos/file', { body: { id } })
+  if (error || !(data instanceof Blob) || !data.size) throw new Error('photo')
+  return data
+}
+
 const photoUrlsQuery = (ids: string[]) =>
   queryOptions({
     queryKey: ['photo-urls', ...ids] as const,

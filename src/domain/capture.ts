@@ -81,3 +81,21 @@ export function mergeTranscripts(ts: readonly Transcript[]): Transcript | null {
     unreadable: ts.reduce((n, t) => n + t.unreadable, 0),
   }
 }
+
+/**
+ * A long capture (a list scrolled into one tall screenshot) is read in overlapping slices:
+ * the AI shrinks each image to about 1500 px, so a very tall one became too small to read and
+ * only some rows came back. Slices of about 1.6 widths, a quarter of a width shared with the
+ * next so no row is cut in two; at most 4 (taller ones get taller slices). Rows read twice
+ * where they overlap are dropped on the server.
+ */
+export function captureSlices(width: number, height: number): { top: number; height: number }[] {
+  if (width <= 0 || height <= width * 2.6) return [{ top: 0, height }]
+  const overlap = Math.round(width * 0.25)
+  const count = Math.min(4, Math.ceil((height - overlap) / (width * 1.6 - overlap)))
+  const step = Math.ceil((height - overlap) / count)
+  return Array.from({ length: count }, (_, i) => {
+    const top = i * step
+    return { top, height: Math.min(height, top + step + overlap) - top }
+  })
+}
