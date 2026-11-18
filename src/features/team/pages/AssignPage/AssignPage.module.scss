@@ -314,10 +314,36 @@
   }
 }
 
-.import-button {
-  flex: 1 0 auto;
+.tools {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: space(2);
+  width: 100%;
 
   @include up(lg) {
-    flex: 0 0 auto;
+    display: flex;
+    gap: space(3);
+    width: auto;
+  }
+}
+
+// Phones: an icon over a short label, three to a row. Computers: the usual button.
+.tool {
+  flex-direction: column;
+  gap: space(1);
+  height: auto;
+  min-height: space(16);
+  padding: space(2);
+  font-size: 13px;
+  line-height: 1.2;
+  text-align: center;
+
+  @include up(lg) {
+    flex-direction: row;
+    gap: space(2);
+    height: $touch-target;
+    min-height: 0;
+    padding: 0 space(4);
+    font-size: 15px;
   }
 }
