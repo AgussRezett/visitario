@@ -29,7 +29,7 @@ export async function handleClosure({ path, route, state, json, body }: Ctx): Pr
     state.closure = { ...state.closure, closed: [{ company_id: company, name, closed_at: new Date().toISOString(), closed_by: 'Agustín Rezett', reopen_until: new Date(Date.now() + 30 * 86_400_000).toISOString(), kept, reason: b.p_reason }] }
     return done(json(state.closure.closed?.[0]?.reopen_until))
   }
-  if (path.endsWith('/rpc/my_closed_companies')) return done(json((state.closure?.closed ?? []).map(({ kept: _k, reason: _r, ...c }) => c)))
+  if (path.endsWith('/rpc/my_closed_companies')) return done(json((state.closure?.closed ?? []).map((c) => ({ company_id: c.company_id, name: c.name, closed_at: c.closed_at, closed_by: c.closed_by, reopen_until: c.reopen_until }))))
   if (path.endsWith('/rpc/reopen_company')) {
     const company = String(body().p_company)
     const closed = state.closure?.closed?.find((c) => c.company_id === company)
