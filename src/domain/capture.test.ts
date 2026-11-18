@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mergeTranscripts, titleMerchandiser, transcriptToLines, transcriptToTable, type Transcript } from './capture'
+import { captureSlices, mergeTranscripts, titleMerchandiser, transcriptToLines, transcriptToTable, type Transcript } from './capture'
 import { toRows } from './import'
 
 const read = (t: Partial<Transcript>) => transcriptToTable({ title: '', headers: [], rows: [], unreadable: 0, ...t })
@@ -92,5 +92,19 @@ describe('several captures of one list', () => {
     expect(mergeTranscripts([t(['COD'], [['1']], 'RUTA ANA'), t(['COD'], [['2']], 'RUTA LEO')])?.title).toBe('')
     expect(mergeTranscripts([t(['COD', 'DOMICILIO'], []), t(['DIRECCION'], [])])).toBeNull()
     expect(mergeTranscripts([])).toBeNull()
+  })
+})
+
+describe('a long capture is read in slices', () => {
+  it('a usual screenshot goes whole; a tall one in overlapping slices that cover it all', () => {
+    expect(captureSlices(1080, 2400)).toEqual([{ top: 0, height: 2400 }]) // a phone screen, 20:9
+    expect(captureSlices(1080, 2800)).toEqual([{ top: 0, height: 2800 }])
+    const s = captureSlices(1080, 6000)
+    expect(s.length).toBe(4)
+    expect(s[0]?.top).toBe(0)
+    expect((s.at(-1)?.top ?? 0) + (s.at(-1)?.height ?? 0)).toBe(6000)
+    // Each slice starts before the previous one ends: no row is cut in two.
+    s.slice(1).forEach((x, i) => expect(x.top).toBeLessThan((s[i]?.top ?? 0) + (s[i]?.height ?? 0)))
+    expect(captureSlices(1000, 20000).length).toBe(4)
   })
 })
