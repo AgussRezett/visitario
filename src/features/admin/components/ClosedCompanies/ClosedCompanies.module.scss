@@ -1,0 +1,44 @@
+@use '@/styles/abstracts' as *;
+
+.closed {
+  @include flex(column, $gap: space(3));
+  padding: space(4);
+  border-radius: $radius-lg;
+  background: $color-card;
+}
+
+.heading {
+  @include eyebrow;
+}
+
+.list {
+  @include flex(column, $gap: space(3));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  @include flex(column, $gap: space(2));
+
+  @include up(sm) {
+    flex-direction: row;
+    align-items: center;
+  }
+}
+
+.text {
+  @include flex(column, $gap: space(1));
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  @include text(base);
+  font-weight: $weight-bold;
+}
+
+.when {
+  @include text(label);
+  color: $color-ink-muted;
+}
