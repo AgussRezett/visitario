@@ -10,6 +10,8 @@ import styles from './ZoneControls.module.scss'
 
 interface ZoneControlsProps {
   zones: RouteZone[]
+  /** While drawing: how many stores the filters take inside it. */
+  inside: number | null
   /** The saved zone in use, or ALL. */
   zoneId: string
   onZone: (id: string) => void
@@ -25,7 +27,7 @@ interface ZoneControlsProps {
 }
 
 /** Pick a saved zone, or draw a new one by tapping its corners on the map. */
-export function ZoneControls({ zones, zoneId, onZone, draft, onDraw, onUndo, onCancel, onSave, onRemove, saving, error }: ZoneControlsProps) {
+export function ZoneControls({ zones, inside, zoneId, onZone, draft, onDraw, onUndo, onCancel, onSave, onRemove, saving, error }: ZoneControlsProps) {
   const [name, setName] = useState('')
 
   if (draft) {
@@ -33,7 +35,7 @@ export function ZoneControls({ zones, zoneId, onZone, draft, onDraw, onUndo, onC
     return (
       <div className={styles.drawing}>
         <p className={styles.help}>
-          {ready ? `Zona de ${draft.length} esquinas. Seguí tocando para ajustarla, o ponele nombre.` : `Tocá el mapa para marcar las esquinas de la zona (${draft.length} de al menos 3).`}
+          {ready ? `Zona de ${draft.length} esquinas${inside === null ? '' : `, con ${inside} ${inside === 1 ? 'local' : 'locales'} adentro`}. Seguí tocando para ajustarla, o ponele nombre.` : `Tocá el mapa para marcar las esquinas de la zona (${draft.length} de al menos 3).`}
         </p>
         <div className={styles.row}>
           <Button variant="secondary" size="md" onClick={onUndo} disabled={!draft.length}><Undo2 size={18} aria-hidden />Deshacer</Button>

@@ -54,7 +54,7 @@ test('the supervisor plans a route for a goal and puts it into a day', async ({ 
   expect(s.addedToDay?.[0]?.stores).not.toContain('s1')
 })
 
-test('zones: pick a saved one, or start drawing a new one', async ({ page }) => {
+test('zones: pick a saved one, or start drawing a new one', async ({ page }, info) => {
   await installFakeSupabase(page, state(), 'supervisor')
   await page.goto('/s/plan?date=2026-11-20')
   await expect(page.getByText('7 locales cumplen los filtros')).toBeVisible()
@@ -69,13 +69,22 @@ test('zones: pick a saved one, or start drawing a new one', async ({ page }) => 
   await expect(page.getByText('Tocá el mapa para marcar las esquinas de la zona (0 de al menos 3).')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Guardar zona' })).toBeDisabled()
   await expect(page.getByRole('button', { name: 'Armar recorrido' })).toBeDisabled()
+  // The map is right there, under the zone tools, not at the end of the page (headless browsers show its fallback).
+  const map = page.getByRole('region', { name: /^Mapa/ }).or(page.getByText('No pudimos mostrar el mapa', { exact: false }))
+  const mapTop = (await map.boundingBox())?.y ?? Infinity
+  const goalTop = (await page.getByText('Objetivo', { exact: true }).boundingBox())?.y ?? 0
+  if (info.project.name === 'mobile') expect(mapTop).toBeLessThan(goalTop)
   await page.getByRole('button', { name: 'Cancelar' }).click()
   await expect(page.getByRole('button', { name: 'Dibujar zona' })).toBeVisible()
 })
 
-test('Asignar and the map lead to it', async ({ page }) => {
+test('Asignar and the map lead to it', async ({ page }, info) => {
   await installFakeSupabase(page, state(), 'supervisor')
   await page.goto('/s/assign?date=2026-11-20')
+  // On a phone the three tools sit side by side.
+  const tops = await Promise.all(['Importar planilla', 'Armar recorrido', 'Armar operativo'].map(async (n) => (await page.getByRole('button', { name: n }).boundingBox())?.y))
+  expect(new Set(tops).size).toBe(1)
+  await page.screenshot({ path: `test-results/assign-tools-${info.project.name}.png` })
   await page.getByRole('button', { name: 'Armar recorrido' }).click()
   await expect(page).toHaveURL(/\/s\/plan\?date=2026-11-20/)
   await expect(page.getByRole('heading', { name: 'Armar recorrido' })).toBeVisible()
