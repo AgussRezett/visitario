@@ -287,3 +287,32 @@ test('a store without a location is located by itself, without anyone tapping "V
   if (desktop) await expect(page.getByRole('row', { name: /Tres Arroyos 762 PB/ })).toContainText('Verificada')
   else await expect(page.getByRole('link', { name: /Tres Arroyos 762 PB/ })).not.toContainText('sin verificar')
 })
+
+test('known names of a store: add who to ask for, fix it, remove it', async ({ page }, info) => {
+  const state = directory()
+  state.contacts = [{ id: 'k0', store_id: 's1', name: 'Don Julio', role: 'Dueño', note: null, deleted_at: null, created_at: '2026-11-01T12:00:00Z' }]
+  await installFakeSupabase(page, state, 'supervisor')
+  await page.goto('/stores/s1')
+  const names = page.getByRole('region', { name: 'Nombres conocidos' })
+  await expect(names.getByText('Don Julio')).toBeVisible()
+  await expect(names.getByText('· Dueño')).toBeVisible()
+
+  await names.getByRole('button', { name: 'Agregar' }).click()
+  await names.getByLabel('Nombre').fill('Marta')
+  await names.getByLabel('Quién es (opcional)').fill('Encargada')
+  await names.getByLabel('Nota (opcional)').fill('Está de mañana')
+  await page.screenshot({ path: `test-results/known-names-${info.project.name}.png` })
+  await names.getByRole('button', { name: 'Agregar nombre' }).click()
+  await expect(names.getByText('Marta')).toBeVisible()
+  await expect(names.getByText('Está de mañana')).toBeVisible()
+  expect(state.contacts.at(-1)).toMatchObject({ store_id: 's1', name: 'Marta', role: 'Encargada', note: 'Está de mañana' })
+
+  await names.getByRole('button', { name: 'Editar a Don Julio' }).click()
+  await names.getByLabel('Nombre').fill('Julio Pérez')
+  await names.getByRole('button', { name: 'Guardar' }).click()
+  await expect(names.getByText('Julio Pérez')).toBeVisible()
+
+  await names.getByRole('button', { name: 'Quitar a Marta' }).click()
+  await expect(names.getByText('Marta')).toBeHidden()
+  expect(state.contacts.find((c) => c.name === 'Marta')?.deleted_at).toBeTruthy()
+})

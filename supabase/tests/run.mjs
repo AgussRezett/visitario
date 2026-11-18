@@ -480,7 +480,26 @@ await sys(`update visit set work_status = 'in_progress', consent = 'yes', arrive
 await sys(`update visit set work_status = 'done', review_status = 'approved' where id = $1`, [vMergeA])
 await expectError('A merchandiser cannot merge stores', () => as('agus', `select merge_stores($1, $2)`, [dupKeep, dupDrop]), /supervisors/)
 await expectError('Another company cannot merge Panda’s stores', () => as('beto', `select merge_stores($1, $2)`, [dupKeep, dupDrop]))
+{
+  console.log('\nKnown names of a store');
+  await as('lucia', `insert into store_contact (store_id, name, role) values ($1, '  Don Julio ', 'Dueño')`, [dupDrop])
+  const [c] = await sys(`select * from store_contact where store_id = $1`, [dupDrop])
+  check('A merchandiser adds a name: trimmed, with its company and who added it', c?.name === 'Don Julio' && c?.company_id === panda && c?.created_by === await pid('lucia'))
+  check('The supervisor sees it', (await as('martin', `select name from store_contact where store_id = $1`, [dupDrop])).length === 1)
+  check('Another company does not', (await as('beto', `select name from store_contact`)).length === 0)
+  await expectError('…nor adds names to Panda’s stores', () => as('beto', `insert into store_contact (store_id, name) values ($1, 'Intruso')`, [dupDrop]))
+  await as('martin', `update store_contact set role = 'Dueño, va de mañana' where id = $1`, [c.id])
+  check('Anyone fixes it, and who did is kept', (await sys(`select updated_by = $2 ok from store_contact where id = $1`, [c.id, await pid('martin')]))[0].ok)
+  await as('beto', `update store_contact set name = 'Otro' where id = $1`, [c.id])
+  check('…but not another company', (await sys(`select name from store_contact where id = $1`, [c.id]))[0].name === 'Don Julio')
+  await expectError('A name cannot be empty', () => as('lucia', `insert into store_contact (store_id, name) values ($1, '   ')`, [dupDrop]))
+  await expectError('…nor change its store', () => as('lucia', `update store_contact set store_id = $2 where id = $1`, [c.id, dupKeep]))
+  await as('lucia', `insert into store_contact (store_id, name) values ($1, 'Marta')`, [dupDrop])
+  await as('lucia', `update store_contact set deleted_at = now() where name = 'Marta'`)
+  check('Removing keeps it, out of the list', (await sys(`select deleted_at is not null gone from store_contact where name = 'Marta'`))[0].gone)
+}
 check('Merging moves every visit, even an approved one', (await as('martin', `select merge_stores($1, $2) n`, [dupKeep, dupDrop]))[0].n === 1 && (await sys(`select store_id = $2 ok from visit where id = $1`, [vMergeA, dupKeep]))[0].ok)
+check('…and its known names', (await sys(`select count(*)::int n from store_contact where store_id = $1`, [dupKeep]))[0].n === 2)
 const merged = (await sys(`select (select deleted_at is not null and merged_into = $1 from store where id = $2) gone, customer_number, area, name, location_status::text loc from store where id = $1`, [dupKeep, dupDrop]))[0]
 check(`The one that stays takes what only the duplicate had (${JSON.stringify(merged)})`, merged.gone && merged.customer_number === '20577' && merged.area === 'Belgrano' && merged.name === 'Lili' && merged.loc === 'verified')
 await expectError('An approved visit still cannot be moved by hand', () => as('martin', `update visit set store_id = $2 where id = $1`, [vMergeA, s1]), /pending|locked/)
