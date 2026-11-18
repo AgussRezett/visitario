@@ -267,3 +267,40 @@ test('company and plan: billing shows, settings save, data exports', async ({ pa
   expect(text).toContain('Fecha;Activador;Comercio;Dirección')
   expect(text).toContain('"Faltó ""SKYY""; volver"')
 })
+
+test('closing the company: say what happens, type its name, and reopen it from the welcome', async ({ page }, info) => {
+  const state = company({
+    company: { id: 'c1', name: 'Panda', kind: 'distributor', geocoding_scope: 'caba', show_whatsapp: true, photo_retention_months: 12, logo_version: null, shift_start: '09:00:00', shift_end: '14:00:00', ai_daily_per_person: 30 },
+    memberships: [{ ...admin[0], company_id: 'c1' }],
+    closure: { daysToday: 2 },
+  })
+  await installFakeSupabase(page, state, 'admin')
+  await page.goto('/s/company')
+  const card = page.getByRole('region', { name: 'Cerrar la empresa' })
+  await card.getByRole('button', { name: 'Cerrar la empresa…' }).click()
+
+  const sheet = page.getByRole('dialog', { name: 'Cerrar Panda' })
+  const effects = sheet.getByRole('list', { name: 'Qué pasa al cerrarla' })
+  await expect(effects).toContainText('5 personas dejan de entrar, vos incluido. 1 invitación queda cancelada.')
+  await expect(effects).toContainText('230 comercios, visitas, fotos y personas quedan guardados')
+  await expect(sheet.getByText('Hoy hay 2 jornadas publicadas', { exact: false })).toBeVisible()
+  const confirm = sheet.getByRole('button', { name: 'Cerrar Panda' })
+  await expect(confirm).toBeDisabled()
+  await sheet.getByLabel('Para confirmar, escribí Panda').fill('Pand')
+  await expect(confirm).toBeDisabled()
+  await sheet.getByLabel('Motivo (opcional)').fill('Terminamos el piloto')
+  await sheet.getByLabel('Para confirmar, escribí Panda').fill(' panda ')
+  await page.screenshot({ path: `test-results/close-company-${info.project.name}.png` })
+  await confirm.click()
+
+  // Nobody gets in, not even the admin: the welcome, with the company to reopen.
+  await expect(page.getByRole('heading', { name: 'Todavía no tenés empresa' })).toBeVisible()
+  expect(state.closure?.closed?.[0]?.reason).toBe('Terminamos el piloto')
+  const closed = page.getByRole('region', { name: 'Empresas cerradas' })
+  await expect(closed.getByText('Panda', { exact: true })).toBeVisible()
+  await expect(closed.getByText(/La cerró Agustín Rezett el .* Se puede reabrir hasta el/)).toBeVisible()
+  await page.screenshot({ path: `test-results/closed-company-${info.project.name}.png` })
+  await closed.getByRole('button', { name: 'Reabrir' }).click()
+  await expect(page.getByRole('heading', { name: 'Todavía no tenés empresa' })).toBeHidden()
+  expect(state.memberships?.[0]?.status).toBe('active')
+})
