@@ -69,15 +69,18 @@ export function AssignPage({ date: requested, person, imported }: AssignSearch) 
         </div>
         <div className={styles.actions}>
           <Field label="Fecha" type="date" value={date} onChange={(e) => e.target.value && go({ date: e.target.value })} className={styles.dateField} />
-          <Button variant="secondary" size="md" onClick={() => navigate({ to: '/s/import', search: { date, person: selected?.personId } })} className={styles.importButton}>
-            <FileUp size={18} aria-hidden />Importar planilla
-          </Button>
-          <Button variant="secondary" size="md" onClick={() => navigate({ to: '/s/plan', search: { date, person: selected?.personId } })}>
-            <RouteIcon size={18} aria-hidden />Armar recorrido
-          </Button>
-          <Button variant="secondary" size="md" onClick={() => setCreating(true)}>
-            <Users size={18} aria-hidden />Armar operativo
-          </Button>
+          {/* Three tools side by side on a phone, in the row on a computer. */}
+          <div className={styles.tools}>
+            <Button variant="secondary" size="md" className={styles.tool} onClick={() => navigate({ to: '/s/import', search: { date, person: selected?.personId } })}>
+              <FileUp size={18} aria-hidden />Importar planilla
+            </Button>
+            <Button variant="secondary" size="md" className={styles.tool} onClick={() => navigate({ to: '/s/plan', search: { date, person: selected?.personId } })}>
+              <RouteIcon size={18} aria-hidden />Armar recorrido
+            </Button>
+            <Button variant="secondary" size="md" className={styles.tool} onClick={() => setCreating(true)}>
+              <Users size={18} aria-hidden />Armar operativo
+            </Button>
+          </div>
           <Button size="md" onClick={publish} disabled={!drafts.length} loading={assign.publish.isPending} className={styles.publishDesktop}>
             <Send size={18} aria-hidden />{drafts.length ? `Publicar a ${drafts.length} ${drafts.length === 1 ? 'activador' : 'activadores'}` : 'Nada para publicar'}
           </Button>

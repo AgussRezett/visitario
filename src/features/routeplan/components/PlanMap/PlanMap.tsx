@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import maplibregl, { type GeoJSONSource } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import { inZone } from '@/domain/route-plan'
 import styles from './PlanMap.module.scss'
 
 // OpenFreeMap: OpenStreetMap streets, free and without a key (attribution shown on the map).
@@ -74,7 +75,13 @@ export default function PlanMap({ candidates, stops, line, zone, drawing, onDraw
       m.addLayer({ id: 'zone-fill', type: 'fill', source: 'zone', paint: { 'fill-color': accent, 'fill-opacity': 0.08 } })
       m.addLayer({ id: 'zone-line', type: 'line', source: 'zone', paint: { 'line-color': accent, 'line-width': 2, 'line-dasharray': [2, 1.5] } })
       m.addLayer({ id: 'corners', type: 'circle', source: 'corners', paint: { 'circle-radius': 6, 'circle-color': accent, 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } })
-      m.addLayer({ id: 'cands', type: 'circle', source: 'cands', paint: { 'circle-radius': 4, 'circle-color': '#8a8a85', 'circle-opacity': 0.7, 'circle-stroke-color': '#fff', 'circle-stroke-width': 1 } })
+      // Stores inside the zone stand out: bigger, in the accent; the rest stay grey.
+      m.addLayer({ id: 'cands', type: 'circle', source: 'cands', paint: {
+        'circle-radius': ['case', ['get', 'inside'], 6, 4],
+        'circle-color': ['case', ['get', 'inside'], accent, '#8a8a85'],
+        'circle-opacity': ['case', ['get', 'inside'], 1, 0.7],
+        'circle-stroke-color': '#fff', 'circle-stroke-width': ['case', ['get', 'inside'], 2, 1],
+      } })
       m.addLayer({ id: 'route', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': accent, 'line-width': 4, 'line-opacity': 0.9 } })
       m.on('click', (e) => {
         if (latest.current.drawing) latest.current.onDrawPoint([e.lngLat.lng, e.lngLat.lat])
@@ -109,7 +116,9 @@ export default function PlanMap({ candidates, stops, line, zone, drawing, onDraw
     const chosen = new Set(stops.map((s) => s.id))
     ;(m.getSource('cands') as GeoJSONSource).setData({
       type: 'FeatureCollection',
-      features: candidates.filter((c) => !chosen.has(c.id)).map((c) => ({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [c.lng, c.lat] } })),
+      features: candidates.filter((c) => !chosen.has(c.id)).map((c) => ({
+        type: 'Feature', properties: { inside: ring.length >= 3 && inZone(c.lng, c.lat, ring) }, geometry: { type: 'Point', coordinates: [c.lng, c.lat] },
+      })),
     })
     const path = line && line.length > 1 ? line : stops.map((s) => [s.lng, s.lat] as LngLat)
     ;(m.getSource('route') as GeoJSONSource).setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: path } })

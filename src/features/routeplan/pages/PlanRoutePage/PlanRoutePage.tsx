@@ -9,6 +9,7 @@ import { areasOf } from '@/domain/store-map'
 import type { TravelMode } from '@/domain/route'
 import { Banner } from '@/ui/Banner'
 import { Button } from '@/ui/Button'
+import { useWide } from '@/lib/use-wide'
 import { Field } from '@/ui/Field'
 import { Skeleton } from '@/ui/Skeleton'
 import { useCatalogs } from '@/features/workday/api/queries'
@@ -65,6 +66,9 @@ export function PlanRoutePage({ date: wanted, person }: PlanSearch) {
   const channels = useMemo(() => (catalogs?.channels ?? []).map((c) => ({ id: c.id, name: c.name })), [catalogs])
   const ring = draft ?? zones.data?.find((z) => z.id === zoneId)?.ring ?? null
   const cands = useMemo(() => toCandidates(points.data ?? [], pending.data ?? new Map()), [points.data, pending.data])
+  const wide = useWide()
+  // While drawing, the stores the filters take inside the zone so far.
+  const insideDraft = useMemo(() => (draft && draft.length >= 3 ? eligible(cands, { ...filters, zone: draft }, today).length : null), [cands, filters, draft, today])
   const fit = useMemo(() => eligible(cands, { ...filters, zone: draft ? null : ring }, today), [cands, filters, ring, draft, today])
   if (!ctx) return null
   if (ctx.role !== 'supervisor' && ctx.role !== 'admin') return <Banner tone="info">Armar recorridos es para supervisores y administradores.</Banner>
@@ -103,6 +107,18 @@ export function PlanRoutePage({ date: wanted, person }: PlanSearch) {
     setAdded(n === plan.stops.length ? `Listo: ${n} locales en la jornada de ${who}.` : `Agregamos ${n} locales a la jornada de ${who}; ${plan.stops.length - n} ya estaban.`)
   }
 
+  const map = (
+    <>
+      {points.isPending ? <Skeleton height={360} /> : points.error ? <Banner tone="error">No pudimos cargar los locales. Revisá la conexión.</Banner> : (
+        <Suspense fallback={<Skeleton height={360} />}>
+          <PlanMap candidates={fit} stops={(plan?.stops ?? []).map((s) => ({ id: s.id, lat: s.lat, lng: s.lng, label: s.address }))} line={plan?.line ?? null}
+            zone={ring} drawing={Boolean(draft)} onDrawPoint={(p) => setDraft((d) => (d ? [...d, p] : d))}
+            frameKey={JSON.stringify([zoneId, plan?.stops.map((s) => s.id), draft === null, points.data?.length])} />
+        </Suspense>
+      )}
+    </>
+  )
+
   return (
     <div className={styles.page}>
       <header className={styles.top}>
@@ -117,12 +133,14 @@ export function PlanRoutePage({ date: wanted, person }: PlanSearch) {
           <AiRequest companyId={companyId} today={today} onApply={apply}
             catalog={{ sellers, channels, zones: zones.data ?? [], areas, people: team.data ?? [] }} />
           <ZoneControls
-            zones={zones.data ?? []} zoneId={zoneId} onZone={(id) => { changed(); setZoneId(id) }} draft={draft}
+            zones={zones.data ?? []} inside={insideDraft} zoneId={zoneId} onZone={(id) => { changed(); setZoneId(id) }} draft={draft}
             onDraw={() => { changed(); setDraft([]) }} onUndo={() => setDraft((d) => (d ? d.slice(0, -1) : d))} onCancel={() => setDraft(null)}
             onSave={async (name) => { const id = await zoneActions.save.mutateAsync({ name, ring: draft ?? [] }); setDraft(null); setZoneId(id) }}
             onRemove={(id) => { changed(); setZoneId(ALL); zoneActions.remove.mutate(id) }}
             saving={zoneActions.save.isPending} error={zoneActions.save.error?.message ?? null}
           />
+          {/* On a phone the map goes right under the zone, so drawing it is in reach. */}
+          {wide ? null : map}
           <PlanSetup
             goal={goal} onGoal={(g) => { changed(); setGoal(g) }} filters={filters} onFilters={(p) => { changed(); setFilters((f) => ({ ...f, ...p })) }}
             count={count} onCount={(n) => { changed(); setCount(n) }} mode={mode} onMode={(m) => { changed(); setMode(m) }}
@@ -135,13 +153,7 @@ export function PlanRoutePage({ date: wanted, person }: PlanSearch) {
         </section>
 
         <div className={styles.side}>
-          {points.isPending ? <Skeleton height={360} /> : points.error ? <Banner tone="error">No pudimos cargar los locales. Revisá la conexión.</Banner> : (
-            <Suspense fallback={<Skeleton height={360} />}>
-              <PlanMap candidates={fit} stops={(plan?.stops ?? []).map((s) => ({ id: s.id, lat: s.lat, lng: s.lng, label: s.address }))} line={plan?.line ?? null}
-                zone={ring} drawing={Boolean(draft)} onDrawPoint={(p) => setDraft((d) => (d ? [...d, p] : d))}
-                frameKey={JSON.stringify([zoneId, plan?.stops.map((s) => s.id), draft === null, points.data?.length])} />
-            </Suspense>
-          )}
+          {wide ? map : null}
           {plan ? (
             <PlanResult plan={plan} today={today} onRemove={(id) => void build(plan.stops.filter((s) => s.id !== id), false)} short={short}
               people={team.data ?? []} personId={personId} onPerson={setPersonId} dayLabel={dayLabel}
