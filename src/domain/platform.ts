@@ -27,6 +27,8 @@ export interface PlatformCompany {
   aiCustomLimit: number | null
   /** Until when my support session for this company is open, if it is. */
   supportUntil: string | null
+  /** Closed by its admin: nobody gets in until it is reopened. */
+  closedAt: string | null
 }
 
 export interface PlatformTotals {

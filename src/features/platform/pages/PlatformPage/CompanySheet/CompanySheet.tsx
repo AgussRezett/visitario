@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { Eye, KeyRound, Save } from 'lucide-react'
+import { Eye, KeyRound, RotateCcw, Save } from 'lucide-react'
 import { formatBytes, KIND_LABEL, type PlanKind } from '@/domain/company'
 import { formatDayMonth, formatTime, todayInArgentina } from '@/domain/dates'
 import { PLAN_SHORT, STATUS_LABEL, formatUsd, peopleLabel, supportOpen, type PlatformCompany, type SubscriptionStatus } from '@/domain/platform'
@@ -18,7 +18,7 @@ const STATES = (['active', 'expired', 'canceled'] as const).map((s) => ({ value:
 
 /** One company: its numbers, its plan, and a support session to look at it read-only. */
 export function CompanySheet({ company, onClose }: { company: PlatformCompany | null; onClose: () => void }) {
-  const { setPlan, setAiLimit, startSupport } = usePlatform()
+  const { setPlan, setAiLimit, startSupport, reopen } = usePlatform()
   const [plan, setPlanKind] = useState<PlanKind>('pilot')
   const [status, setStatus] = useState<SubscriptionStatus>('active')
   const [endsOn, setEndsOn] = useState('')
@@ -56,6 +56,15 @@ export function CompanySheet({ company, onClose }: { company: PlatformCompany | 
 
   return (
     <Sheet open onClose={onClose} title={company.name} subtitle={`${KIND_LABEL[company.kind]} · alta ${formatDayMonth(todayInArgentina(new Date(company.createdAt)), true)}`}>
+      {company.closedAt ? (
+        <Banner tone="warn" title={`Cerrada por su admin el ${formatDayMonth(todayInArgentina(new Date(company.closedAt)), true)}`}>
+          <p>Nadie entra; no se borró nada. Sus admins la pueden reabrir durante 30 días; después, solo desde acá.</p>
+          {reopen.error ? <p>{reopen.error.message}</p> : null}
+          <Button variant="secondary" size="md" loading={reopen.isPending} onClick={() => reopen.mutate(company.id)}>
+            <RotateCcw size={18} aria-hidden />Reabrir la empresa
+          </Button>
+        </Banner>
+      ) : null}
       <dl className={styles.facts}>
         {facts.map(([k, v]) => (
           <div key={k} className={styles.fact}><dt>{k}</dt><dd>{v}</dd></div>

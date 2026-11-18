@@ -15,6 +15,7 @@ import { getThemeChoice, setThemeChoice, type ThemeChoice } from '@/features/pro
 import { EmailRow } from './EmailRow'
 import { PersonalDataCard } from './PersonalDataCard'
 import { ProfileHeader } from './ProfileHeader'
+import { ClosedCompanies } from '@/features/admin/components/ClosedCompanies'
 import { SecurityCard } from './SecurityCard'
 import { InstallRow } from '@/features/install/components/InstallRow'
 import styles from './ProfilePage.module.scss'
@@ -64,6 +65,7 @@ export function ProfilePage({ me }: { me: Me & { person: NonNullable<Me['person'
               <p className={styles.empty}>Todavía no pertenecés a ninguna empresa.</p>
             )}
             <Invitations invitations={me.invitations} />
+            <ClosedCompanies />
             {me.isPlatformAdmin ? (
               <Link to="/platform" className={buttonClass('secondary', 'md', styles.platform)}>
                 <ShieldCheck size={18} aria-hidden />Panel de Visitario · super admin

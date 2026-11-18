@@ -27,7 +27,8 @@ export function PlatformPage() {
   const now = new Date()
   const t = totals.data
 
-  const status = (c: PlatformCompany) => (c.status ? <span className={styles.chip} data-tone={TONE[c.status]}>{STATUS_LABEL[c.status]}</span> : null)
+  const status = (c: PlatformCompany) => (c.closedAt ? <span className={styles.chip} data-tone="closed">Cerrada</span>
+    : c.status ? <span className={styles.chip} data-tone={TONE[c.status]}>{STATUS_LABEL[c.status]}</span> : null)
   const since = (c: PlatformCompany) => `Alta ${formatDayMonth(todayInArgentina(new Date(c.createdAt)), true)}`
 
   return (
