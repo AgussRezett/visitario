@@ -39,11 +39,44 @@ export function defaultModel() {
   return set && !set.startsWith('@cf/') ? set : 'claude-haiku-5-5'
 }
 
-export async function readImage(image: string, type: string, model = defaultModel()): Promise<Reading> {
-  return provider === 'cloudflare' ? readWithCloudflare(image, type, model) : readWithClaude(image, type, model)
+export interface Image {
+  data: string
+  type: string
 }
 
-async function readWithCloudflare(image: string, type: string, model: string): Promise<Reading> {
+/** What to ask: one capture, or the slices of a long one (the overlap is not repeated). */
+const ask = (n: number) => n > 1
+  ? `Estas ${n} imágenes son partes de UNA misma captura larga, en orden de arriba hacia abajo, y se superponen un poco. Transcribí la lista completa una sola vez: todas las filas, sin repetir las que aparecen en dos partes.`
+  : 'Transcribí esta captura.'
+
+export async function readImage(images: Image[], model = defaultModel()): Promise<Reading> {
+  const read = (some: Image[]) => (provider === 'cloudflare' ? readWithCloudflare(some, model) : readWithClaude(some, model))
+  try {
+    return await read(images)
+  } catch (e) {
+    // A model that takes one image at a time: each slice on its own, the rows joined in order.
+    if (images.length < 2 || !(e instanceof ProviderError) || e.message !== 'ai_failed') throw e
+    const parts = await Promise.all(images.map((i) => read([i])))
+    return { transcript: joinTranscripts(parts.map((p) => p.transcript)), model, cost: parts.reduce((n, p) => n + p.cost, 0) }
+  }
+}
+
+/** Slices read one by one as one list: the first one's title and column titles, each row once. */
+function joinTranscripts(parts: (Transcript | null)[]): Transcript | null {
+  const read = parts.filter((p): p is Transcript => p !== null)
+  const [first] = read
+  if (!first) return null
+  const seen = new Set<string>()
+  const rows = read.flatMap((p) => p.rows).filter((r) => {
+    const key = r.join('|')
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+  return { title: first.title, headers: first.headers.length ? first.headers : read.find((p) => p.headers.length)?.headers ?? [], rows, unreadable: read.reduce((n, p) => n + p.unreadable, 0) }
+}
+
+async function readWithCloudflare(images: Image[], model: string): Promise<Reading> {
   const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${cfAccount}/ai/v1/chat/completions`, {
     method: 'POST',
     signal: AbortSignal.timeout(90_000),
@@ -57,8 +90,8 @@ async function readWithCloudflare(image: string, type: string, model: string): P
         {
           role: 'user',
           content: [
-            { type: 'text', text: 'Transcribí esta captura.' },
-            { type: 'image_url', image_url: { url: `data:${type};base64,${image}` } },
+            { type: 'text', text: ask(images.length) },
+            ...images.map((i) => ({ type: 'image_url', image_url: { url: `data:${i.type};base64,${i.data}` } })),
           ],
         },
       ],
@@ -81,7 +114,7 @@ async function readWithCloudflare(image: string, type: string, model: string): P
   }
 }
 
-async function readWithClaude(image: string, type: string, model: string): Promise<Reading> {
+async function readWithClaude(images: Image[], model: string): Promise<Reading> {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     signal: AbortSignal.timeout(90_000),
@@ -92,8 +125,8 @@ async function readWithClaude(image: string, type: string, model: string): Promi
       messages: [{
         role: 'user',
         content: [
-          { type: 'image', source: { type: 'base64', media_type: type, data: image } },
-          { type: 'text', text: PROMPT },
+          ...images.map((i) => ({ type: 'image', source: { type: 'base64', media_type: i.type, data: i.data } })),
+          { type: 'text', text: `${PROMPT}\n\n${ask(images.length)}` },
         ],
       }],
       output_config: { format: { type: 'json_schema', schema: SCHEMA } },

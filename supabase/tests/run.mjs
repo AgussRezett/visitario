@@ -209,6 +209,18 @@ const staleStore = (await sys(`select store_id from visit where id = $1`, [vStal
 const vFresh = (await as('agus', `select add_visit($1, p_store => $2) id`, [wNext, staleStore]))[0].id
 const sameStore = (await sys(`select (select store_id from visit where id = $1) = (select store_id from visit where id = $2) same`, [vStale, vFresh]))[0].same
 check('…until the same store has a newer visit of mine', sameStore && !(await as('agus', `select visit_id from resumable_visits($1, '2026-10-14')`, [panda])).some(r => r.visit_id === vStale))
+{
+  // A visit the supervisor already approved is not offered, and dismissing the rest skips it (it is locked).
+  const vOk = (await as('agus', `select add_visit($1, p_address => 'Ciudad de la Paz 353') id`, [wOwn]))[0].id
+  const vLeft = (await as('agus', `select add_visit($1, p_address => 'Ciudad de la Paz 561') id`, [wOwn]))[0].id
+  // As in production: a closed visit the supervisor approved (set directly, past the review flow's guards).
+  await sys(`set session_replication_role = replica`)
+  await sys(`update visit set work_status = 'closed', consent = 'closed', finished_at = now(), review_status = 'approved', reviewed_at = now() where id = $1`, [vOk])
+  await sys(`set session_replication_role = origin`)
+  const offered = (await as('agus', `select visit_id from resumable_visits($1, '2026-10-14')`, [panda])).map((r) => r.visit_id)
+  check('An approved visit is not offered to resume', !offered.includes(vOk) && offered.includes(vLeft))
+  check('Dismissing with an approved one among them does not fail: the rest are dismissed', (await as('agus', `select dismiss_resumable($1) n`, [[vOk, vLeft]]))[0].n === 1)
+}
 check('Only the last 7 days are offered', (await as('agus', `select visit_id from resumable_visits($1, '2026-12-01')`, [panda])).length === 0);
 
 // ---- The storefront photo decides whether the visit started

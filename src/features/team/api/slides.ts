@@ -97,15 +97,7 @@ function toSlideVisit(r: Row): SlideVisit {
   }
 }
 
-/**
- * A photo's file, through Visitario's photos function: the bucket only lets the browser show
- * its links, not read them, so the bytes come this way (with the same permissions).
- */
-export async function photoFile(id: string): Promise<Blob> {
-  const { data, error } = await supabase.functions.invoke<Blob>('photos/file', { body: { id } })
-  if (error || !(data instanceof Blob) || !data.size) throw new Error('photo')
-  return data
-}
+export { photoFile } from '@/features/workday/api/photos'
 
 /** Where the company's backgrounds are (public files in the "slides" bucket). */
 export const slideAssetUrl = (path: string | null) => (path ? supabase.storage.from('slides').getPublicUrl(path).data.publicUrl : null)
