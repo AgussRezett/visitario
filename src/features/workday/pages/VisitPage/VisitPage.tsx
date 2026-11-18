@@ -21,6 +21,7 @@ import { useVisitActions } from './useVisitActions'
 import { StoreInfo } from './StoreInfo'
 import { LocationSheet } from './LocationSheet'
 import { StoreHistory } from './StoreHistory'
+import { KnownNames } from '@/features/stores/components/KnownNames'
 import { IssuesSection } from './IssuesSection'
 import { PhotoStrip } from './PhotoStrip'
 import { ArrivalSection } from './ArrivalSection'
@@ -163,6 +164,7 @@ function VisitBody(props: {
 
           <div className={styles.columns}>
             <div className={styles.column}>
+              <KnownNames storeId={v.store.id} />
               <div className={styles.arrival}>
                 <ArrivalSection visit={v} urlFor={urlFor} onArrive={actions.arrive} busy={actions.uploading} onView={(id) => onView({ photos: storefront, startId: id, title: 'Fachada' })} />
               </div>
