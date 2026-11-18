@@ -15,6 +15,21 @@ export async function handleIssues({ path, url, req, route, state, json, body }:
     await p
     return true as const
   }
+  // Known names of a store: add, fix, remove (deleted_at), list.
+  if (path.endsWith('/store_contact')) {
+    const contacts = (state.contacts ??= [])
+    if (req.method() === 'POST') {
+      contacts.push({ id: `k${contacts.length + 1}`, ...body(), deleted_at: null, created_at: new Date().toISOString() })
+      return done(route.fulfill({ status: 201 }))
+    }
+    if (req.method() === 'PATCH') {
+      const id = url.searchParams.get('id')?.slice(3)
+      const c = contacts.find((x) => x.id === id)
+      if (c) Object.assign(c, body())
+      return done(route.fulfill({ status: 204 }))
+    }
+    return done(json(contacts.filter((c) => keep(c, url.searchParams))))
+  }
   if (path.endsWith('/store_issue') && req.method() === 'POST') {
     const b = body()
     const issues = (state.issues ??= [])

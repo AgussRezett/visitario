@@ -19,6 +19,7 @@ import { usePhotoUrls } from '@/features/workday/api/photos'
 import { VisitPhotos } from './VisitPhotos'
 import { ClientIssues } from './ClientIssues'
 import { RequestCard } from './RequestCard'
+import { KnownNames } from '@/features/stores/components/KnownNames'
 import { VisitSheet } from './VisitSheet'
 import { SellerVisits } from './SellerVisits'
 import { sellerVisitsQuery } from '@/features/stores/api/seller-visits'
@@ -81,6 +82,8 @@ export function ClientPage({ storeId }: { storeId: string }) {
       </div>
 
       <SellerVisits storeId={s.id} store={s} me={ctx.firstName} />
+
+      <KnownNames storeId={s.id} />
 
       <RequestCard storeId={s.id} place={s.name ?? s.address} />
 

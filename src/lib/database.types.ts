@@ -1209,6 +1209,51 @@ export type Database = {
           },
         ]
       }
+      store_contact: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          id: string
+          name: string
+          note: string | null
+          role: string | null
+          store_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          id?: string
+          name: string
+          note?: string | null
+          role?: string | null
+          store_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          id?: string
+          name?: string
+          note?: string | null
+          role?: string | null
+          store_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       store_issue: {
         Row: {
           company_id: string
