@@ -49,7 +49,7 @@ test('ANTES for the whole visit, DESPUÉS one per kind of display: a message for
   await page.getByRole('button', { name: 'Copiar ANTES', exact: true }).click()
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe('ANTES\nCLIENTE: 1462\nTIPO DE EXHIBICION: 2 GÓNDOLA, PUNTERA')
   await page.getByRole('button', { name: 'Copiar DESPUÉS de Góndola (2)' }).click()
-  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe('DESPUÉS\nTIPO DE EXHIBICION: 2 GÓNDOLA')
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe('DESPUÉS\nTIPO DE EXHIBICION: GÓNDOLA')
   await page.getByRole('button', { name: 'Copiar DESPUÉS de Puntera' }).click()
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe('DESPUÉS\nTIPO DE EXHIBICION: PUNTERA')
 })

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildSends, nextSend, observationText, shareFileName } from './share-queue'
+import { albumCaption, buildSends, nextSend, observationText, shareFileName } from './share-queue'
 
 const photos = [
   { id: 'f1', kind: 'storefront' as const, displayId: null },
@@ -38,6 +38,10 @@ describe('share queue', () => {
       ['storefront', 'Fachada', ['f1']], ['before', 'ANTES', ['b1', 'b2']],
       ['after-type-1', 'DESPUÉS · Góndola (2)', ['a1', 'a1b']], ['after-type-2', 'DESPUÉS · Puntera', []],
     ])
+  })
+
+  it('several photos go as one album, the text apart (WhatsApp would repeat it on each)', () => {
+    expect([albumCaption(1), albumCaption(3)]).toEqual([false, true])
   })
 
   it('the next one skips what was sent and what has no photo yet', () => {

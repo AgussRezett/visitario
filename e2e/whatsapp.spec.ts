@@ -66,8 +66,11 @@ test('the activador sends the visit to WhatsApp one message at a time, with its 
   await sheet.getByRole('button', { name: 'Enviar ANTES · Puntera', exact: true }).click()
   await expect(sheet.getByText('2 de 5 enviados')).toBeVisible()
   await sheet.getByRole('button', { name: 'Enviar ANTES · Puntera', exact: true }).click()
+  // Two photos: one album, the text copied to paste once (WhatsApp would repeat it on each photo).
+  await expect(sheet.getByText('Van 2 fotos juntas y el texto queda copiado: pegalo en la primera, así sale una sola vez.')).toBeVisible()
   await sheet.getByRole('button', { name: 'Enviar DESPUÉS · Góndola', exact: true }).click()
-  await expect.poll(async () => (await shares(page))[3]?.files).toEqual(['DESPUÉS - Góndola.jpg', 'DESPUÉS - Góndola 2.jpg'])
+  await expect.poll(async () => (await shares(page))[3]).toEqual({ files: ['DESPUÉS - Góndola.jpg', 'DESPUÉS - Góndola 2.jpg'] })
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe('DESPUÉS\nTIPO DE EXHIBICION: GÓNDOLA')
   await expect(sheet.getByText('4 de 5 enviados')).toBeVisible()
   await expect(sheet.getByText('Lo que falta se habilita cuando saques sus fotos.')).toBeVisible()
   await page.screenshot({ path: `test-results/whatsapp-sent-${info.project.name}.png` })

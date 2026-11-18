@@ -20,7 +20,7 @@ export interface MessageGroup {
   key: string
   label: string | null
   displayIds: string[] | null
-  /** "Puntera", "3 Góndola"; undefined: the whole visit's list. */
+  /** "Puntera", "Góndola": the kind, once; undefined: the whole visit's list. */
   displays?: string
 }
 
@@ -41,6 +41,6 @@ export function messageGroups(displays: readonly { id: string; typeId: number; n
     key: `type-${typeId}`,
     label: t.ids.length > 1 ? `${t.name} (${t.ids.length})` : t.name,
     displayIds: t.ids,
-    displays: t.ids.length > 1 ? `${t.ids.length} ${t.name}` : t.name,
+    displays: t.name,
   }))
 }
