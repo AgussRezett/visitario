@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import { Camera, Cloud, Crop as CropIcon, Download, RefreshCw, Share2, Trash2, X, Clock } from 'lucide-react'
 import type { Crop } from '@/domain/crop'
 import { formatTime } from '@/domain/dates'
@@ -28,10 +28,15 @@ interface PhotoViewerProps {
   onCrop?: (photo: Photo, crop: Crop | null) => unknown
   /** The photo as it is now (its crop may have changed since the viewer opened). */
   latest?: (id: string) => Photo | undefined
+  /** Each photo's own title, when the photos are of different displays ("1 Primaria · antes"). */
+  captionFor?: (photo: Photo) => string | undefined
 }
 
+// A horizontal drag this long (px), more sideways than down, moves to the next or previous photo.
+const SWIPE = 48
+
 /** Full-screen viewer for the photos of a visit or a display (wireframes A15 / AD12). */
-export function PhotoViewer({ photos, startId, title, subtitle, urlFor, onClose, onReplace, onDelete, onRetry, onCrop, latest }: PhotoViewerProps) {
+export function PhotoViewer({ photos, startId, title: fallbackTitle, subtitle, urlFor, onClose, onReplace, onDelete, onRetry, onCrop, latest, captionFor }: PhotoViewerProps) {
   const ref = useRef<HTMLDialogElement>(null)
   const [index, setIndex] = useState(0)
   const open = startId !== null
@@ -49,11 +54,40 @@ export function PhotoViewer({ photos, startId, title, subtitle, urlFor, onClose,
   const listed = photos[index]
   const photo = (listed && latest?.(listed.id)) ?? listed
   const url = photo ? urlFor(photo.id) : undefined
+  const [cropping, setCropping] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const title = (listed && captionFor?.(listed)) || fallbackTitle
+  const many = photos.length > 1
+  const move = (step: number) => setIndex((i) => (i + step + photos.length) % photos.length)
+
+  // Swiping on the phone: a sideways drag moves; the tap that ends it is not a second move.
+  const start = useRef<{ x: number; y: number } | null>(null)
+  const swiped = useRef(false)
+  const onPointerDown = (e: PointerEvent) => {
+    start.current = { x: e.clientX, y: e.clientY }
+    swiped.current = false
+  }
+  const onPointerUp = (e: PointerEvent) => {
+    const from = start.current
+    start.current = null
+    if (!from || !many) return
+    const dx = e.clientX - from.x
+    if (Math.abs(dx) < SWIPE || Math.abs(dx) < Math.abs(e.clientY - from.y)) return
+    swiped.current = true
+    move(dx < 0 ? 1 : -1)
+  }
+  const tap = (step: number) => () => {
+    if (swiped.current) swiped.current = false
+    else move(step)
+  }
+  const onKeyDown = (e: KeyboardEvent) => {
+    if (!many || cropping) return
+    if (e.key === 'ArrowRight') move(1)
+    else if (e.key === 'ArrowLeft') move(-1)
+  }
   const uploadState = useUploadState(photo?.id)
   const failed = uploadState === 'failed'
   const online = useOnline()
-  const [cropping, setCropping] = useState(false)
-  const [saving, setSaving] = useState(false)
   const saveCrop = async (crop: Crop | null) => {
     if (!photo || !onCrop) return
     setSaving(true)
@@ -75,7 +109,7 @@ export function PhotoViewer({ photos, startId, title, subtitle, urlFor, onClose,
   }
 
   return (
-    <dialog ref={ref} className={styles.viewer} aria-label={title} onClose={(e) => e.target === e.currentTarget && onClose()}>
+    <dialog ref={ref} className={styles.viewer} aria-label={title} onKeyDown={onKeyDown} onClose={(e) => e.target === e.currentTarget && onClose()}>
       {open && photo ? (
         <div className={styles.frame}>
           <div className={styles.bar}>
@@ -87,12 +121,12 @@ export function PhotoViewer({ photos, startId, title, subtitle, urlFor, onClose,
               <span className={styles.subtitle}>Foto {index + 1} de {photos.length} · {subtitle}</span>
             </div>
           </div>
-          <div className={styles.stage}>
-            {photos.length > 1 ? <button type="button" className={styles.prev} aria-label="Foto anterior" onClick={() => setIndex((i) => (i - 1 + photos.length) % photos.length)} /> : null}
+          <div className={styles.stage} onPointerDown={onPointerDown} onPointerUp={onPointerUp} onPointerCancel={() => { start.current = null }}>
+            {many ? <button type="button" className={styles.prev} aria-label="Foto anterior" onClick={tap(-1)} /> : null}
             {url ? <PhotoImage url={url} frame={photo} fit="contain" alt={`${title}, foto ${index + 1}`} className={styles.image} /> : <span className={styles.loading}>Cargando…</span>}
-            {photos.length > 1 ? <button type="button" className={styles.next} aria-label="Foto siguiente" onClick={() => setIndex((i) => (i + 1) % photos.length)} /> : null}
+            {many ? <button type="button" className={styles.next} aria-label="Foto siguiente" onClick={tap(1)} /> : null}
           </div>
-          {photos.length > 1 ? (
+          {many ? (
             <div className={styles.dots} aria-hidden>
               {photos.map((p, i) => (
                 <span key={p.id} className={i === index ? styles.dotOn : styles.dot} />
