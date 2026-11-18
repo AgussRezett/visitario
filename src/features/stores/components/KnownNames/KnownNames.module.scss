@@ -1,0 +1,96 @@
+@use '@/styles/abstracts' as *;
+
+.card {
+  @include surface;
+  @include flex(column, $gap: space(2));
+  padding: space(4);
+}
+
+.head {
+  @include flex(row, $align: center, $justify: space-between);
+  min-height: $touch-target;
+}
+
+.label {
+  @include eyebrow;
+}
+
+.list {
+  @include flex(column);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  @include flex(row, $gap: space(2), $align: center);
+  min-height: $touch-target;
+
+  & + & {
+    border-top: 1px solid $color-line;
+  }
+}
+
+.icon {
+  flex-shrink: 0;
+  color: $color-ink-muted;
+}
+
+.text {
+  @include flex(column, $gap: space(0.5));
+  flex: 1;
+  min-width: 0;
+  padding: space(2) 0;
+}
+
+.name {
+  @include text(base);
+  font-weight: $weight-bold;
+  overflow-wrap: anywhere;
+}
+
+.role {
+  font-weight: $weight-medium;
+  color: $color-ink-muted;
+}
+
+.note {
+  @include text(label);
+  color: $color-ink-muted;
+  overflow-wrap: anywhere;
+}
+
+.action {
+  @include flex(row, $align: center, $justify: center);
+  flex-shrink: 0;
+  width: $touch-target;
+  height: $touch-target;
+  border: 0;
+  border-radius: $radius-full;
+  background: transparent;
+  color: $color-ink-muted;
+  cursor: pointer;
+
+  @include hover {
+    background: $color-muted;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $color-focus;
+  }
+}
+
+.help {
+  @include text(label);
+  margin: 0;
+  color: $color-ink-muted;
+}
+
+.form {
+  @include flex(column, $gap: space(3));
+}
+
+.buttons {
+  @include flex(row, $gap: space(2));
+  flex-wrap: wrap;
+}
