@@ -41,6 +41,7 @@ export const platformCompaniesQuery = queryOptions({
       aiLimit: r.ai_limit,
       aiCustomLimit: r.ai_custom_limit,
       supportUntil: r.support_until,
+      closedAt: r.closed_at,
     }))
   },
 })
@@ -139,5 +140,13 @@ export function usePlatform() {
     onSuccess: refresh,
   })
 
-  return { create, setPlan, setAiLimit, startSupport }
+  const reopen = useMutation({
+    mutationFn: async (companyId: string) => {
+      const { error } = await supabase.rpc('platform_reopen_company', { p_company: companyId })
+      if (error) throw fail(error)
+    },
+    onSuccess: refresh,
+  })
+
+  return { create, setPlan, setAiLimit, startSupport, reopen }
 }

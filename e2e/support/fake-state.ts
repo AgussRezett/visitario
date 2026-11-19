@@ -90,6 +90,8 @@ export interface FakeState {
   storeHistory?: Row[]
   pastVisits?: Record<string, Row>
   /** What reading a capture with AI answers: its transcript, or an error status. */
+  /** Closing the company: today's published days, and the companies closed (with their memberships as they were). */
+  closure?: { daysToday?: number; closed?: (Row & { kept?: Row[] })[] }
   /** Known names of stores (store_contact rows). */
   contacts?: Row[]
   /** A PDF with indications, as read-brief answers: the pages' text and the AI's reading. */

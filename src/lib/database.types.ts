@@ -2000,6 +2000,17 @@ export type Database = {
         Returns: { month_used: number; month_limit: number; my_today: number; my_daily_limit: number | null }[]
       }
       company_ai_usage: { Args: { p_company: string }; Returns: Json }
+      company_close_preview: {
+        Args: { p_company: string }
+        Returns: { name: string; kind: Database["public"]["Enums"]["company_kind"]; members: number; invited: number; stores: number; days_today: number }[]
+      }
+      close_company: { Args: { p_company: string; p_name: string; p_reason?: string | null }; Returns: string }
+      my_closed_companies: {
+        Args: never
+        Returns: { company_id: string; name: string; closed_at: string; closed_by: string; reopen_until: string }[]
+      }
+      reopen_company: { Args: { p_company: string }; Returns: undefined }
+      platform_reopen_company: { Args: { p_company: string }; Returns: undefined }
       platform_set_ai_limit: {
         Args: { p_company: string; p_limit: number | null }
         Returns: undefined
@@ -2293,6 +2304,7 @@ export type Database = {
           visits_30d: number
           ai_limit: number
           ai_custom_limit: number | null
+          closed_at: string | null
         }[]
       }
       platform_create_company: {

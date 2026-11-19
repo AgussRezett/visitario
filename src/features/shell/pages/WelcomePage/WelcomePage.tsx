@@ -11,6 +11,7 @@ import { Card } from '@/ui/Card'
 import { Banner } from '@/ui/Banner'
 import { Logo } from '@/ui/Logo'
 import { PersonAvatar } from '@/features/people/PersonAvatar'
+import { ClosedCompanies } from '@/features/admin/components/ClosedCompanies'
 import styles from './WelcomePage.module.scss'
 
 /** Shown to a person with no active company: accept an invitation, wait for one, or work self-employed. */
@@ -59,6 +60,8 @@ export function WelcomePage() {
           <Invitations invitations={me.invitations} />
         </div>
       ) : null}
+
+      <ClosedCompanies />
 
       <div className={styles.choices}>
         <Card className={styles.choice}>

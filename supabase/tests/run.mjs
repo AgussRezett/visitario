@@ -1449,6 +1449,60 @@ await expectError('A company cannot lose its last admin', () => as('carla', `upd
   await expectError('…nor write the log', () => as('carla', `insert into ai_event (company_id) values ($1)`, [panda]))
 }
 
+{
+  console.log('\nClosing a company');
+  // A company of its own: Beto is its admin, Lucía works there, Carla is invited.
+  const [{ id: kiosco }] = await sys(`insert into company (name, kind) values ('Kiosco Sur', 'distributor') returning id`)
+  const [beto, lucia, carla] = [await pid('beto'), await pid('lucia'), await pid('carla')]
+  await sys(`insert into membership (company_id, person_id, roles, status) values ($1, $2, '{admin}', 'active'), ($1, $3, '{merchandiser}', 'active'), ($1, $4, '{supervisor}', 'invited')`, [kiosco, beto, lucia, carla])
+  await sys(`insert into store (company_id, address) values ($1, 'Calle Falsa 123')`, [kiosco])
+  // Whether someone is in: their own active membership there.
+  const mine = async (who) => (await as(who, `select company_id from membership where company_id = $1 and status = 'active' and person_id = $2`, [kiosco, await pid(who)])).length
+
+  const pre = (await as('beto', `select * from company_close_preview($1)`, [kiosco]))[0]
+  check(`The admin sees what closing leaves without access (${JSON.stringify(pre)})`, pre?.members === 2 && pre?.invited === 1 && pre?.stores === 1)
+  await expectError('Someone who works there cannot close it', () => as('lucia', `select close_company($1, 'Kiosco Sur')`, [kiosco]), /admins/)
+  await expectError('…nor see the preview', () => as('lucia', `select * from company_close_preview($1)`, [kiosco]), /admins/)
+  await expectError('Another company’s admin cannot close it', () => as('carla', `select close_company($1, 'Kiosco Sur')`, [kiosco]), /admins/)
+  await expectError('The name must be typed as it is', () => as('beto', `select close_company($1, 'Kiosco')`, [kiosco]), /name/)
+  const [{ id: own }] = await sys(`insert into company (name, kind, owner_person_id) values ('Beto', 'personal', $1) returning id`, [beto])
+  await sys(`insert into membership (company_id, person_id, roles, status) values ($1, $2, '{admin,merchandiser}', 'active')`, [own, beto])
+  await expectError('A self-employed account is not closed this way', () => as('beto', `select close_company($1, 'Beto')`, [own]), /personal/)
+
+  await as('beto', `select close_company($1, ' kiosco sur ', 'Cerramos el local')`, [kiosco])
+  check('Closed: nobody keeps access, not even its admin', (await mine('beto')) === 0 && (await mine('lucia')) === 0
+    && (await sys(`select count(*)::int n from membership where company_id = $1 and status = 'disabled'`, [kiosco]))[0].n === 3)
+  check('Its data is still there', (await sys(`select count(*)::int n from store where company_id = $1`, [kiosco]))[0].n === 1)
+  check('The admin no longer sees its stores', (await as('beto', `select id from store where company_id = $1`, [kiosco])).length === 0)
+  await expectError('The invitation cannot be accepted any more', () => as('carla', `update membership set status = 'active' where company_id = $1 and person_id = $2`, [kiosco, carla]).then(async () => {
+    if ((await sys(`select status from membership where company_id = $1 and person_id = $2`, [kiosco, carla]))[0].status !== 'active') throw new Error('not accepted')
+  }))
+  await expectError('Closing twice', () => sys(`select close_company($1, 'Kiosco Sur')`, [kiosco]))
+  check('The closure is not readable by the company people', (await as('beto', `select * from company_closure`)).length === 0
+    && (await as('lucia', `select * from company_closure`)).length === 0)
+  await expectError('…nor written by them', () => as('beto', `delete from company_closure where company_id = $1`, [kiosco]))
+
+  const closed = await as('beto', `select * from my_closed_companies()`)
+  check(`Its admin sees it closed, with 30 days to reopen (${closed.length})`, closed.length === 1 && closed[0].name === 'Kiosco Sur'
+    && closed[0].closed_by.startsWith('Beto') && new Date(closed[0].reopen_until) - Date.now() > 29 * 86_400_000)
+  check('Who only worked there does not', (await as('lucia', `select * from my_closed_companies()`)).length === 0)
+  await expectError('…and cannot reopen it', () => as('lucia', `select reopen_company($1)`, [kiosco]), /reopen/)
+  check('Visitario sees when it was closed', (await as('agus', `select closed_at from platform_companies() where id = $1`, [kiosco]))[0]?.closed_at !== null)
+
+  await as('beto', `select reopen_company($1)`, [kiosco])
+  check('Reopened: everything as it was', (await mine('beto')) === 1 && (await mine('lucia')) === 1
+    && (await sys(`select status from membership where company_id = $1 and person_id = $2`, [kiosco, carla]))[0].status === 'invited'
+    && (await sys(`select count(*)::int n from company_closure`))[0].n === 0)
+
+  await as('beto', `select close_company($1, 'Kiosco Sur')`, [kiosco])
+  await sys(`update company_closure set reopen_until = now() - interval '1 day' where company_id = $1`, [kiosco])
+  await expectError('After 30 days its admin cannot reopen it', () => as('beto', `select reopen_company($1)`, [kiosco]), /reopen/)
+  await expectError('…only Visitario', () => as('beto', `select platform_reopen_company($1)`, [kiosco]), /Visitario/)
+  await as('agus', `select platform_reopen_company($1)`, [kiosco])
+  check('Visitario reopens it', (await mine('beto')) === 1)
+  await expectError('The last admin still cannot be disabled outside closing', () => as('beto', `update membership set status = 'disabled' where company_id = $1 and person_id = $2`, [kiosco, beto]), /admin/)
+}
+
 console.log('\nQuery plan for visits as supervisor:');
 await db.exec(`set role authenticated; select set_config('request.jwt.claim.sub', '${U.martin}', false);`);
 for (const row of (await db.query(`explain select id from visit where work_date = '2026-10-09'`)).rows) console.log('  ' + row['QUERY PLAN']);

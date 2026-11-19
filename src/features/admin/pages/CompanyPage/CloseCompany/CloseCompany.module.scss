@@ -1,0 +1,21 @@
+@use '@/styles/abstracts' as *;
+
+.open {
+  align-self: flex-start;
+}
+
+.body {
+  @include flex(column, $gap: space(4));
+}
+
+.effects {
+  @include flex(column, $gap: space(2));
+  @include text(base);
+  margin: 0;
+  padding-left: space(5);
+}
+
+.actions {
+  @include flex(row, $gap: space(2), $justify: flex-end);
+  flex-wrap: wrap;
+}

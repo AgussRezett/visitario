@@ -1,0 +1,1 @@
+export { ClosedCompanies } from './ClosedCompanies'

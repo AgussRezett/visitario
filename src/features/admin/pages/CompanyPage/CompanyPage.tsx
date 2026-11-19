@@ -13,6 +13,7 @@ import { Switch } from '@/ui/Switch'
 import { useWorkContext } from '@/features/workday/context'
 import { companyQuery, exportCsv, saveFile, subscriptionQuery, usageQuery, useCompanyUpdate } from '@/features/admin/api/company'
 import { SupportLog } from './SupportLog'
+import { CloseCompany } from './CloseCompany'
 import { AiUsage } from './AiUsage'
 import { SlidesTemplate } from './SlidesTemplate'
 import styles from './CompanyPage.module.scss'
@@ -145,6 +146,8 @@ export function CompanyPage() {
         </section>
 
         <SupportLog companyId={ctx.companyId} cardClass={styles.card} headingClass={styles.heading} helpClass={styles.help} />
+
+        {ctx.personal ? null : <CloseCompany companyId={ctx.companyId} cardClass={styles.card} headingClass={styles.heading} helpClass={styles.help} />}
       </div>
     </div>
   )
