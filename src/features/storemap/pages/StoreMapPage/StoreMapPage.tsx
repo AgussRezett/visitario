@@ -34,6 +34,7 @@ const COLOR_OPTIONS: { value: ColorBy; label: string; seller?: boolean }[] = [
   { value: 'recency', label: 'Última visita' },
   { value: 'channel', label: 'Canal' },
   { value: 'rapport', label: 'Trato' },
+  { value: 'display', label: 'Exhibición' },
 ]
 
 /** The points of sale on a map: by seller, by how recently they were activated, by channel or by treatment. */
@@ -58,12 +59,15 @@ export function StoreMapPage({ point }: { point?: string }) {
   const sellers = useMemo(() => [...(catalogs?.sellers ?? [])].sort((a, b) => a.name.localeCompare(b.name, 'es')).map((s) => ({ id: s.id, name: s.name, personId: s.personId })), [catalogs])
   const channels = useMemo(() => (catalogs?.channels ?? []).map((c) => ({ id: c.id, name: c.name })), [catalogs])
   const all = useMemo(() => data.data ?? [], [data.data])
+  // The company's display types in its order; only those some point has take a color.
+  const displayTypes = useMemo(() => (catalogs?.displayTypes ?? []).map((t) => ({ id: t.id, name: t.name })), [catalogs])
+  const displayRank = useMemo(() => displayTypes.filter((t) => all.some((p) => p.displayTypes.includes(t.id))), [displayTypes, all])
   const shown = useMemo(() => applyFilters(all, f, today), [all, f, today])
   const located = useMemo(() => shown.filter((p) => p.lat !== null && p.lng !== null), [shown])
   // Colors for the ones with the most points (counted before filtering, so they stay put).
   const sellerRank = useMemo(() => rankByPoints(sellers, all, (p) => p.sellerId), [sellers, all])
   const channelRank = useMemo(() => rankByPoints(channels, all, (p) => p.channelId), [channels, all])
-  const paint = useMemo(() => painter(by, today, sellerRank, channelRank), [by, today, sellerRank, channelRank])
+  const paint = useMemo(() => painter(by, today, sellerRank, channelRank, displayRank, f.displayTypeIds), [by, today, sellerRank, channelRank, displayRank, f.displayTypeIds])
   const sellerColor = useMemo(() => colorsFor(sellerRank), [sellerRank])
   const facts = useMemo(() => insights(shown, sellers, today), [shown, sellers, today])
   const zoneList = useMemo((): Zone[] => {
@@ -82,7 +86,7 @@ export function StoreMapPage({ point }: { point?: string }) {
   const set = (patch: Partial<MapFilters>) => setF((x) => ({ ...x, ...patch }))
   const areas = areasOf(all)
   const filtered = JSON.stringify(f) !== JSON.stringify(NO_FILTERS)
-  const active = [f.areas, f.sellerIds, f.channelIds].filter((x) => x.length > 0).length + (f.staleOnly ? 1 : 0) + (f.query.trim().length >= 2 ? 1 : 0)
+  const active = [f.areas, f.sellerIds, f.channelIds, f.displayTypeIds].filter((x) => x.length > 0).length + (f.staleOnly ? 1 : 0) + (f.query.trim().length >= 2 ? 1 : 0)
   const current = all.find((p) => p.id === selected) ?? null
   const nameOf = (list: { id: number; name: string }[], id: number | null) => (id === null ? null : list.find((x) => x.id === id)?.name ?? null)
   const options = COLOR_OPTIONS.filter((o) => !(o.seller && asSeller))
@@ -112,6 +116,10 @@ export function StoreMapPage({ point }: { point?: string }) {
           ) : null}
           <MultiSelect label="Canal" values={f.channelIds.map(String)} onChange={(v) => set({ channelIds: toIds(v) })} allLabel="Todos" noun="canales"
             options={[...channels.map((c) => ({ value: String(c.id), label: c.name })), { value: '0', label: 'Sin canal' }]} />
+          {/* Choosing displays paints the points by them, so the map says which one each has. */}
+          <MultiSelect label="Exhibición" values={f.displayTypeIds.map(String)} noun="exhibiciones" allLabel="Todas"
+            onChange={(v) => { const ids = toIds(v); set({ displayTypeIds: ids }); if (ids.length) setBy('display') }}
+            options={[...displayTypes.map((t) => ({ value: String(t.id), label: t.name })), { value: '0', label: 'Sin exhibiciones registradas' }]} />
           <label className={styles.search}>
             <Search size={18} aria-hidden />
             <input value={f.query} onChange={(e) => set({ query: e.target.value })} placeholder="Nombre, dirección o nro." aria-label="Buscar un punto" />
@@ -162,7 +170,8 @@ export function StoreMapPage({ point }: { point?: string }) {
         </div>
       )}
 
-      <PointSheet point={current} today={today} asSeller={asSeller} channel={nameOf(channels, current?.channelId ?? null)} seller={nameOf(sellers, current?.sellerId ?? null)} onClose={() => setSelected(null)} />
+      <PointSheet point={current} today={today} asSeller={asSeller} channel={nameOf(channels, current?.channelId ?? null)} seller={nameOf(sellers, current?.sellerId ?? null)}
+        displays={(current?.displayTypes ?? []).map((id) => nameOf(displayTypes, id)).filter((n): n is string => n !== null)} onClose={() => setSelected(null)} />
     </div>
   )
 }

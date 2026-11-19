@@ -31,7 +31,7 @@ export interface PlanSearch {
   person?: string
 }
 
-const SETUP: SetupFilters = { areas: [], sellerIds: [], channelIds: [], minRapport: null, staleDays: null, includePlanned: false }
+const SETUP: SetupFilters = { areas: [], sellerIds: [], channelIds: [], displayTypeIds: [], minRapport: null, staleDays: null, includePlanned: false }
 
 /** Armar recorrido: a goal and filters, the stores that serve it best close together, into a day. */
 export function PlanRoutePage({ date: wanted, person }: PlanSearch) {
@@ -63,6 +63,7 @@ export function PlanRoutePage({ date: wanted, person }: PlanSearch) {
 
   const sellers = useMemo(() => [...(catalogs?.sellers ?? [])].sort((a, b) => a.name.localeCompare(b.name, 'es')).map((s) => ({ id: s.id, name: s.name, personId: s.personId })), [catalogs])
   const channels = useMemo(() => (catalogs?.channels ?? []).map((c) => ({ id: c.id, name: c.name })), [catalogs])
+  const displayTypes = useMemo(() => (catalogs?.displayTypes ?? []).map((t) => ({ id: t.id, name: t.name })), [catalogs])
   // It applies as soon as it has 3 corners: no name and nothing to save first.
   const ring = zone && zone.length >= 3 ? zone : null
   const cands = useMemo(() => toCandidates(points.data ?? [], pending.data ?? new Map()), [points.data, pending.data])
@@ -144,7 +145,7 @@ export function PlanRoutePage({ date: wanted, person }: PlanSearch) {
           <PlanSetup
             goal={goal} onGoal={(g) => { changed(); setGoal(g) }} filters={filters} onFilters={(p) => { changed(); setFilters((f) => ({ ...f, ...p })) }}
             count={count} onCount={(n) => { changed(); setCount(n) }} mode={mode} onMode={(m) => { changed(); setMode(m) }}
-            sellers={sellers} channels={channels} areas={areas}
+            sellers={sellers} channels={channels} areas={areas} displayTypes={displayTypes}
           />
           <p className={styles.fit} role="status">{points.data ? `${fit.length} ${fit.length === 1 ? 'local cumple' : 'locales cumplen'} los filtros` : ''}</p>
           <Button size="lg" onClick={() => void build()} disabled={fit.length < 2 || (drawing && !ring)} loading={busy} className={styles.build}>

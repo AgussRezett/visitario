@@ -47,6 +47,35 @@ test('the supervisor sees every point, by seller, with insights that filter the 
   await expect(page.getByRole('list', { name: 'Referencias' })).toContainText('Más de 30 días')
 })
 
+test('the supervisor sees where each display is: filter by type, and the points take its color', async ({ page }, info) => {
+  const typed = [
+    point('s1', { name: 'Coto Cabildo', display_types: [1, 12] }),
+    point('s2', { area: 'Palermo', lat: -34.58, lng: -58.43, display_types: [12] }),
+    point('s3', { area: 'Palermo', lat: -34.59, lng: -58.42, display_types: [11] }),
+    point('s4', { area: 'Núñez', lat: -34.54, lng: -58.47 }),
+  ]
+  const cat = { ...catalogs(), display_type: [{ id: 11, name: 'Paño', active: true, sort_order: 1 }, { id: 1, name: 'Puntera', active: true, sort_order: 2 }, { id: 12, name: 'Primaria', active: true, sort_order: 4 }, { id: 4, name: 'Isla', active: true, sort_order: 7 }] }
+  const state: FakeState = { workday: null, visits: [], uploads: [], memberships: role('supervisor'), catalogs: cat, mapPoints: typed }
+  await installFakeSupabase(page, state, 'supervisor')
+  await page.goto('/s/map')
+  await expect(page.getByText('4 puntos', { exact: true })).toBeVisible()
+  await page.getByRole('radio', { name: 'Exhibición' }).click()
+  // Only the types some point has take a color (no Isla), plus those without any.
+  const legend = page.getByRole('list', { name: 'Referencias' })
+  await expect(legend.getByRole('listitem')).toHaveText(['Paño', 'Puntera', 'Primaria', 'Sin exhibiciones registradas'])
+
+  if (info.project.name === 'mobile') await page.getByRole('button', { name: 'Filtros' }).click()
+  await pick(page.getByLabel('Exhibición', { exact: true }), 'Puntera')
+  await expect(page.getByText('1 de 4 puntos')).toBeVisible()
+  await pick(page.getByLabel('Exhibición', { exact: true }), 'Primaria')
+  await expect(page.getByText('2 de 4 puntos')).toBeVisible()
+  await expect(legend.getByRole('listitem')).toHaveText(['Puntera', 'Primaria', 'Sin exhibiciones registradas'])
+  await page.screenshot({ path: `test-results/storemap-displays-${info.project.name}.png`, fullPage: true })
+
+  await page.goto('/s/map?point=s1')
+  await expect(page.getByRole('dialog', { name: 'Coto Cabildo' }).getByText('Puntera, Primaria')).toBeVisible()
+})
+
 test('a point opens with its last activation and a way to its file', async ({ page }) => {
   const state: FakeState = { workday: null, visits: [], uploads: [], memberships: role('supervisor'), catalogs: catalogs(), mapPoints: points }
   await installFakeSupabase(page, state, 'supervisor')

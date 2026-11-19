@@ -1,6 +1,6 @@
 import { daysBetween } from './dates'
 import { levelOf, RAPPORT_SHORT, type Rapport } from './reputation'
-import { matchesAny } from './filters'
+import { matchesAny, matchesSome } from './filters'
 
 /** A point of sale on the map, with what the map colors and counts. */
 export interface MapPoint {
@@ -19,9 +19,11 @@ export interface MapPoint {
   visits90: number
   /** Average reputation (0 to 3), null when nobody rated it. */
   rapport: number | null
+  /** The display types of its last activation that recorded any; none when never recorded. */
+  displayTypes: number[]
 }
 
-export type ColorBy = 'seller' | 'recency' | 'channel' | 'rapport'
+export type ColorBy = 'seller' | 'recency' | 'channel' | 'rapport' | 'display'
 export type Recency = 'recent' | 'month' | 'stale' | 'never'
 
 /** Categorical hues in a fixed order (validated for color-blind separation). A 9th seller is "Otros". */
@@ -73,11 +75,26 @@ export function rankByPoints(items: readonly Named[], points: readonly MapPoint[
   return items.filter((x) => count.has(x.id)).sort((a, b) => (count.get(b.id) ?? 0) - (count.get(a.id) ?? 0) || a.name.localeCompare(b.name, 'es'))
 }
 
+/**
+ * The display type a point is painted with: its first one in the company's order, among
+ * those chosen in the filter when there is one (a store with a Puntera and a Primaria, with
+ * only Primaria chosen, shows as Primaria). Null when it has none.
+ */
+export function displayOf(p: Pick<MapPoint, 'displayTypes'>, types: readonly Named[], chosen: readonly number[] = []): number | null {
+  const has = (id: number) => p.displayTypes.includes(id) && (!chosen.length || chosen.includes(id))
+  return types.find((t) => has(t.id))?.id ?? p.displayTypes.find((id) => !chosen.length || chosen.includes(id)) ?? null
+}
+
 /** The color of a point, and the legend of the mode. */
-export function painter(by: ColorBy, today: string, sellers: readonly Named[], channels: readonly Named[]) {
+export function painter(by: ColorBy, today: string, sellers: readonly Named[], channels: readonly Named[], displays: readonly Named[] = [], chosenDisplays: readonly number[] = []) {
   const sellerColor = colorsFor(sellers)
   const channelColor = colorsFor(channels)
+  const displayColor = colorsFor(displays)
   const color = (p: MapPoint): string => {
+    if (by === 'display') {
+      const d = displayOf(p, displays, chosenDisplays)
+      return d === null ? NONE_COLOR : displayColor.get(d) ?? OTHER_COLOR
+    }
     if (by === 'seller') return p.sellerId === null ? NONE_COLOR : sellerColor.get(p.sellerId) ?? NONE_COLOR
     if (by === 'channel') return p.channelId === null ? NONE_COLOR : channelColor.get(p.channelId) ?? NONE_COLOR
     if (by === 'rapport') return p.rapport === null ? NONE_COLOR : RAPPORT_COLOR[levelOf(p.rapport)]
@@ -85,6 +102,7 @@ export function painter(by: ColorBy, today: string, sellers: readonly Named[], c
   }
   /** The legend entry a point belongs to (groups count their points by it). */
   const keyOf = (p: MapPoint): string => {
+    if (by === 'display') return String(displayOf(p, displays, chosenDisplays) ?? 'none')
     if (by === 'seller') return p.sellerId === null ? 'none' : String(p.sellerId)
     if (by === 'channel') return p.channelId === null ? 'none' : String(p.channelId)
     if (by === 'rapport') return p.rapport === null ? 'none' : levelOf(p.rapport)
@@ -97,6 +115,7 @@ export function painter(by: ColorBy, today: string, sellers: readonly Named[], c
   const legend: LegendItem[] =
     by === 'seller' ? named(sellers, sellerColor, 'Sin vendedor')
     : by === 'channel' ? named(channels, channelColor, 'Sin canal')
+    : by === 'display' ? named(chosenDisplays.length ? displays.filter((d) => chosenDisplays.includes(d.id)) : displays, displayColor, 'Sin exhibiciones registradas')
     : by === 'rapport' ? [...(Object.keys(RAPPORT_COLOR) as Rapport[]).map((r) => ({ key: r, label: RAPPORT_SHORT[r], color: RAPPORT_COLOR[r] })), { key: 'none', label: 'Sin calificar', color: NONE_COLOR }]
     : (Object.keys(RECENCY_COLOR) as Recency[]).map((r) => ({ key: r, label: RECENCY_LABEL[r], color: RECENCY_COLOR[r] }))
   return { color, keyOf, legend }
@@ -107,12 +126,14 @@ export interface MapFilters {
   areas: string[]
   sellerIds: number[]
   channelIds: number[]
+  /** Points with any of these display types; 0 for those without any recorded. */
+  displayTypeIds: number[]
   /** Only the points with no activation in 30 days (or never). */
   staleOnly: boolean
   query: string
 }
 
-export const NO_FILTERS: MapFilters = { areas: [], sellerIds: [], channelIds: [], staleOnly: false, query: '' }
+export const NO_FILTERS: MapFilters = { areas: [], sellerIds: [], channelIds: [], displayTypeIds: [], staleOnly: false, query: '' }
 
 const fold = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
@@ -122,6 +143,7 @@ export function applyFilters(points: readonly MapPoint[], f: MapFilters, today: 
     matchesAny(p.area, f.areas, '')
     && matchesAny(p.sellerId, f.sellerIds, 0)
     && matchesAny(p.channelId, f.channelIds, 0)
+    && matchesSome(p.displayTypes, f.displayTypeIds, 0)
     && (!f.staleOnly || ['stale', 'never'].includes(recencyOf(p, today).band))
     && (q.length < 2 || fold(`${p.name ?? ''} ${p.address} ${p.customerNumber ?? ''}`).includes(q)))
 }

@@ -1,15 +1,40 @@
 import { describe, expect, it } from 'vitest'
 import { daysBetween } from './dates'
-import { applyFilters, convexHull, insights, NO_FILTERS, NONE_COLOR, OTHER_COLOR, painter, rankByPoints, recencyOf, ringArcs, ringSize, SERIES, zoneOf, type MapPoint } from './store-map'
+import { applyFilters, convexHull, displayOf, insights, NO_FILTERS, NONE_COLOR, OTHER_COLOR, painter, rankByPoints, recencyOf, ringArcs, ringSize, SERIES, zoneOf, type MapPoint } from './store-map'
 
 const TODAY = '2026-10-25'
 const p = (id: string, extra: Partial<MapPoint> = {}): MapPoint => ({
   id, name: null, address: `Calle ${id}`, area: 'Belgrano', customerNumber: null, lat: -34.56, lng: -58.46, channelId: null, sellerId: null,
-  lastVisitDate: null, lastMerchandiser: null, visits30: 0, visits90: 0, rapport: null, ...extra,
+  lastVisitDate: null, lastMerchandiser: null, visits30: 0, visits90: 0, rapport: null, displayTypes: [], ...extra,
 })
 const sellers = [{ id: 10, name: 'Florencia' }, { id: 11, name: 'Pedro' }]
 
 describe('store map', () => {
+  const types = [{ id: 11, name: 'Paño' }, { id: 1, name: 'Puntera' }, { id: 12, name: 'Primaria' }]
+
+  it('filters by display type: any of the chosen, or the ones without any', () => {
+    const pts = [p('a', { displayTypes: [1, 12] }), p('b', { displayTypes: [12] }), p('c')]
+    const ids = (displayTypeIds: number[]) => applyFilters(pts, { ...NO_FILTERS, displayTypeIds }, TODAY).map((x) => x.id)
+    expect(ids([1])).toEqual(['a'])
+    expect(ids([1, 12])).toEqual(['a', 'b'])
+    expect(ids([0, 1])).toEqual(['a', 'c'])
+  })
+
+  it('paints a point by its first display in the company order, among the chosen ones', () => {
+    const both = p('a', { displayTypes: [12, 1] })
+    expect(displayOf(both, types)).toBe(1)
+    expect(displayOf(both, types, [12])).toBe(12)
+    expect(displayOf(p('b'), types)).toBeNull()
+    const paint = painter('display', TODAY, [], [], types)
+    expect(paint.color(both)).toBe(SERIES[1])
+    expect(paint.color(p('b'))).toBe(NONE_COLOR)
+    expect(paint.keyOf(both)).toBe('1')
+    expect(paint.legend.map((l) => l.label)).toEqual(['Paño', 'Puntera', 'Primaria', 'Sin exhibiciones registradas'])
+    // With a filter, the legend shows the chosen ones, in the same colors as before.
+    const chosen = painter('display', TODAY, [], [], types, [12])
+    expect(chosen.legend.map((l) => [l.label, l.color])).toEqual([['Primaria', SERIES[2]], ['Sin exhibiciones registradas', NONE_COLOR]])
+  })
+
   it('counts days and bands the last activation', () => {
     expect(daysBetween('2026-10-01', TODAY)).toBe(24)
     expect(recencyOf(p('a', { lastVisitDate: '2026-10-20' }), TODAY)).toEqual({ band: 'recent', days: 5 })

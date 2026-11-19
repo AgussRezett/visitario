@@ -20,6 +20,7 @@ interface PlanSetupProps {
   onMode: (m: TravelMode) => void
   sellers: { id: number; name: string; personId: string | null }[]
   channels: { id: number; name: string }[]
+  displayTypes: { id: number; name: string }[]
   areas: string[]
 }
 
@@ -38,7 +39,7 @@ const num = (v: string) => (v === 'any' ? null : v === 'never' ? NEVER : Number(
 const staleValue = (d: number | null) => (d === null ? 'any' : d === NEVER ? 'never' : String(d))
 
 /** What the route is for and which stores may go. */
-export function PlanSetup({ goal, onGoal, filters: f, onFilters: set, count, onCount, mode, onMode, sellers, channels, areas }: PlanSetupProps) {
+export function PlanSetup({ goal, onGoal, filters: f, onFilters: set, count, onCount, mode, onMode, sellers, channels, displayTypes, areas }: PlanSetupProps) {
   return (
     <>
       <fieldset className={styles.goals}>
@@ -58,6 +59,8 @@ export function PlanSetup({ goal, onGoal, filters: f, onFilters: set, count, onC
         <MultiSelect label="Barrio" values={f.areas} onChange={(v) => set({ areas: v })} allLabel="Todos" noun="barrios" options={areas.map((a) => ({ value: a, label: a }))} />
         <MultiSelect label="Canal" values={f.channelIds.map(String)} onChange={(v) => set({ channelIds: toIds(v) })} allLabel="Todos" noun="canales"
           options={[...channels.map((c) => ({ value: String(c.id), label: c.name })), { value: '0', label: 'Sin canal' }]} />
+        <MultiSelect label="Exhibición" values={f.displayTypeIds.map(String)} onChange={(v) => set({ displayTypeIds: toIds(v) })} allLabel="Todas" noun="exhibiciones"
+          options={[...displayTypes.map((t) => ({ value: String(t.id), label: t.name })), { value: '0', label: 'Sin exhibiciones registradas' }]} />
         <Select label="Trato" value={f.minRapport === null ? 'any' : String(f.minRapport)} onChange={(v) => set({ minRapport: num(v) })} options={RAPPORT_MIN} />
         <Select label="Sin activar hace" value={staleValue(f.staleDays)} onChange={(v) => set({ staleDays: num(v) })} options={STALE} />
         <Select label="Locales" value={count} onChange={(v) => onCount(Number(v))} options={countOptions(count).map((n) => ({ value: n, label: `${n} locales` }))} />
