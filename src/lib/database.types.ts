@@ -2171,6 +2171,7 @@ export type Database = {
           visits_30d: number
           visits_90d: number
           rapport: number | null
+          display_types: number[]
         }[]
       }
       company_catalogs: { Args: { p_company: string }; Returns: Json }

@@ -3,7 +3,7 @@
  * together. Pure rules; the order by streets comes from the route function afterwards.
  */
 import { daysBetween } from './dates'
-import { matchesAny } from './filters'
+import { matchesAny, matchesSome } from './filters'
 import { levelOf, RAPPORT_SHORT } from './reputation'
 import { distanceKm } from './route'
 import type { MapPoint } from './store-map'
@@ -32,6 +32,8 @@ export interface PlanFilters {
   areas: string[]
   sellerIds: number[]
   channelIds: number[]
+  /** Stores with any of these display types; 0 for those without any recorded. */
+  displayTypeIds: number[]
   /** Only stores rated at least this well (0 to 3); unrated ones stay out. */
   minRapport: number | null
   /** Only stores not activated in more than this many days (never activated count); NEVER: only those never activated. */
@@ -40,7 +42,7 @@ export interface PlanFilters {
   includePlanned: boolean
 }
 
-export const NO_PLAN_FILTERS: PlanFilters = { zone: null, areas: [], sellerIds: [], channelIds: [], minRapport: null, staleDays: null, includePlanned: false }
+export const NO_PLAN_FILTERS: PlanFilters = { zone: null, areas: [], sellerIds: [], channelIds: [], displayTypeIds: [], minRapport: null, staleDays: null, includePlanned: false }
 
 /** The route function solves up to 25 stops by streets. */
 export const MAX_STOPS = 25
@@ -87,6 +89,7 @@ function fits(c: Candidate, f: PlanFilters, today: string): boolean {
     if (d !== null && d <= f.staleDays) return false
   }
   return matchesAny(c.area, f.areas, '') && matchesAny(c.sellerId, f.sellerIds, 0) && matchesAny(c.channelId, f.channelIds, 0)
+    && matchesSome(c.displayTypes, f.displayTypeIds, 0)
 }
 
 /** How much a store serves the goal, 0 to 1. */

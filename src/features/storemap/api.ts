@@ -26,6 +26,7 @@ export const storeMapQuery = (companyId: string) =>
         visits30: r.visits_30d,
         visits90: r.visits_90d,
         rapport: r.rapport === null ? null : Number(r.rapport),
+        displayTypes: r.display_types ?? [],
       }))
     },
   })

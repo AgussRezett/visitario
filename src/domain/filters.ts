@@ -8,5 +8,10 @@ export function matchesAny<T>(value: T | null | undefined, wanted: readonly T[],
   return wanted.length === 0 || wanted.includes(value ?? none)
 }
 
+/** The same for something that has several (a store's display types): any of them passes; none is `none`. */
+export function matchesSome<T>(values: readonly T[], wanted: readonly T[], none: T): boolean {
+  return wanted.length === 0 || (values.length ? values.some((v) => wanted.includes(v)) : wanted.includes(none))
+}
+
 /** Ids from a filter's strings (a MultiSelect gives strings). */
 export const toIds = (values: readonly string[]) => values.map(Number).filter((n) => Number.isInteger(n) && n >= 0)

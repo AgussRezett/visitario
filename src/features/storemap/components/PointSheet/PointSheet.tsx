@@ -13,13 +13,15 @@ interface PointSheetProps {
   today: string
   channel: string | null
   seller: string | null
+  /** Its display types by name, as of its last activation that recorded any. */
+  displays: string[]
   /** A seller opens their client's page; supervisors and admins, the directory's. */
   asSeller: boolean
   onClose: () => void
 }
 
 /** A tapped balloon: who it is, when it was last activated and where to go from here. */
-export function PointSheet({ point: p, today, channel, seller, asSeller, onClose }: PointSheetProps) {
+export function PointSheet({ point: p, today, channel, seller, displays, asSeller, onClose }: PointSheetProps) {
   if (!p) return null
   const { band, days } = recencyOf(p, today)
   const last = p.lastVisitDate
@@ -29,6 +31,7 @@ export function PointSheet({ point: p, today, channel, seller, asSeller, onClose
     { label: 'Última activación', value: last },
     { label: 'Activaciones', value: `${p.visits30} en 30 días · ${p.visits90} en 90 días` },
     { label: 'Trato', value: p.rapport === null ? 'Sin calificar' : RAPPORT_SHORT[levelOf(p.rapport)] },
+    { label: 'Exhibiciones', value: displays.length ? displays.join(', ') : 'Sin registrar' },
     { label: 'Canal', value: channel ?? 'Sin canal' },
     ...(asSeller ? [] : [{ label: 'Vendedor', value: seller ?? 'Sin vendedor' }]),
   ]
