@@ -783,6 +783,13 @@ check('…someone who is not a seller sees none', (await as('agus', `select coun
   await sys(`update visit set work_status = 'done', finished_at = now() where id = $1`, [vMap])
   const point = (await as('nora', `select * from store_map($1)`, [panda]))[0]
   check('Map: the last activation, its counts and the reputation', point.last_visit_status === 'done' && point.last_merchandiser === 'Agustín' && Number(point.rapport) === 3)
+  check('Map: a point without displays recorded has none', Array.isArray(point.display_types) && point.display_types.length === 0)
+  // Its displays: those of its last activation that recorded any.
+  const [{ id: shelfType }] = await sys(`insert into display_type (company_id, name) values ($1, 'Góndola mapa') returning id`, [panda])
+  await sys(`insert into display (company_id, visit_id, display_type_id) values ($1, $2, $3), ($1, $2, $3), ($1, $2, $4)`, [panda, vMap, endcap, shelfType])
+  const typed = (await as('nora', `select display_types from store_map($1)`, [panda]))[0].display_types
+  check('Map: a point says its display types, each once', typed.length === 2 && typed.includes(endcap) && typed.includes(shelfType))
+  check('Map: another company never sees them', (await as('beto', `select count(*)::int n from store_map($1)`, [panda]))[0].n === 0)
   const h = (await as('nora', `select client_history($1, $2) j`, [panda, tagged]))[0].j
   check('Client history: the point and its activations, for its seller', h.store.id === tagged && h.visits.some((v) => v.id === vMap && v.merchandiser === 'Agustín Rezett'))
   const other = (await as('nora', `select id from store where company_id = $1 and id <> $2 limit 1`, [panda, tagged]))[0]

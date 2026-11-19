@@ -83,6 +83,17 @@ test('a zone is marked on the map and used as it is: no name, nothing to save', 
   await expect(page.getByRole('button', { name: 'Armar recorrido' })).toBeEnabled()
 })
 
+test('a route only with stores that have a given display', async ({ page }) => {
+  const s = state()
+  s.mapPoints = points.map((p, i) => ({ ...p, display_types: i < 3 ? [1] : [12] }))
+  s.catalogs = { ...s.catalogs, display_type: [{ id: 1, name: 'Puntera', active: true, sort_order: 1 }, { id: 12, name: 'Primaria', active: true, sort_order: 2 }] }
+  await installFakeSupabase(page, s, 'supervisor')
+  await page.goto('/s/plan?date=2026-11-20')
+  await expect(page.getByText('7 locales cumplen los filtros')).toBeVisible()
+  await pick(page.getByLabel('Exhibición', { exact: true }), 'Puntera')
+  await expect(page.getByText('3 locales cumplen los filtros')).toBeVisible()
+})
+
 test('Asignar and the map lead to it', async ({ page }, info) => {
   await installFakeSupabase(page, state(), 'supervisor')
   await page.goto('/s/assign?date=2026-11-20')

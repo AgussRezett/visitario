@@ -5,11 +5,20 @@ const TODAY = '2026-11-17'
 // Around Palermo: 0.001° is about 100 m.
 const store = (id: string, lng: number, lat: number, extra: Partial<Candidate> = {}): Candidate => ({
   id, name: null, address: `Calle ${id}`, area: 'Palermo', customerNumber: null, lat, lng, channelId: 1, sellerId: 7,
-  lastVisitDate: '2026-11-10', lastMerchandiser: null, visits30: 1, visits90: 2, rapport: null,
+  lastVisitDate: '2026-11-10', lastMerchandiser: null, visits30: 1, visits90: 2, rapport: null, displayTypes: [],
   openRequest: false, requestBy: null, openIssues: 0, plannedFor: null, ...extra,
 })
 
 describe('the stores a route may take', () => {
+  it('by display type: any of the chosen; 0 for those without any recorded', () => {
+    const cands = [store('a', -58.43, -34.58, { displayTypes: [1, 12] }), store('b', -58.431, -34.58, { displayTypes: [12] }), store('c', -58.432, -34.58)]
+    const ids = (displayTypeIds: number[]) => eligible(cands, { ...NO_PLAN_FILTERS, displayTypeIds }, TODAY).map((c) => c.id)
+    expect(ids([1])).toEqual(['a'])
+    expect(ids([12])).toEqual(['a', 'b'])
+    expect(ids([0])).toEqual(['c'])
+    expect(ids([])).toEqual(['a', 'b', 'c'])
+  })
+
   const zone: [number, number][] = [[-58.44, -34.59], [-58.42, -34.59], [-58.42, -34.57], [-58.44, -34.57]]
 
   it('a point inside a drawn zone, or not', () => {
