@@ -23,7 +23,6 @@ const state = (): FakeState => ({
     { store_id: 's3', open_request: true, request_by: 'Mirko', open_issues: 1, planned_for: null },
     { store_id: 's6', open_request: false, request_by: null, open_issues: 0, planned_for: 'Pedro' },
   ],
-  routeZones: [{ id: 'z1', name: 'Palermo', ring: [[-58.44, -34.59], [-58.42, -34.59], [-58.42, -34.57], [-58.44, -34.57]], deleted_at: null }],
 })
 
 test('the supervisor plans a route for a goal and puts it into a day', async ({ page }, info) => {
@@ -54,20 +53,25 @@ test('the supervisor plans a route for a goal and puts it into a day', async ({ 
   expect(s.addedToDay?.[0]?.stores).not.toContain('s1')
 })
 
-test('zones: pick a saved one, or start drawing a new one', async ({ page }, info) => {
+test('a zone is marked on the map and used as it is: no name, nothing to save', async ({ page }, info) => {
   await installFakeSupabase(page, state(), 'supervisor')
   await page.goto('/s/plan?date=2026-11-20')
   await expect(page.getByText('7 locales cumplen los filtros')).toBeVisible()
-  await pick(page.getByLabel('Zona', { exact: true }), 'Palermo')
-  await expect(page.getByText('5 locales cumplen los filtros')).toBeVisible()
+  // No saved zones to pick, and nothing to name.
+  await expect(page.getByRole('combobox', { name: 'Zona' })).toHaveCount(0)
+  await expect(page.getByText('Sin zona: toma locales de todo el mapa.')).toBeVisible()
   await choose(page, 'Trato', 'Buena onda')
   await expect(page.getByText('0 locales cumplen los filtros')).toBeVisible()
   await expect(page.getByText('Con estos filtros no hay locales')).toBeVisible()
   await choose(page, 'Trato', 'Cualquiera')
 
-  await page.getByRole('button', { name: 'Dibujar zona' }).click()
+  await page.getByRole('button', { name: 'Marcar zona' }).click()
   await expect(page.getByText('Tocá el mapa para marcar las esquinas de la zona (0 de al menos 3).')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Guardar zona' })).toBeDisabled()
+  await expect(page.getByLabel('Nombre de la zona')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Guardar zona' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Listo' })).toBeDisabled()
+  await page.screenshot({ path: `test-results/route-zone-${info.project.name}.png` })
+  // Until it has 3 corners there is no zone yet; with them, the route is built right away.
   await expect(page.getByRole('button', { name: 'Armar recorrido' })).toBeDisabled()
   // The map is right there, under the zone tools, not at the end of the page (headless browsers show its fallback).
   const map = page.getByRole('region', { name: /^Mapa/ }).or(page.getByText('No pudimos mostrar el mapa', { exact: false }))
@@ -75,7 +79,8 @@ test('zones: pick a saved one, or start drawing a new one', async ({ page }, inf
   const goalTop = (await page.getByText('Objetivo', { exact: true }).boundingBox())?.y ?? 0
   if (info.project.name === 'mobile') expect(mapTop).toBeLessThan(goalTop)
   await page.getByRole('button', { name: 'Cancelar' }).click()
-  await expect(page.getByRole('button', { name: 'Dibujar zona' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Marcar zona' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Armar recorrido' })).toBeEnabled()
 })
 
 test('Asignar and the map lead to it', async ({ page }, info) => {
@@ -92,8 +97,8 @@ test('Asignar and the map lead to it', async ({ page }, info) => {
 
 test('a route asked for in words: the AI fills in the form, only with what the lists have', async ({ page }, info) => {
   const s = state()
-  // The AI's answer, with a seller and a zone that exist, and one person that does not.
-  s.planRequest = { plan: { goal: 'overdue', seller_ids: [1], zone_id: 'z1', min_rapport: null, stale_days: 30, count: 7, mode: 'walking', merchandiser: 'Pedro', unknown: [] } }
+  // The AI's answer, with a seller that exists and one person that does not.
+  s.planRequest = { plan: { goal: 'overdue', seller_ids: [1], zone_id: null, min_rapport: null, stale_days: 30, count: 7, mode: 'walking', merchandiser: 'Pedro', unknown: [] } }
   await installFakeSupabase(page, s, 'supervisor')
   await page.goto('/s/plan?date=2026-11-20')
   await expect(page.getByText('Te quedan 30 usos de IA hoy.')).toBeVisible()
@@ -103,23 +108,19 @@ test('a route asked for in words: the AI fills in the form, only with what the l
   const read = page.getByRole('status').filter({ hasText: 'Entendí esto' })
   await expect(read).toContainText('Objetivo: Los más atrasados')
   await expect(read).toContainText('Vendedor: Mirko Ra')
-  await expect(read).toContainText('Zona: Palermo')
   await expect(read).toContainText('Sin activar hace más de 30 días')
   await expect(read).toContainText('7 locales') // as asked, not rounded to a usual count
   await expect(read).toContainText('No encontramos el activador "Pedro": lo dejamos afuera.')
   await expect(page.getByText('Te quedan 29 usos de IA hoy.')).toBeVisible()
   expect(s.planRequest.asked?.[0]).toContain('Mirko')
-  // The form now says it: the zone, the seller's stores in it (s6 is already planned).
-  await expect(page.getByText('5 locales cumplen los filtros')).toBeVisible()
+  // The form now says it: the seller's stores (s6 is already planned).
+  await expect(page.getByText('6 locales cumplen los filtros')).toBeVisible()
   await page.screenshot({ path: `test-results/route-plan-ai-${info.project.name}.png`, fullPage: true })
   await page.getByRole('button', { name: 'Armar recorrido' }).click()
   const result = page.getByRole('region', { name: 'Recorrido propuesto' })
-  await expect(result.getByText(/^5 locales/)).toBeVisible()
+  await expect(result.getByText(/^6 locales/)).toBeVisible()
   // Fewer fit than asked: said, not hidden.
-  await expect(result.getByText('Pediste 7, pero con estos filtros hay 5 locales en el mapa.', { exact: false })).toBeVisible()
-  // The zone picker is a normal control, not stretched.
-  const box = await page.getByRole('combobox', { name: 'Zona' }).boundingBox()
-  expect(box?.height ?? 0).toBeLessThan(64)
+  await expect(result.getByText('Pediste 7, pero con estos filtros hay 6 locales en el mapa.', { exact: false })).toBeVisible()
 })
 
 test('a written request without the AI on says so, and the form still works', async ({ page }) => {
