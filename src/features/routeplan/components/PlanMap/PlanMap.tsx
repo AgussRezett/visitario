@@ -74,13 +74,16 @@ export default function PlanMap({ candidates, stops, line, zone, drawing, onDraw
       for (const id of ['zone', 'corners', 'cands', 'route']) m.addSource(id, { type: 'geojson', data: empty })
       m.addLayer({ id: 'zone-fill', type: 'fill', source: 'zone', paint: { 'fill-color': accent, 'fill-opacity': 0.08 } })
       m.addLayer({ id: 'zone-line', type: 'line', source: 'zone', paint: { 'line-color': accent, 'line-width': 2, 'line-dasharray': [2, 1.5] } })
-      m.addLayer({ id: 'corners', type: 'circle', source: 'corners', paint: { 'circle-radius': 6, 'circle-color': accent, 'circle-stroke-color': '#fff', 'circle-stroke-width': 2 } })
-      // Stores inside the zone stand out: bigger, in the accent; the rest stay grey.
+      // Stores inside the zone stand out: bigger, filled in the accent; the rest stay grey.
       m.addLayer({ id: 'cands', type: 'circle', source: 'cands', paint: {
-        'circle-radius': ['case', ['get', 'inside'], 6, 4],
+        'circle-radius': ['case', ['get', 'inside'], 5.5, 4],
         'circle-color': ['case', ['get', 'inside'], accent, '#8a8a85'],
         'circle-opacity': ['case', ['get', 'inside'], 1, 0.7],
-        'circle-stroke-color': '#fff', 'circle-stroke-width': ['case', ['get', 'inside'], 2, 1],
+        'circle-stroke-color': '#fff', 'circle-stroke-width': ['case', ['get', 'inside'], 1.5, 1],
+      } })
+      // The zone's corners are handles, not stores: hollow white rings on the outline, over the dots.
+      m.addLayer({ id: 'corners', type: 'circle', source: 'corners', paint: {
+        'circle-radius': 7, 'circle-color': '#fff', 'circle-stroke-color': accent, 'circle-stroke-width': 3,
       } })
       m.addLayer({ id: 'route', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': accent, 'line-width': 4, 'line-opacity': 0.9 } })
       m.on('click', (e) => {
