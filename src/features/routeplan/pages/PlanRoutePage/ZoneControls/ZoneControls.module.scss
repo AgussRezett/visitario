@@ -5,10 +5,11 @@
   flex-wrap: wrap;
 }
 
-.pick,
-.name {
-  flex: 1 1 12rem;
-  min-width: 0;
+.summary {
+  @include text(label);
+  flex: 1 1 100%;
+  margin: 0;
+  color: $color-ink-muted;
 }
 
 // While drawing: a highlighted block, so it reads as a mode.

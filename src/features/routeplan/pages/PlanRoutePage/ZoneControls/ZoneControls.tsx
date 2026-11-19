@@ -1,65 +1,55 @@
-import { useState } from 'react'
-import { PenLine, Trash2, Undo2 } from 'lucide-react'
-import { Banner } from '@/ui/Banner'
+import { Check, PenLine, Undo2, X } from 'lucide-react'
 import { Button } from '@/ui/Button'
-import { Field } from '@/ui/Field'
-import { Select } from '@/ui/Select'
-import { ALL_ZONES as ALL, type RouteZone } from '@/features/routeplan/api'
 import styles from './ZoneControls.module.scss'
 
-
 interface ZoneControlsProps {
-  zones: RouteZone[]
-  /** While drawing: how many stores the filters take inside it. */
+  /** The zone's corners; null when the route may take stores anywhere. */
+  zone: [number, number][] | null
+  /** Tapping the map adds corners. */
+  drawing: boolean
+  /** How many stores the filters take inside the zone (once it has 3 corners). */
   inside: number | null
-  /** The saved zone in use, or ALL. */
-  zoneId: string
-  onZone: (id: string) => void
-  /** The corners tapped so far, while drawing; null when not drawing. */
-  draft: [number, number][] | null
   onDraw: () => void
   onUndo: () => void
-  onCancel: () => void
-  onSave: (name: string) => Promise<unknown>
-  onRemove: (id: string) => void
-  saving: boolean
-  error: string | null
+  onDone: () => void
+  onClear: () => void
 }
 
-/** Pick a saved zone, or draw a new one by tapping its corners on the map. */
-export function ZoneControls({ zones, inside, zoneId, onZone, draft, onDraw, onUndo, onCancel, onSave, onRemove, saving, error }: ZoneControlsProps) {
-  const [name, setName] = useState('')
+/** Optionally mark on the map where the route goes: it applies as soon as it has 3 corners, no name, nothing to save. */
+export function ZoneControls({ zone, drawing, inside, onDraw, onUndo, onDone, onClear }: ZoneControlsProps) {
+  const corners = zone?.length ?? 0
+  const ready = corners >= 3
+  const count = inside === null ? '' : `, con ${inside} ${inside === 1 ? 'local' : 'locales'} adentro`
 
-  if (draft) {
-    const ready = draft.length >= 3
+  if (drawing) {
     return (
       <div className={styles.drawing}>
-        <p className={styles.help}>
-          {ready ? `Zona de ${draft.length} esquinas${inside === null ? '' : `, con ${inside} ${inside === 1 ? 'local' : 'locales'} adentro`}. Seguí tocando para ajustarla, o ponele nombre.` : `Tocá el mapa para marcar las esquinas de la zona (${draft.length} de al menos 3).`}
+        <p className={styles.help} role="status">
+          {ready ? `Zona de ${corners} esquinas${count}. Seguí tocando para ajustarla, o armá el recorrido.` : `Tocá el mapa para marcar las esquinas de la zona (${corners} de al menos 3).`}
         </p>
         <div className={styles.row}>
-          <Button variant="secondary" size="md" onClick={onUndo} disabled={!draft.length}><Undo2 size={18} aria-hidden />Deshacer</Button>
-          <Button variant="ghost" size="md" onClick={onCancel}>Cancelar</Button>
+          <Button variant="secondary" size="md" onClick={onUndo} disabled={!corners}><Undo2 size={18} aria-hidden />Deshacer</Button>
+          <Button variant="secondary" size="md" onClick={onDone} disabled={!ready}><Check size={18} aria-hidden />Listo</Button>
+          <Button variant="ghost" size="md" onClick={onClear}>Cancelar</Button>
         </div>
-        <form className={styles.row} onSubmit={(e) => { e.preventDefault(); if (ready && name.trim()) void onSave(name).then(() => setName('')) }}>
-          <Field label="Nombre de la zona" value={name} onChange={(e) => setName(e.target.value)} maxLength={40} placeholder="Ej.: Palermo Norte" className={styles.name} />
-          <Button type="submit" size="md" disabled={!ready || !name.trim()} loading={saving}>Guardar zona</Button>
-        </form>
-        {error ? <Banner tone="error">{error}</Banner> : null}
+      </div>
+    )
+  }
+
+  if (ready) {
+    return (
+      <div className={styles.row}>
+        <p className={styles.summary} role="status">Zona marcada: {corners} esquinas{count}.</p>
+        <Button variant="secondary" size="md" onClick={onDraw}><PenLine size={18} aria-hidden />Marcar otra</Button>
+        <Button variant="ghost" size="md" onClick={onClear}><X size={18} aria-hidden />Quitar zona</Button>
       </div>
     )
   }
 
   return (
     <div className={styles.row}>
-      <div className={styles.pick}>
-        <Select label="Zona" value={zoneId} onChange={onZone}
-          options={[{ value: ALL, label: 'Toda la empresa' }, ...zones.map((z) => ({ value: z.id, label: z.name }))]} />
-      </div>
-      {zoneId !== ALL ? (
-        <Button variant="ghost" size="md" onClick={() => onRemove(zoneId)} aria-label="Borrar esta zona"><Trash2 size={18} aria-hidden /></Button>
-      ) : null}
-      <Button variant="secondary" size="md" onClick={onDraw}><PenLine size={18} aria-hidden />Dibujar zona</Button>
+      <p className={styles.summary}>Sin zona: toma locales de todo el mapa.</p>
+      <Button variant="secondary" size="md" onClick={onDraw}><PenLine size={18} aria-hidden />Marcar zona</Button>
     </div>
   )
 }
