@@ -10,6 +10,10 @@ import { meQuery, refreshMe, type Me } from '@/features/auth/me'
 import { dropSession, sessionUser } from '@/features/auth/session'
 import { applyTheme } from '@/features/profile/theme'
 import { FullScreenSpinner } from '@/ui/Spinner'
+import { AppErrorBoundary } from '@/features/errors/components/AppErrorBoundary'
+import { ErrorScreen } from '@/features/errors/components/ErrorScreen'
+import { NotFoundScreen } from '@/features/errors/components/NotFoundScreen'
+import { reloadForUpdate } from '@/features/errors/chunk'
 import { PERSIST_OPTIONS } from '@/features/sync/persist'
 import { startSync, syncNow } from '@/features/sync/outbox'
 import { startPwa } from './pwa'
@@ -18,6 +22,10 @@ import '@/features/install/state'
 import { routeTree } from './routeTree.gen'
 
 applyTheme()
+// A phone on an old version asks for code files a new one replaced: reload once to get it.
+window.addEventListener('vite:preloadError', (e) => {
+  if (reloadForUpdate()) e.preventDefault()
+})
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme())
 
 // Data counts as fresh for 30 s: going back to a screen shows it at once without refetching.
@@ -32,6 +40,11 @@ const router = createRouter({
   context: { queryClient },
   defaultPreload: 'intent',
   defaultPendingComponent: () => <FullScreenSpinner />,
+  // A screen that breaks shows this inside the app (menus stay), in Spanish, with a way to report it.
+  defaultErrorComponent: ({ error, reset }) => (
+    <ErrorScreen error={error} onRetry={() => { reset(); void router.invalidate() }} />
+  ),
+  defaultNotFoundComponent: () => <NotFoundScreen />,
 })
 
 declare module '@tanstack/react-router' {
@@ -87,9 +100,11 @@ async function start(root: HTMLElement) {
   startPwa()
   createRoot(root).render(
     <StrictMode>
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>
+      <AppErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </AppErrorBoundary>
     </StrictMode>,
   )
 }

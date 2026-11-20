@@ -20,6 +20,7 @@ import { SecurityCard } from './SecurityCard'
 import { InstallRow } from '@/features/install/components/InstallRow'
 import styles from './ProfilePage.module.scss'
 import { AppVersion } from '@/ui/AppVersion'
+import { ReportProblem } from '@/features/errors/components/ReportProblem'
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -80,6 +81,7 @@ export function ProfilePage({ me }: { me: Me & { person: NonNullable<Me['person'
           </Section>
           <Section title="App en este dispositivo">
             <InstallRow />
+            <ReportProblem />
           </Section>
           <Section title="Apariencia en este dispositivo">
             <Segmented
