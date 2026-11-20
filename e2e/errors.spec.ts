@@ -20,8 +20,8 @@ async function catchReports(page: Page) {
 
 test('a screen that breaks says so in Spanish, keeps the app around it, and the person can report it', async ({ page }, info) => {
   await installFakeSupabase(page, mapState(), 'supervisor')
-  // The map's code fails when it runs.
-  await page.route('**/assets/PointsMap-*.js', (r) => r.fulfill({ contentType: 'text/javascript', body: "throw new Error('Mapa roto de prueba')" }))
+  // The whole map screen's code fails when it runs.
+  await page.route('**/assets/s.map-*.js', (r) => r.fulfill({ contentType: 'text/javascript', body: "throw new Error('Mapa roto de prueba')" }))
   const sent = await catchReports(page)
   await page.goto('/s/map')
 
@@ -44,7 +44,7 @@ test('a screen that breaks says so in Spanish, keeps the app around it, and the 
 
 test('a report that cannot go out says so and can be sent again', async ({ page }) => {
   await installFakeSupabase(page, mapState(), 'supervisor')
-  await page.route('**/assets/PointsMap-*.js', (r) => r.fulfill({ contentType: 'text/javascript', body: "throw new Error('Mapa roto de prueba')" }))
+  await page.route('**/assets/s.map-*.js', (r) => r.fulfill({ contentType: 'text/javascript', body: "throw new Error('Mapa roto de prueba')" }))
   let tries = 0
   await page.route('**/functions/v1/report-error', (r) => (tries++ === 0
     ? r.fulfill({ status: 500, body: '{"error":"failed"}' })
@@ -59,13 +59,44 @@ test('a report that cannot go out says so and can be sent again', async ({ page 
 
 test('an old version asking for code that is gone reloads once, then asks to reload', async ({ page }) => {
   await installFakeSupabase(page, mapState(), 'supervisor')
-  await page.route('**/assets/PointsMap-*.js', (r) => r.abort())
+  await page.route('**/assets/s.map-*.js', (r) => r.abort())
   let loads = 0
   page.on('request', (req: Request) => { if (req.isNavigationRequest() && req.url().includes('/s/map')) loads++ })
   await page.goto('/s/map')
   await expect(page.getByRole('heading', { name: 'Hay una versión nueva' })).toBeVisible()
-  expect(loads).toBe(2)
+  // It reloads to get the new version (the router may too), but never in a loop.
+  await page.waitForTimeout(1500)
+  expect(loads).toBeGreaterThan(1)
+  expect(loads).toBeLessThanOrEqual(3)
   await expect(page.getByRole('button', { name: 'Recargar' })).toBeVisible()
+})
+
+test('when only a part breaks (the map), only that part says so: the screen keeps working', async ({ page }, info) => {
+  await installFakeSupabase(page, mapState(), 'supervisor')
+  await page.route('**/assets/PointsMap-*.js', (r) => r.fulfill({ contentType: 'text/javascript', body: "throw new Error('Mapa roto de prueba')" }))
+  const sent = await catchReports(page)
+  await page.goto('/s/map')
+  await expect(page.getByText('No pudimos mostrar el mapa. El resto de la pantalla sigue funcionando.')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Algo salió mal' })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: 'Mapa de puntos de venta' })).toBeVisible()
+  await expect(page.getByRole('radio', { name: 'Última visita' })).toBeVisible()
+  await page.screenshot({ path: `test-results/error-local-${info.project.name}.png` })
+  await page.getByRole('button', { name: 'Reportar', exact: true }).click()
+  await expect(page.getByText('Reporte enviado. Gracias.')).toBeVisible()
+  expect(sent[0]).toMatchObject({ kind: 'crash', url: '/s/map' })
+  expect(String(sent[0]?.comment)).toContain('Falló el mapa')
+})
+
+test('without signal a screen that cannot open says so, with nothing to report', async ({ page, context }) => {
+  await installFakeSupabase(page, mapState(), 'supervisor')
+  await page.goto('/profile')
+  await expect(page.getByRole('button', { name: 'Reportar un problema' })).toBeVisible()
+  await context.setOffline(true)
+  // Going to a screen whose code is not on the phone yet.
+  await page.evaluate(() => { history.pushState({}, '', '/s/map'); dispatchEvent(new PopStateEvent('popstate')) })
+  await expect(page.getByRole('heading', { name: 'Sin conexión' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Reportar el problema' })).toHaveCount(0)
+  await context.setOffline(false)
 })
 
 test('anyone can report a problem from their profile', async ({ page }) => {

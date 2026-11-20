@@ -9,6 +9,7 @@ import { RouteSketch } from './RouteSketch'
 import { RouteStops } from './RouteStops'
 import { StreetMap } from './StreetMap'
 import styles from './RoutePage.module.scss'
+import { LocalBoundary } from '@/features/errors/components/LocalBoundary'
 
 export interface RoutePlan {
   ids: string[]
@@ -103,9 +104,9 @@ export function RouteResult({ plan, visits, mode, origin, fromOrigin, lastId, re
       </div>
       {outside ? <p className={styles.help}>{outside === 1 ? 'Sumaste 1 local después de calcularlo: recalculá para ubicarlo.' : `Sumaste ${outside} locales después de calcularlo: recalculá para ubicarlos.`}</p> : null}
 
-      <Suspense fallback={<RouteSketch stops={stops} origin={origin} />}>
+      <LocalBoundary what="el mapa"><Suspense fallback={<RouteSketch stops={stops} origin={origin} />}>
         <StreetMap stops={stops} origin={origin} line={plan.line} mode={mode} progress />
-      </Suspense>
+      </Suspense></LocalBoundary>
 
       {left.length > 1 ? (
         <p className={styles.help}>{plan.custom ? 'Lo ordenaste vos. Para volver al sugerido, recalculalo.' : 'Arrastrá los locales para cambiar el orden: el mapa se actualiza solo.'}</p>

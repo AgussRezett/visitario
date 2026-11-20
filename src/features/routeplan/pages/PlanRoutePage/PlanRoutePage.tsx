@@ -23,6 +23,7 @@ import { ZoneControls } from './ZoneControls'
 import { PlanResult } from './PlanResult'
 import { AiRequest } from './AiRequest'
 import styles from './PlanRoutePage.module.scss'
+import { LocalBoundary } from '@/features/errors/components/LocalBoundary'
 
 const PlanMap = lazy(() => import('@/features/routeplan/components/PlanMap/PlanMap'))
 
@@ -111,11 +112,11 @@ export function PlanRoutePage({ date: wanted, person }: PlanSearch) {
   const map = (
     <>
       {points.isPending ? <Skeleton height={360} /> : points.error ? <Banner tone="error">No pudimos cargar los locales. Revisá la conexión.</Banner> : (
-        <Suspense fallback={<Skeleton height={360} />}>
+        <LocalBoundary what="el mapa"><Suspense fallback={<Skeleton height={360} />}>
           <PlanMap candidates={fit} stops={(plan?.stops ?? []).map((s) => ({ id: s.id, lat: s.lat, lng: s.lng, label: s.address }))} line={plan?.line ?? null}
             zone={zone && zone.length ? zone : null} drawing={drawing} onDrawPoint={(p) => { changed(); setZone((z) => [...(z ?? []), p]) }}
             frameKey={JSON.stringify([plan?.stops.map((s) => s.id), drawing, points.data?.length])} />
-        </Suspense>
+        </Suspense></LocalBoundary>
       )}
     </>
   )

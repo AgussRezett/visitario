@@ -23,6 +23,7 @@ import { InsightsPanel } from '@/features/storemap/components/InsightsPanel'
 import { PointSheet } from '@/features/storemap/components/PointSheet'
 import type { Zone } from '@/features/storemap/components/PointsMap/layers'
 import styles from './StoreMapPage.module.scss'
+import { LocalBoundary } from '@/features/errors/components/LocalBoundary'
 
 const PointsMap = lazy(() => import('@/features/storemap/components/PointsMap/PointsMap'))
 
@@ -143,9 +144,9 @@ export function StoreMapPage({ point }: { point?: string }) {
       ) : (
         <div className={styles.layout}>
           <div className={styles.mapColumn}>
-            <Suspense fallback={<Skeleton height={420} />}>
+            <LocalBoundary what="el mapa"><Suspense fallback={<Skeleton height={420} />}>
               <PointsMap points={located} paint={paint} zones={zoneList} selectedId={selected} onSelect={setSelected} grouped={grouped} frameKey={JSON.stringify([f, all.length])} />
-            </Suspense>
+            </Suspense></LocalBoundary>
             <ul className={styles.legend} aria-label="Referencias">
               {paint.legend.map((l) => (
                 <li key={l.key} className={styles.legendItem}>

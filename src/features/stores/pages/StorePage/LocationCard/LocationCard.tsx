@@ -8,6 +8,7 @@ import { Button } from '@/ui/Button'
 import { Skeleton } from '@/ui/Skeleton'
 import { useStoreAdmin, type StoreDetail } from '@/features/stores/api/stores'
 import styles from './LocationCard.module.scss'
+import { LocalBoundary } from '@/features/errors/components/LocalBoundary'
 
 const StoreMap = lazy(() => import('./StoreMap'))
 
@@ -33,9 +34,9 @@ export function LocationCard({ store: s, scope, canEdit }: { store: StoreDetail;
   return (
     <section className={styles.card} aria-label="Ubicación">
       {located ? (
-        <Suspense fallback={<Skeleton height={220} />}>
+        <LocalBoundary what="el mapa"><Suspense fallback={<Skeleton height={220} />}>
           <StoreMap lat={s.lat as number} lng={s.lng as number} label={s.name ?? s.address} approximate={s.locationStatus !== 'verified'} />
-        </Suspense>
+        </Suspense></LocalBoundary>
       ) : (
         <div className={styles.noMap}>
           <MapPinOff size={24} aria-hidden />

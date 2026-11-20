@@ -20,6 +20,7 @@ import { StreetMap } from '@/features/route/pages/RoutePage/StreetMap'
 import { MemberStops, type MemberFilter } from './MemberStops'
 import styles from './MemberDayPage.module.scss'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
+import { LocalBoundary } from '@/features/errors/components/LocalBoundary'
 
 /**
  * An activador's day as their supervisor sees it: read-only, in the activador's own order,
@@ -129,9 +130,9 @@ function MemberDay({ companyId, personId, workday, first, activity }: MemberDayP
           </div>
           {mapOpen ? (
             located.length ? (
-              <Suspense fallback={<RouteSketch stops={located} origin={null} />}>
+              <LocalBoundary what="el mapa"><Suspense fallback={<RouteSketch stops={located} origin={null} />}>
                 <StreetMap key={stops.map((v) => `${v.id}:${v.workStatus}`).join(',')} stops={stops} origin={null} line={null} mode="walking" progress />
-              </Suspense>
+              </Suspense></LocalBoundary>
             ) : (
               <p className={styles.empty}>Ningún local de la jornada tiene ubicación todavía.</p>
             )
