@@ -1,0 +1,15 @@
+@use '@/styles/abstracts' as *;
+
+.form {
+  @include flex(column, $gap: space(3));
+}
+
+.sent {
+  @include flex(row, $gap: space(2), $align: center);
+  @include text(body);
+  margin: 0;
+  padding: space(3) space(4);
+  border-radius: $radius-md;
+  background: $color-done-soft;
+  color: $color-done-ink;
+}
