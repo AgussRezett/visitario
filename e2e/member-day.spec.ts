@@ -143,10 +143,11 @@ test('the supervisor sees where the activador is, live, with the path they walke
   await blankStreets(page)
   await installFakeSupabase(page, s, 'supervisor')
   await page.goto('/s/today/p2')
-  await expect(page.getByText('Ubicación de Lucía: hace 2 min · también conectado desde otro teléfono')).toBeVisible()
+  await expect(page.getByText('Ubicación de Lucía: hace 2 min · en Juramento 2101 · también conectado desde otro teléfono')).toBeVisible()
   // Out today: the map opens by itself, even on a phone, following her.
   const following = page.getByRole('button', { name: 'Siguiendo a Lucía' })
-  await expect(following).toBeVisible()
+  // The map takes a moment to draw (WebGL in software on the test machine).
+  await expect(following).toBeVisible({ timeout: 20_000 })
   await expect(following).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByRole('img', { name: 'Lucía, hace 2 min' })).toBeVisible()
   await page.screenshot({ path: `test-results/member-live-${info.project.name}.png`, fullPage: true })
@@ -173,11 +174,39 @@ test('the supervisor sees where the activador is, live, with the path they walke
   const center = page.getByRole('button', { name: 'Centrar en Lucía' })
   await expect(center).toHaveAttribute('aria-pressed', 'false')
   await center.click()
-  await expect(page.getByRole('button', { name: 'Siguiendo a Lucía' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Siguiendo a Lucía' })).toBeVisible({ timeout: 10_000 })
 })
 
-test('before the activador shares anything, the supervisor is told why there is no position', async ({ page }) => {
+test('with the app closed between stops, the supervisor sees where they are headed and since when', async ({ page }, info) => {
+  const s = luciaDay()
+  const located = (lat: number) => ({ id: `s-${lat}`, name: null, area: 'Belgrano', customer_number: null, lat, lng: -58.45, location_status: 'verified' })
+  s.visits = [
+    visitRow('v1', 0, 'Tres Arroyos 762', { ...ofLucia, work_status: 'done', arrived_at: `${TODAY}T10:02:00-03:00`, finished_at: `${TODAY}T10:40:00-03:00`, store: { ...located(-34.56), address: 'Tres Arroyos 762' } }),
+    visitRow('v2', 1, 'Juramento 2101', { ...ofLucia, work_status: 'done', arrived_at: `${TODAY}T11:05:00-03:00`, finished_at: `${TODAY}T11:40:00-03:00`, store: { ...located(-34.565), address: 'Juramento 2101' } }),
+    visitRow('v3', 2, 'Cuba 1940', { ...ofLucia, store: { ...located(-34.575), address: 'Cuba 1940' } }),
+  ]
+  // The phone sent at the first store only; then the app stayed closed.
+  s.positions = [{ device_id: 'a', lat: -34.5601, lng: -58.4501, accuracy: 10, recorded_at: `${TODAY}T10:10:00-03:00` }]
+  await blankStreets(page)
+  await installFakeSupabase(page, s, 'supervisor')
+  await page.goto('/s/today/p2')
+  await expect(page.getByText('En camino a Cuba 1940 · salió de Juramento 2101 hace 20 min')).toBeVisible()
+  // On the map: at the last stop they left, greyed, following.
+  await expect(page.getByRole('img', { name: 'Lucía, hace 20 min' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Siguiendo a Lucía' })).toBeVisible({ timeout: 20_000 })
+  await page.screenshot({ path: `test-results/member-between-${info.project.name}.png`, fullPage: true })
+})
+
+test('at a stop with the phone silent, the supervisor sees which one and since when', async ({ page }) => {
   await installFakeSupabase(page, luciaDay(), 'supervisor')
   await page.goto('/s/today/p2')
-  await expect(page.getByText('Lucía todavía no compartió su ubicación hoy.', { exact: false })).toBeVisible()
+  await expect(page.getByText('Lucía está en Juramento 2101 desde las 11:05')).toBeVisible()
+})
+
+test('before the day starts, the supervisor is told the position comes with the first stop', async ({ page }) => {
+  const s = luciaDay()
+  s.visits = s.visits.map((v) => ({ ...v, work_status: 'pending', arrived_at: null, finished_at: null }))
+  await installFakeSupabase(page, s, 'supervisor')
+  await page.goto('/s/today/p2')
+  await expect(page.getByText('Lucía todavía no empezó la jornada. Su ubicación aparece cuando llega al primer local.')).toBeVisible()
 })
