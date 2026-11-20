@@ -79,6 +79,9 @@ Deno.serve(async (req) => {
       console.error('report email', (e as Error).message?.slice(0, 200))
       await admin.from('error_report').update({ emailed: false }).eq('id', row.id)
     }
+  } else if (row.email) {
+    // Not set up to email (no ERROR_REPORT_TO or Gmail): it stays stored only.
+    await admin.from('error_report').update({ emailed: false }).eq('id', row.id)
   }
   return json({ id: row.id, emailed })
 })
