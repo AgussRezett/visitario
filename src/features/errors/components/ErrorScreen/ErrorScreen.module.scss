@@ -1,0 +1,90 @@
+@use '@/styles/abstracts' as *;
+
+.screen {
+  @include flex(column, $align: center);
+  padding: space(6) space(4);
+
+  @include up(lg) {
+    padding: space(12) space(8);
+  }
+}
+
+.card {
+  @include surface;
+  @include flex(column, $gap: space(3));
+  width: 100%;
+  max-width: 480px;
+  padding: space(5);
+
+  @include up(sm) {
+    padding: space(6);
+  }
+}
+
+.icon {
+  @include icon-tile;
+  background: $color-fix-soft;
+  color: $color-fix-ink;
+
+  @include dark {
+    color: $color-fix-ink;
+  }
+}
+
+.title {
+  @include heading(title);
+  margin: 0;
+}
+
+.lead {
+  @include text(body);
+  margin: 0;
+  color: $color-ink-muted;
+}
+
+.actions {
+  @include flex(column, $gap: space(2));
+  margin-top: space(2);
+
+  @include up(sm) {
+    flex-direction: row;
+
+    > * {
+      flex: 1;
+    }
+  }
+}
+
+.report {
+  @include flex(column);
+  padding-top: space(3);
+  border-top: 1px solid $color-line;
+}
+
+.details {
+  @include text(label);
+  color: $color-ink-subtle;
+
+  summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+  }
+}
+
+.code {
+  display: block;
+  padding: space(2) space(3);
+  border-radius: $radius-sm;
+  background: $color-muted;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.updating {
+  @include text(body);
+  padding: space(8) space(4);
+  text-align: center;
+  color: $color-ink-muted;
+}
