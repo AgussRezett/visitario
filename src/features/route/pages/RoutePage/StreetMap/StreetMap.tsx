@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { LocateFixed } from 'lucide-react'
+import clsx from 'clsx'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { directionsUrl, placeQuery, type Point, type TravelMode } from '@/domain/route'
@@ -6,6 +8,7 @@ import { STOP_TONE_LABEL, stopTone, type StopTone } from '@/domain/visit'
 import type { Visit } from '@/features/workday/api/queries'
 import { placeName } from '../stop'
 import { RouteSketch } from '../RouteSketch'
+import { useTracker, type Tracked } from './useTracker'
 import styles from './StreetMap.module.scss'
 
 // OpenFreeMap: OpenStreetMap streets, free and without a key (attribution shown on the map).
@@ -19,6 +22,8 @@ interface StreetMapProps {
   mode: TravelMode
   /** Show how each stop is going, in the colors of the status chips (done green, in progress blue...). */
   progress?: boolean
+  /** Someone followed live (a supervisor watching an activador's day). */
+  tracker?: Tracked | null
 }
 
 const TONE: Record<StopTone, string | undefined> = {
@@ -35,7 +40,7 @@ const TONE: Record<StopTone, string | undefined> = {
  * The route on a real street map: numbered stops to tap, zoom, and the path between them.
  * The map loads once; a new order (dragged by hand) redraws the line and the pins in place.
  */
-export default function StreetMap({ stops, origin, line, mode, progress = false }: StreetMapProps) {
+export default function StreetMap({ stops, origin, line, mode, progress = false, tracker = null }: StreetMapProps) {
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<maplibregl.Map | null>(null)
   const markers = useRef<maplibregl.Marker[]>([])
@@ -47,7 +52,7 @@ export default function StreetMap({ stops, origin, line, mode, progress = false 
 
   useEffect(() => {
     const el = box.current
-    if (!el || failed || located.length < 1) return
+    if (!el || failed || (located.length < 1 && !tracker)) return
     const dark = document.documentElement.dataset.theme === 'dark'
     const css = getComputedStyle(document.documentElement)
     const color = css.getPropertyValue(dark ? '--lime' : '--forest').trim() || '#173b30'
@@ -56,7 +61,7 @@ export default function StreetMap({ stops, origin, line, mode, progress = false 
       m = new maplibregl.Map({
         container: el,
         style: dark ? STYLE.dark : STYLE.light,
-        bounds: bounds([...path, ...located.map((v) => [v.store.lng as number, v.store.lat as number] as [number, number])]),
+        bounds: bounds([...path, ...located.map((v) => [v.store.lng as number, v.store.lat as number] as [number, number]), ...(tracker ? [[tracker.lng, tracker.lat] as [number, number]] : [])]),
         fitBoundsOptions: { padding: 48, maxZoom: 16 },
         attributionControl: { compact: true },
         // On a phone, one finger scrolls the page; two move the map.
@@ -127,11 +132,20 @@ export default function StreetMap({ stops, origin, line, mode, progress = false 
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `drawn` says what changed
   }, [drawn, ready, failed])
 
+  const live = useTracker(ready ? map.current : null, tracker)
+
   if (failed) return <RouteSketch stops={stops} origin={origin} />
   const missing = stops.length - located.length
   return (
     <div className={styles.wrap}>
-      <div ref={box} className={styles.map} role="region" aria-label="Mapa del recorrido" />
+      <div className={styles.stage}>
+        <div ref={box} className={styles.map} role="region" aria-label="Mapa del recorrido" />
+        {tracker ? (
+          <button type="button" className={clsx(styles.follow, live.following && styles.following)} aria-pressed={live.following} onClick={live.center}>
+            <LocateFixed size={18} aria-hidden />{live.following ? `Siguiendo a ${tracker.name}` : `Centrar en ${tracker.name}`}
+          </button>
+        ) : null}
+      </div>
       {missing ? <p className={styles.note}>{missing === 1 ? '1 local no tiene ubicación y no está en el mapa.' : `${missing} locales no tienen ubicación y no están en el mapa.`}</p> : null}
     </div>
   )

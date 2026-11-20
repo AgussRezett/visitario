@@ -1791,6 +1791,42 @@ export type Database = {
           },
         ]
       }
+      workday_position: {
+        Row: {
+          accuracy: number | null
+          company_id: string
+          device_id: string
+          id: number
+          lat: number
+          lng: number
+          person_id: string
+          recorded_at: string
+          workday_id: string
+        }
+        Insert: {
+          accuracy?: number | null
+          company_id: string
+          device_id: string
+          id?: never
+          lat: number
+          lng: number
+          person_id: string
+          recorded_at?: string
+          workday_id: string
+        }
+        Update: {
+          accuracy?: number | null
+          company_id?: string
+          device_id?: string
+          id?: never
+          lat?: number
+          lng?: number
+          person_id?: string
+          recorded_at?: string
+          workday_id?: string
+        }
+        Relationships: []
+      }
       workday: {
         Row: {
           company_id: string
@@ -2410,6 +2446,10 @@ export type Database = {
       save_route_plan: {
         Args: { p_by_street: boolean; p_custom?: boolean; p_from_origin: boolean; p_km: number; p_line?: Json; p_minutes?: number; p_mode: string; p_stop_ids: string[]; p_workday: string }
         Returns: undefined
+      }
+      share_day_position: {
+        Args: { p_accuracy: number; p_device: string; p_lat: number; p_lng: number; p_workday: string }
+        Returns: boolean
       }
       set_photo_crop: {
         Args: { p_crop: number[] | null; p_photo: string }

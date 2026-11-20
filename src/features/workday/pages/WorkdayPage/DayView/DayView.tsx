@@ -19,6 +19,8 @@ import { useAutoVerify } from '@/features/stores/useAutoVerify'
 import { AddAddressSheet } from '../AddAddressSheet'
 import { ResumeSheet } from '../ResumeSheet'
 import { DayHero } from '../DayHero'
+import { todayInArgentina } from '@/domain/dates'
+import { SharingNotice } from '@/features/tracking/components/SharingNotice'
 import { DayStats } from '../DayStats'
 import { StopList, type StopFilter } from '../StopList'
 import { ReportPanel, ResumePanel } from '../SidePanels'
@@ -132,6 +134,10 @@ export function DayView({ ctx, workday, sheet, onSheet }: DayViewProps) {
             ) : null}
             {day.op ? operation : null}
             <DayHero progress={progress} next={next} stop={next ? list.indexOf(next) + 1 : 0} date={workday.workDate} />
+            {/* Today, while some stop is left: say plainly that the supervisor sees where they are. */}
+            {!ctx.personal && workday.status !== 'draft' && workday.workDate === todayInArgentina() && progress.visited < progress.total ? (
+              <SharingNotice started={list.some((v) => v.arrivedAt !== null || v.workStatus !== 'pending')} />
+            ) : null}
             <DayStats visits={list} />
             <StopList visits={shown} all={list} filter={filter} onFilter={setFilter} reputation={reputation.data} operationStops={day.operationStops} presence={presence} meId={ctx.personId} />
             <div className={styles.phoneOnly}>

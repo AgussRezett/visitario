@@ -1,9 +1,11 @@
 import { Suspense, useState } from 'react'
+import clsx from 'clsx'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { CalendarPlus, ChevronLeft, ChevronRight, Eye, Map as MapIcon, Users } from 'lucide-react'
 import { addDays, formatLongDate, todayInArgentina } from '@/domain/dates'
-import { lastActivityText } from '@/domain/team'
+import { agoText, lastActivityText } from '@/domain/team'
+import { follow } from '@/domain/tracking'
 import { workdayProgress } from '@/domain/visit'
 import { PersonAvatar } from '@/features/people/PersonAvatar'
 import { BackLink } from '@/ui/BackLink'
@@ -21,6 +23,8 @@ import { MemberStops, type MemberFilter } from './MemberStops'
 import styles from './MemberDayPage.module.scss'
 import { useDocumentTitle } from '@/lib/useDocumentTitle'
 import { LocalBoundary } from '@/features/errors/components/LocalBoundary'
+import { dayPositionsQuery } from '@/features/tracking/api'
+import { FollowStatus } from '@/features/tracking/components/FollowStatus'
 
 /**
  * An activador's day as their supervisor sees it: read-only, in the activador's own order,
@@ -95,8 +99,15 @@ interface MemberDayProps {
 function MemberDay({ companyId, personId, workday, first, activity }: MemberDayProps) {
   const day = useOperationDay(companyId, personId, workday, workday.workDate)
   const [filter, setFilter] = useState<MemberFilter>('all')
-  // The map is heavy: open on a computer, one tap away on a phone.
-  const [mapOpen, setMapOpen] = useState(() => window.matchMedia('(min-width: 1024px)').matches)
+  // Where they are: live today, the path they walked another day.
+  const live = workday.workDate === todayInArgentina()
+  const positions = useQuery({ ...dayPositionsQuery(workday.id), enabled: workday.status !== 'draft', refetchInterval: live ? 15_000 : false })
+  const now = new Date()
+  const seen = positions.data ? follow(positions.data, now) : null
+  const tracker = seen ? { name: first, lat: seen.last.lat, lng: seen.last.lng, trail: seen.trail, stale: seen.stale, seen: agoText(seen.last.at, now) } : null
+  // The map is heavy: open on a computer, one tap away on a phone (open when they are out today).
+  const [mapChoice, setMapOpen] = useState<boolean | null>(null)
+  const mapOpen = mapChoice ?? (window.matchMedia('(min-width: 1024px)').matches || Boolean(live && seen && !seen.stale))
   if (day.isPending) return <div className={styles.skeletons}>{[0, 1, 2].map((i) => <Skeleton key={i} height={72} />)}</div>
   if (day.isError) return <Banner tone="error">No pudimos cargar los locales. Revisá la conexión.</Banner>
 
@@ -121,17 +132,20 @@ function MemberDay({ companyId, personId, workday, first, activity }: MemberDayP
       </div>
 
       {stops.length ? (
-        <aside className={styles.aside} aria-label="Recorrido en el mapa">
+        <aside className={clsx(styles.aside, live && seen && !seen.stale && styles.asideLive)} aria-label="Recorrido en el mapa">
           <div className={styles.mapHead}>
             <h2 className={styles.mapTitle}>Su recorrido</h2>
-            <Button variant="secondary" size="sm" className={styles.mapToggle} onClick={() => setMapOpen((o) => !o)} aria-expanded={mapOpen}>
+            <Button variant="secondary" size="sm" className={styles.mapToggle} onClick={() => setMapOpen(!mapOpen)} aria-expanded={mapOpen}>
               <MapIcon size={16} aria-hidden />{mapOpen ? 'Ocultar mapa' : 'Ver en el mapa'}
             </Button>
           </div>
+          {workday.status !== 'draft' && !positions.isPending ? (
+            <FollowStatus first={first} live={live} seen={tracker?.seen ?? null} stale={seen?.stale ?? false} otherPhones={seen?.otherPhones ?? 0} />
+          ) : null}
           {mapOpen ? (
-            located.length ? (
+            located.length || tracker ? (
               <LocalBoundary what="el mapa"><Suspense fallback={<RouteSketch stops={located} origin={null} />}>
-                <StreetMap key={stops.map((v) => `${v.id}:${v.workStatus}`).join(',')} stops={stops} origin={null} line={null} mode="walking" progress />
+                <StreetMap stops={stops} origin={null} line={null} mode="walking" progress tracker={tracker} />
               </Suspense></LocalBoundary>
             ) : (
               <p className={styles.empty}>Ningún local de la jornada tiene ubicación todavía.</p>
