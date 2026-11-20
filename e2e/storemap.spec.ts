@@ -76,6 +76,38 @@ test('the supervisor sees where each display is: filter by type, and the points 
   await expect(page.getByRole('dialog', { name: 'Coto Cabildo' }).getByText('Puntera, Primaria')).toBeVisible()
 })
 
+test('a map kept offline from an older version does not break it: the phone loads it again', async ({ page }) => {
+  const state: FakeState = { workday: null, visits: [], uploads: [], memberships: role('supervisor'), catalogs: catalogs(), mapPoints: points }
+  await installFakeSupabase(page, state, 'supervisor')
+  await page.goto('/s/map')
+  await expect(page.getByText('4 puntos', { exact: true })).toBeVisible()
+  // What a phone had saved before display types existed: the points without them.
+  await page.evaluate(async () => {
+    const key = ['stores', 'map', 'c1']
+    const old = [{ id: 's1', name: 'Viejo', address: 'Calle s1', area: 'Belgrano', customerNumber: null, lat: -34.56, lng: -58.46, channelId: null, sellerId: null, lastVisitDate: null, lastMerchandiser: null, visits30: 0, visits90: 0, rapport: null }]
+    const now = Date.now()
+    const client = {
+      timestamp: now, buster: 'v1',
+      clientState: { mutations: [], queries: [{ queryKey: key, queryHash: JSON.stringify(key), state: {
+        data: old, dataUpdateCount: 1, dataUpdatedAt: now, error: null, errorUpdateCount: 0, errorUpdatedAt: 0, fetchFailureCount: 0,
+        fetchFailureReason: null, fetchMeta: null, isInvalidated: false, status: 'success', fetchStatus: 'idle' } }] },
+    }
+    await new Promise<void>((done, fail) => {
+      const open = indexedDB.open('visitario')
+      open.onerror = () => fail(open.error)
+      open.onsuccess = () => {
+        const tx = open.result.transaction('kv', 'readwrite')
+        tx.objectStore('kv').put({ key: 'query-cache', value: client })
+        tx.oncomplete = () => { open.result.close(); done() }
+        tx.onerror = () => fail(tx.error)
+      }
+    })
+  })
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Mapa de puntos de venta' })).toBeVisible()
+  await expect(page.getByText('4 puntos', { exact: true })).toBeVisible()
+})
+
 test('a point opens with its last activation and a way to its file', async ({ page }) => {
   const state: FakeState = { workday: null, visits: [], uploads: [], memberships: role('supervisor'), catalogs: catalogs(), mapPoints: points }
   await installFakeSupabase(page, state, 'supervisor')
