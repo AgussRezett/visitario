@@ -10,6 +10,7 @@ import type { Visit } from '@/features/workday/api/queries'
 import { teammatesQuery, useOperationActions } from '@/features/operation/api'
 import { PeoplePicker } from '@/features/operation/components/PeoplePicker'
 import styles from './OperationCard.module.scss'
+import { LocalBoundary } from '@/features/errors/components/LocalBoundary'
 
 const TeamMap = lazy(() => import('@/features/operation/components/TeamMap/TeamMap'))
 
@@ -17,7 +18,7 @@ const TeamMap = lazy(() => import('@/features/operation/components/TeamMap/TeamM
 export function TeamMapSheet({ open, onClose, title, stops, people, meId }: { open: boolean; onClose: () => void; title: string; stops: Visit[]; people: Presence[]; meId: string }) {
   return (
     <Sheet open={open} onClose={onClose} wide title={title} subtitle="Se actualiza en vivo. Solo se ve quien comparte su ubicación.">
-      {open ? <Suspense fallback={<Skeleton height={340} />}><TeamMap stops={stops} people={people} meId={meId} /></Suspense> : null}
+      {open ? <LocalBoundary what="el mapa"><Suspense fallback={<Skeleton height={340} />}><TeamMap stops={stops} people={people} meId={meId} /></Suspense></LocalBoundary> : null}
     </Sheet>
   )
 }

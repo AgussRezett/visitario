@@ -9,6 +9,7 @@ import { Skeleton } from '@/ui/Skeleton'
 import type { Visit } from '@/features/workday/api/queries'
 import { fixStoreLocation, geocode, positionHere, type GeocodeResult } from '@/features/workday/api/geocode'
 import styles from './LocationSheet.module.scss'
+import { LocalBoundary } from '@/features/errors/components/LocalBoundary'
 
 const PickMap = lazy(() => import('./PickMap'))
 
@@ -86,9 +87,9 @@ export function LocationSheet({ visit: v, open, onClose }: { visit: Visit; open:
       </>}>
       <div className={styles.body}>
         <Button variant="secondary" onClick={() => void here()} loading={locating}><Crosshair size={20} aria-hidden />Estoy en el local</Button>
-        <Suspense fallback={<Skeleton height={260} />}>
+        <LocalBoundary what="el mapa"><Suspense fallback={<Skeleton height={260} />}>
           <PickMap point={point} onMove={(p) => { setPoint(p); setNote(null) }} />
-        </Suspense>
+        </Suspense></LocalBoundary>
         <p className={styles.help}>{point ? 'Arrastrá el pin hasta la puerta del local, o tocá el mapa donde está. Mover el mapa no cambia nada.' : 'Todavía no sabemos dónde está: usá tu ubicación, buscá la dirección o tocá el mapa donde está.'}</p>
         {note ? <Banner tone={note.tone}>{note.text}</Banner> : null}
 
