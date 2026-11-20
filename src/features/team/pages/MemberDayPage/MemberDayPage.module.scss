@@ -160,6 +160,15 @@
   }
 }
 
+// Out right now: on a phone the live map comes before the list.
+.aside-live {
+  order: -1;
+
+  @include up(lg) {
+    order: 0;
+  }
+}
+
 .map-head {
   @include flex(row, $gap: space(2), $align: center, $justify: space-between);
 }
