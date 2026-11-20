@@ -20,6 +20,7 @@ import { UpdateBanner } from '@/features/shell/components/UpdateBanner'
 import { InstallOffer } from '@/features/install/components/InstallOffer'
 import { useLive } from '@/features/live/live'
 import { OperationLive } from '@/features/operation/OperationLive'
+import { DayTracking } from '@/features/tracking/components/DayTracking'
 import { SyncStatus } from '@/features/sync/components/SyncStatus'
 import { useNavBadges } from '@/features/shell/useNavBadges'
 import { MainOverlayContext } from './main-overlay-context'
@@ -102,6 +103,9 @@ export function AppShell({ me, active, children }: Props) {
       <UpdateBanner />
       <InstallOffer />
       {active?.role === 'merchandiser' ? <OperationLive companyId={active.companyId} personId={me.person.id} firstName={me.person.firstName} /> : null}
+      {active?.role === 'merchandiser' ? (
+        <DayTracking companyId={active.companyId} personId={me.person.id} personal={Boolean(me.memberships.find((m) => m.companyId === active.companyId)?.personal)} />
+      ) : null}
 
       <main className={clsx(styles.main, immersive && styles.mainImmersive)} data-scroll>
         <MainOverlayContext.Provider value={overlay}>{children}</MainOverlayContext.Provider>

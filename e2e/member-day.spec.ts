@@ -125,3 +125,59 @@ test('the supervisor assigning a day sees who else already has the store', async
   await sheet.getByLabel('Buscar en el directorio').fill('lili')
   await expect(sheet.getByText('Diego P. ya lo tiene en su jornada de ese día, lo sumó por su cuenta.')).toBeVisible()
 })
+
+/** A blank street style, so the real map draws without the tile server. */
+async function blankStreets(page: import('@playwright/test').Page) {
+  await page.route('https://tiles.openfreemap.org/**', (r) => r.fulfill({ json: { version: 8, sources: {}, layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#eef0ea' } }] } }))
+}
+
+test('the supervisor sees where the activador is, live, with the path they walked, and the map follows them', async ({ page }, info) => {
+  const s = luciaDay()
+  const at = (time: string) => `${TODAY}T${time}:00-03:00`
+  s.positions = [
+    { device_id: 'a', lat: -34.565, lng: -58.452, accuracy: 10, recorded_at: at('11:50') },
+    { device_id: 'a', lat: -34.566, lng: -58.451, accuracy: 12, recorded_at: at('11:55') },
+    { device_id: 'b', lat: -34.6, lng: -58.4, accuracy: 15, recorded_at: at('11:57') },
+    { device_id: 'a', lat: -34.567, lng: -58.45, accuracy: 9, recorded_at: at('11:58') },
+  ]
+  await blankStreets(page)
+  await installFakeSupabase(page, s, 'supervisor')
+  await page.goto('/s/today/p2')
+  await expect(page.getByText('Ubicación de Lucía: hace 2 min · también conectado desde otro teléfono')).toBeVisible()
+  // Out today: the map opens by itself, even on a phone, following her.
+  const following = page.getByRole('button', { name: 'Siguiendo a Lucía' })
+  await expect(following).toBeVisible()
+  await expect(following).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('img', { name: 'Lucía, hace 2 min' })).toBeVisible()
+  await page.screenshot({ path: `test-results/member-live-${info.project.name}.png`, fullPage: true })
+
+  // Moving the map by hand stops following; the button brings it back.
+  const map = page.getByRole('region', { name: 'Mapa del recorrido' })
+  await map.scrollIntoViewIfNeeded()
+  const box = await map.boundingBox()
+  if (!box) throw new Error('no map')
+  const [x, y] = [box.x + box.width / 2, box.y + box.height / 2]
+  if (info.project.name === 'mobile') {
+    // On a phone the map moves with two fingers (one scrolls the page).
+    const cdp = await page.context().newCDPSession(page)
+    const fingers = (dx: number) => [{ x: x - 30 + dx, y, id: 1 }, { x: x + 30 + dx, y, id: 2 }]
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: fingers(0) })
+    for (let i = 1; i <= 8; i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: fingers(-15 * i) })
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+  } else {
+    await page.mouse.move(x, y)
+    await page.mouse.down()
+    await page.mouse.move(x - 120, y - 40, { steps: 8 })
+    await page.mouse.up()
+  }
+  const center = page.getByRole('button', { name: 'Centrar en Lucía' })
+  await expect(center).toHaveAttribute('aria-pressed', 'false')
+  await center.click()
+  await expect(page.getByRole('button', { name: 'Siguiendo a Lucía' })).toBeVisible()
+})
+
+test('before the activador shares anything, the supervisor is told why there is no position', async ({ page }) => {
+  await installFakeSupabase(page, luciaDay(), 'supervisor')
+  await page.goto('/s/today/p2')
+  await expect(page.getByText('Lucía todavía no compartió su ubicación hoy.', { exact: false })).toBeVisible()
+})

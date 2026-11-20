@@ -138,3 +138,63 @@
   color: $color-action-ink;
   text-decoration: none;
 }
+
+// Someone followed live: a dot with their initial and a soft pulse, greyed without news.
+.tracker {
+  @include square(32px);
+  display: grid;
+  place-items: center;
+  border: 3px solid $color-white;
+  border-radius: 50%;
+  background: $color-active;
+  color: $color-white;
+  font-weight: 700;
+  font-size: 0.875rem;
+  box-shadow: 0 0 0 0 rgb(47 91 211 / 0.45);
+  animation: tracker-pulse 2s ease-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.tracker-stale {
+  background: $color-ink-subtle;
+  animation: none;
+}
+
+@keyframes tracker-pulse {
+  to {
+    box-shadow: 0 0 0 14px rgb(47 91 211 / 0);
+  }
+}
+
+.stage {
+  position: relative;
+}
+
+.follow {
+  @include flex(row, $gap: space(2), $align: center);
+  @include text(label);
+  position: absolute;
+  left: space(3);
+  bottom: space(3);
+  min-height: 44px;
+  padding: 0 space(3);
+  border: 1px solid $color-line;
+  border-radius: $radius-full;
+  background: $color-card;
+  color: $color-ink;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.16);
+  cursor: pointer;
+
+  @include hover {
+    border-color: $color-active;
+  }
+}
+
+.following {
+  border-color: $color-active;
+  color: $color-active-ink;
+}

@@ -1,0 +1,17 @@
+@use '@/styles/abstracts' as *;
+
+.notice {
+  @include flex(row, $gap: space(2), $align: flex-start);
+  @include text(label);
+  margin: 0;
+  color: $color-ink-muted;
+
+  svg {
+    flex: none;
+    margin-top: 2px;
+  }
+}
+
+.off {
+  color: $color-fix-ink;
+}

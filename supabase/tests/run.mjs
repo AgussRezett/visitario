@@ -1510,6 +1510,25 @@ await expectError('A company cannot lose its last admin', () => as('carla', `upd
   await expectError('The last admin still cannot be disabled outside closing', () => as('beto', `update membership set status = 'disabled' where company_id = $1 and person_id = $2`, [kiosco, beto]), /admin/)
 }
 
+// ---- Where an activador is during their workday
+{
+  const today = `(now() at time zone 'America/Argentina/Buenos_Aires')::date`
+  let [row] = await sys(`select id from workday where company_id = $1 and merchandiser_id = $2 and work_date = ${today}`, [panda, agus])
+  if (!row) [row] = await sys(`insert into workday (company_id, merchandiser_id, work_date, status, created_by) values ($1, $2, ${today}, 'published', $2) returning id`, [panda, agus])
+  await sys(`update workday set status = 'published', published_at = coalesce(published_at, now()) where id = $1`, [row.id])
+  const share = (who, workday, device = 'phone-a') => as(who, `select share_day_position($1, $2, -34.58, -58.43, 12) ok`, [workday, device])
+  check('The activador shares where they are during today\'s workday', (await share('agus', row.id))[0].ok === true)
+  check('…the same phone again within 10 seconds is not stored twice', (await share('agus', row.id))[0].ok === false)
+  check('…another phone of theirs is', (await share('agus', row.id, 'phone-b'))[0].ok === true)
+  await expectError('Not for another day\'s workday', () => share('agus', w2))
+  await expectError('Nobody shares a position for someone else', () => share('martin', row.id))
+  await expectError('Positions are not written directly', () => as('agus', `insert into workday_position (company_id, workday_id, person_id, device_id, lat, lng) values ($1, $2, $3, 'x', 0, 0)`, [panda, row.id, agus]))
+  const seen = async (who) => (await as(who, `select count(*)::int n from workday_position where workday_id = $1`, [row.id]))[0].n
+  check('The activador sees their own positions', (await seen('agus')) === 2)
+  check('Their supervisor sees them', (await seen('martin')) === 2)
+  check('Another company never does', (await seen('beto')) === 0)
+}
+
 // ---- Problems reported from the app
 {
   const asService = async (sql, params = []) => {

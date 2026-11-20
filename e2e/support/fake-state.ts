@@ -2,6 +2,10 @@
 export type Row = Record<string, unknown>
 
 export interface FakeState {
+  /** The activador's positions of the day, as workday_position rows. */
+  positions?: Row[]
+  /** What the activador's phone sent (share_day_position bodies). */
+  shared?: Row[]
   /** store_map rows, and client_history answers by store id. */
   mapPoints?: Row[]
   clientHistory?: Record<string, Row>

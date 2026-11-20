@@ -1,0 +1,1 @@
+export { SharingNotice } from './SharingNotice'
