@@ -1510,6 +1510,35 @@ await expectError('A company cannot lose its last admin', () => as('carla', `upd
   await expectError('The last admin still cannot be disabled outside closing', () => as('beto', `update membership set status = 'disabled' where company_id = $1 and person_id = $2`, [kiosco, beto]), /admin/)
 }
 
+// ---- Problems reported from the app
+{
+  const asService = async (sql, params = []) => {
+    await db.exec('set role service_role;')
+    try { return (await db.query(sql, params)).rows } finally { await db.exec('reset role;') }
+  }
+  const report = (person, message, company = panda) => asService(
+    `select * from record_error_report($1, $2, 'crash', $3, 'at Map (map.tsx:1)', null, '/s/map', '2.17.1', 'test')`, [person, company, message])
+  const [first] = await report(martin, 'Cannot read properties of undefined')
+  check('A report is stored and emailed', first.id && first.email === true)
+  check('…with the company the person works in', (await sys(`select company_id from error_report where id = $1`, [first.id]))[0].company_id === panda)
+  check('The same one again within 10 minutes is stored, not emailed again', (await report(martin, 'Cannot read properties of undefined'))[0].email === false)
+  check('Another problem is emailed', (await report(martin, 'Something else'))[0].email === true)
+  const [{ id: elsewhere }] = await sys(`select id from company where id <> $1 limit 1`, [panda])
+  const [foreign] = await report(martin, 'Wrong company', elsewhere)
+  check('A company the person is not in is not kept', (await sys(`select company_id from error_report where id = $1`, [foreign.id]))[0].company_id === null)
+  for (let i = 0; i < 5; i++) await report(null, `anonymous ${i}`, null)
+  check('Without a session, at most 5 emails an hour', (await report(null, 'anonymous 6', null))[0].email === false)
+  await sys(`insert into error_report (kind, message, created_at) select 'crash', 'flood ' || g, now() from generate_series(1, 50) g`)
+  check('…and past 50 an hour, not even stored', (await report(null, 'one more', null)).length === 0)
+
+  check('Visitario reads the reports', (await as('agus', `select count(*)::int n from error_report`))[0].n > 0)
+  check('Nobody else does, not even a company admin', (await as('martin', `select count(*)::int n from error_report`))[0].n === 0
+    && (await as('beto', `select count(*)::int n from error_report`))[0].n === 0)
+  await expectError('People cannot write reports directly', () => as('martin', `insert into error_report (kind, message) values ('manual', 'x')`))
+  await expectError('…nor through the function, which only the server runs', () => as('martin', `select * from record_error_report($1, $2, 'manual', 'x', null, null, null, null, null)`, [martin, panda]))
+  await expectError('…nor anyone without a session', () => asAnon(`select * from record_error_report(null, null, 'manual', 'x', null, null, null, null, null)`))
+}
+
 console.log('\nQuery plan for visits as supervisor:');
 await db.exec(`set role authenticated; select set_config('request.jwt.claim.sub', '${U.martin}', false);`);
 for (const row of (await db.query(`explain select id from visit where work_date = '2026-10-09'`)).rows) console.log('  ' + row['QUERY PLAN']);
