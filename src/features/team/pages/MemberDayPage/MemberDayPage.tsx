@@ -5,7 +5,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { CalendarPlus, ChevronLeft, ChevronRight, Eye, Map as MapIcon, Users } from 'lucide-react'
 import { addDays, formatLongDate, todayInArgentina } from '@/domain/dates'
 import { agoText, lastActivityText } from '@/domain/team'
-import { follow } from '@/domain/tracking'
+import { follow, whereabouts, type StopTimes } from '@/domain/tracking'
 import { workdayProgress } from '@/domain/visit'
 import { PersonAvatar } from '@/features/people/PersonAvatar'
 import { BackLink } from '@/ui/BackLink'
@@ -103,11 +103,17 @@ function MemberDay({ companyId, personId, workday, first, activity }: MemberDayP
   const live = workday.workDate === todayInArgentina()
   const positions = useQuery({ ...dayPositionsQuery(workday.id), enabled: workday.status !== 'draft', refetchInterval: live ? 15_000 : false })
   const now = new Date()
-  const seen = positions.data ? follow(positions.data, now) : null
-  const tracker = seen ? { name: first, lat: seen.last.lat, lng: seen.last.lng, trail: seen.trail, stale: seen.stale, seen: agoText(seen.last.at, now) } : null
+  // Between stops the app is closed: the stops they reached and left fill in the path.
+  const times: StopTimes[] = (day.visits ?? []).map((v) => ({ name: v.store.name ?? v.store.address, lat: v.store.lat, lng: v.store.lng, workStatus: v.workStatus, arrivedAt: v.arrivedAt, finishedAt: v.finishedAt }))
+  const seen = workday.status !== 'draft' ? follow(positions.data ?? [], now, times) : null
+  const where = whereabouts(times)
+  const next = live && where?.kind === 'between' && where.to.lat !== null && where.to.lng !== null ? [where.to.lng, where.to.lat] as [number, number] : null
+  const tracker = seen ? { name: first, lat: seen.last.lat, lng: seen.last.lng, trail: seen.trail, ahead: next, stale: seen.stale, seen: agoText(seen.last.at, now) } : null
+  const fresh = seen && seen.last.device !== null && !seen.stale ? agoText(seen.last.at, now) : null
   // The map is heavy: open on a computer, one tap away on a phone (open when they are out today).
   const [mapChoice, setMapOpen] = useState<boolean | null>(null)
-  const mapOpen = mapChoice ?? (window.matchMedia('(min-width: 1024px)').matches || Boolean(live && seen && !seen.stale))
+  const out = live && Boolean(fresh || where?.kind === 'at' || where?.kind === 'between')
+  const mapOpen = mapChoice ?? (window.matchMedia('(min-width: 1024px)').matches || out)
   if (day.isPending) return <div className={styles.skeletons}>{[0, 1, 2].map((i) => <Skeleton key={i} height={72} />)}</div>
   if (day.isError) return <Banner tone="error">No pudimos cargar los locales. Revisá la conexión.</Banner>
 
@@ -132,7 +138,7 @@ function MemberDay({ companyId, personId, workday, first, activity }: MemberDayP
       </div>
 
       {stops.length ? (
-        <aside className={clsx(styles.aside, live && seen && !seen.stale && styles.asideLive)} aria-label="Recorrido en el mapa">
+        <aside className={clsx(styles.aside, out && styles.asideLive)} aria-label="Recorrido en el mapa">
           <div className={styles.mapHead}>
             <h2 className={styles.mapTitle}>Su recorrido</h2>
             <Button variant="secondary" size="sm" className={styles.mapToggle} onClick={() => setMapOpen(!mapOpen)} aria-expanded={mapOpen}>
@@ -140,7 +146,7 @@ function MemberDay({ companyId, personId, workday, first, activity }: MemberDayP
             </Button>
           </div>
           {workday.status !== 'draft' && !positions.isPending ? (
-            <FollowStatus first={first} live={live} seen={tracker?.seen ?? null} stale={seen?.stale ?? false} otherPhones={seen?.otherPhones ?? 0} />
+            <FollowStatus first={first} live={live} fresh={fresh} where={where} otherPhones={seen?.otherPhones ?? 0} hasPath={Boolean(seen)} now={now} />
           ) : null}
           {mapOpen ? (
             located.length || tracker ? (
