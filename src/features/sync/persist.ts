@@ -27,7 +27,11 @@ export const persister: Persister = {
   },
 }
 
-/** Screens kept for working without signal: everything except short-lived photo links. */
+/**
+ * Screens kept for working without signal: everything except short-lived photo links.
+ * A cached query whose rows gain a field must change its key (e.g. a 'v2' in it), or a
+ * phone restores the old rows without it.
+ */
 export const PERSIST_OPTIONS = {
   persister,
   maxAge: 7 * 24 * 60 * 60_000,

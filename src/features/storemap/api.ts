@@ -6,7 +6,9 @@ import type { MapPoint } from '@/domain/store-map'
 /** The points of sale I can see: all of the company (supervisor, admin) or my clients (seller). */
 export const storeMapQuery = (companyId: string) =>
   queryOptions({
-    queryKey: ['stores', 'map', companyId],
+    // The shape is part of the key: phones keep this list offline (sync/persist.ts), and a copy
+    // saved before display types existed broke the map. A new field means a new version here.
+    queryKey: ['stores', 'map', 'v2', companyId],
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<MapPoint[]> => {
       const { data, error } = await supabase.rpc('store_map', { p_company: companyId })
