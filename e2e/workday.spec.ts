@@ -273,3 +273,48 @@ test('the after photo of a display can come from the gallery: the display is arr
   await expect.poll(() => state.uploads.map((u) => u.meta.kind)).toEqual(['after'])
   await expect(page.getByRole('button', { name: 'Elegir foto del después de la galería' })).toBeVisible() // more after photos, from either
 })
+
+test('with the day under way, the phone shares where it is with the supervisor, and says so', async ({ page, context }) => {
+  const state: FakeState = {
+    workday: { id: 'w1', company_id: 'c1', work_date: DATE, status: 'published', created_by: 'p9' },
+    visits: [
+      visitRow('v1', 0, 'Amenábar 1260', { work_status: 'in_progress', arrived_at: `${DATE}T11:40:00-03:00` }),
+      visitRow('v2', 1, 'Moldes 1365'),
+    ],
+    uploads: [],
+  }
+  await context.grantPermissions(['geolocation'])
+  await context.setGeolocation({ latitude: -34.5612, longitude: -58.4561, accuracy: 8 })
+  await installFakeSupabase(page, state)
+  await page.goto('/s/workday')
+  await expect(page.getByText('Tu supervisor ve tu ubicación mientras la jornada está en curso.')).toBeVisible()
+  await expect.poll(() => state.shared?.length ?? 0).toBeGreaterThan(0)
+  expect(state.shared?.[0]).toMatchObject({ p_workday: 'w1', p_lat: -34.5612, p_lng: -58.4561, p_accuracy: 8 })
+  expect(String(state.shared?.[0]?.p_device)).toMatch(/^[0-9a-f-]{36}$/)
+})
+
+test('before the day starts nothing is shared, and the activador is told what will be', async ({ page, context }) => {
+  const state: FakeState = {
+    workday: { id: 'w1', company_id: 'c1', work_date: DATE, status: 'published', created_by: 'p9' },
+    visits: [visitRow('v1', 0, 'Amenábar 1260'), visitRow('v2', 1, 'Moldes 1365')],
+    uploads: [],
+  }
+  await context.grantPermissions(['geolocation'])
+  await context.setGeolocation({ latitude: -34.5612, longitude: -58.4561, accuracy: 8 })
+  await installFakeSupabase(page, state)
+  await page.goto('/s/workday')
+  await expect(page.getByText('Cuando empieces la jornada, tu supervisor va a ver tu ubicación hasta que la termines.')).toBeVisible()
+  await page.waitForTimeout(1500)
+  expect(state.shared ?? []).toHaveLength(0)
+})
+
+test('without permission for the location, the activador is told the supervisor cannot see their path', async ({ page }) => {
+  const state: FakeState = {
+    workday: { id: 'w1', company_id: 'c1', work_date: DATE, status: 'published', created_by: 'p9' },
+    visits: [visitRow('v1', 0, 'Amenábar 1260', { work_status: 'in_progress', arrived_at: `${DATE}T11:40:00-03:00` }), visitRow('v2', 1, 'Moldes 1365')],
+    uploads: [],
+  }
+  await installFakeSupabase(page, state)
+  await page.goto('/s/workday')
+  await expect(page.getByText('Tu celular no da permiso de ubicación', { exact: false })).toBeVisible()
+})

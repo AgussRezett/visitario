@@ -89,6 +89,9 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
     const stored = await handleStorage({ path, req, route, state, json, body })
     if (stored) return stored
     if (path.endsWith('/rpc/has_password')) return json(true)
+    // ---- Where the activador is during the day
+    if (path.endsWith('/workday_position')) return json(state.positions ?? [])
+    if (path.endsWith('/rpc/share_day_position')) { (state.shared ??= []).push(body()); return json(true) }
     // Who has a profile photo (people photos for avatars across the app)
     if (path.endsWith('/person') && (url.searchParams.get('select') ?? '').includes('avatar_path')) return json(state.photos ?? [])
     if (path.endsWith('/person')) return json(state.invite?.noPerson ? [] : [{ id: ME, first_name: 'Agustín', last_name: 'Rezett' }])
