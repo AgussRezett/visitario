@@ -1,5 +1,6 @@
 import { pick } from './support/select'
 import { expect, test } from '@playwright/test'
+import { reviewAndAdd } from './support/review'
 import { installFakeSupabase, visitRow, type FakeState } from './support/fake-supabase'
 
 const TODAY = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' })
@@ -97,7 +98,7 @@ test('assigning: plan a day, add a store, publish', async ({ page }, info) => {
   const sheet = page.getByRole('dialog', { name: 'Agregar a la jornada de Lucía' })
   await sheet.getByRole('radio', { name: 'Pegar varias' }).click()
   await sheet.getByLabel('Direcciones').fill('Moldes 1365')
-  await sheet.getByRole('button', { name: 'Agregar 1 dirección' }).click()
+  await reviewAndAdd(sheet, 1)
   await expect.poll(() => state.visits.some((v) => v.workday_id === `w-p2-${friday}`)).toBe(true)
   await page.keyboard.press('Escape')
 
@@ -124,7 +125,7 @@ test('assigning: copy a task to other stops, and add only the pending stops chos
   const sheet = page.getByRole('dialog', { name: 'Agregar a la jornada de Lucía' })
   await sheet.getByRole('radio', { name: 'Pegar varias' }).click()
   await sheet.getByLabel('Direcciones').fill('Moldes 1365\nVidal 2044\nCuba 2100')
-  await sheet.getByRole('button', { name: 'Agregar 3 direcciones' }).click()
+  await reviewAndAdd(sheet, 3)
   await expect.poll(() => state.visits.filter((v) => v.workday_id === `w-p2-${friday}`).length).toBe(3)
   await page.keyboard.press('Escape')
 

@@ -89,6 +89,11 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
     const stored = await handleStorage({ path, req, route, state, json, body })
     if (stored) return stored
     if (path.endsWith('/rpc/has_password')) return json(true)
+    // ---- A seller created while adding stores (admins)
+    if (path.endsWith('/seller') && req.method() === 'POST') {
+      const list = ((state.catalogs ??= {}).seller ??= []) as Row[]
+      return json(list[list.push({ id: Math.max(0, ...list.map((x) => Number(x.id))) + 1, name: body().name, active: true, person_id: null }) - 1])
+    }
     // ---- Where the activador is during the day
     if (path.endsWith('/workday_position')) return json(state.positions ?? [])
     if (path.endsWith('/rpc/share_day_position')) { (state.shared ??= []).push(body()); return json(true) }
