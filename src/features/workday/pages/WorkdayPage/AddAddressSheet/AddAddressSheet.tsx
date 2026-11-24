@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Check, MapPinOff, Search } from 'lucide-react'
 import { formatLongDate, todayInArgentina } from '@/domain/dates'
-import { overlapText } from '@/domain/overlaps'
 import { supabase } from '@/lib/supabase'
 import { useDebounced } from '@/lib/useDebounced'
 import { Banner } from '@/ui/Banner'
@@ -15,23 +14,18 @@ import { Select } from '@/ui/Select'
 import { ToggleTags } from '@/ui/ToggleTag'
 import type { WorkContext } from '@/features/workday/context'
 import { useCatalogs } from '@/features/workday/api/queries'
-import { useAddVisit, useAddVisits } from '@/features/workday/api/mutations'
+import { useAddVisit } from '@/features/workday/api/mutations'
 import { geocode, type GeocodeResult } from '@/features/workday/api/geocode'
 import { channelIdOf, channelOptions } from './channel-choice'
 import styles from './AddAddressSheet.module.scss'
 import { useOnline } from '@/lib/online'
-import { MentionTextArea } from '@/features/workday/components/MentionTextArea'
 import { SellerPicker } from '@/features/workday/components/SellerPicker'
 import { useAddSeller, useCanAddSellers } from '@/features/workday/api/sellers'
 import { pickable } from '@/features/workday/store-tags'
 import { useDayOverlaps } from '@/features/workday/api/overlaps'
 import { OverlapNote } from '@/features/workday/components/OverlapNote'
-import { pastedHelp, readLines } from './paste-lines'
 import { DirectoryResults } from './DirectoryResults'
-import { PasteSources } from './PasteSources'
-import { pasteOutcome, repeatedLines, type PasteOutcome } from './paste-results'
-import { PasteNotes } from './PasteNotes'
-import { briefLines, taskKey, type UnderstoodBrief } from '@/domain/brief'
+import { useManyStores } from './useManyStores'
 
 interface AddAddressSheetProps {
   open: boolean
@@ -45,7 +39,7 @@ interface AddAddressSheetProps {
 
 const EMPTY = { address: '', name: '', customerNumber: '', task: '', displayTypes: [] as number[], channel: null as string | null, seller: null as number | null }
 
-/** Add a store from the directory, a new one, or several pasted addresses (wireframes A05 / AD06). */
+/** Add a store from the directory, a new one, or several at once, reviewed row by row (wireframes A05 / AD06). */
 export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }: AddAddressSheetProps) {
   const online = useOnline()
   const [mode, setMode] = useState<'one' | 'many'>('one')
@@ -53,28 +47,14 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
   /** The store being added: marked while it saves, so the tap shows. */
   const [picked, setPicked] = useState<string | null>(null)
   const [form, setForm] = useState(EMPTY)
-  const [pasted, setPasted] = useState('')
-  /** Read from a PDF: each line's task, and what was understood. */
-  const [tasks, setTasks] = useState<Record<string, string>>({})
-  const [brief, setBrief] = useState<UnderstoodBrief | null>(null)
-  const [outcome, setOutcome] = useState<PasteOutcome | null>(null)
-  /** For the pasted lines without #canal: unchosen until picked (a channel or "Sin canal"). */
-  const [defaultChannel, setDefaultChannel] = useState<string | null>(null)
   const catalogs = useCatalogs(ctx.companyId)
   const add = useAddVisit(workdayId)
-  const addMany = useAddVisits(workdayId)
 
   useEffect(() => {
     if (open) {
       setQuery('')
       setForm(EMPTY)
-      setPasted('')
-      setTasks({})
-      setBrief(null)
-      setOutcome(null)
-      setDefaultChannel(null)
       add.reset()
-      addMany.reset()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only when the sheet opens
   }, [open])
@@ -102,29 +82,19 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
   const set = (key: keyof typeof EMPTY) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm((f) => ({ ...f, [key]: e.target.value }))
   const sellers = pickable(catalogs.data?.sellers, null)
   const channels = pickable(catalogs.data?.channels, null)
-  const lines = readLines(pasted, sellers, channels)
   // A new store's channel is chosen on purpose: a channel, or "Sin canal". Never assumed.
-  const pastedChannel = defaultChannel ?? ''
   const formChannel = form.channel ?? ''
   const formNeedsChannel = channels.length > 0 && formChannel === ''
-  const pastedNeedsChannel = channels.length > 0 && pastedChannel === '' && lines.some((l) => l.channelId == null)
-  // The same store twice in the list goes in once; say so before adding.
-  const twice = [...repeatedLines(lines)].map(([i, first]) => `Línea ${i + 1} repite la ${first + 1}: ${lines[i]?.customerNumber || lines[i]?.address}`)
-  // The mention still being typed at the end is not flagged yet.
   const canAdd = useCanAddSellers(ctx.companyId)
   const newSeller = useAddSeller(ctx.companyId)
   const addSeller = canAdd ? (name: string) => newSeller.mutateAsync(name) : undefined
-  const unknown = [...new Set(lines.flatMap((l) => l.unknown))].filter((u) => !pasted.endsWith(u))
+  const many = useManyStores({ open, ctx, workdayId, date, online, sellers, channels, onAddSeller: addSeller, onClose })
 
   // Who else already has these stores that day, before adding them again.
   const when = date === todayInArgentina() ? 'de hoy' : 'de ese día'
   const foundOverlaps = useDayOverlaps(workdayId, (found.data ?? []).map((st) => ({ storeId: st.id })), open && mode === 'one' && online)
   const typed = useDebounced(`${form.address.trim()}|${form.customerNumber.trim()}`, 500).split('|')
   const newOverlaps = useDayOverlaps(workdayId, [{ address: typed[0], customerNumber: typed[1] }], open && mode === 'one' && online)
-  const pastedLines = useDebounced(lines.map((l) => [l.address, l.customerNumber ?? ''].join('|')).join('\n'), 500)
-  const pastedAsks = pastedLines ? pastedLines.split('\n').map((r) => ({ address: r.split('|')[0], customerNumber: r.split('|')[1] })) : []
-  const pastedOverlaps = useDayOverlaps(workdayId, pastedAsks, open && mode === 'many' && online)
-  const repeated = [...(pastedOverlaps.data ?? [])].flatMap(([i, list]) => (lines[i] ? [`${lines[i].address || lines[i].customerNumber}: ${overlapText(list, when)}`] : []))
 
   const pick = async (storeId: string) => {
     setPicked(storeId)
@@ -153,26 +123,6 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
     onClose()
   }
 
-  const addPasted = async () => {
-    setOutcome(null)
-    const sent = lines
-    const rows = sent.map((l) => ({ customerNumber: l.customerNumber, address: l.address, area: l.area, sellerId: l.sellerId, channelId: l.channelId ?? channelIdOf(pastedChannel), task: tasks[taskKey(l.address)] }))
-    const result = pasteOutcome(sent.map((l) => l.text), await addMany.mutateAsync(rows), repeatedLines(sent))
-    if (!result.failed.length) return onClose()
-    // The lines that did not go in stay, to fix them and try again.
-    setPasted(result.failed.map((f) => f.text).join('\n'))
-    setOutcome(result)
-  }
-
-  // The PDF's stores go below what is already there, in the PDF's order, each with its task.
-  const addLines = (read: string[]) => setPasted((p) => [p.trim(), ...read].filter(Boolean).join('\n'))
-  const readPdf = (b: UnderstoodBrief) => {
-    const read = briefLines(b, sellers)
-    addLines(read.map((l) => l.text))
-    setTasks((t) => ({ ...t, ...Object.fromEntries(read.map((l) => [l.key, l.task])) }))
-    setBrief(b)
-  }
-
   const canAddNew = form.address.trim().length >= 3 && !formNeedsChannel
 
   return (
@@ -183,20 +133,16 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
       title={forName ? `Agregar a la jornada de ${forName}` : 'Agregar a mi jornada'}
       subtitle={formatLongDate(date)}
       footer={
-        <>
-          <Button variant="secondary" size="md" className={styles.cancel} onClick={onClose}>Cancelar</Button>
-          {mode === 'one' ? (
+        mode === 'one' ? (
+          <>
+            <Button variant="secondary" size="md" className={styles.cancel} onClick={onClose}>Cancelar</Button>
             <Button size="md" disabled={!canAddNew || !online} loading={add.isPending} onClick={addNew}>{forName ? 'Agregar a la jornada' : 'Agregar a mi jornada'}</Button>
-          ) : (
-            <Button size="md" disabled={!lines.length || pastedNeedsChannel || !online} loading={addMany.isPending} onClick={() => void addPasted().catch(() => undefined)}>
-              Agregar {lines.length || ''} {lines.length === 1 ? 'dirección' : 'direcciones'}
-            </Button>
-          )}
-        </>
+          </>
+        ) : many.footer
       }
     >
       {online ? null : <Banner tone="info">Sin señal: para buscar y agregar direcciones necesitás conexión. Las visitas que ya tenés siguen funcionando.</Banner>}
-      <Segmented
+      {mode === 'many' && many.step === 'review' ? null : <Segmented
         label="Cómo agregar"
         value={mode}
         onChange={setMode}
@@ -204,7 +150,7 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
           { value: 'one', label: 'Una dirección' },
           { value: 'many', label: 'Pegar varias' },
         ]}
-      />
+      />}
 
       {mode === 'one' ? (
         <>
@@ -265,31 +211,9 @@ export function AddAddressSheet({ open, onClose, ctx, workdayId, date, forName }
             ) : null}
           </div>
         </>
-      ) : (
-        <>
-          {/* Self-employed accounts have no plan with AI. */}
-          {ctx.personal ? null : <PasteSources companyId={ctx.companyId} sellers={sellers} disabled={!online} day={date} brief={brief} onLines={addLines} onBrief={readPdf} />}
-          <MentionTextArea
-            label="Direcciones"
-            value={pasted}
-            onChange={setPasted}
-            sellers={sellers}
-            channels={channels}
-            onAddSeller={addSeller}
-            rows={8}
-            placeholder={'Una por línea. Nro. de cliente y zona, si los tenés:\n20114; Amenábar 1260; Belgrano @vendedor\nMoldes 1365'}
-            help={pastedHelp(lines, true)}
-          />
-          <PasteNotes outcome={outcome} unknown={unknown} twice={twice} repeated={repeated} />
-          {channels.length ? (
-            <Select label="Canal de los que no lo indican" value={pastedChannel} onChange={(v) => setDefaultChannel(v)} placeholder="Elegí uno" options={channelOptions(channels)} />
-          ) : null}
-          {pastedNeedsChannel ? <p className={styles.help}>Para agregarlas, elegí el canal de las que no lo indican con #canal (o "Sin canal").</p> : null}
-        </>
-      )}
+      ) : many.body}
 
-      {addMany.isPending ? <p className={styles.help}>Agregando {lines.length} {lines.length === 1 ? 'local' : 'locales'}…</p> : null}
-      {(add.error ?? addMany.error) ? <Banner tone="error">{(add.error ?? addMany.error)?.message}</Banner> : null}
+      {add.error ? <Banner tone="error">{add.error.message}</Banner> : null}
       <p className={styles.help}>
         Queda registrada como agregada por vos y tu supervisor la ve en tu jornada. Si no encontramos la altura exacta, la guardás sin ubicación y la verificás después.
       </p>
