@@ -21,6 +21,7 @@ import { ResumeSheet } from '../ResumeSheet'
 import { DayHero } from '../DayHero'
 import { todayInArgentina } from '@/domain/dates'
 import { SharingNotice } from '@/features/tracking/components/SharingNotice'
+import { ClearDay } from '@/features/workday/components/ClearDay'
 import { DayStats } from '../DayStats'
 import { StopList, type StopFilter } from '../StopList'
 import { ReportPanel, ResumePanel } from '../SidePanels'
@@ -140,6 +141,8 @@ export function DayView({ ctx, workday, sheet, onSheet }: DayViewProps) {
             ) : null}
             <DayStats visits={list} />
             <StopList visits={shown} all={list} filter={filter} onFilter={setFilter} reputation={reputation.data} operationStops={day.operationStops} presence={presence} meId={ctx.personId} />
+            {/* A route passed by mistake: everything not started goes in one step. */}
+            <ClearDay workdayId={workday.id} visits={list} boss={false} whose="tu jornada" />
             <div className={styles.phoneOnly}>
               <ResumePanel items={pending} onResume={() => setResuming(true)} />
             </div>
