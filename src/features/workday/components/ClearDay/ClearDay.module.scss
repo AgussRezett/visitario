@@ -1,0 +1,11 @@
+@use '@/styles/abstracts' as *;
+
+.button {
+  color: $color-fix-ink;
+}
+
+.hint {
+  @include text(label);
+  margin: space(1) 0 0;
+  color: $color-ink-muted;
+}
