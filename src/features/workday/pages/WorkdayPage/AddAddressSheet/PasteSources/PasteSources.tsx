@@ -3,7 +3,6 @@ import type { UnderstoodBrief } from '@/domain/brief'
 import type { Mentionable } from '@/domain/mentions'
 import { CaptureError } from '@/features/import/api/capture'
 import { AiReader } from '@/features/import/components/AiReader'
-import { BriefSummary } from '@/features/import/components/BriefSummary'
 import { readNote } from '@/features/import/read-note'
 
 interface PasteSourcesProps {
@@ -11,16 +10,14 @@ interface PasteSourcesProps {
   sellers: readonly Mentionable[]
   channels: readonly Mentionable[]
   disabled: boolean
-  /** The day being filled. */
-  day: string
-  brief: UnderstoodBrief | null
   /** A capture's stores, to review row by row. */
   onRows: (rows: ReviewRow[], note: string) => void
-  onBrief: (brief: UnderstoodBrief) => void
+  /** A PDF or indications understood: its stores and tasks, and what to say of the reading. */
+  onBrief: (brief: UnderstoodBrief, note: string | null) => void
 }
 
 /** Stores from files, read by AI: captures go to the review row by row; PDFs or indications, as lines with what was understood. */
-export function PasteSources({ companyId, sellers, channels, disabled, day, brief, onRows, onBrief }: PasteSourcesProps) {
+export function PasteSources({ companyId, sellers, channels, disabled, onRows, onBrief }: PasteSourcesProps) {
   return (
     <>
       <AiReader
@@ -30,8 +27,9 @@ export function PasteSources({ companyId, sellers, channels, disabled, day, brie
         placeholder="Ej.: Mañana hacé estos locales. Todos son de Pablo, menos el de Olaguer que es de Mirko. Avisame si falta algo."
         onRead={(r) => {
           if (r.kind === 'brief') {
-            onBrief(r.brief)
-            return r.unreadable ? readNote(r.brief.stops.length, r.unreadable) : null
+            const note = r.unreadable ? readNote(r.brief.stops.length, r.unreadable) : null
+            onBrief(r.brief, note)
+            return note
           }
           const read = Date.now()
           const rows = r.transcripts.flatMap((t, i) => rowsFromTranscript(t, sellers, channels, `capture-${read}-${i}`))
@@ -41,7 +39,6 @@ export function PasteSources({ companyId, sellers, channels, disabled, day, brie
           return note
         }}
       />
-      {brief ? <BriefSummary brief={brief} day={day} /> : null}
     </>
   )
 }
