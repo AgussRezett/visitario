@@ -1553,6 +1553,34 @@ await expectError('A company cannot lose its last admin', () => as('carla', `upd
   check('Another company never does', (await seen('beto')) === 0)
 }
 
+// ---- Clearing a day loaded by mistake
+{
+  const day = (await as('martin', `select plan_workday($1, $2, '2027-02-03') id`, [panda, agus]))[0].id
+  await as('martin', `update workday set status = 'published' where id = $1`, [day])
+  const stores = (await sys(`insert into store (company_id, address) select $1, 'Clear ' || g from generate_series(1, 5) g returning id`, [panda])).map((r) => r.id)
+  const stop = async (store, by, extra = '') => (await sys(
+    `insert into visit (company_id, workday_id, merchandiser_id, work_date, store_id, added_by${extra ? ', work_status, arrived_at' : ''})
+     values ($1, $2, $3, '2027-02-03', $4, $5${extra}) returning id`, [panda, day, agus, store, by]))[0].id
+  const assigned = await stop(stores[0], martin)
+  const mine = await stop(stores[1], agus)
+  const started = await stop(stores[2], agus, ", 'in_progress', now()")
+  const withPhoto = await stop(stores[3], agus)
+  await sys(`insert into photo (id, company_id, visit_id, kind, taken_at, bytes, width, height, created_by) values (gen_random_uuid(), $1, $2, 'storefront', now(), 1, 1, 1, $3)`, [panda, withPhoto, agus])
+  const alsoAssigned = await stop(stores[4], martin)
+  const live = async () => (await sys(`select id from visit where workday_id = $1 and deleted_at is null order by id`, [day])).map((r) => r.id).sort()
+
+  const [byAgus] = await as('agus', `select * from clear_workday($1)`, [day])
+  check('The activador clears the stops they added and did not start', byAgus.removed === 1 && !(await live()).includes(mine))
+  check('…not the ones the supervisor assigned, started or with photos', byAgus.kept === 4)
+  const [byMartin] = await as('martin', `select * from clear_workday($1)`, [day])
+  check('The supervisor clears every stop not started yet', byMartin.removed === 2 && JSON.stringify(await live()) === JSON.stringify([started, withPhoto].sort()))
+  check('…and what was started or has photos stays', byMartin.kept === 2)
+  check('Clearing again finds nothing to remove', (await as('martin', `select * from clear_workday($1)`, [day]))[0].removed === 0)
+  await expectError('Another company cannot clear it', () => as('beto', `select * from clear_workday($1)`, [day]), /not found/)
+  void assigned; void alsoAssigned
+  await sys(`update visit set deleted_at = now() where workday_id = $1`, [day])
+}
+
 // ---- Problems reported from the app
 {
   const asService = async (sql, params = []) => {

@@ -4,7 +4,7 @@ import { handlePlatform } from './fake-platform'
 import { handleStorage } from './fake-storage'
 import { handleOperation } from './fake-operation'
 import { dayOverlaps } from './fake-overlaps'
-import { addVisits, matchDayStores } from './fake-paste'
+import { addVisits, clearWorkday, matchDayStores } from './fake-paste'
 import type { FakeState, Row } from './fake-state'
 
 export type { FakeState, Row } from './fake-state'
@@ -90,7 +90,7 @@ export async function installFakeSupabase(page: Page, state: FakeState, role: 'm
     if (stored) return stored
     if (path.endsWith('/rpc/has_password')) return json(true)
     // ---- Directory stores among the rows to add; a seller created there (admins)
-    if (path.endsWith('/rpc/match_day_stores')) return json(matchDayStores(state, body()))
+    if (path.endsWith('/rpc/match_day_stores') || path.endsWith('/rpc/clear_workday')) return json(path.endsWith('/rpc/clear_workday') ? clearWorkday(state, body(), ME) : matchDayStores(state, body()))
     if (path.endsWith('/seller') && req.method() === 'POST') {
       const list = ((state.catalogs ??= {}).seller ??= []) as Row[]
       return json(list[list.push({ id: Math.max(0, ...list.map((x) => Number(x.id))) + 1, name: body().name, active: true, person_id: null }) - 1])
