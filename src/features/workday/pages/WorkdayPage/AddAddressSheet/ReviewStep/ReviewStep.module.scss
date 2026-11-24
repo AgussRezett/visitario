@@ -168,3 +168,40 @@
   color: $color-fix-ink;
   font-weight: 600;
 }
+
+// A directory store: shown as it is there, not to be typed again.
+.row-known {
+  background: $color-muted;
+}
+
+.known {
+  @include flex(column, $gap: space(1));
+  grid-area: address;
+  min-width: 0;
+  padding-top: space(1);
+}
+
+.known-tag {
+  @include flex(row, $gap: space(1), $align: center);
+  @include text(label);
+  margin: 0;
+  color: $color-done-ink;
+  font-weight: 600;
+}
+
+.known-name {
+  @include text(body);
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.known-meta {
+  @include text(label);
+  margin: 0;
+  color: $color-ink-muted;
+
+  &:empty {
+    display: none;
+  }
+}

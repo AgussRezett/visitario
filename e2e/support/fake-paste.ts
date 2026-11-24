@@ -1,6 +1,20 @@
 import type { FakeState, Row } from './fake-state'
 
 const norm = (t: unknown) => String(t ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim()
+/** As the database compares them: "Av." and other street kinds aside, and numbers without leading zeros. */
+const street = (t: unknown) => norm(t).replace(/\./g, '').replace(/^(av|avda|avenida|calle|pje|pasaje) /, '')
+const num = (t: unknown) => String(t ?? '').trim().replace(/^0+/, '')
+
+/** match_day_stores: the rows that are directory stores, and which. */
+export function matchDayStores(state: FakeState, b: Row) {
+  return ((b.p_rows as Row[] | undefined) ?? []).flatMap((r, idx) => {
+    const live = (state.stores ?? []).filter((s) => !s.deleted_at)
+    const byNumber = num(r.customer_number) ? live.find((s) => num(s.customer_number) === num(r.customer_number)) : undefined
+    const s = byNumber ?? (street(r.address).length > 2 ? live.find((x) => street(x.address) === street(r.address)) : undefined)
+    return s ? [{ idx, store_id: s.id, matched_by: byNumber ? 'customer' : 'address', name: s.name ?? null, address: s.address, area: s.area ?? null,
+      customer_number: s.customer_number ?? null, channel_id: s.channel_id ?? null, seller_id: s.seller_id ?? null }] : []
+  })
+}
 
 /**
  * add_visits: each pasted row on its own, as the database does. Stores in `state.stores`
@@ -15,7 +29,7 @@ export function addVisits(state: FakeState, b: Row, addVisit: (b: Row) => string
     const address = String(r.address ?? '').trim()
     const byNumber = num ? stores.find((s) => s.customer_number === num) : undefined
     if (byNumber?.deleted_at) return { ...base, error: 'archived_customer', detail: byNumber.address }
-    const found = byNumber ?? (address.length >= 3 ? stores.find((s) => !s.deleted_at && norm(s.address) === norm(address)) : undefined)
+    const found = byNumber ?? (address.length >= 3 ? stores.find((s) => !s.deleted_at && street(s.address) === street(address)) : undefined)
     if (!found && address.length < 3) return { ...base, error: 'no_address' }
     const already = found ? state.visits.find((v) => v.store_id === found.id && (v.workday_id ?? 'w1') === workdayId) : undefined
     if (already) return { ...base, visit_id: already.id, store_id: found?.id, matched_by: byNumber ? 'customer' : 'address' }

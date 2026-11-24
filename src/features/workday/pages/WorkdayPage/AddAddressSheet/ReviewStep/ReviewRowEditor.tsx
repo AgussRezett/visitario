@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { Trash2 } from 'lucide-react'
+import { BookMarked, Trash2 } from 'lucide-react'
 import clsx from 'clsx'
 import type { ReviewRow } from '@/domain/add-review'
 import type { Mentionable } from '@/domain/mentions'
@@ -24,10 +24,19 @@ interface ReviewRowEditorProps {
 /** One store to add, every part editable. */
 export const ReviewRowEditor = memo(function ReviewRowEditor({ row, n, sellers, channelOptions, problem, notes, onChange, onRemove, onAddSeller }: ReviewRowEditorProps) {
   const set = (patch: Partial<ReviewRow>) => onChange(row.key, patch)
-  const what = row.address || row.customerNumber || `local ${n}`
+  const k = row.known
+  const what = k?.address ?? (row.address || row.customerNumber || `local ${n}`)
   return (
-    <li className={clsx(styles.row, problem && styles.rowProblem)} aria-label={`Local ${n}: ${what}`}>
+    <li className={clsx(styles.row, problem && styles.rowProblem, k && styles.rowKnown)} aria-label={`Local ${n}: ${what}`}>
       <span className={styles.n} aria-hidden>{n}</span>
+      {k ? (
+        // Already in the directory: that store goes, as it is there.
+        <div className={styles.known}>
+          <p className={styles.knownTag}><BookMarked size={14} aria-hidden />Ya está en el directorio · {k.by === 'customer' ? 'mismo nro. de cliente' : 'misma dirección'}</p>
+          <p className={styles.knownName}>{k.name ? `${k.name} · ` : ''}{k.address}</p>
+          <p className={styles.knownMeta}>{[k.area, k.customerNumber ? `Nro. ${k.customerNumber}` : row.customerNumber ? `Nro. ${row.customerNumber} (se lo agregamos)` : null].filter(Boolean).join(' · ')}</p>
+        </div>
+      ) : (<>
       <div className={styles.address}>
         <Field label="Dirección" value={row.address} onChange={(e) => set({ address: e.target.value })} autoComplete="off" />
       </div>
@@ -37,6 +46,7 @@ export const ReviewRowEditor = memo(function ReviewRowEditor({ row, n, sellers, 
       <div className={styles.area}>
         <Field label="Barrio" value={row.area} onChange={(e) => set({ area: e.target.value })} autoComplete="off" />
       </div>
+      </>)}
       <div className={styles.seller}>
         <SellerPicker sellers={sellers} value={row.sellerId} onChange={(sellerId) => set({ sellerId, sellerName: sellerId === null ? row.sellerName : '' })} onAddSeller={onAddSeller} />
         {row.sellerId === null && row.sellerName ? <p className={styles.read}>Leído: {row.sellerName} (todavía no está cargado)</p> : null}

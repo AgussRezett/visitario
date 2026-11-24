@@ -18,6 +18,20 @@ export interface ReviewRow {
   /** '' not chosen yet, 'none' for "Sin canal", or the channel's id. */
   channel: string
   task: string
+  /** The directory's store this row is (same customer number, or the same address written another way). */
+  known?: KnownStore
+}
+
+export interface KnownStore {
+  id: string
+  name: string | null
+  address: string
+  area: string | null
+  customerNumber: string | null
+  channelId: number | null
+  sellerId: number | null
+  /** How it was found. */
+  by: 'customer' | 'address'
 }
 
 export interface PastedLineLike {
@@ -31,13 +45,13 @@ export interface PastedLineLike {
 }
 
 /** Lines pasted one by one ("564; Lacroze 3265; Belgrano @Mirko #Kiosco"), as rows. */
-export function rowsFromLines(lines: readonly PastedLineLike[], taskFor: (address: string) => string = () => ''): ReviewRow[] {
+export function rowsFromLines(lines: readonly PastedLineLike[], taskFor: (address: string) => string = () => '', source = 'line'): ReviewRow[] {
   const seen = new Map<string, number>()
   return lines.map((l) => {
     const n = seen.get(l.text) ?? 0
     seen.set(l.text, n + 1)
     return {
-      key: `line:${l.text}:${n}`,
+      key: `${source}:${l.text}:${n}`,
       customerNumber: l.customerNumber,
       address: l.address,
       area: l.area,
@@ -114,6 +128,8 @@ export function assignSeller(rows: readonly ReviewRow[], name: string, sellerId:
 
 /** What a row still needs before adding it; null when ready. */
 export function rowProblem(r: ReviewRow, hasChannels: boolean): string | null {
+  // A directory store is already what it is: nothing to fill in.
+  if (r.known) return null
   if (r.address.trim().length < 3 && !r.customerNumber.trim()) return 'Falta la dirección'
   if (hasChannels && r.channel === '') return 'Elegí el canal'
   return null
@@ -126,4 +142,24 @@ export function rowProblem(r: ReviewRow, hasChannels: boolean): string | null {
 export function keepEdits(fresh: readonly ReviewRow[], before: readonly ReviewRow[], removed: ReadonlySet<string>): ReviewRow[] {
   const edited = new Map(before.map((r) => [r.key, r]))
   return fresh.filter((r) => !removed.has(r.key)).map((r) => edited.get(r.key) ?? r)
+}
+
+/**
+ * Marks the rows that are directory stores, and fills what the row did not say with the
+ * store's own (its channel and seller). A row whose address or number changed so that it no
+ * longer matches is a new store again.
+ */
+export function applyKnown(rows: readonly ReviewRow[], known: ReadonlyMap<string, KnownStore>): ReviewRow[] {
+  return rows.map((r) => {
+    const k = known.get(r.key)
+    if (!k) return r.known ? { ...r, known: undefined } : r
+    if (r.known?.id === k.id) return r
+    return {
+      ...r,
+      known: k,
+      channel: r.channel || (k.channelId === null ? '' : String(k.channelId)),
+      sellerId: r.sellerId ?? k.sellerId,
+      sellerName: r.sellerId ?? k.sellerId ? '' : r.sellerName,
+    }
+  })
 }

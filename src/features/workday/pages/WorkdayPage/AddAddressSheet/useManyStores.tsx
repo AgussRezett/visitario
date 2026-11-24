@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { keepEdits, rowProblem, rowsFromLines, type ReviewRow } from '@/domain/add-review'
+import { applyKnown, keepEdits, rowProblem, rowsFromLines, type ReviewRow } from '@/domain/add-review'
 import { briefLines, taskKey, type UnderstoodBrief } from '@/domain/brief'
 import { todayInArgentina } from '@/domain/dates'
 import type { Mentionable } from '@/domain/mentions'
@@ -9,11 +9,13 @@ import { Button } from '@/ui/Button'
 import type { WorkContext } from '@/features/workday/context'
 import { useAddVisits } from '@/features/workday/api/mutations'
 import { useDayOverlaps } from '@/features/workday/api/overlaps'
+import { useKnownStores } from '@/features/workday/api/known-stores'
 import { MentionTextArea } from '@/features/workday/components/MentionTextArea'
 import { channelIdOf } from './channel-choice'
 import { pastedHelp, readLines } from './paste-lines'
 import { outcomeText, pasteOutcome, repeatedLines } from './paste-results'
 import { PasteSources } from './PasteSources'
+import { BriefSummary } from '@/features/import/components/BriefSummary'
 import { ReviewStep } from './ReviewStep'
 import styles from './AddAddressSheet.module.scss'
 
@@ -36,8 +38,7 @@ interface ManyStoresInput {
 export function useManyStores({ open, ctx, workdayId, date, online, sellers, channels, onAddSeller, onClose }: ManyStoresInput) {
   const [step, setStep] = useState<'paste' | 'review'>('paste')
   const [pasted, setPasted] = useState('')
-  /** Read from a PDF: each line's task, and what was understood. */
-  const [tasks, setTasks] = useState<Record<string, string>>({})
+  /** Read from a PDF or indications: what was understood. */
   const [brief, setBrief] = useState<UnderstoodBrief | null>(null)
   /** Rows read from captures, as the AI left them. */
   const [readRows, setReadRows] = useState<ReviewRow[]>([])
@@ -54,7 +55,6 @@ export function useManyStores({ open, ctx, workdayId, date, online, sellers, cha
     if (!open) return
     setStep('paste')
     setPasted('')
-    setTasks({})
     setBrief(null)
     setReadRows([])
     setRows([])
@@ -67,7 +67,7 @@ export function useManyStores({ open, ctx, workdayId, date, online, sellers, cha
   }, [open])
 
   const lines = readLines(pasted, sellers, channels)
-  const fresh = () => [...rowsFromLines(lines, (a) => tasks[taskKey(a)] ?? ''), ...readRows]
+  const fresh = () => [...rowsFromLines(lines), ...readRows]
   const count = fresh().filter((r) => !removed.has(r.key)).length
 
   const review = (extra: ReviewRow[] = []) => {
@@ -80,12 +80,15 @@ export function useManyStores({ open, ctx, workdayId, date, online, sellers, cha
     setReadSaid(note)
     review(read)
   }
-  const addLines = (read: string[]) => setPasted((p) => [p.trim(), ...read].filter(Boolean).join('\n'))
-  const readPdf = (b: UnderstoodBrief) => {
+  // A PDF or indications understood: straight to the review too, each store with its task.
+  const readPdf = (b: UnderstoodBrief, note: string | null) => {
     const read = briefLines(b, sellers)
-    addLines(read.map((l) => l.text))
-    setTasks((t) => ({ ...t, ...Object.fromEntries(read.map((l) => [l.key, l.task])) }))
+    const byKey = Object.fromEntries(read.map((l) => [l.key, l.task]))
+    const rows = rowsFromLines(readLines(read.map((l) => l.text).join('\n'), sellers, channels), (a) => byKey[taskKey(a)] ?? '', `brief-${Date.now()}`)
     setBrief(b)
+    setReadRows((r) => [...r, ...rows])
+    setReadSaid(note)
+    review(rows)
   }
   const remove = useCallback((key: string) => {
     setRows((all) => all.filter((r) => r.key !== key))
@@ -95,6 +98,12 @@ export function useManyStores({ open, ctx, workdayId, date, online, sellers, cha
   // Who else already has these stores that day, and the same store twice in the list.
   const when = date === todayInArgentina() ? 'de hoy' : 'de ese día'
   const overlaps = useDayOverlaps(workdayId, rows.map((r) => ({ address: r.address, customerNumber: r.customerNumber })), open && step === 'review' && online)
+  // The rows that are directory stores go as those stores.
+  const known = useKnownStores(ctx.companyId, rows, open && step === 'review' && online)
+  useEffect(() => {
+    if (known.data) setRows((all) => applyKnown(all, known.data))
+  }, [known.data])
+
   const notes = useMemo(() => {
     const out = new Map<string, string[]>()
     const push = (key: string, t: string) => out.set(key, [...(out.get(key) ?? []), t])
@@ -127,7 +136,7 @@ export function useManyStores({ open, ctx, workdayId, date, online, sellers, cha
     <>
       {/* Self-employed accounts have no plan with AI. */}
       {ctx.personal ? null : (
-        <PasteSources companyId={ctx.companyId} sellers={sellers} channels={channels} disabled={!online} day={date} brief={brief} onRows={onRows} onBrief={readPdf} />
+        <PasteSources companyId={ctx.companyId} sellers={sellers} channels={channels} disabled={!online} onRows={onRows} onBrief={readPdf} />
       )}
       {readRows.length ? (
         <p className={styles.help}>{readRows.length === 1 ? '1 local leído' : `${readRows.length} locales leídos`} de capturas: los ves en la revisión.</p>
@@ -147,6 +156,7 @@ export function useManyStores({ open, ctx, workdayId, date, online, sellers, cha
   ) : (
     <>
       {summary ? <Banner tone="warn">{summary}</Banner> : readSaid ? <Banner tone="info">{readSaid}</Banner> : null}
+      {brief && !summary ? <BriefSummary brief={brief} day={date} /> : null}
       <ReviewStep rows={rows} onRows={setRows} onRemove={remove} sellers={sellers} channels={channels} onAddSeller={onAddSeller} notes={notes} />
       {addMany.isPending ? <p className={styles.help}>Agregando {rows.length} {rows.length === 1 ? 'local' : 'locales'}…</p> : null}
       {addMany.error ? <Banner tone="error">{addMany.error.message}</Banner> : null}

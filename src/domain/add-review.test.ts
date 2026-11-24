@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assignSeller, channelIn, keepEdits, rowProblem, rowsFromLines, rowsFromTranscript, unknownSellers, type ReviewRow } from './add-review'
+import { applyKnown, assignSeller, channelIn, keepEdits, rowProblem, rowsFromLines, rowsFromTranscript, unknownSellers, type ReviewRow } from './add-review'
 
 const sellers = [{ id: 1, name: 'Mirko Ra' }, { id: 2, name: 'Florencia' }]
 const channels = [{ id: 10, name: 'Kiosco' }, { id: 11, name: 'Autoservicio' }, { id: 12, name: 'Mayorista' }]
@@ -87,5 +87,22 @@ describe('going back to paste more', () => {
     const fresh = [row({ key: 'a' }), row({ key: 'b' }), row({ key: 'c' })]
     const before = [row({ key: 'a', area: 'Belgrano' })]
     expect(keepEdits(fresh, before, new Set(['b'])).map((r) => [r.key, r.area])).toEqual([['a', 'Belgrano'], ['c', '']])
+  })
+})
+
+describe('rows that are directory stores', () => {
+  const callao = { id: 's1', name: 'Autoservicio Lili', address: 'Av. Callao 2000', area: 'Balvanera', customerNumber: null, channelId: 11, sellerId: 2, by: 'address' as const }
+  it('take the store, with its channel and seller where the row said none, and need nothing more', () => {
+    const [r] = applyKnown([row({ key: 'a', address: 'Callao 2000', customerNumber: '9320', sellerName: 'Juan' })], new Map([['a', callao]]))
+    expect(r).toMatchObject({ known: callao, channel: '11', sellerId: 2, sellerName: '' })
+    expect(r && rowProblem(r, true)).toBeNull()
+  })
+  it('keep what the row chose', () => {
+    const [r] = applyKnown([row({ key: 'a', channel: '10', sellerId: 1 })], new Map([['a', callao]]))
+    expect(r).toMatchObject({ channel: '10', sellerId: 1 })
+  })
+  it('a row that no longer matches is a new store again', () => {
+    const [r] = applyKnown([row({ key: 'a', known: callao })], new Map())
+    expect(r?.known).toBeUndefined()
   })
 })

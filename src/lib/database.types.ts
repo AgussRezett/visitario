@@ -2451,6 +2451,20 @@ export type Database = {
         Args: { p_accuracy: number; p_device: string; p_lat: number; p_lng: number; p_workday: string }
         Returns: boolean
       }
+      match_day_stores: {
+        Args: { p_company: string; p_rows: Json }
+        Returns: {
+          idx: number
+          store_id: string
+          matched_by: string
+          name: string | null
+          address: string
+          area: string | null
+          customer_number: string | null
+          channel_id: number | null
+          seller_id: number | null
+        }[]
+      }
       set_photo_crop: {
         Args: { p_crop: number[] | null; p_photo: string }
         Returns: undefined

@@ -24,12 +24,14 @@ export function ReviewStep({ rows, onRows, onRemove, sellers, channels, onAddSel
   const unknown = useMemo(() => unknownSellers(rows), [rows])
   const withoutChannel = options ? rows.filter((r) => r.channel === '').length : 0
   const pending = rows.filter((r) => rowProblem(r, Boolean(options))).length
+  const inDirectory = rows.filter((r) => r.known).length
   const change = useCallback((key: string, patch: Partial<ReviewRow>) => onRows((all) => all.map((r) => (r.key === key ? { ...r, ...patch } : r))), [onRows])
 
   return (
     <div className={styles.step}>
       <p className={styles.summary} role="status">
         {rows.length === 1 ? '1 local para agregar' : `${rows.length} locales para agregar`}
+        {inDirectory ? ` · ${inDirectory === 1 ? '1 ya está' : `${inDirectory} ya están`} en el directorio` : ''}
         {pending ? ` · ${pending === 1 ? 'a 1 le falta un dato' : `a ${pending} les falta un dato`}` : ' · todo listo'}
       </p>
       {options && withoutChannel ? (
