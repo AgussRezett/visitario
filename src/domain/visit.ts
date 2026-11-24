@@ -47,6 +47,14 @@ export function canRemoveVisit(v: { addedByMe: boolean; resumedFrom: string | nu
 }
 
 /**
+ * Whether "Limpiar jornada" takes this stop off: not started yet (no arrival, no photos) and
+ * one the person may remove (a supervisor or admin, any; the activador, the ones they added).
+ */
+export function canClear(v: { workStatus: WorkStatus; arrivedAt: string | null; photos: readonly unknown[]; addedByMe: boolean; resumedFrom: string | null; reviewStatus: ReviewStatus; autoApproved?: boolean }, boss: boolean) {
+  return v.workStatus === 'pending' && v.arrivedAt === null && v.photos.length === 0 && (boss || canRemoveVisit(v))
+}
+
+/**
  * The merchandiser undoes "finished" (done or not authorized) to fix the visit and finish
  * it again; closed has its own "Volví: probar de nuevo". Not once a supervisor approved it.
  */

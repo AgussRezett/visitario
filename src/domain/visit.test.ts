@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canRecord, canReopen, canRemoveVisit, canTransition, finishCheck, isVisited, staleSoon, stopTone, workdayProgress } from './visit'
+import { canRecord, canReopen, canRemoveVisit, canTransition, finishCheck, isVisited, staleSoon, stopTone, workdayProgress, canClear } from './visit'
 
 describe('visit rules', () => {
   it('mirrors the database transitions', () => {
@@ -97,5 +97,21 @@ describe('canReopen', () => {
     expect(canReopen({ workStatus: 'done', reviewStatus: 'approved', autoApproved: false })).toBe(false)
     expect(canReopen({ workStatus: 'closed', reviewStatus: 'unreviewed' })).toBe(false)
     expect(canReopen({ workStatus: 'in_progress', reviewStatus: 'unreviewed' })).toBe(false)
+  })
+})
+
+describe('clearing a day', () => {
+  type Stop = Parameters<typeof canClear>[0]
+  const v = (extra: Partial<Stop> = {}): Stop => ({ workStatus: 'pending', arrivedAt: null, photos: [], addedByMe: true, resumedFrom: null, reviewStatus: 'unreviewed', ...extra })
+  it('takes off what was not started, that the person may remove', () => {
+    expect(canClear(v(), false)).toBe(true)
+    expect(canClear(v({ addedByMe: false }), false)).toBe(false)
+    expect(canClear(v({ addedByMe: false }), true)).toBe(true)
+    expect(canClear(v({ resumedFrom: 'x', addedByMe: false }), false)).toBe(true)
+  })
+  it('never what was started, visited or has photos', () => {
+    expect(canClear(v({ arrivedAt: '2026-11-24T12:00:00Z' }), true)).toBe(false)
+    expect(canClear(v({ workStatus: 'done' }), true)).toBe(false)
+    expect(canClear(v({ photos: [{}] }), true)).toBe(false)
   })
 })

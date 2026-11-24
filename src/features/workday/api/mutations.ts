@@ -121,3 +121,20 @@ export function useDismissResumable() {
     onSettled: () => qc.invalidateQueries({ queryKey: ['workday', 'resumable'] }),
   })
 }
+
+/**
+ * "Limpiar jornada": every stop not started yet goes, in one step (a route passed by mistake).
+ * Says how many went and how many stay.
+ */
+export function useClearWorkday(workdayId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.rpc('clear_workday', { p_workday: workdayId })
+      if (error) throw new Error(workdayErrorMessage(error))
+      const [r] = data ?? []
+      return { removed: r?.removed ?? 0, kept: r?.kept ?? 0 }
+    },
+    onSettled: () => Promise.all([qc.invalidateQueries({ queryKey: workdayKeys.all }), qc.invalidateQueries({ queryKey: ['team'] })]),
+  })
+}

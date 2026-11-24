@@ -109,6 +109,28 @@ test('assigning: plan a day, add a store, publish', async ({ page }, info) => {
   await expect.poll(() => state.workdays?.find((w) => w.merchandiser_id === 'p2')?.status).toBe('published')
 })
 
+test('assigning: the supervisor clears a day loaded by mistake in one step', async ({ page }) => {
+  const state = team()
+  state.people = [lucia]
+  await installFakeSupabase(page, state, 'supervisor')
+  const friday = '2026-10-16'
+  await page.goto(`/s/assign?date=${friday}`)
+  await page.getByRole('button', { name: 'Agregar locales' }).click()
+  const sheet = page.getByRole('dialog', { name: 'Agregar a la jornada de Lucía' })
+  await sheet.getByRole('radio', { name: 'Pegar varias' }).click()
+  await sheet.getByLabel('Direcciones').fill('Moldes 1365\nVidal 2044\nCuba 2100')
+  await reviewAndAdd(sheet, 3)
+  await expect.poll(() => state.visits.filter((v) => v.workday_id === `w-p2-${friday}`).length).toBe(3)
+  await page.keyboard.press('Escape')
+
+  await page.getByRole('button', { name: 'Limpiar jornada' }).click()
+  const ask = page.getByRole('alertdialog', { name: '¿Limpiar la jornada de Lucía?' })
+  await expect(ask).toContainText('Se quitan los 3 locales que todavía no se empezaron.')
+  await ask.getByRole('button', { name: 'Quitar 3 locales' }).click()
+  await expect.poll(() => state.visits.filter((v) => v.workday_id === `w-p2-${friday}`).length).toBe(0)
+  await expect(page.getByText('Locales de Lucía · 0')).toBeVisible()
+})
+
 test('assigning: copy a task to other stops, and add only the pending stops chosen', async ({ page }, info) => {
   const state = team()
   state.people = [lucia]

@@ -2465,6 +2465,10 @@ export type Database = {
           seller_id: number | null
         }[]
       }
+      clear_workday: {
+        Args: { p_workday: string }
+        Returns: { removed: number; kept: number }[]
+      }
       set_photo_crop: {
         Args: { p_crop: number[] | null; p_photo: string }
         Returns: undefined

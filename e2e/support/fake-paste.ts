@@ -42,3 +42,14 @@ export function addVisits(state: FakeState, b: Row, addVisit: (b: Row) => string
     return { ...base, visit_id: visitId, store_id: storeId, matched_by: found ? (byNumber ? 'customer' : 'address') : null, created: true }
   })
 }
+
+/** clear_workday: the stops not started yet that the person may remove go; says how many went and stay. */
+export function clearWorkday(state: FakeState, b: Row, me: string) {
+  const boss = (state.memberships ?? []).some((m) => ((m.roles ?? []) as string[]).some((r) => r === 'supervisor' || r === 'admin'))
+  const day = (v: Row) => (v.workday_id ?? 'w1') === b.p_workday
+  const goes = (v: Row) => day(v) && v.work_status === 'pending' && !v.arrived_at && !((v.photo as Row[] | undefined) ?? []).length
+    && (boss || v.added_by === me || v.resumed_from)
+  const removed = state.visits.filter(goes).length
+  state.visits = state.visits.filter((v) => !goes(v))
+  return [{ removed, kept: state.visits.filter(day).length }]
+}

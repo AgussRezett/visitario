@@ -13,6 +13,7 @@ import { Refreshing } from '@/ui/Refreshing'
 import { Skeleton } from '@/ui/Skeleton'
 import { useWorkContext, type WorkContext } from '@/features/workday/context'
 import { useCatalogs, visitsQuery } from '@/features/workday/api/queries'
+import { ClearDay } from '@/features/workday/components/ClearDay'
 import { AddAddressSheet } from '@/features/workday/pages/WorkdayPage/AddAddressSheet'
 import { memberPendingQuery, teamDayQuery } from '@/features/team/api/queries'
 import { useAssign } from '@/features/team/api/mutations'
@@ -166,6 +167,7 @@ function MemberPlan({ ctx, member: m, date }: { ctx: WorkContext; member: TeamMe
               <History size={16} aria-hidden />Pendientes · {toResume.length}
             </Button>
           ) : null}
+          {m.workdayId ? <ClearDay workdayId={m.workdayId} visits={stops} boss whose={`la jornada de ${m.firstName}`} /> : null}
         </div>
       </div>
 
