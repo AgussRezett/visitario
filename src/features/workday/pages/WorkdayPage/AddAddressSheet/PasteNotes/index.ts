@@ -1,1 +1,0 @@
-export { PasteNotes } from './PasteNotes'

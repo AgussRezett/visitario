@@ -1,5 +1,6 @@
 import { pick } from './support/select'
 import { expect, test } from '@playwright/test'
+import { reviewAndAdd } from './support/review'
 import { atFakeToday, installFakeSupabase, visitRow, type FakeState } from './support/fake-supabase'
 
 test.beforeEach(({ page }) => atFakeToday(page))
@@ -39,19 +40,27 @@ test('pasting stores: @ offers the sellers and # the channels, and the store kee
   await expect(text).toHaveValue('1462; Altolaguirre 1952 @Florencia #Drugstore / Kiosco / Kiosco ventana ')
   await expect(sheet.getByText(/1 local · 1 con nro\. de cliente · 1 con vendedor · 1 con canal/)).toBeVisible()
 
-  await sheet.getByRole('button', { name: 'Agregar 1 dirección' }).click()
+  await reviewAndAdd(sheet, 1)
   await expect.poll(() => state.tagged?.[0]).toMatchObject({ p_store: 's-v1', p_seller: 1, p_channel: 11 })
 })
 
-test('an unknown @name is flagged and the store goes without it', async ({ page }) => {
-  const state: FakeState = { workday: null, visits: [], uploads: [], memberships: as(['supervisor']), catalogs: catalogs(), people: [{ id: 'p2', first_name: 'Lucía', last_name: 'Gómez' }] }
+test('an unknown @name is a seller to create in the review: an admin creates it with one tap for every store that names it', async ({ page }) => {
+  const state: FakeState = { workday: null, visits: [], uploads: [], memberships: as(['supervisor', 'admin']), catalogs: catalogs(), people: [{ id: 'p2', first_name: 'Lucía', last_name: 'Gómez' }] }
   await installFakeSupabase(page, state, 'supervisor')
   await page.goto('/s/assign?date=2026-10-16')
   await page.getByRole('button', { name: 'Agregar locales' }).click()
   const sheet = page.getByRole('dialog', { name: 'Agregar a la jornada de Lucía' })
   await sheet.getByRole('radio', { name: 'Pegar varias' }).click()
-  await sheet.getByLabel('Direcciones').fill('Cuba 2200 @Pedro\nMoldes 1365')
-  await expect(sheet.getByText('No encontramos @Pedro.', { exact: false })).toBeVisible()
+  await sheet.getByLabel('Direcciones').fill('Cuba 2200 @Pedro\nMoldes 1365 @Pedro\nVidal 2044')
+  await sheet.getByRole('button', { name: 'Revisar 3 locales' }).click()
+  const box = sheet.getByRole('region', { name: 'Vendedores que no están cargados' })
+  await expect(box).toContainText('Pedro · 2 locales')
+  await box.getByRole('button', { name: 'Crear vendedor' }).click()
+  await expect(box).toBeHidden()
+  const rows = sheet.getByRole('list', { name: 'Locales para agregar' }).locator(':scope > li')
+  await expect(rows.nth(0).getByLabel('Vendedor', { exact: true })).toHaveValue('Pedro')
+  await expect(rows.nth(1).getByLabel('Vendedor', { exact: true })).toHaveValue('Pedro')
+  await expect(rows.nth(2).getByLabel('Vendedor', { exact: true })).toHaveValue('')
 })
 
 test('the activador sees the channel and seller in the visit, and the message names them', async ({ page }, info) => {

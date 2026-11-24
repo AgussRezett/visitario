@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { pick } from './support/select'
+import { reviewAndAdd } from './support/review'
 import { readFiles } from './support/read-files'
 import { atFakeToday, installFakeSupabase, type FakeState } from './support/fake-supabase'
 
@@ -69,13 +69,12 @@ test('a PDF and a capture with indications, at once: the files order, each selle
   // A line fixed by hand keeps its task.
   const list = sheet.getByLabel('Direcciones')
   await list.fill((await list.inputValue()).replace('118; Av. Santa Fe 3200', '118; Santa Fe 3200; Palermo'))
-  await pick(sheet.getByLabel('Canal de los que no lo indican'), 'Autoservicio')
-  await sheet.getByRole('button', { name: 'Agregar 4 direcciones' }).click()
+  await reviewAndAdd(sheet, 4, 'Autoservicio')
   await expect(sheet).toBeHidden()
   expect(state.visits.map((v) => v.task)).toEqual([`${TASK} · PDF págs. 2 y 3`, `${TASK} · PDF pág. 4`, `${TASK} · PDF pág. 5`, TASK])
 })
 
-test('several captures without indications go in as lines, one after the other', async ({ page }) => {
+test('several captures without indications go to the review as rows, one after the other', async ({ page }) => {
   const state: FakeState = {
     workday: null, visits: [], uploads: [],
     catalogs: { display_type: [], channel: CHANNELS, seller: SELLERS },
@@ -87,9 +86,13 @@ test('several captures without indications go in as lines, one after the other',
   await installFakeSupabase(page, state)
   const sheet = await openSheet(page)
   await readFiles(sheet, [SHOT('uno.png'), SHOT('dos.png')])
-  await expect(sheet.getByLabel('Direcciones')).toHaveValue('564; Thames 1500\nGorriti 4100 @Ana Lo')
   await expect(sheet.getByText(/Leímos 2 locales/)).toBeVisible()
-  await expect(sheet.getByText('Te quedan 28 usos de IA hoy.')).toBeVisible()
+  const rows = sheet.getByRole('list', { name: 'Locales para agregar' }).locator(':scope > li')
+  await expect(rows).toHaveCount(2)
+  await expect(rows.nth(0).getByLabel('Nro. de cliente')).toHaveValue('564')
+  await expect(rows.nth(0).getByLabel('Dirección')).toHaveValue('Thames 1500')
+  await expect(rows.nth(1).getByLabel('Dirección')).toHaveValue('Gorriti 4100')
+  await expect(rows.nth(1).getByLabel('Vendedor', { exact: true })).toHaveValue('Ana Lo')
   expect(state.brief?.sent).toBeUndefined()
 })
 

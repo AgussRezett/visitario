@@ -100,15 +100,17 @@ test('adding a store someone else already has that day warns before adding it', 
   await expect(sheet.getByText('Diego P. ya lo tiene en su jornada de hoy, lo sumó por su cuenta y ya lo visitó.')).toBeVisible()
   await page.screenshot({ path: `test-results/overlap-one-${info.project.name}.png` })
 
-  // Pasted lines: one banner names which ones.
+  // Pasted lines: in the review, under the row that is.
   await sheet.getByRole('radio', { name: 'Pegar varias' }).click()
   await sheet.getByLabel('Direcciones').fill('Moldes 1365\nVidal 2044')
-  await expect(sheet.getByText('Una dirección ya está en otra jornada')).toBeVisible()
-  await expect(sheet.getByText(/Moldes 1365: Lucía G\. ya lo tiene/)).toBeVisible()
+  await sheet.getByRole('button', { name: 'Revisar 2 locales' }).click()
+  const rows = sheet.getByRole('list', { name: 'Locales para agregar' }).locator(':scope > li')
+  await expect(rows.nth(0)).toContainText('Lucía G. ya lo tiene en su jornada de hoy')
+  await expect(rows.nth(1)).not.toContainText('ya lo tiene')
   await page.screenshot({ path: `test-results/overlap-many-${info.project.name}.png` })
 
   // It is a heads-up: adding still works.
-  await sheet.getByRole('button', { name: 'Agregar 2 direcciones' }).click()
+  await sheet.getByRole('button', { name: 'Agregar 2 locales' }).click()
   await expect.poll(() => state.visits.length).toBe(2)
 })
 

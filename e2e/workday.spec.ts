@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { reviewAndAdd } from './support/review'
 import { installFakeSupabase, visitRow, type FakeState, atFakeToday } from './support/fake-supabase'
 
 // Written for Monday 12 October: run as if it were that day.
@@ -19,7 +20,7 @@ test('opens an own workday, adds 5 addresses and sees them in order', async ({ p
   await page.getByRole('button', { name: 'Agregar dirección' }).filter({ visible: true }).first().click()
   await page.getByRole('radio', { name: 'Pegar varias' }).click()
   await page.getByLabel('Direcciones').fill(ADDRESSES.join('\n'))
-  await page.getByRole('button', { name: 'Agregar 5 direcciones' }).click()
+  await reviewAndAdd(page, 5)
 
   await expect(page.getByText('0 de 5 visitados')).toBeVisible()
   const region = info.project.name === 'desktop' ? page.getByRole('table', { name: 'Locales de la jornada' }) : page.getByRole('region', { name: 'Locales' })
@@ -37,7 +38,7 @@ test('addresses an activador adds are located by themselves, though only supervi
   await page.getByRole('button', { name: 'Agregar dirección' }).filter({ visible: true }).first().click()
   await page.getByRole('radio', { name: 'Pegar varias' }).click()
   await page.getByLabel('Direcciones').fill(ADDRESSES.slice(0, 2).join('\n'))
-  await page.getByRole('button', { name: 'Agregar 2 direcciones' }).click()
+  await reviewAndAdd(page, 2)
   await expect(page.getByText('0 de 2 visitados')).toBeVisible()
   // Each new store is asked to the server once, one after the other.
   await expect.poll(() => state.verifyCalls).toEqual(['s-v1', 's-v2'])
