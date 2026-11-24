@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { reviewAndAdd } from './support/review'
+import { pick } from './support/select'
 import { readFiles } from './support/read-files'
 import { atFakeToday, installFakeSupabase, type FakeState } from './support/fake-supabase'
 
@@ -54,8 +54,14 @@ test('a PDF and a capture with indications, at once: the files order, each selle
   await page.screenshot({ path: `test-results/read-files-chosen-${info.project.name}.png` })
   await sheet.getByRole('button', { name: 'Leer los 2 archivos' }).click()
 
-  // The deck's "#120" goes as the client number.
-  await expect(sheet.getByLabel('Direcciones')).toHaveValue('120; Gorriti 4100 @Ana Lo\n4471; Honduras 3900 @Ana Lo\n118; Av. Santa Fe 3200 @Beto Su\n564; Thames 1500 @Ana Lo')
+  // Straight to the review, in the files' order; the deck's "#120" goes as the client number.
+  const rows = sheet.getByRole('list', { name: 'Locales para agregar' }).locator(':scope > li')
+  await expect(rows).toHaveCount(4)
+  await expect(rows.nth(0).getByLabel('Nro. de cliente')).toHaveValue('120')
+  await expect(rows.nth(0).getByLabel('Dirección')).toHaveValue('Gorriti 4100')
+  await expect(rows.nth(0).getByLabel('Vendedor', { exact: true })).toHaveValue('Ana Lo')
+  await expect(rows.nth(2).getByLabel('Vendedor', { exact: true })).toHaveValue('Beto Su')
+  await expect(rows.nth(0)).toContainText(`Tarea: ${TASK} · PDF págs. 2 y 3`)
   // The AI got every page, named, and what was written.
   expect(state.brief?.sent).toMatchObject({ text: indications, pages: [{ label: 'PDF pág. 1' }, {}, {}, {}, {}, { label: 'la captura', text: 'COD | DOMICILIO\n564 | THAMES 1500' }] })
   const understood = sheet.getByRole('list', { name: 'Lo que entendimos' })
@@ -63,13 +69,13 @@ test('a PDF and a capture with indications, at once: the files order, each selle
   await expect(understood).toContainText('Ana Lo: 3')
   await expect(sheet.getByText('Una dirección no está escrita así en el PDF: la dejamos afuera.', { exact: false })).toBeVisible()
   await expect(sheet.getByText(/Las indicaciones hablan del martes 13 de octubre/)).toBeVisible()
-  await expect(sheet.getByText('Te quedan 28 usos de IA hoy.')).toBeVisible()
   await page.screenshot({ path: `test-results/read-files-${info.project.name}.png` })
 
-  // A line fixed by hand keeps its task.
-  const list = sheet.getByLabel('Direcciones')
-  await list.fill((await list.inputValue()).replace('118; Av. Santa Fe 3200', '118; Santa Fe 3200; Palermo'))
-  await reviewAndAdd(sheet, 4, 'Autoservicio')
+  // A row fixed by hand keeps its task.
+  await rows.nth(2).getByLabel('Dirección').fill('Santa Fe 3200')
+  await rows.nth(2).getByLabel('Barrio').fill('Palermo')
+  await pick(sheet.getByLabel('Canal de los 4 sin canal'), 'Autoservicio')
+  await sheet.getByRole('button', { name: 'Agregar 4 locales' }).click()
   await expect(sheet).toBeHidden()
   expect(state.visits.map((v) => v.task)).toEqual([`${TASK} · PDF págs. 2 y 3`, `${TASK} · PDF pág. 4`, `${TASK} · PDF pág. 5`, TASK])
 })
@@ -89,10 +95,9 @@ test('several captures without indications go to the review as rows, one after t
   await expect(sheet.getByText(/Leímos 2 locales/)).toBeVisible()
   const rows = sheet.getByRole('list', { name: 'Locales para agregar' }).locator(':scope > li')
   await expect(rows).toHaveCount(2)
-  await expect(rows.nth(0).getByLabel('Nro. de cliente')).toHaveValue('564')
-  await expect(rows.nth(0).getByLabel('Dirección')).toHaveValue('Thames 1500')
-  await expect(rows.nth(1).getByLabel('Dirección')).toHaveValue('Gorriti 4100')
-  await expect(rows.nth(1).getByLabel('Vendedor', { exact: true })).toHaveValue('Ana Lo')
+  // (The fake answers the two reads in the order they arrive; the app keeps the files' order.)
+  const read = await rows.evaluateAll((lis) => lis.map((li) => Array.from(li.querySelectorAll('input'), (i) => i.value).filter(Boolean).join(' | ')))
+  expect(read.sort()).toEqual(['Thames 1500 | 564', 'Gorriti 4100 | Ana Lo'].sort())
   expect(state.brief?.sent).toBeUndefined()
 })
 

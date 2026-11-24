@@ -88,6 +88,30 @@ test('going back to paste more keeps what was fixed in the review', async ({ pag
   await expect(rows.nth(1).getByLabel('Dirección')).toHaveValue('Vidal 2044')
 })
 
+test('a row that is already a directory store goes as that store, not a new one', async ({ page }, info) => {
+  const state: FakeState = {
+    workday: null, visits: [], uploads: [], catalogs: catalogs(),
+    stores: [{ id: 's-callao', name: 'Autoservicio Lili', address: 'Av. Callao 2000', area: 'Balvanera', customer_number: null, channel_id: 10 }],
+  }
+  await installFakeSupabase(page, state)
+  await page.goto('/s/workday?date=2026-10-12')
+  await page.getByRole('button', { name: /Abrir (mi )?jornada/ }).click()
+  await page.getByRole('button', { name: 'Agregar dirección' }).filter({ visible: true }).first().click()
+  const sheet = page.getByRole('dialog', { name: 'Agregar a mi jornada' })
+  await sheet.getByRole('radio', { name: 'Pegar varias' }).click()
+  await sheet.getByLabel('Direcciones').fill('9320; Callao 2000\nMoldes 1365')
+  await sheet.getByRole('button', { name: 'Revisar 2 locales' }).click()
+  const rows = sheet.getByRole('list', { name: 'Locales para agregar' }).locator(':scope > li')
+  // "Callao 2000" is the directory's "Av. Callao 2000": shown as that store, with its channel.
+  await expect(rows.nth(0)).toContainText('Ya está en el directorio · misma dirección')
+  await expect(rows.nth(0)).toContainText('Autoservicio Lili · Av. Callao 2000')
+  await expect(rows.nth(0)).toContainText('Nro. 9320 (se lo agregamos)')
+  await expect(rows.nth(0).getByLabel('Dirección')).toHaveCount(0)
+  await expect(rows.nth(0).getByLabel('Canal')).toHaveAttribute('data-value', '10')
+  await expect(sheet.getByText('2 locales para agregar · 1 ya está en el directorio · a 1 le falta un dato')).toBeVisible()
+  await page.screenshot({ path: `test-results/paste-known-${info.project.name}.png`, fullPage: true })
+})
+
 test('a new store asks for its channel: one of them, or "Sin canal" on purpose', async ({ page }, info) => {
   await installFakeSupabase(page, { workday: null, visits: [], uploads: [], catalogs: catalogs() })
   await page.goto('/s/workday?date=2026-10-12')

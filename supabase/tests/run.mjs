@@ -1094,6 +1094,30 @@ check('Ended: Lucía can join another one that day', (await as('lucia', `select 
   await sys(`update visit set deleted_at = now() where workday_id = $1`, [day])
 }
 
+// ---- The directory's stores reused: the number with zeros, the address written another way
+{
+  const day = (await as('agus', `select open_workday($1, '2026-11-03') id`, [panda]))[0].id
+  const callao = (await sys(`insert into store (company_id, address) values ($1, 'Av. Callao 2000') returning id`, [panda]))[0].id
+  const zeros = (await sys(`insert into store (company_id, address, customer_number) values ($1, 'Pareja 2351', '00975') returning id`, [panda]))[0].id
+  const other = (await sys(`insert into store (company_id, address, customer_number) values ($1, 'Lavalle 1500', '91700') returning id`, [panda]))[0].id
+  const rows = [
+    { customer_number: '99320', address: 'Callao 2000' },
+    { customer_number: '975', address: 'Pareja 2351' },
+    { customer_number: '91800', address: 'Lavalle 1500' },
+  ]
+  const seen = await as('agus', `select * from match_day_stores($1, $2) order by idx`, [panda, JSON.stringify(rows)])
+  check('The review knows which rows are directory stores, and which', seen.length === 2
+    && seen[0].idx === 0 && seen[0].store_id === callao && seen[0].matched_by === 'address' && seen[0].address === 'Av. Callao 2000'
+    && seen[1].idx === 1 && seen[1].store_id === zeros && seen[1].matched_by === 'customer')
+  check('Another company learns nothing from it', (await as('beto', `select count(*)::int n from match_day_stores($1, $2)`, [panda, JSON.stringify(rows)]))[0].n === 0)
+  const res = await as('agus', `select * from add_visits($1, $2) order by idx`, [day, JSON.stringify(rows)])
+  check('"Callao 2000" is the directory\'s "Av. Callao 2000", not a new store', res[0].store_id === callao && res[0].matched_by === 'address')
+  check('A number with zeros in front is the same customer', res[1].store_id === zeros && res[1].matched_by === 'customer')
+  check('The same address with another customer number is another store', res[2].store_id !== other && res[2].created)
+  await sys(`update visit set deleted_at = now() where workday_id = $1`, [day])
+  await sys(`update store set deleted_at = now() where id = any($1::uuid[])`, [[callao, zeros, other, res[2].store_id]])
+}
+
 // ---- Extra means added once the shift started, whoever added it
 {
   const today = (await sys(`select (now() at time zone 'America/Argentina/Buenos_Aires')::date::text d`))[0].d
