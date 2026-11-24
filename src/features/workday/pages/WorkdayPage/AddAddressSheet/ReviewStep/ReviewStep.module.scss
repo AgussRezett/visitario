@@ -1,0 +1,170 @@
+@use '@/styles/abstracts' as *;
+
+.step {
+  @include flex(column, $gap: space(4));
+}
+
+.summary {
+  @include text(label);
+  margin: 0;
+  color: $color-ink-muted;
+}
+
+.bulk {
+  max-width: 360px;
+}
+
+// Sellers the list names that are not loaded yet.
+.unknown {
+  @include flex(column, $gap: space(2));
+  padding: space(3) space(4);
+  border-radius: $radius-md;
+  background: $color-fix-soft;
+}
+
+.unknown-title {
+  @include text(label);
+  margin: 0;
+  font-weight: 600;
+  color: $color-fix-ink;
+}
+
+.unknown-list {
+  @include flex(column, $gap: space(2));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    @include flex(row, $gap: space(2) space(3), $align: center);
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+}
+
+.unknown-help {
+  @include text(label);
+  margin: 0;
+  color: $color-ink-muted;
+}
+
+.rows {
+  @include flex(column, $gap: space(3));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+// One store: stacked on a phone, two lines on a wider screen.
+.row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) minmax(0, 1fr) 44px;
+  grid-template-areas:
+    'n address address remove'
+    'number number area area'
+    'seller seller channel channel'
+    'task task task task'
+    'notes notes notes notes';
+  gap: space(3) space(2);
+  padding: space(3) space(3) space(4);
+  border: 1px solid $color-line;
+  border-radius: $radius-md;
+  background: $color-card;
+
+  @include up(sm) {
+    grid-template-columns: 28px minmax(0, 0.9fr) minmax(0, 1.1fr) minmax(0, 1.4fr) minmax(0, 1.2fr) 44px;
+    grid-template-areas:
+      'n address address address address remove'
+      '. number area seller channel .'
+      '. task task task task .'
+      '. notes notes notes notes .';
+    align-items: start;
+  }
+}
+
+.row-problem {
+  border-color: $color-fix-ink;
+}
+
+.n {
+  @include text(label);
+  grid-area: n;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-top: space(8);
+  border-radius: $radius-sm;
+  background: $color-muted;
+  font-weight: 700;
+}
+
+.address {
+  grid-area: address;
+}
+
+.number {
+  grid-area: number;
+}
+
+.area {
+  grid-area: area;
+}
+
+.seller {
+  grid-area: seller;
+  min-width: 0;
+}
+
+.channel {
+  grid-area: channel;
+  min-width: 0;
+}
+
+.remove {
+  grid-area: remove;
+  justify-self: end;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: $radius-sm;
+  background: transparent;
+  color: $color-ink-muted;
+  margin-top: space(7);
+  cursor: pointer;
+
+  @include hover {
+    background: $color-muted;
+    color: $color-ink;
+  }
+}
+
+.read {
+  @include text(label);
+  margin: space(1) 0 0;
+  color: $color-fix-ink;
+}
+
+.task {
+  @include text(label);
+  grid-area: task;
+  margin: 0;
+  color: $color-ink-muted;
+}
+
+.notes {
+  @include flex(column, $gap: space(1));
+  @include text(label);
+  grid-area: notes;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: $color-ink-muted;
+}
+
+.problem {
+  color: $color-fix-ink;
+  font-weight: 600;
+}
