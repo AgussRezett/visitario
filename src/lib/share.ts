@@ -1,21 +1,31 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-/** Copies text; falls back to a hidden textarea where the Clipboard API is missing. */
+/** Copies at once, in the same tap, through a hidden textarea; false where the browser does not allow it. */
+export function copyNow(text: string): boolean {
+  const area = document.createElement('textarea')
+  area.value = text
+  area.setAttribute('readonly', '')
+  area.style.position = 'fixed'
+  area.style.opacity = '0'
+  document.body.append(area)
+  area.select()
+  let ok = false
+  try {
+    ok = document.execCommand('copy')
+  } catch {
+    ok = false
+  }
+  area.remove()
+  return ok
+}
+
+/** Copies text with the Clipboard API; falls back to the hidden textarea. */
 export async function copyText(text: string) {
   try {
     await navigator.clipboard.writeText(text)
     return true
   } catch {
-    const area = document.createElement('textarea')
-    area.value = text
-    area.setAttribute('readonly', '')
-    area.style.position = 'fixed'
-    area.style.opacity = '0'
-    document.body.append(area)
-    area.select()
-    const ok = document.execCommand('copy')
-    area.remove()
-    return ok
+    return copyNow(text)
   }
 }
 
