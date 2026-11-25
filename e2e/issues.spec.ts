@@ -87,3 +87,33 @@ test('the supervisor gets the novedades, passes the order to the seller and mark
   await page.getByRole('radio', { name: 'Resueltas' }).click()
   await expect(page.getByRole('article', { name: 'Necesita pedido: Autoservicio Lili' })).toContainText('Resuelta por Martín')
 })
+
+test('the supervisor tells novedades apart: by day ("Hoy", "Ayer"), by type, and the new ones since last time', async ({ page }, info) => {
+  const s: FakeState = {
+    workday: null, visits: [], uploads: [],
+    memberships: [{ id: 'm1', company_id: 'c1', roles: ['supervisor'], status: 'active', starts_on: '2026-10-01', company: { name: 'Panda', kind: 'distributor' } }],
+    catalogs: { issue_type: TYPES, seller: [], channel: [] },
+    issues: [
+      issue('i1', 2, 'Sin Campari', '2026-10-12T14:30:00Z'),
+      issue('i2', 1, 'Pidió SKYY', '2026-10-11T19:00:00Z'),
+      issue('i3', 2, 'Sin Aperol', '2026-10-09T15:00:00Z'),
+    ],
+  }
+  await installFakeSupabase(page, s, 'supervisor')
+  // Last opened on the 11th at noon: what came after is new.
+  await page.addInitScript(() => { try { if (!localStorage.getItem('visitario.issuesSeen.c1')) localStorage.setItem('visitario.issuesSeen.c1', '2026-10-11T15:00:00Z') } catch { /* private window */ } })
+  await page.goto('/s/issues')
+
+  const sections = page.locator('section[aria-label]').filter({ has: page.getByRole('heading', { level: 2 }) })
+  await expect(sections.getByRole('heading', { level: 2 })).toHaveText(['Hoy1', 'Ayer1', 'Viernes 9 de octubre1'])
+  await expect(page.getByRole('region', { name: 'Hoy' }).getByRole('article')).toContainText('11:30')
+  await expect(page.getByText('2 novedades nuevas desde la última vez que entraste.')).toBeVisible()
+  await expect(page.getByRole('article', { name: /Falta de stock/ }).filter({ hasText: 'Sin Campari' })).toContainText('Nueva')
+  await expect(page.getByRole('article', { name: /Falta de stock/ }).filter({ hasText: 'Sin Aperol' })).not.toContainText('Nueva')
+  await page.screenshot({ path: `test-results/issues-by-day-${info.project.name}.png`, fullPage: true })
+
+  await page.getByRole('radio', { name: 'Por tipo' }).click()
+  await expect(sections.getByRole('heading', { level: 2 })).toHaveText(['Necesita pedido1', 'Falta de stock2'])
+  // Under a type, the date goes with the time.
+  await expect(page.getByRole('region', { name: 'Falta de stock' }).getByRole('article').first()).toContainText('12/10 11:30')
+})
