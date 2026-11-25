@@ -28,12 +28,20 @@ const state = (): FakeState => ({
 /** The phone's share sheet: records what goes out; `cancelNext` acts as closing it without sending. */
 async function fakeShare(page: Page) {
   await page.addInitScript(() => {
-    const w = window as unknown as { shares: { text?: string; files: string[] }[]; cancelNext?: boolean }
+    const w = window as unknown as { shares: { text?: string; files: string[] }[]; cancelNext?: boolean; away?: boolean }
     w.shares = []
+    // Like a phone: once WhatsApp opens, the page is not focused and copying is refused.
+    const write = navigator.clipboard.writeText.bind(navigator.clipboard)
+    navigator.clipboard.writeText = (t: string) => new Promise((ok, no) => setTimeout(() => (w.away ? no(new DOMException('Document is not focused', 'NotAllowedError')) : write(t).then(ok, no)), 0))
+    const exec = document.execCommand.bind(document)
+    document.execCommand = (cmd: string, ...rest: [boolean?, string?]) => (w.away ? false : exec(cmd, ...rest))
     Object.defineProperty(Navigator.prototype, 'canShare', { configurable: true, value: () => true })
     Object.defineProperty(Navigator.prototype, 'share', {
       configurable: true,
       value: async (data: ShareData) => {
+        w.away = true
+        await new Promise((r) => setTimeout(r, 50))
+        w.away = false
         if (w.cancelNext) {
           w.cancelNext = false
           throw new DOMException('Share canceled', 'AbortError')

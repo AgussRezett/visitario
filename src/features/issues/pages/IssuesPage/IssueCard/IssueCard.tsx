@@ -20,10 +20,14 @@ interface IssueCardProps {
   asSeller?: boolean
   /** Already on the client's page: no link to it. */
   inClient?: boolean
+  /** When it was reported, as the list shows it (only the time under a day's heading). */
+  when?: string
+  /** Reported since the list was last opened. */
+  fresh?: boolean
 }
 
 /** One novedad: what, where, who saw it; to pass it to the seller and mark it resolved. */
-export function IssueCard({ issue: i, typeName, seller, channel, busy, onResolve, onReopen, asSeller, inClient }: IssueCardProps) {
+export function IssueCard({ issue: i, typeName, seller, channel, busy, onResolve, onReopen, asSeller, inClient, when: shownWhen, fresh }: IssueCardProps) {
   const [resolving, setResolving] = useState(false)
   const [note, setNote] = useState('')
   const when = issueWhen(i.createdAt)
@@ -34,7 +38,8 @@ export function IssueCard({ issue: i, typeName, seller, channel, busy, onResolve
     <article className={styles.card} aria-label={`${typeName}: ${place}`}>
       <div className={styles.top}>
         <span className={styles.type}>{typeName}</span>
-        <span className={styles.when}>{when}</span>
+        {fresh ? <span className={styles.fresh}>Nueva</span> : null}
+        <span className={styles.when}>{shownWhen ?? when}</span>
       </div>
       {inClient ? null : (
         <div className={styles.store}>

@@ -47,3 +47,32 @@
     align-items: start;
   }
 }
+
+.fresh {
+  @include text(label);
+  margin: 0;
+  color: $color-active-ink;
+  font-weight: $weight-bold;
+}
+
+// A day (or a type) with its novedades under it.
+.group {
+  @include flex(column, $gap: space(3));
+}
+
+.group-title {
+  @include flex(row, $gap: space(2), $align: center);
+  @include eyebrow;
+  margin: space(2) 0 0;
+  color: $color-ink;
+}
+
+.group-count {
+  @include text(small);
+  min-width: 24px;
+  padding: 0 space(2);
+  border-radius: $radius-full;
+  background: $color-muted;
+  color: $color-ink-muted;
+  text-align: center;
+}

@@ -42,7 +42,7 @@ export function SendSheet({ open, onClose, address, sends, sent, onSent, urlFor,
   // The observations need no photo: always ready.
   const stateOf = (s: Send): SendState => (s.textOnly ? 'ready' : sendState(s.photoIds, files))
 
-  const send = (s: Send) => {
+  const send = async (s: Send) => {
     const state = stateOf(s)
     if (state === 'error') return retry()
     if (state !== 'ready') return
@@ -52,12 +52,12 @@ export function SendSheet({ open, onClose, address, sends, sent, onSent, urlFor,
     })
     // Copied too: some WhatsApp versions drop the text that comes with photos. With several photos
     // WhatsApp repeats the text on each one, so they go alone, as one album, and the text is pasted once.
-    void copyText(s.text)
-    void share({ text: albumCaption(shared.length) ? undefined : s.text, files: shared }).then((ok) => {
-      if (!ok) return
-      onSent(s.key)
-      setAnnounce(`Enviado: ${s.label}`)
-    })
+    // Copied before WhatsApp opens: once it does the page loses focus and the phone refuses the copy.
+    await copyText(s.text)
+    const ok = await share({ text: albumCaption(shared.length) ? undefined : s.text, files: shared })
+    if (!ok) return
+    onSent(s.key)
+    setAnnounce(`Enviado: ${s.label}`)
   }
 
   const nextState = next ? stateOf(next) : null
@@ -66,7 +66,7 @@ export function SendSheet({ open, onClose, address, sends, sent, onSent, urlFor,
       {next.text && albumCaption(next.photoIds.length) ? (
         <p className={styles.note}>Van {next.photoIds.length} fotos juntas y el texto queda copiado: pegalo en la primera, así sale una sola vez.</p>
       ) : null}
-      <Button size="lg" className={styles.main} loading={nextState === 'loading'} onClick={() => send(next)}>
+      <Button size="lg" className={styles.main} loading={nextState === 'loading'} onClick={() => void send(next)}>
         {nextState === 'error' ? <RotateCw size={20} aria-hidden /> : <SendIcon size={20} aria-hidden />}
         {nextState === 'loading' ? 'Preparando fotos…' : nextState === 'error' ? 'Reintentar fotos' : `Enviar ${next.label}`}
       </Button>
@@ -102,7 +102,7 @@ export function SendSheet({ open, onClose, address, sends, sent, onSent, urlFor,
               <ul className={styles.rows}>
                 {rows.map((s) => (
                   <li key={s.key}>
-                    <Row send={s} state={stateOf(s)} sent={sent.has(s.key)} isNext={next?.key === s.key} url={s.photoIds[0] ? urlFor(s.photoIds[0]) : undefined} frame={s.photoIds[0] ? frameFor?.(s.photoIds[0]) : undefined} onSend={() => send(s)} />
+                    <Row send={s} state={stateOf(s)} sent={sent.has(s.key)} isNext={next?.key === s.key} url={s.photoIds[0] ? urlFor(s.photoIds[0]) : undefined} frame={s.photoIds[0] ? frameFor?.(s.photoIds[0]) : undefined} onSend={() => void send(s)} />
                   </li>
                 ))}
               </ul>

@@ -72,3 +72,14 @@
     margin-left: auto;
   }
 }
+
+// Reported since the list was last opened.
+.fresh {
+  @include text(small);
+  margin-right: auto;
+  padding: space(0.5) space(2);
+  border-radius: $radius-full;
+  background: $color-active-soft;
+  color: $color-active-ink;
+  font-weight: $weight-bold;
+}
