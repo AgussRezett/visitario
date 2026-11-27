@@ -18,10 +18,8 @@ export interface Send {
   label: string
   photoIds: string[]
   text: string
-  /** Goes without photos (the observations, or the text of an album). */
+  /** Goes without photos (the observations). */
   textOnly?: boolean
-  /** The text of an album: goes right after its photos, as its own message. */
-  ofAlbum?: string
 }
 
 /** The observations as the supervisor reads them: Observaciones: …. */
@@ -49,10 +47,7 @@ export interface SendInput {
 
 const WORD: Record<'before' | 'after', string> = { before: 'ANTES', after: 'DESPUÉS' }
 
-/**
- * With more than one photo the text goes apart, as its own message right after them: shared
- * with the photos, WhatsApp would repeat it on every photo.
- */
+/** With more than one photo the text goes apart: WhatsApp would repeat it on every photo. */
 export const albumCaption = (photos: number) => photos > 1
 
 export function buildSends(input: SendInput): Send[] {
@@ -64,14 +59,7 @@ export function buildSends(input: SendInput): Send[] {
       // The whole visit keeps its old key ("before"), each display too ("before-<id>"): what was sent stays sent.
       const key = m.label === null ? kind : `${kind}-${m.key}`
       const title = m.label ?? WORD[kind]
-      const label = m.label === null ? WORD[kind] : `${WORD[kind]} · ${m.label}`
-      const photoIds = of(kind, m.displayIds)
-      if (!albumCaption(photoIds.length) || !m.text) {
-        sends.push({ key, group: kind, title, label, photoIds, text: m.text })
-        continue
-      }
-      sends.push({ key, group: kind, title, label, photoIds, text: '' })
-      sends.push({ key: `${key}-text`, group: kind, title: `${title} · texto`, label: `texto de ${label}`, photoIds: [], text: m.text, textOnly: true, ofAlbum: key })
+      sends.push({ key, group: kind, title, label: m.label === null ? WORD[kind] : `${WORD[kind]} · ${m.label}`, photoIds: of(kind, m.displayIds), text: m.text })
     }
   }
   const notes = observationText(input.notes)

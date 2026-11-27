@@ -50,11 +50,11 @@ export function SendSheet({ open, onClose, address, sends, sent, onSent, urlFor,
       const blob = files[id]
       return blob instanceof Blob ? [new File([blob], shareFileName(s, i), { type: 'image/jpeg' })] : []
     })
-    // Copied too: some WhatsApp versions drop the text that comes with photos. Copied before
-    // WhatsApp opens: once it does the page loses focus and the phone refuses the copy.
-    // (An album goes without text: its text is the next send, as its own message.)
-    if (s.text) await copyText(s.text)
-    const ok = await share({ text: s.text || undefined, files: shared })
+    // Copied too: some WhatsApp versions drop the text that comes with photos. With several photos
+    // WhatsApp repeats the text on each one, so they go alone, as one album, and the text is pasted once.
+    // Copied before WhatsApp opens: once it does the page loses focus and the phone refuses the copy.
+    await copyText(s.text)
+    const ok = await share({ text: albumCaption(shared.length) ? undefined : s.text, files: shared })
     if (!ok) return
     onSent(s.key)
     setAnnounce(`Enviado: ${s.label}`)
@@ -63,10 +63,8 @@ export function SendSheet({ open, onClose, address, sends, sent, onSent, urlFor,
   const nextState = next ? stateOf(next) : null
   const footer = next ? (
     <div className={styles.footer}>
-      {albumCaption(next.photoIds.length) && sends.some((s) => s.ofAlbum === next.key) ? (
-        <p className={styles.note}>Van {next.photoIds.length} fotos juntas. La plantilla va en el envío siguiente, como mensaje aparte, así sale una sola vez.</p>
-      ) : next.ofAlbum ? (
-        <p className={styles.note}>Mandalo en el mismo chat, justo después de las fotos.</p>
+      {next.text && albumCaption(next.photoIds.length) ? (
+        <p className={styles.note}>Van {next.photoIds.length} fotos juntas y el texto queda copiado: pegalo en la primera, así sale una sola vez.</p>
       ) : null}
       <Button size="lg" className={styles.main} loading={nextState === 'loading'} onClick={() => void send(next)}>
         {nextState === 'error' ? <RotateCw size={20} aria-hidden /> : <SendIcon size={20} aria-hidden />}

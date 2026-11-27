@@ -65,7 +65,7 @@ test('the activador sends the visit to WhatsApp one message at a time, with its 
   await page.goto('/visit/v1')
   await page.getByRole('button', { name: /Enviar a WhatsApp/ }).click()
   const sheet = page.getByRole('dialog', { name: 'Enviar a WhatsApp' })
-  await expect(sheet.getByText('0 de 6 enviados')).toBeVisible()
+  await expect(sheet.getByText('0 de 5 enviados')).toBeVisible()
   await expect(sheet.getByRole('button', { name: 'Enviar DESPUÉS · Puntera · Falta la foto' })).toBeDisabled()
   await page.screenshot({ path: `test-results/whatsapp-send-${info.project.name}.png` })
 
@@ -78,22 +78,20 @@ test('the activador sends the visit to WhatsApp one message at a time, with its 
   // Closing WhatsApp's sheet without sending keeps it as the next one.
   await page.evaluate(() => { (window as unknown as { cancelNext: boolean }).cancelNext = true })
   await sheet.getByRole('button', { name: 'Enviar ANTES · Puntera', exact: true }).click()
-  await expect(sheet.getByText('2 de 6 enviados')).toBeVisible()
+  await expect(sheet.getByText('2 de 5 enviados')).toBeVisible()
   await sheet.getByRole('button', { name: 'Enviar ANTES · Puntera', exact: true }).click()
-  // Two photos: one album, and its text right after as its own message (WhatsApp would repeat it on each photo).
-  await expect(sheet.getByText('Van 2 fotos juntas. La plantilla va en el envío siguiente, como mensaje aparte, así sale una sola vez.')).toBeVisible()
+  // Two photos: one album, the text copied to paste once (WhatsApp would repeat it on each photo).
+  await expect(sheet.getByText('Van 2 fotos juntas y el texto queda copiado: pegalo en la primera, así sale una sola vez.')).toBeVisible()
   await sheet.getByRole('button', { name: 'Enviar DESPUÉS · Góndola', exact: true }).click()
   await expect.poll(async () => (await shares(page))[3]).toEqual({ files: ['DESPUÉS - Góndola.jpg', 'DESPUÉS - Góndola 2.jpg'] })
-  await expect(sheet.getByText('Mandalo en el mismo chat, justo después de las fotos.')).toBeVisible()
-  await sheet.getByRole('button', { name: 'Enviar texto de DESPUÉS · Góndola', exact: true }).click()
-  await expect.poll(async () => (await shares(page))[4]).toEqual({ text: 'DESPUÉS\nTIPO DE EXHIBICION: GÓNDOLA', files: [] })
-  await expect(sheet.getByText('5 de 6 enviados')).toBeVisible()
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe('DESPUÉS\nTIPO DE EXHIBICION: GÓNDOLA')
+  await expect(sheet.getByText('4 de 5 enviados')).toBeVisible()
   await expect(sheet.getByText('Lo que falta se habilita cuando saques sus fotos.')).toBeVisible()
   await page.screenshot({ path: `test-results/whatsapp-sent-${info.project.name}.png` })
 
   // Coming back from WhatsApp may reload the app: what was sent is remembered.
   await page.reload()
-  await expect(page.getByRole('button', { name: /Enviar a WhatsApp/ })).toContainText('5 de 6 enviados')
+  await expect(page.getByRole('button', { name: /Enviar a WhatsApp/ })).toContainText('4 de 5 enviados')
   await page.getByRole('button', { name: /Enviar a WhatsApp/ }).click()
   await sheet.getByRole('button', { name: 'Volver a enviar Fachada · Enviado' }).click()
   await expect.poll(async () => (await shares(page)).length).toBe(1)
@@ -120,10 +118,10 @@ test('the observations are copied and sent too, as text, after the photos', asyn
 
   await page.getByRole('button', { name: /Enviar a WhatsApp/ }).click()
   const sheet = page.getByRole('dialog', { name: 'Enviar a WhatsApp' })
-  await expect(sheet.getByText('0 de 7 enviados')).toBeVisible()
+  await expect(sheet.getByText('0 de 6 enviados')).toBeVisible()
   await sheet.getByRole('region', { name: 'Observaciones' }).getByRole('button', { name: /Enviar Observaciones/ }).click()
   await expect.poll(() => shares(page)).toEqual([{ text: 'Observaciones: Faltó SKYY en la góndola', files: [] }])
-  await expect(sheet.getByText('1 de 7 enviados')).toBeVisible()
+  await expect(sheet.getByText('1 de 6 enviados')).toBeVisible()
 })
 
 test('without observations there is nothing extra to send', async ({ page }) => {
