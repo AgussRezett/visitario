@@ -28,7 +28,7 @@ export function FollowStatus({ first, live, fresh, where, otherPhones, hasPath, 
     return (
       <p className={clsx(styles.status, !hasPath && styles.none)}>
         {hasPath ? <LocateFixed size={16} aria-hidden /> : <LocateOff size={16} aria-hidden />}
-        {hasPath ? `El recorrido que hizo ${first}` : `No hay recorrido de ${first} ese día.`}
+        {hasPath ? `Dónde estuvo ${first} por última vez ese día` : `No hay ubicación de ${first} ese día.`}
       </p>
     )
   }
