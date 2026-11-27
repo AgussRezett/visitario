@@ -108,7 +108,7 @@ function MemberDay({ companyId, personId, workday, first, activity }: MemberDayP
   const seen = workday.status !== 'draft' ? follow(positions.data ?? [], now, times) : null
   const where = whereabouts(times)
   const next = live && where?.kind === 'between' && where.to.lat !== null && where.to.lng !== null ? [where.to.lng, where.to.lat] as [number, number] : null
-  const tracker = seen ? { name: first, lat: seen.last.lat, lng: seen.last.lng, trail: seen.trail, ahead: next, stale: seen.stale, seen: agoText(seen.last.at, now) } : null
+  const tracker = seen ? { name: first, lat: seen.last.lat, lng: seen.last.lng, ahead: next, stale: seen.stale, seen: agoText(seen.last.at, now) } : null
   const fresh = seen && seen.last.device !== null && !seen.stale ? agoText(seen.last.at, now) : null
   // The map is heavy: open on a computer, one tap away on a phone (open when they are out today).
   const [mapChoice, setMapOpen] = useState<boolean | null>(null)

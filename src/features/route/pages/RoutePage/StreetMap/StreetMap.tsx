@@ -100,13 +100,12 @@ export default function StreetMap({ stops, origin, line, mode, progress = false,
   }, [failed])
 
   // The line and the pins, drawn again whenever the order, the path or a stop's state changes.
-  const drawn = JSON.stringify([path, located.map((v) => v.id + v.workStatus + v.reviewStatus), origin, mode, progress, Boolean(tracker)])
+  const drawn = JSON.stringify([path, located.map((v) => v.id + v.workStatus + v.reviewStatus), origin, mode, progress])
   useEffect(() => {
     const m = map.current
     if (!m) return
     const source = ready ? (m.getSource('route') as maplibregl.GeoJSONSource | undefined) : undefined
-    // Following someone, the path they walked is the line; the planned one would cross it.
-    source?.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: tracker ? [] : path } })
+    source?.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: path } })
     // Straight lines are dashed: a sketch, not the streets.
     if (source) m.setPaintProperty('route', 'line-dasharray', byStreet ? undefined : [1.5, 1.5])
     markers.current.forEach((k) => k.remove())

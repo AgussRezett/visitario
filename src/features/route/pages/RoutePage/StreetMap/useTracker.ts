@@ -7,8 +7,6 @@ export interface Tracked {
   name: string
   lat: number
   lng: number
-  /** The path walked so far, as [lng, lat], oldest first (up to the dot). */
-  trail: [number, number][]
   /** On the way to the next stop: drawn dashed from the dot to it. */
   ahead: [number, number] | null
   /** No news for a while: shown greyed. */
@@ -27,14 +25,11 @@ export function useTracker(map: maplibregl.Map | null, tracker: Tracked | null) 
   const marker = useRef<maplibregl.Marker | null>(null)
   const [following, setFollowing] = useState(true)
 
-  // The path's line, once per map.
+  // The dashed line to the next stop, once per map. (No path walked: only where they are.)
   useEffect(() => {
-    if (!map || map.getSource('trail')) return
-    // The path in the "in progress" blue, as the stop being worked on.
+    if (!map || map.getSource('ahead')) return
+    // In the "in progress" blue, as the stop being worked on.
     const color = getComputedStyle(document.documentElement).getPropertyValue('--active').trim() || '#2f5bd3'
-    map.addSource('trail', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [] } } })
-    map.addLayer({ id: 'trail', type: 'line', source: 'trail', layout: { 'line-join': 'round', 'line-cap': 'round' },
-      paint: { 'line-color': color, 'line-width': 4, 'line-opacity': 0.55 } })
     map.addSource('ahead', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [] } } })
     map.addLayer({ id: 'ahead', type: 'line', source: 'ahead', layout: { 'line-cap': 'round' },
       paint: { 'line-color': color, 'line-width': 3, 'line-opacity': 0.6, 'line-dasharray': [1, 2] } })
@@ -60,8 +55,6 @@ export function useTracker(map: maplibregl.Map | null, tracker: Tracked | null) 
       marker.current = null
       return
     }
-    const source = map.getSource('trail') as maplibregl.GeoJSONSource | undefined
-    source?.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [...tracker.trail, [tracker.lng, tracker.lat]] } })
     const ahead = map.getSource('ahead') as maplibregl.GeoJSONSource | undefined
     ahead?.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: tracker.ahead ? [[tracker.lng, tracker.lat], tracker.ahead] : [] } })
     if (!marker.current) {
@@ -79,8 +72,8 @@ export function useTracker(map: maplibregl.Map | null, tracker: Tracked | null) 
       if (tracker.ahead) map.fitBounds(new maplibregl.LngLatBounds([tracker.lng, tracker.lat], [tracker.lng, tracker.lat]).extend(tracker.ahead), { padding: { top: 56, right: 64, bottom: 104, left: 64 }, maxZoom: FOLLOW_ZOOM, duration: 800 })
       else map.easeTo({ center: [tracker.lng, tracker.lat], zoom: Math.max(map.getZoom(), FOLLOW_ZOOM), duration: 800 })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `where` and the trail length say what moved
-  }, [map, where, tracker?.trail.length, tracker?.stale, tracker?.seen, tracker?.ahead?.join(), following])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `where` says what moved
+  }, [map, where, tracker?.stale, tracker?.seen, tracker?.ahead?.join(), following])
 
   useEffect(() => () => {
     marker.current?.remove()
